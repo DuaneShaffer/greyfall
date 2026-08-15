@@ -9,12 +9,12 @@ import {
   startCharge,
   STANDING_PER_ACTION,
 } from "../rules/abilities.js";
-import { spendCharge } from "../rules/effects.js";
+import { checkContact, emptyOutcome, spendCharge } from "../rules/effects.js";
 import { coordEq, facingToward, manhattan, objectById, unitById } from "../rules/grid.js";
 import { findPath } from "../rules/movement.js";
 import { evaluateOutcome } from "../rules/outcome.js";
 import { canAct, canMove } from "../rules/status.js";
-import { aimedTile, hasLos, inRange, isValidTargetKind } from "../rules/targeting.js";
+import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
 import { evaluateTriggers } from "../rules/triggers.js";
 import { advanceClock, endActiveTurn } from "../rules/turn.js";
 import { commandError, type Command, type CommandError, type CommandResult } from "./types.js";
@@ -90,6 +90,10 @@ function validateAct(
   if (ability.targeting.requiresLos && !hasLos(state, unit.position, aimed)) {
     return { ability: null, error: commandError("no-line-of-sight", "nothing in sight there") };
   }
+  const requirement = unmetRequirement(state, unit, ability, cmd.target);
+  if (requirement !== null) {
+    return { ability: null, error: commandError("requirement-unmet", `${cmd.abilityId} needs ${requirement}`) };
+  }
   return { ability, error: null };
 }
 
@@ -126,10 +130,18 @@ function validate(state: GameState, cmd: Command, unit: BattleUnit): CommandErro
   }
 }
 
+/**
+ * Triggers run before win/loss so a `unitDowned` trigger's closing dialogue is
+ * emitted before the `BattleEnded` it causes. Every "last words" beat in the
+ * slice depends on this ordering; `tests/core/conditions.test.ts` asserts it.
+ */
 function settle(ctx: Ctx): void {
   evaluateTriggers(ctx);
   evaluateOutcome(ctx);
 }
+
+/** Bound on re-advancing when a trigger takes the newly-active unit off the field. */
+const MAX_SETTLE_PASSES = 4;
 
 function finish(ctx: Ctx, turnEnded: boolean): void {
   settle(ctx);
@@ -142,9 +154,12 @@ function finish(ctx: Ctx, turnEnded: boolean): void {
       ended = true;
     }
   }
-  if (ended && ctx.state.result === null) {
+  if (!ended || ctx.state.result !== null) return;
+  for (let pass = 0; pass < MAX_SETTLE_PASSES; pass += 1) {
     advanceClock(ctx);
     settle(ctx);
+    if (ctx.state.result !== null || ctx.state.activeTurn !== null) return;
+    if (!ctx.state.units.some((u) => !u.downed)) return;
   }
 }
 
@@ -180,6 +195,7 @@ export function applyCommand(state: GameState, cmd: Command): CommandResult {
       if (previous !== undefined && !coordEq(previous, cmd.to)) {
         faceUnit(ctx, unit, facingToward(previous, cmd.to));
       }
+      checkContact(ctx, unit.id, emptyOutcome());
       break;
     }
     case "act": {

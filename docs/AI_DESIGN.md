@@ -66,16 +66,35 @@ the forecast:
   targets: the rules forbid healing them.
 - Harm landing on an ally is weighted *up* before it is subtracted, and harm
   landing on the actor more so, which is what keeps AoE off friendly heads.
+  **Only actual harm is weighted this way.** A buff arrives at the score as
+  negative harm, and running that through the same percentages doubled the
+  value of helping yourself — Overclocked priced at +960 against a kill bonus
+  of 400, which is why three kits spent most of their turns buffing themselves
+  (`docs/BALANCE_REPORT.md` F4). Negative harm on a friendly is now credited as
+  positive utility, capped at `buffValueCap`.
+- A gift of flux (`modifyCharge` with a positive amount) is aid, worth
+  `chargePoint` per point the target has room to receive. Priced at zero, the
+  Conduit's Tap Line could never be chosen at all.
 - A target an in-flight charge already kills is discounted to a token value, so
   the team spreads its pressure instead of piling onto a corpse. A target
   several allies can already reach is discounted more gently for the same
   reason.
+- **Neutrals score zero** in either direction (`COMBAT_RULES` §18): the search
+  neither hunts a bystander nor steers around one.
 
-Then the costs: flux per point, HP per point, an explicit chip-damage penalty
-when flux is being spent on a small result, and — for a charged ability — the
-turn it forfeits plus a decay for every turn the aimed-at unit gets before the
-cast lands (read from `turnOrderPreview`). A charge aimed at an object or a
-tile does not decay: it lands where it was aimed.
+Then the costs: flux per point, HP per point, a chip-damage penalty when flux
+is being spent on a small result, and — for a charged ability — the turn it
+forfeits plus a decay for every turn the aimed-at unit gets before the cast
+lands (read from `turnOrderPreview`). A charge aimed at an object or a tile does
+not decay: it lands where it was aimed.
+
+The chip penalty **ramps** rather than cliffs: it is `chipPenalty` scaled by how
+far the gross falls short of `chipThreshold`, reaching zero at the threshold. A
+flat penalty below the bar deleted every cheap utility ability at low level,
+where almost nothing clears 200 points of gross.
+
+Abilities whose `requires` the battlefield does not satisfy
+(`COMBAT_RULES` §13a) never enter the candidate list at all.
 
 ### What the battlefield is worth
 
@@ -89,16 +108,26 @@ Objects are scored by what breaking them does, not by their integrity bar:
 - Integrity damage that does *not* destroy is credited a fraction of that
   payload, in proportion to the bite it takes out, so a cell worth blowing up
   is worth softening and a cell worth nothing is worth nothing.
+- Repairing an object is credited when the object belongs to the actor's team
+  **or to nobody** — map-authored machinery carries `owner: null`, and crediting
+  only owned objects meant a repair kit could never mend anything on a map it
+  had not built itself.
 - Flipping power is scored through the deck it carries: a lift or catwalk that
   loses power drops the tile to terrain height, which drags a hostile parked
   out of reach back into everyone's range, and strands an ally if the AI is not
   careful. Operable machines are scored by their payload the same way an
   ability is.
+- Deploying an object (`COMBAT_RULES` §14) is worth a flat obstacle credit plus
+  its payload measured against the hostile the actor means to fight: an
+  `onContact` charge at `contactPayloadPercent`, because it pays out once, and
+  an `attack` at `autoAttackPercent`, because it keeps firing while it stands.
 
 Standing danger is a per-tile field built once per decision: every destructible
 object with an `onDestroyed` payload prices its blast footprint against the
 acting unit, weighted up sharply once the object has already taken damage and
-down when it is intact, plus a small penalty for wet terrain.
+down when it is intact, plus a small penalty for wet terrain. Mines join the
+same field at full weight — a contact charge is a certainty, not a risk — and
+only for the side it can actually go off under.
 
 ### What a tile is worth
 
@@ -159,8 +188,13 @@ should still cap commands per battle.
 - **Charge as a resource across turns.** Flux is priced per point spent now;
   saving it for a better target next turn is not planned for.
 - **Ability-to-ability sequencing** (debuff then payoff), **spawned object
-  placement quality** beyond a flat value, and **`setPower` consequences other
-  than decks** (`requiresPower` controls, powered cells).
+  placement quality** — the payload is priced, the tile it goes on is not — and
+  **`setPower` consequences other than decks** (`requiresPower` controls,
+  powered cells).
+- **A deployable's own threat.** A hostile turret on the board is scored as an
+  object to break, not as a source of damage in the exposure field.
+- **Requirements as a reason to move.** A gated ability is dropped where it
+  cannot be used; the AI does not walk onto a rail tile in order to use it.
 - **Deployment and between-battle decisions**, which belong to progression.
 
 ## Tuning and cost

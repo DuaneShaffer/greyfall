@@ -54,10 +54,13 @@ const RepairObjectEffect = z.object({
   amount: Amount,
 });
 
-const SpawnObjectEffect = z.object({
-  kind: z.literal("spawnObject"),
-  object: z.enum(["turret", "mine", "drone"]),
-  hp: z.int().positive(),
+// Repositions the acting unit itself, unlike forceMove which moves the units in
+// the area. `toward-target`/`away-from-target` are measured against the first
+// tile of the ability's area; `forward` follows the actor's facing.
+const MoveSelfEffect = z.object({
+  kind: z.literal("moveSelf"),
+  direction: z.enum(["toward-target", "away-from-target", "forward"]),
+  distance: z.int().positive(),
 });
 
 const ModifyChargeEffect = z.object({
@@ -78,18 +81,57 @@ const ModifyStatsEffect = z.object({
   duration: z.int().positive().optional(),
 });
 
-export const Effect = z.discriminatedUnion("kind", [
+// Every effect except `spawnObject`. A deployable's payload is drawn from this
+// set so the union stays non-recursive: a mine cannot lay another mine.
+const PAYLOAD_EFFECTS = [
   DamageEffect,
   HealEffect,
   ApplyStatusEffect,
   RemoveStatusEffect,
   ForceMoveEffect,
+  MoveSelfEffect,
   SetPowerEffect,
   DamageObjectEffect,
   RepairObjectEffect,
-  SpawnObjectEffect,
   ModifyChargeEffect,
   ModifyDispositionEffect,
   ModifyStatsEffect,
-]);
+] as const;
+
+export const PayloadEffect = z.discriminatedUnion("kind", PAYLOAD_EFFECTS);
+export type PayloadEffect = z.infer<typeof PayloadEffect>;
+
+// What a deployable does when a unit steps into its footprint. Mines: the
+// payload fires and the object destroys itself. Never fires for the team that
+// deployed it.
+export const ContactPayload = z.object({
+  effects: z.array(PayloadEffect).min(1),
+  destroysSelf: z.boolean().optional(),
+});
+export type ContactPayload = z.infer<typeof ContactPayload>;
+
+// What a deployable shoots with. It rides its own CT timeline at `speed` and
+// fires at the nearest enemy of its owning team inside `range`.
+export const AutoAttack = z.object({
+  amount: Amount,
+  damageType: DamageType,
+  range: z.object({
+    min: z.int().nonnegative(),
+    max: z.int().positive(),
+    vertical: z.int().nonnegative(),
+  }),
+  requiresLos: z.boolean().optional(),
+  speed: z.int().positive(),
+});
+export type AutoAttack = z.infer<typeof AutoAttack>;
+
+const SpawnObjectEffect = z.object({
+  kind: z.literal("spawnObject"),
+  object: z.enum(["turret", "mine", "drone"]),
+  hp: z.int().positive(),
+  onContact: ContactPayload.optional(),
+  attack: AutoAttack.optional(),
+});
+
+export const Effect = z.discriminatedUnion("kind", [...PAYLOAD_EFFECTS, SpawnObjectEffect]);
 export type Effect = z.infer<typeof Effect>;

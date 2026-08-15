@@ -83,6 +83,10 @@ export interface ObjectRuntime {
   powered: boolean | null;
   /** Team that spawned it, or null for objects authored into the map. */
   owner: Team | null;
+  /** Unit that deployed it; the actor its `autoAttack` amounts resolve against. */
+  ownerUnitId: string | null;
+  /** CT banked toward the next `autoAttack`. Meaningless without one. */
+  ct: number;
 }
 
 export interface MapState {

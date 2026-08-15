@@ -1,9 +1,12 @@
+import { chanceRoll } from "../rng/mulberry32.js";
 import { emit, type Ctx } from "../state/ctx.js";
-import type { ActiveTurn, BattleUnit, ChargedAction, GameState } from "../state/types.js";
+import type { ActiveTurn, BattleUnit, ChargedAction, GameState, ObjectRuntime } from "../state/types.js";
 import { resolveCharge } from "./abilities.js";
-import { damageUnit, emptyOutcome } from "./effects.js";
-import { unitById } from "./grid.js";
+import { hitChance } from "./damage.js";
+import { applyEffects, damageUnit, emptyOutcome } from "./effects.js";
+import { manhattan, teamsHostile, unitById } from "./grid.js";
 import { canAct, canMove, ctPerTick, statusHooks } from "./status.js";
+import { hasLos, inRange } from "./targeting.js";
 
 /** CT a unit must bank before it acts, and a charge before it fires. */
 export const CT_TURN_THRESHOLD = 100;
@@ -36,6 +39,57 @@ export function readyCharges(state: GameState): ChargedAction[] {
   return state.charges
     .filter((c) => c.ct >= CT_TURN_THRESHOLD)
     .sort((a, b) => (b.ct === a.ct ? (a.id < b.id ? -1 : 1) : b.ct - a.ct));
+}
+
+/** Deployed turrets and drones with a full CT bar, highest CT first, id breaking ties. */
+export function readyAutoAttackers(state: GameState): ObjectRuntime[] {
+  return state.map.objects
+    .filter((o) => !o.destroyed && o.def.autoAttack !== undefined && o.ct >= CT_TURN_THRESHOLD)
+    .sort((a, b) => (b.ct === a.ct ? (a.def.id < b.def.id ? -1 : 1) : b.ct - a.ct));
+}
+
+/**
+ * A deployable takes its shot: the nearest hostile of its owner's team inside
+ * range and sight, distance breaking to unit id. Accuracy is rolled the same
+ * way a unit's attack is, from the object's own tile. Amounts resolve against
+ * the unit that deployed it while that unit still stands, so a turret inherits
+ * its Machinist's numbers; once the owner is gone it falls back to the
+ * caster-less rules (`fixed` amounts only).
+ */
+export function fireAutoAttack(ctx: Ctx, obj: ObjectRuntime): void {
+  obj.ct = Math.max(0, obj.ct - CT_TURN_THRESHOLD);
+  const attack = obj.def.autoAttack;
+  const origin = obj.def.tiles[0];
+  const owner = obj.owner;
+  if (attack === undefined || owner === null || origin === undefined) return;
+
+  const candidates = ctx.state.units
+    .filter(
+      (u) =>
+        !u.downed &&
+        teamsHostile(u.team, owner) &&
+        inRange(ctx.state, origin, u.position, attack.range) &&
+        (attack.requiresLos === false || hasLos(ctx.state, origin, u.position)),
+    )
+    .sort((a, b) => {
+      const da = manhattan(origin, a.position);
+      const db = manhattan(origin, b.position);
+      return da === db ? (a.id < b.id ? -1 : 1) : da - db;
+    });
+  const target = candidates[0];
+  if (target === undefined) return;
+
+  const hit = chanceRoll(ctx.state.rng, hitChance(ctx.state, origin, target));
+  emit(ctx, { type: "ObjectAttacked", objectId: obj.def.id, targetUnitId: target.id, hit });
+  if (!hit) return;
+
+  const deployer = obj.ownerUnitId === null ? undefined : unitById(ctx.state, obj.ownerUnitId);
+  const actorId = deployer === undefined || deployer.downed ? null : deployer.id;
+  applyEffects(ctx, [{ kind: "damage", damageType: attack.damageType, amount: attack.amount }], actorId, {
+    unitIds: [target.id],
+    objectIds: [],
+    tiles: [{ ...target.position }],
+  });
 }
 
 export function startTurn(ctx: Ctx, unit: BattleUnit): void {
@@ -89,8 +143,10 @@ export function endActiveTurn(ctx: Ctx): void {
 /**
  * Run the clocktick loop until someone has a turn or the battle is over.
  * Each tick every standing unit banks CT equal to its Speed (after Haste/Slow
- * style `ctMultiplierPercent` statuses) and every charge banks its `castSpeed`.
- * Charges that reach 100 fire before any unit whose CT arrived on the same tick.
+ * style `ctMultiplierPercent` statuses), every charge banks its `castSpeed`,
+ * and every deployed turret or drone banks its `autoAttack.speed`. On a tick
+ * where several arrive at once the order is charges, then deployables, then one
+ * unit turn.
  */
 export function advanceClock(ctx: Ctx): void {
   let announcedClock = ctx.state.clock;
@@ -111,9 +167,14 @@ export function advanceClock(ctx: Ctx): void {
         resolveCharge(ctx, charge);
       }
       if (ctx.state.result !== null) break;
+      const guns = readyAutoAttackers(ctx.state);
+      for (const gun of guns) {
+        announce();
+        fireAutoAttack(ctx, gun);
+      }
       const next = readyUnits(ctx.state)[0];
       if (next === undefined) {
-        if (firing.length === 0) break;
+        if (firing.length === 0 && guns.length === 0) break;
         continue;
       }
       announce();
@@ -128,6 +189,11 @@ export function advanceClock(ctx: Ctx): void {
       unit.ct += ctPerTick(ctx.state, unit);
     }
     for (const charge of ctx.state.charges) charge.ct += charge.castSpeed;
+    for (const obj of ctx.state.map.objects) {
+      const attack = obj.def.autoAttack;
+      if (obj.destroyed || attack === undefined) continue;
+      obj.ct += attack.speed;
+    }
   }
   announce();
 }

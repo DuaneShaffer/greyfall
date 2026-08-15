@@ -9,6 +9,8 @@ import type { GameState } from "./types.js";
 export interface Ctx {
   state: GameState;
   events: BattleEvent[];
+  /** Recursion guard for deployables set off by other deployables' shoves. */
+  contactDepth?: number;
 }
 
 export function emit(ctx: Ctx, event: BattleEvent): void {

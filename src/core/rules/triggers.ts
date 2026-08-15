@@ -1,10 +1,11 @@
-import type { Encounter } from "../../data/index.js";
+import type { Encounter, TileCoord } from "../../data/index.js";
 import { emit, type Ctx } from "../state/ctx.js";
 import type { GameState } from "../state/types.js";
 import { createBattleUnit, sortUnits } from "../state/unit.js";
-import { destroyObject, emptyOutcome, setObjectPower } from "./effects.js";
-import { coordEq, objectById, unitById } from "./grid.js";
+import { checkContact, destroyObject, emptyOutcome, setObjectPower } from "./effects.js";
+import { coordEq, isStandable, objectById, unitAt, unitById } from "./grid.js";
 import { hpPercent, endBattle } from "./outcome.js";
+import { endActiveTurn } from "./turn.js";
 
 type Trigger = Encounter["triggers"][number];
 type TriggerCondition = Trigger["when"];
@@ -22,7 +23,11 @@ export function isConditionMet(state: GameState, when: TriggerCondition): boolea
     case "battleStart":
       return state.turn === 0;
     case "turnStart":
-      return state.turn === when.turn;
+      // Reaches-or-passes, not equals: `state.turn` counts individual unit
+      // turns and a turn consumed entirely inside `advanceClock` (a stunned
+      // unit auto-ending) is never seen at its own index, so `===` silently
+      // skips. COMBAT_RULES §15.
+      return state.turn >= when.turn;
     case "unitDowned":
       return unitById(state, when.unitId)?.downed === true;
     case "objectDestroyed":
@@ -41,6 +46,45 @@ export function isConditionMet(state: GameState, when: TriggerCondition): boolea
       return percent !== null && percent < when.percent;
     }
   }
+}
+
+/**
+ * Scripted repositioning. Move, Jump and path length are ignored — this is
+ * authoring, not a walk — but the destination must be standable and free, so a
+ * script can never park two units on one tile.
+ */
+function moveUnit(ctx: Ctx, unitId: string, to: TileCoord): void {
+  const unit = unitById(ctx.state, unitId);
+  if (unit === undefined || unit.downed) return;
+  if (coordEq(unit.position, to)) return;
+  if (!isStandable(ctx.state, to) || unitAt(ctx.state, to) !== undefined) return;
+  const from = { ...unit.position };
+  unit.position = { ...to };
+  emit(ctx, { type: "UnitForcedMove", unitId, from, to: { ...to } });
+  checkContact(ctx, unitId, emptyOutcome());
+}
+
+/**
+ * Take a unit off the field without downing it. Its charges are cancelled and
+ * its turn, if it is taking one, is closed first so the clock keeps running.
+ * A removed unit is no longer counted by `rout` or `partyRout` — see
+ * COMBAT_RULES §16.
+ */
+function removeUnit(ctx: Ctx, unitId: string): void {
+  const unit = unitById(ctx.state, unitId);
+  if (unit === undefined) return;
+  if (ctx.state.activeTurn?.unitId === unitId) endActiveTurn(ctx);
+  for (const charge of ctx.state.charges.filter((c) => c.actorId === unitId)) {
+    emit(ctx, {
+      type: "AbilityChargeCancelled",
+      unitId: charge.actorId,
+      abilityId: charge.abilityId,
+      chargeId: charge.id,
+    });
+  }
+  ctx.state.charges = ctx.state.charges.filter((c) => c.actorId !== unitId);
+  ctx.state.units = ctx.state.units.filter((u) => u.id !== unitId);
+  emit(ctx, { type: "UnitRemoved", unitId });
 }
 
 function runActions(ctx: Ctx, trigger: Trigger): void {
@@ -74,6 +118,12 @@ function runActions(ctx: Ctx, trigger: Trigger): void {
         break;
       case "destroyObject":
         destroyObject(ctx, action.objectId, emptyOutcome());
+        break;
+      case "moveUnit":
+        moveUnit(ctx, action.unitId, action.to);
+        break;
+      case "removeUnit":
+        removeUnit(ctx, action.unitId);
         break;
       case "endBattle":
         endBattle(ctx, action.result);

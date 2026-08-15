@@ -28,9 +28,20 @@ const AbilityBase = z.object({
   standingCost: z.int().nonnegative(),
 });
 
+// Battlefield conditions an ability needs beyond flux and HP. `railUnderfoot`
+// and `adjacentPoweredObject` read the actor's tile; `targetPowered` reads what
+// the ability is aimed at.
+export const AbilityRequirement = z.enum([
+  "railUnderfoot",
+  "adjacentPoweredObject",
+  "targetPowered",
+]);
+export type AbilityRequirement = z.infer<typeof AbilityRequirement>;
+
 const ActionAbility = AbilityBase.extend({
   slot: z.literal("action"),
   targeting: Targeting,
+  requires: z.array(AbilityRequirement).min(1).optional(),
   chargeCost: z.int().nonnegative(),
   hpCost: z.int().nonnegative().optional(),
   // null = instant; otherwise CT-style cast speed (higher resolves sooner).

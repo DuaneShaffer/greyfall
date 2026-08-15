@@ -37,11 +37,14 @@ export type BattleEvent =
   | { type: "ReactionTriggered"; unitId: string; abilityId: string; againstUnitId: string | null }
   | { type: "UnitDowned"; unitId: string }
   | { type: "UnitSpawned"; unitId: string; team: Team; position: TileCoord }
+  | { type: "UnitRemoved"; unitId: string }
   | { type: "ObjectDamaged"; objectId: string; sourceUnitId: string | null; amount: number; hpRemaining: number }
   | { type: "ObjectRepaired"; objectId: string; amount: number; hpRemaining: number }
   | { type: "ObjectDestroyed"; objectId: string }
   | { type: "ObjectActivated"; unitId: string; objectId: string }
   | { type: "ObjectSpawned"; objectId: string; kind: MapObjectKind; owner: Team | null; tiles: TileCoord[] }
+  | { type: "ObjectTriggered"; objectId: string; unitId: string }
+  | { type: "ObjectAttacked"; objectId: string; targetUnitId: string; hit: boolean }
   | { type: "PowerChanged"; objectId: string; powered: boolean }
   | { type: "StandingAwarded"; unitId: string; amount: number; total: number }
   | { type: "TriggerFired"; triggerId: string }

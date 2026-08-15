@@ -46,6 +46,22 @@ describe("win and loss conditions", () => {
     expect(state.turn).toBeGreaterThanOrEqual(4);
   });
 
+  it("wins on an AND group only when every member is met", () => {
+    const start = battle("e-all", {
+      enemies: [guard, enemyAt(enforcer("dell", "Dell"), { x: 3, y: 3 }, "south")],
+      winConditions: [
+        { kind: "all", conditions: [{ kind: "defeatUnit", unitId: "mark" }, { kind: "defeatUnit", unitId: "dell" }] },
+      ],
+    });
+    const atVale = advanceTo(start, "vale");
+    const fell = (ids: string[]): GameState => ({
+      ...atVale,
+      units: atVale.units.map((u) => (ids.includes(u.id) ? { ...u, hp: 0, downed: true, ct: 0 } : u)),
+    });
+    expect(applyCommand(fell(["mark"]), { kind: "endTurn", unitId: "vale" }).state.result).toBeNull();
+    expect(applyCommand(fell(["mark", "dell"]), { kind: "endTurn", unitId: "vale" }).state.result).toBe("win");
+  });
+
   it("loses when the turn limit runs out, and loss beats win", () => {
     const state = passTurns(
       battle("e-limit", {
@@ -54,6 +70,30 @@ describe("win and loss conditions", () => {
       }),
     );
     expect(state.result).toBe("loss");
+  });
+
+  it("loses when the watched unit reaches the named tiles", () => {
+    const state = advanceTo(
+      battle("e-escape", {
+        lossConditions: [{ kind: "unitReachesTiles", team: "player", tiles: [{ x: 0, y: 4 }] }],
+      }),
+      "vale",
+    );
+    const moved = applyCommand(state, { kind: "move", unitId: "vale", to: { x: 0, y: 4 } });
+    expect(moved.error).toBeNull();
+    expect(moved.state.result).toBe("loss");
+  });
+
+  it("ignores a unit the escape condition does not name", () => {
+    const state = advanceTo(
+      battle("e-escape-named", {
+        lossConditions: [{ kind: "unitReachesTiles", unitId: "mark", tiles: [{ x: 0, y: 4 }] }],
+      }),
+      "vale",
+    );
+    const moved = applyCommand(state, { kind: "move", unitId: "vale", to: { x: 0, y: 4 } });
+    expect(moved.error).toBeNull();
+    expect(moved.state.result).toBeNull();
   });
 
   it("loses when a must-survive unit goes down", () => {
@@ -131,6 +171,86 @@ describe("encounter triggers", () => {
     expect(arrival?.team).toBe("enemy");
     expect(arrival?.hp).toBe(61);
     expect(arrival?.position).toEqual({ x: 5, y: 5 });
+  });
+
+  it("fires turnStart even when the clock consumes that turn index whole", () => {
+    const start = battle("e-turn-start", {
+      enemies: [guard, enemyAt(enforcer("dell", "Dell"), { x: 3, y: 3 }, "south")],
+      triggers: trigger("midpoint", { kind: "turnStart", turn: 4 }, [
+        { kind: "dialogue", lines: [{ speaker: "Maren Voss", text: "Now." }] },
+      ]),
+    });
+    const state = advanceTo(start, "vale");
+    expect(state.turn).toBe(3);
+    expect(state.firedTriggerIds).toEqual([]);
+
+    // Everyone but Vale is stunned, so their turns open and close inside
+    // advanceClock and the counter jumps clean over index 4.
+    const stunned: GameState = {
+      ...state,
+      units: state.units.map((u) =>
+        u.id === "vale" ? u : { ...u, statuses: [{ statusId: "stunned", turnsRemaining: 1 }] },
+      ),
+    };
+    const passed = applyCommand(stunned, { kind: "endTurn", unitId: "vale" });
+    expect(passed.error).toBeNull();
+    expect(passed.state.turn).toBeGreaterThan(4);
+    expect(passed.state.firedTriggerIds).toEqual(["midpoint"]);
+    expect(passed.events.some((e) => e.type === "TriggerFired" && e.triggerId === "midpoint")).toBe(true);
+  });
+
+  it("runs trigger actions before win and loss are evaluated", () => {
+    const start = battle("e-last-words", {
+      triggers: trigger("marks-last-words", { kind: "unitDowned", unitId: "mark" }, [
+        { kind: "dialogue", lines: [{ speaker: "Mark", text: "Tell them I held." }] },
+      ]),
+    });
+    const frail: GameState = {
+      ...start,
+      units: start.units.map((u) => (u.id === "mark" ? { ...u, hp: 5 } : u)),
+    };
+    const state = advanceTo(frail, "vale");
+    const struck = applyCommand(state, {
+      kind: "act",
+      unitId: "vale",
+      abilityId: "jolt",
+      target: { kind: "unit", unitId: "mark" },
+    });
+    expect(struck.state.result).toBe("win");
+    const dialogue = struck.events.findIndex((e) => e.type === "DialogueRequested");
+    const ended = struck.events.findIndex((e) => e.type === "BattleEnded");
+    expect(dialogue).toBeGreaterThanOrEqual(0);
+    expect(ended).toBeGreaterThanOrEqual(0);
+    expect(dialogue).toBeLessThan(ended);
+  });
+
+  it("repositions a unit with moveUnit and keeps the destination legal", () => {
+    const state = battle("e-withdraw", {
+      triggers: trigger("mark-withdraws", { kind: "battleStart" }, [
+        { kind: "moveUnit", unitId: "mark", to: { x: 3, y: 1 } },
+      ]),
+    });
+    expect(getUnit(state, "mark")?.position).toEqual({ x: 3, y: 1 });
+
+    const blocked = battle("e-withdraw-blocked", {
+      triggers: trigger("mark-withdraws", { kind: "battleStart" }, [
+        // The yard cell blocks movement; a script may not park a unit inside it.
+        { kind: "moveUnit", unitId: "mark", to: { x: 1, y: 1 } },
+      ]),
+    });
+    expect(getUnit(blocked, "mark")?.position).toEqual({ x: 1, y: 3 });
+  });
+
+  it("takes a unit off the field with removeUnit without downing it", () => {
+    const state = battle("e-exeunt", {
+      triggers: trigger("mark-leaves", { kind: "battleStart" }, [
+        { kind: "removeUnit", unitId: "mark" },
+      ]),
+    });
+    expect(getUnit(state, "mark")).toBeNull();
+    expect(state.units.map((u) => u.id)).toEqual(["vale"]);
+    // A removed unit is not a downed one, so `rout` is not satisfied.
+    expect(state.result).toBeNull();
   });
 
   it("only fires a once trigger a single time", () => {

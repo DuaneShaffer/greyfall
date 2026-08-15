@@ -47,6 +47,8 @@ function initialObjects(content: BattleContent): ObjectRuntime[] {
       destroyed: false,
       powered: def.powered,
       owner: null,
+      ownerUnitId: null,
+      ct: 0,
     }))
     .sort((a, b) => (a.def.id < b.def.id ? -1 : a.def.id > b.def.id ? 1 : 0));
 }

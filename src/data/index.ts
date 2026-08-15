@@ -10,7 +10,7 @@ import { Unit } from "./schemas/unit.js";
 
 export * from "./schemas/common.js";
 export * from "./schemas/effect.js";
-export { Ability, Targeting } from "./schemas/ability.js";
+export { Ability, AbilityRequirement, Targeting } from "./schemas/ability.js";
 export { Campaign, type InventoryEntry } from "./schemas/campaign.js";
 export { Encounter } from "./schemas/encounter.js";
 export { GameMap, MapObject, MapObjectKind, TerrainType, Tile } from "./schemas/map.js";

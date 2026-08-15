@@ -1,7 +1,7 @@
-import type { TileCoord } from "../../data/index.js";
+import type { AbilityRequirement, TileCoord } from "../../data/index.js";
 // `Targeting` is not re-exported from src/data/index.ts; take it from the schema.
 import type { Targeting } from "../../data/schemas/ability.js";
-import type { ActionAbility, BattleUnit, GameState, TargetRef } from "../state/types.js";
+import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
 import {
   FACING_VECTORS,
   allTiles,
@@ -11,6 +11,7 @@ import {
   manhattan,
   objectBlocksLos,
   standHeight,
+  tileAt,
 } from "./grid.js";
 
 /** Height a unit's eyes and a tile's blocking silhouette sit above its surface. */
@@ -111,6 +112,58 @@ export function aimedTile(state: GameState, target: TargetRef): TileCoord | unde
   if (target.kind === "tile") return target.tile;
   if (target.kind === "unit") return state.units.find((u) => u.id === target.unitId)?.position;
   return state.map.objects.find((o) => o.def.id === target.objectId)?.def.tiles[0];
+}
+
+/** Objects that decide `targetPowered`: the aimed-at one plus any covering the tile. */
+function targetedObjects(state: GameState, target: TargetRef): ObjectRuntime[] {
+  if (target.kind === "object") {
+    const obj = state.map.objects.find((o) => o.def.id === target.objectId);
+    return obj === undefined ? [] : [obj];
+  }
+  const tile = aimedTile(state, target);
+  if (tile === undefined) return [];
+  return state.map.objects.filter((o) => o.def.tiles.some((t) => coordEq(t, tile)));
+}
+
+function requirementMet(
+  state: GameState,
+  actor: BattleUnit,
+  requirement: AbilityRequirement,
+  target: TargetRef | null,
+): boolean {
+  switch (requirement) {
+    case "railUnderfoot":
+      return tileAt(state.content.map, actor.position)?.terrain === "rail";
+    case "adjacentPoweredObject":
+      return state.map.objects.some(
+        (o) =>
+          !o.destroyed &&
+          o.powered === true &&
+          o.def.tiles.some((t) => manhattan(t, actor.position) <= 1),
+      );
+    case "targetPowered":
+      if (target === null) return true;
+      return targetedObjects(state, target).some((o) => !o.destroyed && o.powered === true);
+  }
+}
+
+/**
+ * The first `requires` entry the battlefield does not satisfy, or null.
+ *
+ * With `target` null only the actor-scoped requirements are checked, which is
+ * what a menu needs: `targetPowered` cannot be answered until something is
+ * aimed at.
+ */
+export function unmetRequirement(
+  state: GameState,
+  actor: BattleUnit,
+  ability: ActionAbility,
+  target: TargetRef | null,
+): AbilityRequirement | null {
+  for (const requirement of ability.requires ?? []) {
+    if (!requirementMet(state, actor, requirement, target)) return requirement;
+  }
+  return null;
 }
 
 /** Whether a target reference satisfies the ability's `validTargets` list. */

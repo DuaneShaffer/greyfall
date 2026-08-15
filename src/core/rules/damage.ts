@@ -4,10 +4,23 @@ import type { BattleUnit, GameState } from "../state/types.js";
 import { attackAngle } from "./grid.js";
 import { effectiveStats, maxHp } from "./status.js";
 
-/** Divisor on `phys x weaponPower x power`, tuning weapon hits to ~3 per kill. */
+/** Divisor on `phys x weaponPower x power` at level 1; `D(1)`. */
 export const WEAPON_DAMAGE_DIVISOR = 400;
-/** Divisor on `stat x power` for raw phys- and mag-based amounts. */
-export const STAT_AMOUNT_DIVISOR = 2;
+/** Growth in the damage divisor per caster level above 1, holding TTK flat. */
+export const DAMAGE_DIVISOR_PER_LEVEL = 250;
+/** Numerator on `stat x power`; `200 / D(1)` is the historical `1/2`. */
+export const STAT_AMOUNT_NUMERATOR = 200;
+
+/**
+ * `D(level)` — the divisor stat-derived amounts are scaled by. HP grows
+ * sub-linearly while phys and mag grow linearly, so a constant divisor makes
+ * time-to-kill collapse as levels rise (`docs/BALANCE_REPORT.md` F1). Scaling
+ * the divisor with the *caster's* level holds swings-to-down roughly flat, and
+ * `D(1) === WEAPON_DAMAGE_DIVISOR` keeps every level-1 number identical.
+ */
+export function damageDivisor(level: number): number {
+  return WEAPON_DAMAGE_DIVISOR + DAMAGE_DIVISOR_PER_LEVEL * Math.max(0, level - 1);
+}
 
 /** Attunement of a non-unit target (objects, tiles): unscaled. */
 export const INERT_ATTUNEMENT = 100;
@@ -63,11 +76,15 @@ export function isAttunementScaled(amount: Amount): boolean {
 /**
  * Magnitude of a damage/heal/integrity `Amount`, in integer math throughout.
  *
- * - `weapon`   floor(phys * weaponPower * power / 400)  — power is a percentage
- * - `phys`     floor(phys * power / 2)                  — power is a multiplier
- * - `mag`      floor(mag * power / 2)                   — power is a multiplier
+ * - `weapon`   floor(phys * weaponPower * power / D(L))       — power is a percentage
+ * - `phys`     floor(phys * power * 200 / D(L))               — power is a multiplier
+ * - `mag`      floor(mag * power * 200 / D(L))                — power is a multiplier
  * - `fixed`    power
  * - `maxHpPercent` floor(target maxHp * power / 100)
+ *
+ * `L` is the acting unit's level; a caster-less amount (an `onDestroyed`
+ * payload, a spawned object's attack) uses `D(1)` and its stat-derived bases
+ * resolve to 0, exactly as before.
  *
  * Attunement scaling (default on for `mag`) then applies the acting unit's
  * Attunement and the target's in turn, flooring after each: Attunement is both
@@ -80,19 +97,20 @@ export function resolveAmount(
   target: AmountTarget,
 ): number {
   const stats = actor === null ? null : effectiveStats(state, actor);
+  const divisor = damageDivisor(actor === null ? 1 : actor.unit.level);
   let value: number;
   switch (amount.base) {
     case "weapon": {
       const phys = stats === null ? 0 : stats.phys;
       const power = actor === null ? 0 : weaponPower(state, actor);
-      value = Math.floor((phys * power * amount.power) / WEAPON_DAMAGE_DIVISOR);
+      value = Math.floor((phys * power * amount.power) / divisor);
       break;
     }
     case "phys":
-      value = Math.floor(((stats === null ? 0 : stats.phys) * amount.power) / STAT_AMOUNT_DIVISOR);
+      value = Math.floor(((stats === null ? 0 : stats.phys) * amount.power * STAT_AMOUNT_NUMERATOR) / divisor);
       break;
     case "mag":
-      value = Math.floor(((stats === null ? 0 : stats.mag) * amount.power) / STAT_AMOUNT_DIVISOR);
+      value = Math.floor(((stats === null ? 0 : stats.mag) * amount.power * STAT_AMOUNT_NUMERATOR) / divisor);
       break;
     case "fixed":
       value = amount.power;

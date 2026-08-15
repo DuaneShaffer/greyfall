@@ -3,7 +3,7 @@ import type { DerivedStats } from "./progression/stats.js";
 import { resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
 import { objectMaxHp } from "./rules/effects.js";
-import { attackAngle, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
+import { areEnemies, attackAngle, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
 import {
   CT_COST_MOVE_AND_ACT,
@@ -12,7 +12,7 @@ import {
   readyUnits,
 } from "./rules/turn.js";
 import { canAct, canMove, ctPerTick, effectiveStats, maxCharge, maxHp } from "./rules/status.js";
-import { hasLos, targetableTiles as computeTargetable } from "./rules/targeting.js";
+import { hasLos, targetableTiles as computeTargetable, unmetRequirement } from "./rules/targeting.js";
 import { getAbility, getItem, getJob, getStatus, knownActionAbilityIds } from "./state/content.js";
 import { cloneState } from "./state/ctx.js";
 import type {
@@ -158,10 +158,20 @@ export function unitMaxCharge(state: GameState, unitId: string): number | null {
   return unit === undefined ? null : maxCharge(state, unit);
 }
 
-/** Action ability ids the unit may issue right now, including `basic-attack`. */
+/**
+ * Action ability ids the unit may issue right now, including `basic-attack`.
+ * Abilities whose actor-scoped `requires` the battlefield does not satisfy are
+ * dropped; `targetPowered` cannot be judged until something is aimed at, so it
+ * is left to `targetableTiles` and `forecast`.
+ */
 export function availableAbilities(state: GameState, unitId: string): string[] {
   const unit = unitById(state, unitId);
-  return unit === undefined ? [] : knownActionAbilityIds(state, unit);
+  if (unit === undefined) return [];
+  return knownActionAbilityIds(state, unit).filter((id) => {
+    const ability = getAbility(state, unit, id);
+    if (ability === undefined || ability.slot !== "action") return false;
+    return unmetRequirement(state, unit, ability, null) === null;
+  });
 }
 
 /** Every tile the unit can move to, with its path cost. */
@@ -176,7 +186,10 @@ export function targetableTiles(state: GameState, unitId: string, abilityId: str
   if (unit === undefined) return [];
   const ability = getAbility(state, unit, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
-  return computeTargetable(state, unit.position, ability.targeting);
+  if (unmetRequirement(state, unit, ability, null) !== null) return [];
+  return computeTargetable(state, unit.position, ability.targeting).filter(
+    (tile) => unmetRequirement(state, unit, ability, { kind: "tile", tile }) === null,
+  );
 }
 
 /** Tiles an ability would actually cover once aimed at `target`. */
@@ -226,13 +239,14 @@ export function forecast(
   if (actor === undefined) return [];
   const ability = getAbility(state, actor, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
+  if (unmetRequirement(state, actor, ability, target) !== null) return [];
   const area = resolveArea(state, actor, ability, target);
   const out: ForecastEntry[] = [];
 
   for (const id of area.unitIds) {
     const unit = unitById(state, id);
     if (unit === undefined) continue;
-    const chance = unit.team === actor.team ? 100 : hitChance(state, actor.position, unit);
+    const chance = areEnemies(unit, actor) ? hitChance(state, actor.position, unit) : 100;
     const entry: ForecastEntry = {
       unitId: id,
       objectId: null,

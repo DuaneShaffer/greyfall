@@ -1,6 +1,7 @@
 import type {
   DamageType,
   Effect,
+  Facing,
   MapObject,
   MapObjectKind,
   StatMods,
@@ -170,12 +171,32 @@ export function removeStatus(ctx: Ctx, unitId: string, statusId: string): void {
   emit(ctx, { type: "StatusRemoved", unitId, statusId });
 }
 
+/**
+ * Slide a unit along `facing`, stopping at the map edge, an unstandable or
+ * occupied tile, or a height delta over `FORCED_MOVE_HEIGHT_LIMIT`. Move, Jump
+ * and terrain cost are all ignored — this is a shove, not a walk.
+ */
+function slide(ctx: Ctx, unit: BattleUnit, facing: Facing, distance: number): TileCoord {
+  const step = FACING_VECTORS[facing];
+  let current: TileCoord = { ...unit.position };
+  for (let i = 0; i < distance; i += 1) {
+    const next: TileCoord = { x: current.x + step.dx, y: current.y + step.dy };
+    if (!inBounds(ctx.state.content.map, next)) break;
+    if (!isStandable(ctx.state, next)) break;
+    if (unitAt(ctx.state, next) !== undefined) break;
+    if (Math.abs(standHeight(ctx.state, next) - standHeight(ctx.state, current)) > FORCED_MOVE_HEIGHT_LIMIT) break;
+    current = next;
+  }
+  return current;
+}
+
 export function forceMoveUnit(
   ctx: Ctx,
   unitId: string,
   direction: "push" | "pull" | "toward-actor-facing",
   distance: number,
   actor: BattleUnit | null,
+  outcome: EffectOutcome,
 ): void {
   const unit = unitById(ctx.state, unitId);
   if (unit === undefined || unit.downed || actor === null) return;
@@ -187,21 +208,42 @@ export function forceMoveUnit(
       : direction === "push"
         ? facingToward(actor.position, unit.position)
         : facingToward(unit.position, actor.position);
-  const step = FACING_VECTORS[facing];
 
   const from = { ...unit.position };
-  let current = from;
-  for (let i = 0; i < distance; i += 1) {
-    const next: TileCoord = { x: current.x + step.dx, y: current.y + step.dy };
-    if (!inBounds(ctx.state.content.map, next)) break;
-    if (!isStandable(ctx.state, next)) break;
-    if (unitAt(ctx.state, next) !== undefined) break;
-    if (Math.abs(standHeight(ctx.state, next) - standHeight(ctx.state, current)) > FORCED_MOVE_HEIGHT_LIMIT) break;
-    current = next;
-  }
-  if (coordEq(current, from)) return;
-  unit.position = current;
-  emit(ctx, { type: "UnitForcedMove", unitId, from, to: current });
+  const to = slide(ctx, unit, facing, distance);
+  if (coordEq(to, from)) return;
+  unit.position = to;
+  emit(ctx, { type: "UnitForcedMove", unitId, from, to });
+  checkContact(ctx, unitId, outcome);
+}
+
+/**
+ * Reposition the acting unit itself. Direction is measured against `aimed` —
+ * the first tile of the ability's area — with `forward` following the actor's
+ * own facing, which is what a self-targeted ability needs.
+ */
+export function moveSelfUnit(
+  ctx: Ctx,
+  actor: BattleUnit | null,
+  direction: "toward-target" | "away-from-target" | "forward",
+  distance: number,
+  aimed: TileCoord | undefined,
+  outcome: EffectOutcome,
+): void {
+  if (actor === null || actor.downed) return;
+  const from = { ...actor.position };
+  const facing =
+    direction === "forward" || aimed === undefined || coordEq(aimed, from)
+      ? actor.facing
+      : direction === "toward-target"
+        ? facingToward(from, aimed)
+        : facingToward(aimed, from);
+
+  const to = slide(ctx, actor, facing, distance);
+  if (coordEq(to, from)) return;
+  actor.position = to;
+  emit(ctx, { type: "UnitForcedMove", unitId: actor.id, from, to });
+  checkContact(ctx, actor.id, outcome);
 }
 
 export function modifyCharge(
@@ -311,28 +353,71 @@ export function destroyObject(ctx: Ctx, objectId: string, outcome: EffectOutcome
 
 export function spawnObject(
   ctx: Ctx,
-  object: "turret" | "mine" | "drone",
-  hp: number,
+  effect: Extract<Effect, { kind: "spawnObject" }>,
   tile: TileCoord,
-  owner: Team | null,
+  actor: BattleUnit | null,
 ): void {
-  const shape = SPAWNED_OBJECT_SHAPES[object];
-  const id = `spawned-${object}-${nextOrdinal(ctx.state)}`;
+  const shape = SPAWNED_OBJECT_SHAPES[effect.object];
+  const id = `spawned-${effect.object}-${nextOrdinal(ctx.state)}`;
   const def: MapObject = {
     id,
     kind: shape.kind,
-    name: object,
-    spriteId: object,
+    name: effect.object,
+    spriteId: effect.object,
     tiles: [{ ...tile }],
     blocksMovement: shape.blocksMovement,
     blocksLos: false,
-    integrity: { destructible: true, hp },
+    integrity: { destructible: true, hp: effect.hp },
     powered: null,
     operable: null,
+    ...(effect.onContact === undefined ? {} : { onContact: structuredClone(effect.onContact) }),
+    ...(effect.attack === undefined ? {} : { autoAttack: structuredClone(effect.attack) }),
   };
-  ctx.state.map.objects.push({ def, hp, destroyed: false, powered: null, owner });
+  const owner = actor === null ? null : actor.team;
+  ctx.state.map.objects.push({
+    def,
+    hp: effect.hp,
+    destroyed: false,
+    powered: null,
+    owner,
+    ownerUnitId: actor === null ? null : actor.id,
+    ct: 0,
+  });
   ctx.state.map.objects.sort((a, b) => (a.def.id < b.def.id ? -1 : a.def.id > b.def.id ? 1 : 0));
   emit(ctx, { type: "ObjectSpawned", objectId: id, kind: shape.kind, owner, tiles: [{ ...tile }] });
+}
+
+/** Deployables set off by their own shoves must not chain forever. */
+export const MAX_CONTACT_DEPTH = 4;
+
+/**
+ * Fire the `onContact` payload of every deployable covering the tile a unit
+ * just entered. A deployable never goes off under the team that placed it, and
+ * one that `destroysSelf` (the default) is destroyed before its payload runs,
+ * so it cannot re-trigger itself.
+ */
+export function checkContact(ctx: Ctx, unitId: string, outcome: EffectOutcome): void {
+  const depth = ctx.contactDepth ?? 0;
+  if (depth >= MAX_CONTACT_DEPTH) return;
+  const unit = unitById(ctx.state, unitId);
+  if (unit === undefined || unit.downed) return;
+
+  ctx.contactDepth = depth + 1;
+  try {
+    for (const obj of [...ctx.state.map.objects]) {
+      const contact = obj.def.onContact;
+      if (obj.destroyed || contact === undefined) continue;
+      if (obj.owner !== null && obj.owner === unit.team) continue;
+      const standing = unitById(ctx.state, unitId);
+      if (standing === undefined || standing.downed) return;
+      if (!obj.def.tiles.some((t) => coordEq(t, standing.position))) continue;
+      emit(ctx, { type: "ObjectTriggered", objectId: obj.def.id, unitId });
+      if (contact.destroysSelf !== false) destroyObject(ctx, obj.def.id, outcome);
+      mergeOutcome(outcome, applyEffects(ctx, contact.effects, null, collectTargets(ctx.state, obj.def.tiles)));
+    }
+  } finally {
+    ctx.contactDepth = depth;
+  }
 }
 
 /**
@@ -341,8 +426,9 @@ export function spawnObject(
  * Unit-scoped effects (`damage`, `heal`, `applyStatus`, `removeStatus`,
  * `forceMove`, `modifyCharge`, `modifyDisposition`, `modifyStats`) run on
  * `unitIds`; object-scoped effects (`setPower`, `damageObject`,
- * `repairObject`) run on `objectIds`; `spawnObject` runs on `tiles`. Effects
- * are applied in content order, targets in id order.
+ * `repairObject`) run on `objectIds`; `spawnObject` runs on `tiles`;
+ * `moveSelf` runs once on the acting unit. Effects are applied in content
+ * order, targets in id order.
  */
 export function applyEffects(
   ctx: Ctx,
@@ -379,8 +465,11 @@ export function applyEffects(
         break;
       case "forceMove":
         for (const unitId of targets.unitIds) {
-          forceMoveUnit(ctx, unitId, effect.direction, effect.distance, actor);
+          forceMoveUnit(ctx, unitId, effect.direction, effect.distance, actor, outcome);
         }
+        break;
+      case "moveSelf":
+        moveSelfUnit(ctx, actor, effect.direction, effect.distance, targets.tiles[0], outcome);
         break;
       case "modifyCharge":
         for (const unitId of targets.unitIds) {
@@ -428,7 +517,7 @@ export function applyEffects(
         for (const tile of targets.tiles) {
           if (unitAt(ctx.state, tile) !== undefined) continue;
           if (!isStandable(ctx.state, tile)) continue;
-          spawnObject(ctx, effect.object, effect.hp, tile, actor === null ? null : actor.team);
+          spawnObject(ctx, effect, tile, actor);
         }
         break;
     }

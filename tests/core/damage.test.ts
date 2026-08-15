@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { BASIC_ATTACK_ID, createBattle, forecast, type GameState } from "../../src/core/index.js";
+import {
+  BASIC_ATTACK_ID,
+  createBattle,
+  damageDivisor,
+  forecast,
+  unitMaxHp,
+  unitStats,
+  type GameState,
+} from "../../src/core/index.js";
 import { VALE, enemyAt, enforcer, testContent, yardEncounter } from "./fixtures.js";
 
 function facingBattle(): GameState {
@@ -73,6 +81,81 @@ describe("damage formulas", () => {
         statusChances: [],
       },
     ]);
+  });
+});
+
+describe("the level-scaled damage divisor", () => {
+  /** A duel between two enforcers of the same level, both holding a shock maul. */
+  function levelBattle(level: number): GameState {
+    const base = testContent();
+    const encounter = yardEncounter(base, {
+      id: `e-divisor-${level}`,
+      enemies: [enemyAt(enforcer("mark", "Mark", { level }), { x: 1, y: 3 }, "south")],
+      triggers: [],
+    });
+    return createBattle(
+      testContent([encounter]),
+      `e-divisor-${level}`,
+      [enforcer("rowen", "Rowen Corvane", { level })],
+      [{ unitId: "rowen", position: { x: 1, y: 4 }, facing: "north" }],
+    ).state;
+  }
+
+  it("is 400 + 250(L-1)", () => {
+    expect(damageDivisor(1)).toBe(400);
+    expect(damageDivisor(2)).toBe(650);
+    expect(damageDivisor(3)).toBe(900);
+    expect(damageDivisor(5)).toBe(1400);
+  });
+
+  it("leaves level 1 byte-identical and scales every stat-derived base above it", () => {
+    for (const level of [1, 2, 3, 5]) {
+      const state = levelBattle(level);
+      const phys = unitStats(state, "rowen")?.phys ?? 0;
+      const power = 9; // shock-maul
+      const divisor = damageDivisor(level);
+
+      const attack = forecast(state, "rowen", BASIC_ATTACK_ID, { kind: "unit", unitId: "mark" });
+      expect(attack[0]?.damage, `weapon L${level}`).toBe(Math.floor((phys * power * 100) / divisor));
+      const pin = forecast(state, "rowen", "pin", { kind: "unit", unitId: "mark" });
+      expect(pin[0]?.damage, `pin L${level}`).toBe(Math.floor((phys * power * 80) / divisor));
+    }
+    expect(forecast(levelBattle(1), "rowen", BASIC_ATTACK_ID, { kind: "unit", unitId: "mark" })[0]?.damage).toBe(20);
+  });
+
+  it("holds swings-to-down roughly flat where the shipped divisor collapsed it", () => {
+    const swings = [1, 3, 5].map((level) => {
+      const state = levelBattle(level);
+      const damage = forecast(state, "rowen", BASIC_ATTACK_ID, { kind: "unit", unitId: "mark" })[0]?.damage ?? 0;
+      const hp = unitMaxHp(state, "mark") ?? 0;
+      // What the flat 400 divisor would have dealt, for the contrast.
+      const shipped = Math.floor((damage * damageDivisor(level)) / 400);
+      return { level, scaled: Math.ceil(hp / damage), flat: Math.ceil(hp / shipped) };
+    });
+    expect(swings.map((s) => s.scaled)).toEqual([4, 4, 4]);
+    expect(swings.map((s) => s.flat)).toEqual([4, 2, 2]);
+  });
+
+  it("scales phys- and mag-based amounts by 200/D(L), not a fixed half", () => {
+    for (const level of [1, 3]) {
+      const base = testContent();
+      const encounter = yardEncounter(base, {
+        id: `e-mag-${level}`,
+        enemies: [
+          enemyAt(enforcer("mark", "Mark", { disposition: { resolve: 60, attunement: 100 } }), { x: 1, y: 3 }, "south"),
+        ],
+        triggers: [],
+      });
+      const state = createBattle(
+        testContent([encounter]),
+        `e-mag-${level}`,
+        [{ ...VALE, level, disposition: { resolve: 50, attunement: 100 } }],
+        [{ unitId: "vale", position: { x: 1, y: 4 }, facing: "north" }],
+      ).state;
+      const mag = unitStats(state, "vale")?.mag ?? 0;
+      const arc = forecast(state, "vale", "arc", { kind: "unit", unitId: "mark" });
+      expect(arc[0]?.damage, `arc L${level}`).toBe(Math.floor((mag * 8 * 200) / damageDivisor(level)));
+    }
   });
 });
 

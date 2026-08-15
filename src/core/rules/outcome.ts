@@ -1,3 +1,4 @@
+import type { SimpleWinCondition } from "../../data/schemas/encounter.js";
 import { emit, type Ctx } from "../state/ctx.js";
 import type { BattleResult, GameState } from "../state/types.js";
 import { coordEq, unitById } from "./grid.js";
@@ -13,6 +14,24 @@ export function endBattle(ctx: Ctx, result: BattleResult): void {
 function teamRouted(state: GameState, team: "player" | "enemy"): boolean {
   const members = state.units.filter((u) => u.team === team);
   return members.length > 0 && members.every((u) => u.downed);
+}
+
+function simpleWinMet(state: GameState, condition: SimpleWinCondition): boolean {
+  switch (condition.kind) {
+    case "rout":
+      return teamRouted(state, "enemy");
+    case "defeatUnit":
+      return unitById(state, condition.unitId)?.downed === true;
+    case "surviveTurns":
+      return state.turn >= condition.turns;
+    case "reachTiles": {
+      const candidates =
+        condition.unitId === undefined
+          ? state.units.filter((u) => u.team === "player" && !u.downed)
+          : state.units.filter((u) => u.id === condition.unitId && !u.downed);
+      return candidates.some((u) => condition.tiles.some((t) => coordEq(t, u.position)));
+    }
+  }
 }
 
 /**
@@ -36,31 +55,27 @@ export function evaluateOutcome(ctx: Ctx): void {
       case "turnLimit":
         if (state.turn > condition.turns) return endBattle(ctx, "loss");
         break;
-    }
-  }
-
-  for (const condition of encounter.winConditions) {
-    switch (condition.kind) {
-      case "rout":
-        if (teamRouted(state, "enemy")) return endBattle(ctx, "win");
-        break;
-      case "defeatUnit":
-        if (unitById(state, condition.unitId)?.downed === true) return endBattle(ctx, "win");
-        break;
-      case "surviveTurns":
-        if (state.turn >= condition.turns) return endBattle(ctx, "win");
-        break;
-      case "reachTiles": {
-        const candidates =
-          condition.unitId === undefined
-            ? state.units.filter((u) => u.team === "player" && !u.downed)
-            : state.units.filter((u) => u.id === condition.unitId && !u.downed);
+      case "unitReachesTiles": {
+        const candidates = state.units.filter(
+          (u) =>
+            !u.downed &&
+            (condition.unitId === undefined || u.id === condition.unitId) &&
+            (condition.team === undefined || u.team === condition.team),
+        );
         if (candidates.some((u) => condition.tiles.some((t) => coordEq(t, u.position)))) {
-          return endBattle(ctx, "win");
+          return endBattle(ctx, "loss");
         }
         break;
       }
     }
+  }
+
+  for (const condition of encounter.winConditions) {
+    const met =
+      condition.kind === "all"
+        ? condition.conditions.every((inner) => simpleWinMet(state, inner))
+        : simpleWinMet(state, condition);
+    if (met) return endBattle(ctx, "win");
   }
 }
 

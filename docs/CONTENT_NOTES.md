@@ -301,6 +301,24 @@ not expected values.
 
 Reported, not worked around. Nothing below was faked with a wrong mechanic.
 
+> **Closed by the engine-amendment pass (2026-08-15):** gaps **1** (deployables
+> now take `onContact` and `attack` payloads), **2** (`moveSelf`), and **7**
+> (`requires` on action abilities). The engine supports them; the *content*
+> does not use them yet. Concretely, this is the authoring work they create:
+>
+> - `tripwire-charge` wants an `onContact` payload; `sentry-frame` and
+>   `skitter-drone` want an `attack` profile with an `amount`, a `range`, and a
+>   `speed`. Until those are authored the three are still obstacles, and the sim
+>   still never chooses two of them.
+> - `piston-lunge` and `signal-jump` want a `moveSelf` effect.
+> - `tap-line` already carries `requires: ["adjacentPoweredObject"]` — the one
+>   ability this section named. Whether Rail Dash's job wants `railUnderfoot`
+>   gating, and whether `throw-the-breaker` or `rig-machinery` want
+>   `targetPowered`, are content calls this pass deliberately did not make.
+>
+> Gap **4** (consumables) is deferred with a design sketch in
+> `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10 are open.
+
 1. **Deployables are inert.** `spawnObject` takes only `object` and `hp`, and
    `spawnObject()` in `src/core/rules/effects.ts` builds them with
    `operable: null`, `onDestroyed: null`, `powered: null` and no behaviour.

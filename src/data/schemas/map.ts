@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Effect } from "./effect.js";
+import { AutoAttack, ContactPayload, Effect } from "./effect.js";
 import { Id, SchemaVersion, TileCoord } from "./common.js";
 
 export const TerrainType = z.enum(["plain", "rail", "rough", "water", "impassable", "void"]);
@@ -57,6 +57,11 @@ export const MapObject = z.object({
       effects: z.array(Effect),
     })
     .optional(),
+  // Fires when a unit enters the footprint (mines). Never for the owning team.
+  onContact: ContactPayload.optional(),
+  // Fires at the nearest enemy of the owning team on its own CT clock (turrets,
+  // drones). Object-sourced, so it has no caster.
+  autoAttack: AutoAttack.optional(),
 });
 export type MapObject = z.infer<typeof MapObject>;
 

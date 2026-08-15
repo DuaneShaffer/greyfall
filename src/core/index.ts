@@ -137,8 +137,10 @@ export {
 } from "./rules/turn.js";
 export { STANDING_PER_ACTION } from "./rules/abilities.js";
 export {
+  DAMAGE_DIVISOR_PER_LEVEL,
   MIN_HIT_CHANCE,
-  STAT_AMOUNT_DIVISOR,
+  STAT_AMOUNT_NUMERATOR,
   WEAPON_DAMAGE_DIVISOR,
+  damageDivisor,
 } from "./rules/damage.js";
 export { chooseCommand, enemyCommand, WEIGHTS, type AiWeights } from "./ai/index.js";

@@ -37,7 +37,8 @@ export type CommandErrorCode =
   | "not-adjacent"
   | "not-operable"
   | "object-destroyed"
-  | "object-unpowered";
+  | "object-unpowered"
+  | "requirement-unmet";
 
 /** Why a command was rejected. State is returned unchanged when this is set. */
 export interface CommandError {

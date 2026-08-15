@@ -1,7 +1,7 @@
-import type { TileCoord } from "../../data/index.js";
+import type { Effect, TileCoord } from "../../data/index.js";
 import { resolveAmount, unitAmountTarget } from "../rules/damage.js";
 import { objectMaxHp } from "../rules/effects.js";
-import { manhattan, tileAt, tileIndex, unitById } from "../rules/grid.js";
+import { areEnemies, manhattan, tileAt, tileIndex, unitById } from "../rules/grid.js";
 import { moveProfile, type MoveProfile } from "../rules/movement.js";
 import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
@@ -183,15 +183,24 @@ function crowdingMap(state: GameState, actor: BattleUnit, hostiles: readonly Bat
   return crowding;
 }
 
-/** Damage a payload of effects would do to a unit like the actor. */
-export function payloadBite(state: GameState, effects: ObjectRuntime["def"]["onDestroyed"], victim: BattleUnit): number {
+/** Caster-less damage an effect list would do to `victim`. */
+export function damageBite(
+  state: GameState,
+  effects: readonly Effect[] | undefined,
+  victim: BattleUnit,
+): number {
   if (effects === undefined) return 0;
   let total = 0;
-  for (const effect of effects.effects) {
+  for (const effect of effects) {
     if (effect.kind !== "damage") continue;
     total += resolveAmount(state, effect.amount, null, unitAmountTarget(state, victim));
   }
   return total;
+}
+
+/** Damage a payload of effects would do to a unit like the actor. */
+export function payloadBite(state: GameState, payload: ObjectRuntime["def"]["onDestroyed"], victim: BattleUnit): number {
+  return damageBite(state, payload?.effects, victim);
 }
 
 /**
@@ -223,6 +232,23 @@ function hazardField(state: GameState, actor: BattleUnit, weights: AiWeights): n
       hazard[index] = (hazard[index] ?? 0) + value;
     }
   }
+
+  // Mines and anything else that goes off underfoot. Unlike a blast, this is a
+  // certainty rather than a risk, so it carries full weight — and a deployable
+  // never goes off for the team that laid it.
+  for (const obj of state.map.objects) {
+    const contact = obj.def.onContact;
+    if (obj.destroyed || contact === undefined) continue;
+    if (obj.owner !== null && obj.owner === actor.team) continue;
+    const bite = damageBite(state, contact.effects, actor);
+    if (bite <= 0) continue;
+    const value = bite * weights.blastPoint;
+    for (const tile of obj.def.tiles) {
+      const index = tileIndex(map, tile);
+      if (index < 0 || index >= hazard.length) continue;
+      hazard[index] = (hazard[index] ?? 0) + value;
+    }
+  }
   return hazard;
 }
 
@@ -249,7 +275,7 @@ function pickQuarry(
 }
 
 export function buildContext(state: GameState, actor: BattleUnit, weights: AiWeights = WEIGHTS): AiContext {
-  const hostiles = state.units.filter((u) => !u.downed && u.team !== actor.team);
+  const hostiles = state.units.filter((u) => !u.downed && areEnemies(u, actor));
   const allies = state.units.filter((u) => !u.downed && u.team === actor.team && u.id !== actor.id);
   const kit = readKit(state, actor);
   const move = moveProfile(state, actor);

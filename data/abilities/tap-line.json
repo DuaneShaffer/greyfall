@@ -21,6 +21,9 @@
       "self"
     ]
   },
+  "requires": [
+    "adjacentPoweredObject"
+  ],
   "chargeCost": 0,
   "castSpeed": null,
   "effects": [

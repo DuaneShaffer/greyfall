@@ -14,6 +14,8 @@ export interface AiWeights {
   /** Extra weight on harm that lands on an ally (over 100 = actively avoided). */
   friendlyHarmPercent: number;
   selfHarmPercent: number;
+  /** Ceiling on what one buff landing on a friendly is worth, before `allyAidPercent`. */
+  buffValueCap: number;
   /** Value of a hostile that no ally is already engaging, per engaging ally. */
   crowdingPercent: number;
 
@@ -27,6 +29,10 @@ export interface AiWeights {
 
   forceMovePoint: number;
   spawnObjectPoint: number;
+  /** Credit for a deployable's `onContact` payload — it pays out once. */
+  contactPayloadPercent: number;
+  /** Credit for a deployable's `attack` — it keeps firing while it stands. */
+  autoAttackPercent: number;
   drainChargePercent: number;
 
   chargePoint: number;
@@ -79,6 +85,7 @@ export const WEIGHTS: AiWeights = {
   doomedTargetPercent: 15,
   friendlyHarmPercent: 150,
   selfHarmPercent: 200,
+  buffValueCap: 250,
   crowdingPercent: 25,
 
   statusPreventAction: 250,
@@ -91,6 +98,8 @@ export const WEIGHTS: AiWeights = {
 
   forceMovePoint: 25,
   spawnObjectPoint: 120,
+  contactPayloadPercent: 120,
+  autoAttackPercent: 250,
   drainChargePercent: 60,
 
   chargePoint: 12,

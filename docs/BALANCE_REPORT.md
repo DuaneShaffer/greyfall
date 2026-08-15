@@ -9,6 +9,14 @@ Governing docs: `docs/COMBAT_RULES.md` (the formulas), `docs/CONTENT_NOTES.md`
 cannot see). Workstream 20 in `docs/PROJECT_BREAKDOWN.md`; this report answers
 findings-queue item 6.
 
+> **Status (engine-amendment pass, 2026-08-15).** **§4(b) applied** — the
+> level-scaled divisor `D(L) = 400 + 250(L-1)` is in `src/core/rules/damage.ts`
+> and `COMBAT_RULES` §4, level 1 byte-identical. **§4(c) C1 and C3–C5 applied**
+> in `src/core/ai/`; C2 was not needed once C3 landed, and `selfHarmPercent`
+> stays at 200 because it now weights harm only. **§4(a) data changes not
+> applied** — they belong to the content pass, which should re-measure first:
+> every number in F2, F3, and F4 was taken before these changes.
+
 ---
 
 ## 0. How to reproduce
@@ -344,7 +352,7 @@ growth rather than HP growth, so it raises low-level damage enormously: at 15 it
 produces **22 one-shot pairings at level 1**, 37% first-round downs, and 6.2-turn
 duels. It still collapses (1.82 → 1.61).
 
-**Recommendation: level-scale the damage divisor.**
+**Recommendation: level-scale the damage divisor. — Applied.**
 
 ```ts
 // src/core/rules/damage.ts
@@ -441,6 +449,37 @@ strong; that is a content number (A4), not a weight.
 C3–C5 are behaviour gaps in the search rather than tuning, and each is a handful
 of lines. They belong to the AI workstream; this report is the evidence, not the
 patch.
+
+**Applied, with one substitution.** C1 landed as a *proportional* penalty
+(`chipPenalty` scaled by the shortfall against `chipThreshold`, zero at the
+threshold) rather than as new constants — the cliff was the defect, not the
+prices. C3 landed with a cap: negative harm on a friendly is credited as
+positive utility bounded by the new `buffValueCap` (250), which is below the
+kill bonus by construction. C2 was therefore dropped: `selfHarmPercent` at 200
+is correct once it only ever multiplies real harm. C4 and C5 landed as written.
+
+Measured on a 294-duel arena-plus-yard sweep (7x7 pairs, levels 1/3/5, seed 101,
+both maps), before and after the whole amendment pass — the divisor change and
+the AI changes together, since both are in the same wave:
+
+| | before | after |
+|---|---|---|
+| never-chosen abilities | 17 | **12** |
+| abilities over 40% of their job's actions | 6 | 8 |
+| Overdrive share of Augmented actions | 75% | **53%** |
+| Crossfeed share of Machinist actions | 74% | **51%** |
+| total actions chosen | 2,371 | 3,830 |
+
+Newly reachable: `chemist|bracer-shot`, `conduit|tap-line`,
+`machinist|field-repair`, `machinist|tripwire-charge`, `saboteur|gas-line-tap`.
+The action count rises because the divisor change makes battles longer.
+
+Still never chosen: `rejection`, `field-transfusion`, `overload-cell`,
+`throw-the-breaker`, `kettle`, `sentry-frame`, `skitter-drone`,
+`coupling-hook`, `signal-jump`, `bring-it-down`, `rig-machinery`,
+`smoke-canister`. Two of those are now *content* work rather than AI work:
+`sentry-frame` and `skitter-drone` spawn deployables that the engine can now
+make shoot, but the shipped JSON carries no `attack` payload yet.
 
 ---
 

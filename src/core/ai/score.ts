@@ -4,11 +4,11 @@ import { inertAmountTarget, resolveAmount, unitAmountTarget } from "../rules/dam
 import { objectMaxHp } from "../rules/effects.js";
 import { manhattan, objectById, unitAt, unitById } from "../rules/grid.js";
 import { getStatus } from "../state/content.js";
-import { maxHp } from "../rules/status.js";
-import { aimedTile, hasLos, inRange, isValidTargetKind } from "../rules/targeting.js";
+import { maxCharge, maxHp } from "../rules/status.js";
+import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
 import { forecast, turnOrderPreview, type ForecastEntry } from "../selectors.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
-import { effectiveHp, type AiContext } from "./context.js";
+import { damageBite, effectiveHp, type AiContext } from "./context.js";
 
 /** How much a status is worth landing on a hostile; negative means it helps. */
 export function statusValue(ctx: AiContext, state: GameState, statusId: string): number {
@@ -36,12 +36,25 @@ export function statusValue(ctx: AiContext, state: GameState, statusId: string):
   return Math.floor((value * (100 + (turns - 1) * 50)) / 100);
 }
 
-/** Value of one unit taking `harm` and `aid`, signed for the actor's team. */
+/**
+ * Value of one unit taking `harm` and `aid`, signed for the actor's team.
+ *
+ * A neutral bystander scores zero — the AI neither hunts nor shields it.
+ * On a friendly, *negative* harm is a buff rather than an inverted injury:
+ * crediting it as capped utility keeps `selfHarmPercent` (written to make the
+ * AI protective) from doubling the value of helping itself, which is what made
+ * self-buffs outscore kills (BALANCE_REPORT F4).
+ */
 function sideValue(ctx: AiContext, unit: BattleUnit, harm: number, aid: number): number {
   const w = ctx.weights;
+  if (unit.team === "neutral" && unit.team !== ctx.actor.team) return 0;
   if (unit.team !== ctx.actor.team) return harm - aid;
   const percent = unit.id === ctx.actor.id ? w.selfHarmPercent : w.friendlyHarmPercent;
-  return Math.floor((aid * ctx.profile.allyAidPercent) / 100) - Math.floor((harm * percent) / 100);
+  const injury = Math.max(0, harm);
+  const benefit = Math.min(Math.max(0, -harm), w.buffValueCap);
+  return (
+    Math.floor(((aid + benefit) * ctx.profile.allyAidPercent) / 100) - Math.floor((injury * percent) / 100)
+  );
 }
 
 /** Diminishing returns on a hostile several allies can already reach. */
@@ -63,7 +76,12 @@ function extraEffectValue(
     case "forceMove":
       return { harm: Math.floor((w.forceMovePoint * hitChance) / 100), aid: 0 };
     case "modifyCharge": {
-      const drain = Math.max(0, -effect.amount);
+      if (effect.amount > 0) {
+        const room = Math.max(0, maxCharge(state, unit) - unit.charge);
+        const gained = Math.min(effect.amount, room);
+        return { harm: 0, aid: Math.floor((gained * w.chargePoint * hitChance) / 100) };
+      }
+      const drain = -effect.amount;
       return { harm: Math.floor((drain * w.chargePoint * w.drainChargePercent) / 100), aid: 0 };
     }
     case "removeStatus": {
@@ -168,7 +186,9 @@ function objectHitValue(ctx: AiContext, state: GameState, objectId: string, dama
   if (!obj.def.integrity.destructible) return 0;
   const remaining = obj.hp;
   if (heal > 0 && damage === 0) {
-    const owned = obj.owner === ctx.actor.team;
+    // Map-authored objects carry `owner: null`; repairing them is worth doing
+    // too, or a repair kit can only ever mend what its own team deployed.
+    const owned = obj.owner === null || obj.owner === ctx.actor.team;
     const repaired = Math.min(heal, objectMaxHp(obj) - remaining);
     return owned ? repaired * ctx.weights.damagePerHp : 0;
   }
@@ -214,6 +234,32 @@ function entryValue(ctx: AiContext, state: GameState, ability: ActionAbility, en
   return Math.floor((value * crowdingPercent(ctx, unit)) / 100);
 }
 
+/**
+ * What putting a deployable on the board is worth: the obstacle itself, plus
+ * its payload measured against the hostile it is most likely to meet. A mine
+ * pays out once; a turret keeps firing, hence the two percentages.
+ */
+function spawnValue(
+  ctx: AiContext,
+  state: GameState,
+  effect: Extract<Effect, { kind: "spawnObject" }>,
+): number {
+  const w = ctx.weights;
+  let value = w.spawnObjectPoint;
+  const victim = ctx.quarry ?? ctx.hostiles[0];
+  if (victim === undefined) return value;
+
+  if (effect.onContact !== undefined) {
+    const bite = damageBite(state, effect.onContact.effects, victim);
+    value += Math.floor((bite * w.damagePerHp * w.contactPayloadPercent) / 100);
+  }
+  if (effect.attack !== undefined) {
+    const shot = resolveAmount(state, effect.attack.amount, ctx.actor, unitAmountTarget(state, victim));
+    value += Math.floor((shot * w.damagePerHp * w.autoAttackPercent) / 100);
+  }
+  return value;
+}
+
 /** Unit turns the aimed-at unit gets before a cast at this speed lands. */
 function turnsBeforeLanding(state: GameState, castSpeed: number, unitId: string): number {
   const ticks = Math.ceil(100 / castSpeed);
@@ -242,8 +288,9 @@ export function abilityValue(
   for (const entry of forecast(view, ctx.actor.id, ability.id, target)) {
     gross += entryValue(ctx, view, ability, entry);
   }
-  if (ability.effects.some((e) => e.kind === "spawnObject")) {
-    gross += Math.floor((ctx.weights.spawnObjectPoint * ctx.profile.objectPercent) / 100);
+  for (const effect of ability.effects) {
+    if (effect.kind !== "spawnObject") continue;
+    gross += Math.floor((spawnValue(ctx, view, effect) * ctx.profile.objectPercent) / 100);
   }
   for (const effect of ability.effects) {
     if (effect.kind !== "setPower") continue;
@@ -265,8 +312,14 @@ export function abilityValue(
   }
 
   if (ability.chargeCost > 0) {
-    value -= ability.chargeCost * ctx.weights.chargePoint;
-    if (gross < ctx.weights.chipThreshold) value -= ctx.weights.chipPenalty;
+    const w = ctx.weights;
+    value -= ability.chargeCost * w.chargePoint;
+    // Proportional, not a cliff: a flat penalty below the threshold deleted
+    // every cheap utility ability at low level (BALANCE_REPORT F3/C1).
+    const shortfall = Math.max(0, w.chipThreshold - Math.max(0, gross));
+    if (shortfall > 0 && w.chipThreshold > 0) {
+      value -= Math.floor((w.chipPenalty * shortfall) / w.chipThreshold);
+    }
   }
   value -= (ability.hpCost ?? 0) * ctx.weights.hpPoint;
   return value;
@@ -355,6 +408,7 @@ export function actionOptions(ctx: AiContext, view: GameState, at: TileCoord): A
     if (actor.charge < ability.chargeCost) continue;
     const hpCost = ability.hpCost ?? 0;
     if (hpCost > 0 && actor.hp <= hpCost) continue;
+    if (unmetRequirement(view, actor, ability, null) !== null) continue;
     for (const target of targetCandidates(ctx, view, ability)) {
       const aimed = aimedTile(view, target);
       if (aimed === undefined) continue;
@@ -362,6 +416,7 @@ export function actionOptions(ctx: AiContext, view: GameState, at: TileCoord): A
       if (!isValidTargetKind(view, actor, ability, target)) continue;
       if (target.kind === "object" && objectById(view, target.objectId)?.destroyed === true) continue;
       if (ability.targeting.requiresLos && !hasLos(view, at, aimed)) continue;
+      if (unmetRequirement(view, actor, ability, target) !== null) continue;
       const area = resolveArea(view, actor, ability, target);
       if (area.tiles.length === 0) continue;
       const score = abilityValue(ctx, view, ability, target, area.objectIds);

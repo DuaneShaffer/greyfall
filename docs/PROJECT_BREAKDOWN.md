@@ -211,47 +211,78 @@ documented its seam. Phase 2 integration items:
 ## Phase 2 findings queue (escalated by workstream agents, 2026-08-15)
 
 Deliberate engine/schema amendments for the post-wave engine pass, from the
-content agent's vocabulary-gap report (full detail in docs/CONTENT_NOTES.md):
+content agent's vocabulary-gap report (full detail in docs/CONTENT_NOTES.md).
+**Status after the engine-amendment pass (2026-08-15)** is marked per item.
+Every schema change is additive; every shipped `data/` file still validates.
 
-1. **Deployables are inert** — spawnObject creates objects with no behavior;
-   turrets don't shoot, mines don't detonate. Needs an AI hook for spawned
-   turret/drone units-or-objects and an authorable payload (onContact /
-   per-turn effects) for mines. Biggest gap; the Machinist kit depends on it.
-2. **No conditional ability gating** — "requires rail underfoot", "requires
-   adjacent powered object". Without it the bible's "Conduit on a dead map
-   is nearly powerless" is flavor, not rules.
-3. **No self-targeting movement effect** — Piston Lunge / Signal Jump can't
-   reposition the caster.
-4. **Consumables are inert** — no use-item command, no consumable inventory
-   slot; consumableEffectBonusPercent unread by core.
+1. **Deployables are inert** — **DONE.** `spawnObject` takes an optional
+   `onContact` payload (mines: fires when a unit enters the footprint, never
+   for the owning team, destroys itself) and an optional `attack` profile
+   (turrets/drones: ride their own CT timeline at `autoAttack.speed` and shoot
+   the nearest hostile of their owner's team, resolving amounts against the
+   unit that deployed them). Both are also authorable on map objects. The AI
+   prices them when spawning and treats hostile mines as a hazard field.
+   `COMBAT_RULES` §6, §13, §14. **Content follow-up:** `sentry-frame`,
+   `skitter-drone`, and `tripwire-charge` still ship with no payload authored,
+   so they remain never-chosen in the sim.
+2. **No conditional ability gating** — **DONE.** Optional `requires` on action
+   abilities: `railUnderfoot`, `adjacentPoweredObject`, `targetPowered`.
+   Enforced in command validation, `availableAbilities`, `targetableTiles`,
+   `forecast`, and AI candidate generation (`COMBAT_RULES` §13a).
+   `data/abilities/tap-line.json` now requires `adjacentPoweredObject` — the
+   only ability CONTENT_NOTES names as intended; the rest is a content call.
+3. **No self-targeting movement effect** — **DONE.** New `moveSelf` effect
+   (`toward-target` / `away-from-target` / `forward`), same legality rules as
+   `forceMove` (`COMBAT_RULES` §10). Not yet wired into Piston Lunge or Signal
+   Jump: that is a content edit.
+4. **Consumables are inert** — **DEFERRED**, with a sketch. Consumables already
+   carry `effects`, but they carry no targeting block, `Unit` has no carry
+   slot, and campaign inventory has no per-battle hand-off. Sketch: add
+   `carriedItemIds` to `Unit`; mirror it onto `BattleUnit`; add a `useItem`
+   command validated against a default consumable targeting rule (range 1,
+   area single, self/ally/enemy) and against the carry list; spend the entry;
+   route the item's `effects` through `applyEffects` with
+   `consumableEffectBonusPercent` scaling the `heal` and `damage` amounts. The
+   open question is authoring rather than plumbing — every consumable needs a
+   targeting rule and the deployment screen needs to hand items to units — so
+   this wants a design call before code.
 5. Minor: no accuracy stat (blind modeled as stat loss); no on-expiry status
-   cost; reaction trigger vocabulary can't express ally-protection.
-6. **Balance escalation**: TTK collapses with level (HP sub-linear vs phys
-   linear; L1 = 4 hits, L5 = 1). Slice (L1-3) playable; fix is a core
-   formula lever (WEAPON_DAMAGE_DIVISOR scaling or STAT_BASE.hp raise) —
-   assign to the balance-sim workstream with the sim as the measuring tool.
-   Bites concretely in e5: Aldric one-shots a L3 Conduit.
+   cost; reaction trigger vocabulary can't express ally-protection. **OPEN.**
+6. **Balance escalation**: TTK collapses with level — **DONE.** The damage
+   divisor now scales with the acting unit's level:
+   `D(L) = 400 + 250(L-1)`, applied to the `weapon`, `phys`, and `mag` bases.
+   `D(1) = 400`, so level 1 is byte-identical and no level-1 test moved.
+   `COMBAT_RULES` §4; `docs/BALANCE_REPORT.md` §4(b), marked applied.
 
 From the encounter agent (full detail in docs/ENCOUNTER_NOTES.md):
 
-7. **`turnStart` trigger evaluation bug** — `state.turn` increments per unit
-   turn (not per round) and the condition uses `===`; a turn index consumed
-   entirely inside advanceClock never gets trigger evaluation, so
-   `turnStart: n` can silently skip. Real core bug; e4 works around it with
-   a widened tile trigger. Also add a regression test for
-   trigger-before-outcome ordering in settle(), which every closing-dialogue
-   beat depends on.
-8. Trigger vocabulary: `moveUnit`/`removeUnit` actions (Aldric's scripted
-   withdrawal is inexpressible), a unit-reaches-tiles LOSS condition (enemy
-   escape), unit-targeting trigger actions, persistent flags,
-   entered-vs-present semantics for unitEntersTiles.
-9. **Neutral team is hostile to both sides** in grid.ts and ai/context.ts —
-   blocks non-combatant placement (Jory, Quill are voices only, contra the
-   bible). Neutral should be non-hostile, AI-ignored, non-blocking to allies.
-10. Win-condition combinators (AND groups) for "defeat all provocateurs".
+7. **`turnStart` trigger evaluation bug** — **DONE.** The condition is now
+   reaches-or-passes, so a turn index consumed whole inside `advanceClock`
+   cannot skip it; with `once: true` it still fires exactly once
+   (`COMBAT_RULES` §15). The trigger-before-outcome ordering in `settle()` is
+   documented in the same section and now asserted by
+   `tests/core/conditions.test.ts`.
+8. Trigger vocabulary — **PARTLY DONE.** `moveUnit` and `removeUnit` trigger
+   actions and the `unitReachesTiles` loss condition are in
+   (`COMBAT_RULES` §15, §16). Engine and schema only: **no encounter uses them
+   yet**, deliberately, so the content pass owns the wiring. Still **OPEN**:
+   unit-targeting trigger actions (`damageUnit`, `applyStatus`), persistent
+   flags, and entered-vs-present semantics for `unitEntersTiles`.
+9. **Neutral team is hostile to both sides** — **DONE.** `neutral` is now
+   non-combatant on every axis: never hostile, walked through by both sides,
+   never missed, invisible to AI targeting and threat, and uncounted by `rout`
+   and `partyRout` (`COMBAT_RULES` §18). Jory, Quill, and Maren can stand on
+   the map.
+10. Win-condition combinators (AND groups) — **DONE.** A win condition may be
+    `{ kind: "all", conditions: [...] }`, one level deep (`COMBAT_RULES` §16).
 11. e1 polish queue: provocateurs should demonstrably fire first (premise is
     only asserted); rail-showcase triggers; Maren placement; consider
-    unitDowned:rowen loss to establish stakes at battle 1.
+    unitDowned:rowen loss to establish stakes at battle 1. **OPEN — content.**
+
+Also from the balance report (`docs/BALANCE_REPORT.md` §4(c)): the AI scoring
+defects C1 and C3–C5 are **DONE**; C2 was dropped as unnecessary once C3
+landed. The §4(a) data changes are deliberately **not** applied — they are the
+content pass's call, and every number in F2/F3/F4 predates this wave.
 
 ## Open decisions
 

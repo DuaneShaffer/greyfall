@@ -1,4 +1,4 @@
-import type { Facing, GameMap, Tile, TileCoord } from "../../data/index.js";
+import type { Facing, GameMap, Team, Tile, TileCoord } from "../../data/index.js";
 import type { BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 
 /** Terrain a unit can never stand on or move through. */
@@ -118,9 +118,19 @@ export function unitAt(state: GameState, c: TileCoord): BattleUnit | undefined {
   return state.units.find((u) => !u.downed && coordEq(u.position, c));
 }
 
-/** Neutral units are hostile to everyone; only same-team units are allies. */
+/**
+ * Hostility. `neutral` is non-combatant: never hostile to anyone and never
+ * hostile *from* anyone, so bystanders can stand on the map (COMBAT_RULES §18).
+ * Only same-team units are allies.
+ */
 export function areEnemies(a: BattleUnit, b: BattleUnit): boolean {
-  return a.team !== b.team;
+  return teamsHostile(a.team, b.team);
+}
+
+/** Same rule for a side with no unit behind it — a deployed turret's owner. */
+export function teamsHostile(a: Team, b: Team): boolean {
+  if (a === "neutral" || b === "neutral") return false;
+  return a !== b;
 }
 
 /** Direction from `from` to `to`; ties resolve to the x axis. */

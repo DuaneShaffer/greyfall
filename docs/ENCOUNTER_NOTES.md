@@ -279,6 +279,22 @@ slice by intent — but see the warning below, because it is also where
 
 Reported, not worked around. Nothing below was faked with a wrong mechanic.
 
+> **Closed by the engine-amendment pass (2026-08-15):** gaps **1**
+> (`moveUnit` / `removeUnit` trigger actions), **2**
+> (`unitReachesTiles` loss condition), **3** (`turnStart` is now
+> reaches-or-passes), **4** (`all` win-condition groups), **5** (`neutral` is
+> genuinely non-combatant), and **9** (the trigger-before-outcome contract is
+> documented in `COMBAT_RULES` §15 and asserted by a test).
+>
+> **Nothing was wired into an encounter.** The vocabulary exists; e1–e5 are
+> untouched. The content pass owns: Aldric's withdrawal in e5, the saboteur's
+> bolt for the stair in e3, the gallery-stair escape loss in e3, e4's midpoint
+> (which can drop its widened-tile workaround for a real `turnStart`), e2's
+> merciful "put down the provocateurs" objective as an `all` group, and placing
+> Jory, Quill, and Maren as neutrals.
+>
+> Gaps 6, 7, 8, and 10 are open.
+
 1. **No unit-move trigger action.** `TriggerAction` has `dialogue`,
    `spawnUnits`, `setPower`, `destroyObject`, `endBattle` — nothing that
    repositions an existing unit. MAP_NOTES §5 asks for Aldric to withdraw

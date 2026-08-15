@@ -31,6 +31,9 @@ Draw order inside one ability use:
    Only `applyStatus` rolls.
 3. Reaction trigger rolls, in unit-id order.
 
+A deployable's `autoAttack` (§14) draws one accuracy roll of its own, at the
+moment it fires on the clock.
+
 ## 2. Stats
 
 `deriveStats` (`src/core/progression/stats.ts`) is standalone and pure — it is
@@ -93,13 +96,34 @@ base, matching how the content is authored:
 
 | `base` | Formula | `power` reads as |
 |---|---|---|
-| `weapon` | `floor(phys * weaponPower * power / 400)` | percent of a full weapon swing |
-| `phys` | `floor(phys * power / 2)` | a multiplier on Phys |
-| `mag` | `floor(mag * power / 2)` | a multiplier on Mag |
+| `weapon` | `floor(phys * weaponPower * power / D(L))` | percent of a full weapon swing |
+| `phys` | `floor(phys * power * 200 / D(L))` | a multiplier on Phys |
+| `mag` | `floor(mag * power * 200 / D(L))` | a multiplier on Mag |
 | `fixed` | `power` | the number itself |
 | `maxHpPercent` | `floor(targetMaxHp * power / 100)` | percent of the target's max HP |
 
-Constants: `WEAPON_DAMAGE_DIVISOR = 400`, `STAT_AMOUNT_DIVISOR = 2`.
+**The divisor scales with the acting unit's level.**
+
+```
+D(L) = WEAPON_DAMAGE_DIVISOR + DAMAGE_DIVISOR_PER_LEVEL * (L - 1)
+     = 400 + 250 * (L - 1)
+```
+
+Constants: `WEAPON_DAMAGE_DIVISOR = 400`, `DAMAGE_DIVISOR_PER_LEVEL = 250`,
+`STAT_AMOUNT_NUMERATOR = 200`.
+
+Why: HP grows sub-linearly (`STAT_BASE.hp` is 40) while Phys and Mag grow
+linearly off a base of 0, so a constant divisor makes time-to-kill collapse —
+measured at 7.45 swings to down at level 1 and 2.63 at level 5, with 16 of 49
+job pairings one-shotting (`docs/BALANCE_REPORT.md` F1). Scaling the divisor
+with the caster's level holds it at roughly 7 swings across levels 1–5 and
+removes every one-shot. `D(1) = 400`, so **every level-1 number in this
+document is unchanged**; `fixed` and `maxHpPercent` are deliberately left flat,
+so an `onDestroyed` blast falls behind as units grow.
+
+An amount with no acting unit (an `onDestroyed` payload, a deployable whose
+owner is gone) uses `D(1)`, and its `weapon`/`phys`/`mag` bases resolve to 0
+because there is no stat behind them.
 
 A unit with no weapon equipped swings unarmed: power 3, kinetic, range 1/1/1.
 
@@ -131,9 +155,9 @@ Healing uses the same amount pipeline and is capped at the target's max HP.
 
 ## 5. Accuracy, facing, and evasion
 
-Accuracy is rolled once per *hostile* unit in an ability's area. Allies, the
-caster, objects, and tiles are never missed. A miss cancels every unit-scoped
-effect on that unit and emits `AbilityMissed`.
+Accuracy is rolled once per *hostile* unit in an ability's area. Allies,
+neutrals (§18), the caster, objects, and tiles are never missed. A miss cancels
+every unit-scoped effect on that unit and emits `AbilityMissed`.
 
 ```
 angle          = where the attacker stands relative to the target's facing
@@ -161,6 +185,8 @@ Each tick of `state.clock`:
 
 1. Every standing unit banks CT equal to its **effective Speed**.
 2. Every in-flight charge banks CT equal to its `castSpeed`.
+3. Every undestroyed object with an `autoAttack` banks CT equal to its
+   `autoAttack.speed` (§14).
 
 Effective Speed is the unit's Speed after equipment, passives, statuses, and
 timed mods, then folded through each `ctMultiplierPercent` status one at a time
@@ -177,7 +203,12 @@ That is the Haste/Slow hook: `ctMultiplierPercent: 150` on a Speed-6 unit gives
 Anything sitting at 100 CT or more resolves before the clock moves again:
 
 - **Charges fire first**, highest CT first, charge id breaking ties.
+- Then **every ready deployable shoots**, highest CT first, object id breaking
+  ties, each spending 100 CT.
 - Then **one unit takes a turn**, highest CT first, unit id breaking ties.
+
+Deployables do not appear in `turnOrderPreview`: they consume no unit turn and
+the preview answers "who acts next", not "what happens next".
 
 Turn costs, spent when the turn ends:
 
@@ -255,8 +286,8 @@ An edge from tile A to orthogonally adjacent tile B is usable when:
   provides an active walkable surface (see §11).
 - `|standHeight(B) - standHeight(A)| <= Jump`.
 - B is not occupied by a hostile standing unit (`moveThroughEnemies` waives
-  this). Allies may be walked through but not stopped on. Downed units do not
-  occupy anything.
+  this). Allies and neutrals (§18) may be walked through but not stopped on.
+  Downed units do not occupy anything.
 
 Tile entry cost, in the scaled units the Railrunner multiplier defines
 (`railMultiplier` defaults to 1, and the move budget is `Move * railMultiplier`):
@@ -278,6 +309,14 @@ travels up to `distance` tiles and stops early at the map edge, an unstandable
 tile, an occupied tile, or a height delta greater than
 `FORCED_MOVE_HEIGHT_LIMIT` (2). Direction: `push` is away from the caster,
 `pull` is toward the caster, `toward-actor-facing` follows the caster's facing.
+
+**Self movement** (`moveSelf`) slides the *acting* unit under exactly the same
+rules and limits, once per effect rather than once per target. Direction:
+`toward-target` and `away-from-target` are measured against the first tile of
+the ability's area, `forward` follows the actor's own facing — which is what a
+self-targeted ability needs, since its aimed tile is the tile it is standing on.
+`moveSelf` does not change facing; the actor has already turned to face what it
+aimed at.
 
 ## 11. Height and standable surfaces
 
@@ -327,6 +366,7 @@ order.
 | `damage`, `heal`, `applyStatus`, `removeStatus`, `forceMove`, `modifyCharge`, `modifyDisposition`, `modifyStats` | units in the area that were not missed |
 | `setPower`, `damageObject`, `repairObject` | objects named by the payload, plus objects covering the area |
 | `spawnObject` | tiles of the area that are standable and unoccupied |
+| `moveSelf` | the acting unit, once, regardless of area size |
 
 Notes:
 
@@ -336,12 +376,32 @@ Notes:
 - `modifyDisposition` clamps to `[0, 100]`.
 - `modifyStats` with a `duration` expires by the affected unit's own turns, the
   same clock statuses use.
-- `spawnObject` creates a destructible object owned by the acting unit's team.
-  `turret` becomes a `turret` that blocks movement; `mine` and `drone` have no
-  `MapObjectKind` of their own and both become `machine` — mines do not block
-  movement, drones do.
+- `spawnObject` creates a destructible object owned by the acting unit's team
+  and unit. `turret` and `drone` block movement; `mine` does not. Its optional
+  `onContact` and `attack` payloads are copied onto the object and are what
+  make it more than an obstacle (§14).
 - An ability's `hpCost` is taken as self-inflicted chemical damage when the
   ability is used, and a command that would down its own caster is rejected.
+
+## 13a. Ability requirements
+
+An action ability may carry a `requires` list. Every entry must hold or the
+command is rejected with `requirement-unmet`. This is what makes the
+infrastructure pillar binding rather than thematic — the bible's "a Conduit on
+a dead map with no cells is nearly powerless" is a rule here, not flavour.
+
+| Requirement | Holds when |
+|---|---|
+| `railUnderfoot` | the actor's own tile has `rail` terrain |
+| `adjacentPoweredObject` | an undestroyed, powered object covers a tile within 1 of the actor (its own tile counts) |
+| `targetPowered` | the aimed-at object — or an object covering the aimed tile — is undestroyed and powered |
+
+The first two read only the actor, so `availableAbilities` filters on them and
+a menu can grey the ability out before anything is aimed. `targetPowered`
+cannot be judged until a target exists, so it is enforced by `targetableTiles`
+(which prunes the tiles that fail it), by `forecast` (which returns an empty
+list), and by command validation. The AI applies all three when generating
+candidates.
 
 ## 14. Machinery
 
@@ -367,6 +427,31 @@ value and Attunement scaling is skipped on the caster's half.
 are electrical at all (`powered` is not null) and not destroyed. A no-op change
 emits nothing.
 
+**Contact payloads (`onContact`).** An object carrying one goes off when a unit
+enters a tile of its footprint. It fires for movement, for `forceMove`, for
+`moveSelf`, and for a scripted `moveUnit` — but **never for the team that
+deployed it** (a map-authored object has no owner and goes off for everyone).
+The object destroys itself first unless `destroysSelf: false`, so it cannot
+re-trigger inside its own payload; a chain of shoves across several charges is
+bounded at `MAX_CONTACT_DEPTH` (4).
+
+Contact is checked on the tile a unit **ends its movement on**, not on every
+tile of the path. A mine is therefore area denial rather than a tripwire across
+a corridor — a deliberate slice-scope simplification, because interrupting a
+move mid-path would make the `UnitMoved` event's own path a lie.
+
+**Attack payloads (`autoAttack`).** An object carrying one rides its own CT
+timeline at `autoAttack.speed`, exactly as a slow unit does (§6), and at 100 CT
+it shoots the nearest hostile of its **owner's** team inside `range` and (unless
+`requiresLos: false`) line of sight, distance breaking to unit id. It rolls
+accuracy from its own tile under §5. Amounts resolve against the unit that
+deployed it while that unit is still standing — so a turret inherits its
+Machinist's Phys, Mag, and level — and fall back to the caster-less rules (§4)
+once the owner is gone. A destroyed object banks no CT and never fires.
+
+A spawned deployable starts at 0 CT, so it is always slower to its first shot
+than the unit that placed it: setup time is the cost of board presence.
+
 ## 15. Encounter triggers
 
 Triggers are evaluated after every command's effects have settled, and again
@@ -376,11 +461,19 @@ batch, so a trigger fires whenever its condition holds.
 | Condition | Holds when |
 |---|---|
 | `battleStart` | `state.turn === 0` (only during setup) |
-| `turnStart` | `state.turn` equals the named turn |
+| `turnStart` | `state.turn` has **reached or passed** the named turn |
 | `unitDowned` | that unit is down |
 | `objectDestroyed` | that object is destroyed |
 | `unitEntersTiles` | any standing unit (of the named team, if given) is on one of the tiles |
 | `unitHpBelowPercent` | that unit is standing and below the percentage |
+
+**`turnStart` is reaches-or-passes, not equals.** `state.turn` counts
+individual unit turns, and a turn consumed entirely inside `advanceClock` — a
+Stunned unit whose turn the engine opens and closes with no command in
+between — is never seen by trigger evaluation at its own index. Testing for
+equality therefore skipped turns silently. Combined with `once: true`, which is
+how these are authored, the trigger now fires exactly once: at the first
+evaluation at or after that turn index.
 
 A trigger fires at most once per command batch. `once: true` triggers are
 recorded in `state.firedTriggerIds` and never fire again. Evaluation repeats
@@ -390,6 +483,21 @@ Trigger actions go through the same functions commands do — `setPower`,
 `destroyObject`, and unit creation are the identical code paths. `dialogue`
 emits a `DialogueRequested` event and changes nothing; the presentation layer
 owns it. `endBattle` resolves the battle immediately.
+
+| Action | Does |
+|---|---|
+| `dialogue` | emits `DialogueRequested`; changes nothing |
+| `spawnUnits` | creates units through `createBattleUnit`, skipping ids already on the field |
+| `setPower` / `destroyObject` | the same functions commands use |
+| `moveUnit` | teleports a standing unit to `to`. Move, Jump, and path length are ignored — this is authoring — but the tile must be standable and unoccupied, so a script can never stack two units. Emits `UnitForcedMove` and checks contact payloads. |
+| `removeUnit` | takes a unit off the field without downing it: its turn is closed first if it is taking one, its charges are cancelled, and it leaves `state.units` entirely. Emits `UnitRemoved`. |
+| `endBattle` | resolves the battle immediately |
+
+**Triggers run before win and loss.** `settle()` calls `evaluateTriggers` and
+then `evaluateOutcome`, which is what lets a `unitDowned` trigger put a boss's
+last words on screen before the `BattleEnded` that same command causes. Every
+closing beat in the slice depends on it and `tests/core/conditions.test.ts`
+asserts the ordering.
 
 ## 16. Win, loss, and Standing
 
@@ -401,6 +509,7 @@ a turn that both routs the enemy and downs a must-survive unit is a loss.
 | `partyRout` | every player unit is down |
 | `unitDowned` | the named unit is down |
 | `turnLimit` | `state.turn` exceeds the limit |
+| `unitReachesTiles` | a standing unit matching `unitId` and/or `team` is on one of the tiles |
 
 | Win | Met when |
 |---|---|
@@ -408,6 +517,18 @@ a turn that both routs the enemy and downs a must-survive unit is a loss.
 | `defeatUnit` | the named unit is down |
 | `surviveTurns` | `state.turn` reached the number |
 | `reachTiles` | the named unit (or any standing player unit) is on one of the tiles |
+| `all` | every condition in its list is met at the same moment |
+
+`unitReachesTiles` is the pursuit objective: `reachTiles` exists only as a win,
+so "they got away" needed its own polarity. With neither `unitId` nor `team`
+given it watches every standing unit.
+
+`all` is a one-level AND inside the OR that the win list already is — "put down
+every provocateur". Groups do not nest.
+
+**Rout counts units still on the field.** A team with no units at all is not
+routed, so a `removeUnit` trigger that clears the last enemy does *not* win the
+battle; script the `endBattle` alongside it if that is the intent.
 
 **Downing is terminal for the battle.** A unit at 0 HP is out: it stops
 occupying its tile, stops taking turns, loses any charge it had in flight, and
@@ -425,7 +546,8 @@ screen to spend. Kept deliberately dumb: one number for a balance pass to turn.
 Anything that can change an outcome iterates in an explicit order:
 
 - Units: unit id, ascending (`state.units` is kept sorted).
-- Objects: object id, ascending (`state.map.objects` is kept sorted).
+- Objects: object id, ascending (`state.map.objects` is kept sorted), including
+  the CT tiebreak between two deployables ready on the same tick.
 - Tiles: row-major index.
 - Neighbours in pathfinding: north, east, south, west.
 - Statuses and timed mods: id, ascending.
@@ -433,3 +555,27 @@ Anything that can change an outcome iterates in an explicit order:
 - CT ties: higher CT first, then id ascending.
 
 Object key order is never relied on anywhere.
+
+## 18. Teams and neutrality
+
+Three teams exist: `player`, `enemy`, and `neutral`.
+
+**`neutral` is non-combatant.** It is hostile to nobody and nobody is hostile
+to it — `areEnemies` is false in both directions — which is what lets a
+character stand on the map as a body rather than a voice. Consequences, all of
+them falling out of that one rule:
+
+- **Movement.** Both sides walk *through* a neutral the way they walk through
+  an ally, and neither may stop on its tile.
+- **Accuracy.** A neutral caught in an area is never rolled against and never
+  missed, exactly like an ally (§5).
+- **The AI.** Neutrals are absent from the hostile list, from threat
+  estimation, and from crowding. They score zero in `sideValue`, so the search
+  neither hunts them nor protects them; it simply cannot see them.
+- **Outcomes.** `rout` and `partyRout` count `enemy` and `player` units
+  respectively, so a neutral neither prevents a rout nor stands in for a
+  wiped party.
+
+A neutral is still a legal target for a deliberately aimed `enemy`-scoped
+ability — shooting a bystander is a thing a *player* can choose to do, and what
+it costs is a content question, not a rules one.
