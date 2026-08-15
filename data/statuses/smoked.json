@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "smoked",
+  "name": "Smoked",
+  "description": "Eyes streaming in a canister cloud. Cannot pick a target and cannot see one coming.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 2
+  },
+  "hooks": {
+    "statMods": {
+      "phys": -5,
+      "mag": -5,
+      "evade": -8
+    }
+  }
+}

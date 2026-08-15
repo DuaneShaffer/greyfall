@@ -208,6 +208,29 @@ documented its seam. Phase 2 integration items:
   the save/load layer. The reserved `basic-attack` ability id is now
   guarded by a content test.
 
+## Phase 2 findings queue (escalated by workstream agents, 2026-08-15)
+
+Deliberate engine/schema amendments for the post-wave engine pass, from the
+content agent's vocabulary-gap report (full detail in docs/CONTENT_NOTES.md):
+
+1. **Deployables are inert** — spawnObject creates objects with no behavior;
+   turrets don't shoot, mines don't detonate. Needs an AI hook for spawned
+   turret/drone units-or-objects and an authorable payload (onContact /
+   per-turn effects) for mines. Biggest gap; the Machinist kit depends on it.
+2. **No conditional ability gating** — "requires rail underfoot", "requires
+   adjacent powered object". Without it the bible's "Conduit on a dead map
+   is nearly powerless" is flavor, not rules.
+3. **No self-targeting movement effect** — Piston Lunge / Signal Jump can't
+   reposition the caster.
+4. **Consumables are inert** — no use-item command, no consumable inventory
+   slot; consumableEffectBonusPercent unread by core.
+5. Minor: no accuracy stat (blind modeled as stat loss); no on-expiry status
+   cost; reaction trigger vocabulary can't express ally-protection.
+6. **Balance escalation**: TTK collapses with level (HP sub-linear vs phys
+   linear; L1 = 4 hits, L5 = 1). Slice (L1-3) playable; fix is a core
+   formula lever (WEAPON_DAMAGE_DIVISOR scaling or STAT_BASE.hp raise) —
+   assign to the balance-sim workstream with the sim as the measuring tool.
+
 ## Open decisions
 
 - **Retro-PS1 vs. HD-2D shader treatment** — decide once art direction

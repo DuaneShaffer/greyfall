@@ -5,17 +5,47 @@
   "description": "House Watch line soldier. Riot armor, shock maul, and the training to hold a street against a crowd.",
   "prerequisites": {},
   "statCurve": {
-    "hp": { "growth": 11, "multiplierPercent": 120 },
-    "charge": { "growth": 2, "multiplierPercent": 70 },
-    "speed": { "growth": 4, "multiplierPercent": 100 },
-    "phys": { "growth": 8, "multiplierPercent": 115 },
-    "mag": { "growth": 2, "multiplierPercent": 75 }
+    "hp": {
+      "growth": 11,
+      "multiplierPercent": 120
+    },
+    "charge": {
+      "growth": 2,
+      "multiplierPercent": 70
+    },
+    "speed": {
+      "growth": 4,
+      "multiplierPercent": 100
+    },
+    "phys": {
+      "growth": 8,
+      "multiplierPercent": 115
+    },
+    "mag": {
+      "growth": 2,
+      "multiplierPercent": 75
+    }
   },
   "baseMove": 3,
   "baseJump": 2,
   "baseEvade": 8,
   "innateAbilityIds": [],
-  "learnableAbilityIds": ["pin"],
-  "equipTags": ["enforcer-arms", "heavy-armor", "shield"],
+  "learnableAbilityIds": [
+    "pin",
+    "shield-advance",
+    "kettle",
+    "breach-posture",
+    "baton-answer",
+    "hold-the-line",
+    "riot-drill",
+    "press-through"
+  ],
+  "equipTags": [
+    "enforcer-arms",
+    "heavy-armor",
+    "shield",
+    "accessory",
+    "field-issue"
+  ],
   "spriteId": "enforcer"
 }

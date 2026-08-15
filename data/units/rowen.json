@@ -6,7 +6,15 @@
   "portraitId": "rowen",
   "level": 1,
   "jobId": "enforcer",
-  "disposition": { "resolve": 72, "attunement": 38 },
-  "learnedAbilityIds": ["pin"],
-  "equipment": { "weapon": "shock-maul" }
+  "disposition": {
+    "resolve": 72,
+    "attunement": 38
+  },
+  "learnedAbilityIds": [
+    "pin"
+  ],
+  "reactionAbilityId": "baton-answer",
+  "equipment": {
+    "weapon": "shock-maul"
+  }
 }

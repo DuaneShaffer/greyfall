@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "light-hands",
+  "name": "Light Hands",
+  "description": "Nothing you carry rattles, nothing you set makes a sound. The habit outlives the job.",
+  "jobId": "saboteur",
+  "standingCost": 500,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "evade": 6,
+      "speed": 1
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "augmented",
+  "name": "Augmented",
+  "description": "Flux-grafted body, licensed or otherwise. Every graft buys strength on credit and the body settles the account.",
+  "prerequisites": {
+    "conduit": 2,
+    "enforcer": 2
+  },
+  "statCurve": {
+    "hp": {
+      "growth": 10,
+      "multiplierPercent": 110
+    },
+    "charge": {
+      "growth": 6,
+      "multiplierPercent": 105
+    },
+    "speed": {
+      "growth": 3,
+      "multiplierPercent": 100
+    },
+    "phys": {
+      "growth": 10,
+      "multiplierPercent": 115
+    },
+    "mag": {
+      "growth": 4,
+      "multiplierPercent": 85
+    }
+  },
+  "baseMove": 3,
+  "baseJump": 4,
+  "baseEvade": 4,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": [
+    "piston-lunge",
+    "siphon",
+    "overdrive",
+    "rejection",
+    "press-frame",
+    "pain-gate",
+    "graft-tolerance",
+    "hydraulic-stride"
+  ],
+  "equipTags": [
+    "graft-arms",
+    "heavy-armor",
+    "accessory",
+    "field-issue"
+  ],
+  "spriteId": "augmented"
+}

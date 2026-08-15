@@ -1,16 +1,26 @@
-// Browser entry: load content, open the Marshaling Yard with Rowen, mount the
-// battle HUD over the 3D scene, and run the loop.
+// Browser entry: load the chapter, open the between-battle layer, and run the
+// campaign loop — roster, formation, battle, results, roster.
 //
 // This module is the only place Three.js, the DOM, and the core all meet; the
-// controller sees them through the two ports it defines.
+// battle controller and the campaign runner each see them through ports.
 
 import "../ui/styles.css";
-import { createBattle, type BattleResult, type Deployment } from "../core/index.js";
-import type { DialogueLine, Facing, TileCoord } from "../data/index.js";
+import {
+  createBattle,
+  createCampaign,
+  type BattleResult,
+  type Deployment,
+  type GameState,
+} from "../core/index.js";
+import type { DialogueLine, Facing, TileCoord, Unit } from "../data/index.js";
 import { BattleRenderer, attachControls, palette } from "../render/index.js";
-import { BattleHud, el, type BattleHudView, type MenuDef } from "../ui/index.js";
-import { CONTENT, OPENING_ENCOUNTER_ID, PARTY } from "./content.js";
+import { BattleHud, el, noopIntents, type BattleHudView, type MenuDef, type UiIntents } from "../ui/index.js";
+import { BetweenBattleScreens } from "./betweenBattles.js";
+import { CampaignSession } from "./campaign.js";
+import { CampaignRunner, type BattlePort } from "./campaignRunner.js";
+import { CONTENT, UNITS, openingCampaign } from "./content.js";
 import { BattleController, type RendererPort, type UiPort } from "./controller.js";
+import { loadCampaign, saveCampaign } from "./save.js";
 import { stubAiCommand } from "./stubAi.js";
 
 const canvas = document.getElementById("battle-canvas");
@@ -19,37 +29,45 @@ const overlayHost = document.getElementById("ui-root");
 if (!(overlayHost instanceof HTMLElement)) throw new Error("#ui-root missing");
 const status = document.getElementById("debug-status");
 
-const encounter = CONTENT.encounters[OPENING_ENCOUNTER_ID];
-if (encounter === undefined) throw new Error(`missing encounter ${OPENING_ENCOUNTER_ID}`);
-const map = CONTENT.maps[encounter.mapId];
-if (map === undefined) throw new Error(`missing map ${encounter.mapId}`);
-
-// TODO(deployment): the real formation screen picks the party and its tiles.
-// Until it exists the party is auto-placed onto the first deployment tiles.
-const deployment: Deployment[] = PARTY.slice(0, encounter.maxDeployedUnits).map((unit, index) => {
-  const tile = map.deploymentTiles[index] ?? map.deploymentTiles[0];
-  if (tile === undefined) throw new Error(`${map.id} has no deployment tiles`);
-  return { unitId: unit.id, position: tile, facing: "north" };
-});
-
-const battle = createBattle(CONTENT, OPENING_ENCOUNTER_ID, PARTY, deployment);
-
 const setStatus = (text: string): void => {
   if (status) status.textContent = text;
 };
 
-// --- renderer port ----------------------------------------------------------
+// --- chapter ----------------------------------------------------------------
+
+const campaign = openingCampaign();
+const restored = loadCampaign();
+const campaignState =
+  restored.ok && restored.campaign.campaignId === campaign.id
+    ? restored.campaign
+    : createCampaign(campaign, UNITS);
+
+const session = new CampaignSession({
+  campaign,
+  content: CONTENT,
+  state: campaignState,
+  onChange: (next) => {
+    saveCampaign(next);
+    screens.refresh();
+  },
+  onError: (error) => screens.notify(error.message),
+});
+
+// --- battle layer -----------------------------------------------------------
 
 const renderer = new BattleRenderer({
   canvas,
-  onTileHover: (tile) => controller.onTileHover(tile),
-  onTileSelect: (tile) => controller.onTileClick(tile),
+  onTileHover: (tile) => controller?.onTileHover(tile),
+  onTileSelect: (tile) => controller?.onTileClick(tile),
 });
+
+let controller: BattleController | null = null;
+let deploymentTiles: readonly TileCoord[] = [];
 
 const rendererPort: RendererPort = {
   buildScene: (view) => {
     renderer.buildScene(view);
-    renderer.setHighlight("deployment", map.deploymentTiles, palette.highlightDeployment, {
+    renderer.setHighlight("deployment", deploymentTiles, palette.highlightDeployment, {
       opacity: 0.14,
     });
   },
@@ -61,14 +79,22 @@ const rendererPort: RendererPort = {
   isPresentationIdle: () => renderer.queue.isIdle,
 };
 
-// --- overlay chrome ---------------------------------------------------------
-
 const bannerResult = el("p", { class: "gf-end-banner-result" });
 const bannerNote = el("p", { class: "gf-end-banner-note" });
+const bannerContinue = el("button", {
+  class: "gf-button",
+  text: "Continue",
+  attrs: { type: "button" },
+});
 const banner = el("div", {
   class: "gf-end-banner is-hidden",
   attrs: { role: "status", id: "end-banner" },
-  children: [el("div", { class: "gf-end-banner-plate", children: [bannerResult, bannerNote] })],
+  children: [
+    el("div", {
+      class: "gf-end-banner-plate",
+      children: [bannerResult, bannerNote, bannerContinue],
+    }),
+  ],
 });
 
 const FACING_LABELS: Record<Facing, string> = {
@@ -91,6 +117,8 @@ const focusDialogue = (open: boolean): void => {
   }
 };
 
+let onBattleEnd: ((final: GameState) => void) | null = null;
+
 const uiPort: UiPort = {
   // Deliberately not `hud.update`: that would restart an open dialogue's reveal
   // on every refresh. Dialogue is driven through showDialogue instead.
@@ -109,7 +137,7 @@ const uiPort: UiPort = {
     focusDialogue(false);
   },
   showResult: (result: BattleResult) => {
-    bannerResult.textContent = result === "win" ? "Yard Held" : "Line Broken";
+    bannerResult.textContent = result === "win" ? "Field Held" : "Line Broken";
     bannerNote.textContent =
       result === "win" ? "The provocateurs are down." : "The watch detail is spent.";
     banner.classList.toggle("is-loss", result === "loss");
@@ -144,55 +172,140 @@ const uiPort: UiPort = {
   notify: (message) => setStatus(message),
 };
 
-// --- loop -------------------------------------------------------------------
+/**
+ * The HUD is built once and outlives every battle, so its intents forward to
+ * whichever controller currently holds the floor rather than to a fixed one.
+ */
+function forwardingIntents(): UiIntents {
+  const out = {} as UiIntents;
+  for (const name of Object.keys(noopIntents()) as (keyof UiIntents)[]) {
+    (out as unknown as Record<string, (...args: never[]) => void>)[name] = (...args: never[]) => {
+      const target = controller?.intents as
+        | Record<string, ((...args: never[]) => void) | undefined>
+        | undefined;
+      target?.[name]?.(...args);
+    };
+  }
+  return out;
+}
 
-const controller = new BattleController({
-  state: battle.state,
-  events: battle.events,
-  renderer: rendererPort,
-  ui: uiPort,
-  ai: stubAiCommand,
+const hud = new BattleHud({ intents: forwardingIntents() });
+
+const battlePort: BattlePort = {
+  start: (encounterId, party: readonly Unit[], deployment: readonly Deployment[], onEnd) => {
+    const encounter = CONTENT.encounters[encounterId];
+    if (encounter === undefined) throw new Error(`missing encounter ${encounterId}`);
+    const map = CONTENT.maps[encounter.mapId];
+    if (map === undefined) throw new Error(`missing map ${encounter.mapId}`);
+    deploymentTiles = map.deploymentTiles;
+
+    const battle = createBattle(CONTENT, encounterId, party, deployment);
+    onBattleEnd = onEnd;
+    banner.classList.add("is-hidden");
+
+    const next = new BattleController({
+      state: battle.state,
+      events: battle.events,
+      renderer: rendererPort,
+      ui: uiPort,
+      ai: stubAiCommand,
+    });
+    controller = next;
+    hud.el.classList.remove("is-hidden");
+    next.start();
+    console.info(
+      `[greyfall] ${encounter.name}: ${map.width}x${map.depth} tiles, ${map.objects.length} objects`,
+    );
+  },
+  end: () => {
+    hud.actionMenu.menus.detach();
+    hud.dialogue.detach();
+    hud.el.classList.add("is-hidden");
+    banner.classList.add("is-hidden");
+    controller = null;
+    onBattleEnd = null;
+  },
+};
+
+// --- between-battle layer ---------------------------------------------------
+
+const screens: BetweenBattleScreens = new BetweenBattleScreens(session, {
+  beginDeployment: () => void runner.beginDeployment(),
+  confirmDeployment: () => void runner.confirmDeployment(),
+  save: () => {
+    saveCampaign(session.state);
+    screens.notify("Chapter saved.");
+  },
+  load: () => {
+    const loaded = loadCampaign();
+    if (!loaded.ok) {
+      screens.notify(loaded.reason);
+      return;
+    }
+    session.replaceState(loaded.campaign);
+    runner.openRoster();
+  },
 });
 
-const hud = new BattleHud({ intents: controller.intents });
-overlayHost.classList.add("gf-root", "is-overlay");
-overlayHost.append(hud.el, banner);
-hud.attach(document);
+const runner = new CampaignRunner({ session, battle: battlePort, screens });
 
-attachControls(renderer, canvas, { panKeysEnabled: () => !controller.menuOpen });
+bannerContinue.addEventListener("click", () => {
+  const final = controller?.state;
+  const finish = onBattleEnd;
+  if (final === undefined || finish === null) return;
+  onBattleEnd = null;
+  finish(final);
+});
+
+overlayHost.classList.add("gf-root", "is-overlay");
+overlayHost.append(hud.el, banner, screens.el);
+hud.el.classList.add("is-hidden");
+screens.attach(document);
+
+attachControls(renderer, canvas, { panKeysEnabled: () => !(controller?.menuOpen ?? false) });
 renderer.start();
 
 const tileLabel = (tile: TileCoord | null): string => (tile ? `${tile.x},${tile.y}` : "—");
 
+let toastClock = 0;
 renderer.addFrameHook((delta) => {
-  controller.tick(delta);
+  controller?.tick(delta);
   hud.dialogue.tick(delta * 1000);
-  if (controller.phase !== "ended") {
+  toastClock += delta;
+  if (toastClock >= 1) {
+    toastClock = 0;
+    screens.tick();
+  }
+  if (controller !== null && controller.phase !== "ended") {
     setStatus(`${controller.phase} · cursor ${tileLabel(renderer.hoveredTile)}`);
   }
 });
 
 window.addEventListener("keydown", (event) => {
-  if (event.key.toLowerCase() === "x") controller.skipPresentation();
+  if (event.key.toLowerCase() === "x") controller?.skipPresentation();
 });
 
-controller.start();
+runner.start();
 
 /**
- * Debug seam. Agents and humans drive the running battle from the devtools
+ * Debug seam. Agents and humans drive the running chapter from the devtools
  * console (and over CDP) through this handle; nothing in the app reads it.
  */
 declare global {
   interface Window {
     greyfall?: {
-      controller: BattleController;
       renderer: BattleRenderer;
       hud: BattleHud;
+      session: CampaignSession;
+      runner: CampaignRunner;
+      controller: () => BattleController | null;
     };
   }
 }
-window.greyfall = { controller, renderer, hud };
-
-console.info(
-  `[greyfall] ${encounter.name}: ${map.width}x${map.depth} tiles, ${map.objects.length} objects`,
-);
+window.greyfall = {
+  renderer,
+  hud,
+  session,
+  runner,
+  controller: () => controller,
+};

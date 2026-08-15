@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "watch-sergeant",
+  "name": "Watch Sergeant",
+  "spriteId": "enforcer",
+  "level": 3,
+  "jobId": "enforcer",
+  "disposition": {
+    "resolve": 74,
+    "attunement": 38
+  },
+  "learnedAbilityIds": [
+    "pin",
+    "shield-advance",
+    "kettle",
+    "breach-posture"
+  ],
+  "reactionAbilityId": "hold-the-line",
+  "supportAbilityId": "riot-drill",
+  "equipment": {
+    "weapon": "compliance-maul",
+    "shield": "breach-shield",
+    "body": "watch-cuirass",
+    "head": "visored-helm"
+  }
+}

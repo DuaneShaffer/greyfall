@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "ground",
+  "name": "Ground",
+  "description": "Run a shunt from a graft or a housing straight to the deck. Whatever it was holding is yours now.",
+  "jobId": "conduit",
+  "standingCost": 550,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 3,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "object"
+    ]
+  },
+  "chargeCost": 6,
+  "castSpeed": 60,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "grounded",
+      "chance": 80
+    },
+    {
+      "kind": "modifyCharge",
+      "amount": -10,
+      "siphonToActor": true
+    },
+    {
+      "kind": "setPower",
+      "mode": "off"
+    }
+  ]
+}

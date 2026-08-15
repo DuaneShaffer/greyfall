@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "provocateur-torch",
+  "name": "Torch-Hand",
+  "spriteId": "saboteur",
+  "level": 2,
+  "jobId": "saboteur",
+  "disposition": {
+    "resolve": 45,
+    "attunement": 28
+  },
+  "learnedAbilityIds": [
+    "smoke-canister",
+    "shaped-charge",
+    "rig-machinery"
+  ],
+  "movementAbilityId": "catwalk-sense",
+  "equipment": {
+    "weapon": "cutting-torch",
+    "body": "canvas-coat",
+    "head": "dust-hood"
+  }
+}

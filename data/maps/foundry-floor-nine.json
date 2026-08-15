@@ -1,0 +1,1832 @@
+{
+  "schemaVersion": 1,
+  "id": "foundry-floor-nine",
+  "name": "Foundry Floor Nine",
+  "width": 16,
+  "depth": 16,
+  "tiles": [
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 0,
+      "terrain": "void"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    }
+  ],
+  "objects": [
+    {
+      "id": "press-line-north",
+      "kind": "machine",
+      "name": "Blanking Press, Number One",
+      "spriteId": "hydraulic-press",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 6
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 60
+      },
+      "powered": true,
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 2,
+            "y": 5
+          },
+          {
+            "x": 2,
+            "y": 6
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 30
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "press-line-mid",
+      "kind": "machine",
+      "name": "Blanking Press, Number Two",
+      "spriteId": "hydraulic-press",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 8
+        },
+        {
+          "x": 1,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 60
+      },
+      "powered": true,
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 2,
+            "y": 9
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 30
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "press-line-south",
+      "kind": "machine",
+      "name": "Blanking Press, Number Three",
+      "spriteId": "hydraulic-press",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 11
+        },
+        {
+          "x": 1,
+          "y": 12
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 60
+      },
+      "powered": true,
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 12
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 30
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "pour-ladle-tap",
+      "kind": "machine",
+      "name": "Pour Ladle, Tap End",
+      "spriteId": "pour-ladle",
+      "tiles": [
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 80
+      },
+      "powered": true,
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 3
+          },
+          {
+            "x": 8,
+            "y": 3
+          },
+          {
+            "x": 7,
+            "y": 4
+          },
+          {
+            "x": 8,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 16
+            }
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 6,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 1
+          },
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "slag-sluice-south",
+      "kind": "machine",
+      "name": "Slag Sluice, Lower Channel",
+      "spriteId": "slag-sluice",
+      "tiles": [
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 13
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": null,
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 8,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 7,
+            "y": 12
+          },
+          {
+            "x": 8,
+            "y": 12
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 16
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ladle-gantry",
+      "kind": "catwalk",
+      "name": "Ladle Gantry",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 6,
+          "y": 2
+        },
+        {
+          "x": 6,
+          "y": 3
+        },
+        {
+          "x": 6,
+          "y": 4
+        },
+        {
+          "x": 6,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 8
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 4,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": null,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 3
+          },
+          {
+            "x": 6,
+            "y": 4
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 8
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "bay-bridge",
+      "kind": "catwalk",
+      "name": "Melt Bay Bridge",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 5
+        },
+        {
+          "x": 11,
+          "y": 6
+        },
+        {
+          "x": 11,
+          "y": 7
+        },
+        {
+          "x": 11,
+          "y": 8
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 3,
+      "integrity": {
+        "destructible": true,
+        "hp": 45
+      },
+      "powered": null,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 11,
+            "y": 5
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 8
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 20
+            }
+          },
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "charge-lift",
+      "kind": "lift",
+      "name": "Charging Lift",
+      "spriteId": "freight-lift",
+      "tiles": [
+        {
+          "x": 5,
+          "y": 8
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 3,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": true,
+      "operable": null
+    },
+    {
+      "id": "lift-switch",
+      "kind": "switch",
+      "name": "Lift Isolator",
+      "spriteId": "switch-lever",
+      "tiles": [
+        {
+          "x": 4,
+          "y": 10
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": null,
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "charge-lift"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "floor-nine-mains",
+      "kind": "switch",
+      "name": "Floor Nine Mains",
+      "spriteId": "switch-board",
+      "tiles": [
+        {
+          "x": 13,
+          "y": 10
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": null,
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "press-line-north",
+          "press-line-mid",
+          "press-line-south",
+          "pour-ladle-tap"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "slag-cart-north",
+      "kind": "wall",
+      "name": "Slag Cart",
+      "spriteId": "slag-cart",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 6
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "slag-cart-south",
+      "kind": "wall",
+      "name": "Slag Cart",
+      "spriteId": "slag-cart",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "ingot-stack",
+      "kind": "wall",
+      "name": "Ingot Stack",
+      "spriteId": "ingot-stack",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "scrap-hopper-east",
+      "kind": "wall",
+      "name": "Scrap Hopper",
+      "spriteId": "scrap-hopper",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 12
+        },
+        {
+          "x": 12,
+          "y": 12
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "feeder-cell-north",
+      "kind": "cell",
+      "name": "Feeder Cell",
+      "spriteId": "flux-cell",
+      "tiles": [
+        {
+          "x": 12,
+          "y": 3
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 20
+      },
+      "powered": true,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 13,
+            "y": 3
+          },
+          {
+            "x": 12,
+            "y": 2
+          },
+          {
+            "x": 12,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "feeder-cell-south",
+      "kind": "cell",
+      "name": "Feeder Cell",
+      "spriteId": "flux-cell",
+      "tiles": [
+        {
+          "x": 10,
+          "y": 11
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 20
+      },
+      "powered": true,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 10,
+            "y": 10
+          },
+          {
+            "x": 10,
+            "y": 12
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "deploymentTiles": [
+    {
+      "x": 2,
+      "y": 13
+    },
+    {
+      "x": 5,
+      "y": 13
+    },
+    {
+      "x": 6,
+      "y": 13
+    },
+    {
+      "x": 9,
+      "y": 13
+    },
+    {
+      "x": 10,
+      "y": 13
+    },
+    {
+      "x": 12,
+      "y": 13
+    },
+    {
+      "x": 3,
+      "y": 14
+    },
+    {
+      "x": 8,
+      "y": 14
+    },
+    {
+      "x": 12,
+      "y": 14
+    },
+    {
+      "x": 6,
+      "y": 15
+    },
+    {
+      "x": 9,
+      "y": 15
+    }
+  ]
+}

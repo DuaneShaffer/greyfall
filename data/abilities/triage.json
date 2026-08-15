@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "triage",
+  "name": "Triage",
+  "description": "Wash, neutralize, re-dose. Not a cure for anything, just the difference between still working and not.",
+  "jobId": "chemist",
+  "standingCost": 450,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 2,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 4,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "removeStatus",
+      "statusId": "scalded"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "fouled"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "smoked"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "seized"
+    },
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "mag",
+        "power": 3,
+        "attunementScaled": false
+      }
+    }
+  ]
+}

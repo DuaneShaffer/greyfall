@@ -300,15 +300,21 @@ export class BattleController {
       },
       advanceDialogue: noop,
       endDialogue: () => this.endDialogue(),
-      // Progression intents have no core commands yet: there is no
-      // between-battle roster layer in the slice. Deliberately inert.
+      // Progression intents belong to the between-battle layer
+      // (`src/app/campaign.ts`), which owns its own routing. Inert here.
       selectRosterUnit: noop,
       openUnitSheet: noop,
       openLearning: noop,
       openEquipment: noop,
+      openJobs: noop,
       learnAbility: noop,
       equipItem: noop,
       setAbilitySlot: noop,
+      changeJob: noop,
+      setSecondaryJob: noop,
+      beginDeployment: noop,
+      toggleDeployment: noop,
+      confirmDeployment: noop,
       closeScreen: noop,
     };
   }

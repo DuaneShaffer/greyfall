@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "tap-line",
+  "name": "Tap Line",
+  "description": "Open a shunt off the nearest live main and meter it into someone's cells. Perfectly legal with a license nobody has.",
+  "jobId": "conduit",
+  "standingCost": 200,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 3,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 0,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "modifyCharge",
+      "amount": 10
+    }
+  ]
+}

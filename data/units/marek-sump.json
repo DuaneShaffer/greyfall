@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "marek-sump",
+  "name": "Marek Sump",
+  "spriteId": "saboteur",
+  "portraitId": "marek-sump",
+  "level": 2,
+  "jobId": "saboteur",
+  "secondaryJobId": "chemist",
+  "disposition": {
+    "resolve": 44,
+    "attunement": 30
+  },
+  "learnedAbilityIds": [
+    "rig-machinery",
+    "smoke-canister",
+    "shaped-charge"
+  ],
+  "movementAbilityId": "catwalk-sense",
+  "equipment": {
+    "weapon": "pry-bar",
+    "body": "canvas-coat",
+    "head": "dust-hood"
+  }
+}

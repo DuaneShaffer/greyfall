@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "bench-eye",
+  "name": "Bench Eye",
+  "description": "Years of reading a machine by the sound it makes. Applies to machines that are trying to kill you.",
+  "jobId": "machinist",
+  "standingCost": 400,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "mag": 3,
+      "charge": 4
+    }
+  }
+}

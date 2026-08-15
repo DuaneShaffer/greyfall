@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "jory-slate",
+  "name": "Jory Slate",
+  "spriteId": "chemist",
+  "portraitId": "jory-slate",
+  "level": 1,
+  "jobId": "chemist",
+  "disposition": {
+    "resolve": 64,
+    "attunement": 44
+  },
+  "learnedAbilityIds": [
+    "coagulant-jet",
+    "cinder-oil",
+    "triage"
+  ],
+  "supportAbilityId": "bench-grade",
+  "equipment": {
+    "weapon": "dosing-gun",
+    "body": "canvas-coat",
+    "head": "dust-hood"
+  }
+}

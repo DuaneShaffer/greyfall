@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "feedback-shunt",
+  "name": "Feedback Shunt",
+  "description": "The back rig is wired to dump into whatever hits it. Shop hands call it the rude handshake.",
+  "jobId": "machinist",
+  "standingCost": 550,
+  "slot": "reaction",
+  "trigger": "damaged",
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "arc",
+      "amount": {
+        "base": "fixed",
+        "power": 12
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "seized",
+      "chance": 25
+    }
+  ]
+}

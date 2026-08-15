@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "breach-shield",
+  "name": "Breach Shield",
+  "description": "Reinforced door-width slab meant for going first. Nobody carries one anywhere they intend to leave quickly.",
+  "equipTags": [
+    "shield"
+  ],
+  "price": 1000,
+  "slot": "shield",
+  "statMods": {
+    "evade": 18,
+    "hp": 4,
+    "move": -1,
+    "speed": -1
+  }
+}

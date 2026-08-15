@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "orin-vane",
+  "name": "Orin Vane",
+  "spriteId": "augmented",
+  "portraitId": "orin-vane",
+  "level": 2,
+  "jobId": "augmented",
+  "secondaryJobId": "enforcer",
+  "disposition": {
+    "resolve": 66,
+    "attunement": 78
+  },
+  "learnedAbilityIds": [
+    "piston-lunge",
+    "siphon",
+    "overdrive"
+  ],
+  "reactionAbilityId": "pain-gate",
+  "supportAbilityId": "graft-tolerance",
+  "equipment": {
+    "weapon": "graft-fist",
+    "body": "riot-plate",
+    "head": "riot-helm"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "spare-cell",
+  "name": "Spare Cell",
+  "description": "A second cell on the hip, seated and sealed. Everyone who has run dry once carries one.",
+  "equipTags": [
+    "accessory"
+  ],
+  "price": 400,
+  "slot": "accessory",
+  "statMods": {
+    "charge": 10
+  }
+}

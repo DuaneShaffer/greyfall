@@ -862,3 +862,76 @@
   opacity: 0.35;
   pointer-events: none;
 }
+
+/* --- between-battle shell -------------------------------------------------- */
+
+.gf-between {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--gf-gap);
+  padding: 12px;
+  background: var(--gf-soot-900);
+  pointer-events: auto;
+}
+
+.gf-between.is-hidden,
+.gf-battle-hud.is-hidden {
+  display: none;
+}
+
+.gf-between-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--gf-gap);
+  border-bottom: var(--gf-border);
+  padding-bottom: 6px;
+}
+
+.gf-between-brand {
+  color: var(--gf-flux);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-right: auto;
+}
+
+.gf-between-stage {
+  min-height: 0;
+  overflow: auto;
+}
+
+.gf-toast {
+  margin: 0;
+  border: var(--gf-border-strong);
+  padding: 6px var(--gf-pad);
+  color: var(--gf-flux);
+  background: var(--gf-umber-900);
+}
+
+.gf-toast.is-hidden {
+  visibility: hidden;
+}
+
+.gf-deploy-slots {
+  list-style: none;
+  margin: 0 0 var(--gf-gap);
+  padding: 0;
+}
+
+.gf-deploy-slot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gf-gap);
+  border-bottom: 1px solid var(--gf-soot-700);
+  padding: 3px 0;
+}
+
+.gf-deploy-slot.is-empty .gf-field-value {
+  color: var(--gf-text-disabled);
+}
+
+.gf-end-banner-plate .gf-button {
+  margin-top: 12px;
+}

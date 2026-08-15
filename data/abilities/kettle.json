@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "kettle",
+  "name": "Kettle",
+  "description": "Close a cordon around a knot of them and hold it. Nobody in the ring goes anywhere until the ring decides otherwise.",
+  "jobId": "enforcer",
+  "standingCost": 450,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 2,
+      "vertical": 1
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 4,
+  "castSpeed": 40,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "kettled",
+      "chance": 70
+    }
+  ]
+}

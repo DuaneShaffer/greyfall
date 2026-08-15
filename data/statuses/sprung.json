@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "sprung",
+  "name": "Sprung",
+  "description": "Reading the deck plates and the gaps between them. Ground that was in the way is now a route.",
+  "category": "buff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "statMods": {
+      "move": 2,
+      "jump": 1
+    }
+  }
+}

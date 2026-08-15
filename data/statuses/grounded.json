@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "grounded",
+  "name": "Grounded",
+  "description": "Charge shunted to the deck through a shunt strap. Cells will not hold and grafts will not answer.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "preventsReaction": true,
+    "statMods": {
+      "mag": -8,
+      "charge": -12
+    }
+  }
+}

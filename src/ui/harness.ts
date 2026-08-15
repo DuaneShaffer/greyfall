@@ -3,10 +3,12 @@ import { el, replaceChildren } from "./dom.js";
 import { IntentCall, recordingIntents } from "./intents.js";
 import {
   mockActionMenuView,
+  mockDeploymentView,
   mockDialogue,
   mockEnemyView,
   mockEquipmentView,
   mockForecastView,
+  mockJobsView,
   mockLearningView,
   mockPartyView,
   mockTurnOrderView,
@@ -14,16 +16,18 @@ import {
   mockUnitView,
 } from "./mock.js";
 import { BattleHud } from "./battle/hud.js";
+import { DeploymentScreen } from "./screens/deployment.js";
 import { EquipmentScreen } from "./screens/equipment.js";
+import { JobScreen } from "./screens/jobs.js";
 import { LearningScreen } from "./screens/learning.js";
 import { RosterScreen } from "./screens/roster.js";
 import { UnitSheetScreen } from "./screens/unitSheet.js";
-import type { BattleHudView, EquipmentView, LearningView } from "./state.js";
+import type { BattleHudView, DeploymentView, EquipmentView, LearningView } from "./state.js";
 
 // Development harness only — mounts every screen against mock state so the
 // layouts and copy can be eyeballed before core integration. Not shipped.
 
-type ScreenId = "battle" | "roster" | "sheet" | "abilities" | "equipment";
+type ScreenId = "battle" | "roster" | "sheet" | "abilities" | "equipment" | "jobs" | "formation";
 
 interface Screen {
   label: string;
@@ -153,6 +157,41 @@ const equipment = new EquipmentScreen({
 });
 equipment.update(equipmentView);
 
+const jobs = new JobScreen({ intents });
+jobs.update(mockJobsView());
+
+let formationView: DeploymentView = mockDeploymentView();
+const formation = new DeploymentScreen({
+  intents: {
+    ...intents,
+    toggleDeployment: (unitId) => {
+      intents.toggleDeployment(unitId);
+      const slots = formationView.slots.map((slot) => ({ ...slot }));
+      const at = slots.findIndex((slot) => slot.unitId === unitId);
+      const candidate = formationView.candidates.find((entry) => entry.unitId === unitId);
+      if (at !== -1) {
+        slots[at] = { ...slots[at]!, unitId: null, unitName: null };
+      } else {
+        const free = slots.findIndex((slot) => slot.unitId === null);
+        if (free === -1 || !candidate) return;
+        slots[free] = { ...slots[free]!, unitId, unitName: candidate.name };
+      }
+      const assigned = new Set(slots.map((slot) => slot.unitId));
+      formationView = {
+        ...formationView,
+        slots,
+        candidates: formationView.candidates.map((entry) => ({
+          ...entry,
+          assigned: assigned.has(entry.unitId),
+        })),
+        canConfirm: slots.some((slot) => slot.unitId !== null),
+      };
+      formation.update(formationView);
+    },
+  },
+});
+formation.update(formationView);
+
 // --- shell -------------------------------------------------------------------
 
 const screens: Record<ScreenId, Screen> = {
@@ -173,6 +212,8 @@ const screens: Record<ScreenId, Screen> = {
   sheet: { label: "Unit Sheet", el: sheet.el },
   abilities: { label: "Abilities", el: learning.el, handleKey: (event) => void learning.menus.handleKey(event) },
   equipment: { label: "Equipment", el: equipment.el, handleKey: (event) => void equipment.menus.handleKey(event) },
+  jobs: { label: "Jobs", el: jobs.el, handleKey: (event) => void jobs.menus.handleKey(event) },
+  formation: { label: "Formation", el: formation.el, handleKey: (event) => void formation.menus.handleKey(event) },
 };
 
 const stage = el("div", { class: "gf-harness-canvas gf-root" });

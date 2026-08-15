@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "graft-tolerance",
+  "name": "Graft Tolerance",
+  "description": "Scar tissue, seated housings, and a body that has stopped arguing. The brightblood comes later.",
+  "jobId": "augmented",
+  "standingCost": 500,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "hp": 14,
+      "charge": 4
+    }
+  }
+}

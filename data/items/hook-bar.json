@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "hook-bar",
+  "name": "Hook Bar",
+  "description": "Yard-issue coupling bar. Meant for freight hooks; ends up in every yard fight there has ever been.",
+  "equipTags": [
+    "railrunner-gear"
+  ],
+  "price": 360,
+  "slot": "weapon",
+  "power": 9,
+  "damageType": "kinetic",
+  "range": {
+    "min": 1,
+    "max": 2,
+    "vertical": 1
+  },
+  "statMods": {
+    "speed": 1
+  }
+}

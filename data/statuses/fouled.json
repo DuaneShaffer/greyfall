@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "fouled",
+  "name": "Fouled",
+  "description": "Airway and joints gummed by aerosolized compound. Everything takes longer than it should.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "ctMultiplierPercent": 60,
+    "statMods": {
+      "evade": -6
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "pain-gate",
+  "name": "Pain Gate",
+  "description": "The grafts stop reporting damage and start reporting margin. Nothing about the damage has changed.",
+  "jobId": "augmented",
+  "standingCost": 650,
+  "slot": "reaction",
+  "trigger": "hpCritical",
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "overclocked",
+      "chance": 100
+    },
+    {
+      "kind": "modifyDisposition",
+      "stat": "resolve",
+      "amount": -4
+    }
+  ]
+}

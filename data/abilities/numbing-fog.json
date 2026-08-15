@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "numbing-fog",
+  "name": "Numbing Fog",
+  "description": "Aerosolized compound that settles into a working area and stays there. Bought in bulk by nobody who will admit it.",
+  "jobId": "chemist",
+  "standingCost": 550,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 2,
+      "vertical": 2
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 5,
+  "castSpeed": 30,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "fouled",
+      "chance": 80
+    }
+  ]
+}

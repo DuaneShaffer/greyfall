@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "piston-arm",
+  "name": "Piston Arm",
+  "description": "Full-arm graft with a seated ram. Everything it does, it does once and hard, and the shoulder pays.",
+  "equipTags": [
+    "graft-arms"
+  ],
+  "price": 1000,
+  "slot": "weapon",
+  "power": 13,
+  "damageType": "kinetic",
+  "range": {
+    "min": 1,
+    "max": 2,
+    "vertical": 3
+  },
+  "statMods": {
+    "phys": 2,
+    "evade": -2
+  }
+}

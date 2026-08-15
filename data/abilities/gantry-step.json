@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "gantry-step",
+  "name": "Gantry Step",
+  "description": "You built the scaffold, you know which rung takes weight. Hazard plate and open frame are just more floor.",
+  "jobId": "machinist",
+  "standingCost": 450,
+  "slot": "movement",
+  "passive": {
+    "ignoresHazardTiles": true,
+    "statMods": {
+      "jump": 2
+    }
+  }
+}

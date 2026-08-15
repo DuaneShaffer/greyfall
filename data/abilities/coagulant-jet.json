@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "coagulant-jet",
+  "name": "Coagulant Jet",
+  "description": "A measured jet of clotting compound into an open wound. Works on anyone with blood; attunement has no say in it.",
+  "jobId": "chemist",
+  "standingCost": 200,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 3,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 3,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "mag",
+        "power": 6,
+        "attunementScaled": false
+      }
+    }
+  ]
+}

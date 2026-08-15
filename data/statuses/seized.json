@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "seized",
+  "name": "Seized",
+  "description": "Locked up like a dry bearing. The target can walk it off; it cannot work.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 1
+  },
+  "hooks": {
+    "preventsAction": true
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "assay-visor",
+  "name": "Assay Visor",
+  "description": "Graduated lens for reading draw off a live line. Licensed issue; the Underveins copy is worse and cheaper.",
+  "equipTags": [
+    "light-armor"
+  ],
+  "price": 620,
+  "slot": "head",
+  "statMods": {
+    "hp": 4,
+    "mag": 2,
+    "evade": 2
+  }
+}

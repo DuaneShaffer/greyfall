@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "pressure-injector",
+  "name": "Pressure Injector",
+  "description": "Cell-driven and calibrated to the drop. Doses a wound across a yard or a lung across a room.",
+  "equipTags": [
+    "chemist-kit"
+  ],
+  "price": 900,
+  "slot": "weapon",
+  "power": 9,
+  "damageType": "chemical",
+  "range": {
+    "min": 1,
+    "max": 3,
+    "vertical": 2
+  },
+  "statMods": {
+    "mag": 3
+  }
+}

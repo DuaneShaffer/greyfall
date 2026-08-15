@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "counterweight-belt",
+  "name": "Counterweight Belt",
+  "description": "Loading-dock rig that shifts a lift's weight into the hips. Heavy work gets easier; light work gets slower.",
+  "equipTags": [
+    "accessory"
+  ],
+  "price": 500,
+  "slot": "accessory",
+  "statMods": {
+    "phys": 3,
+    "speed": -1
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "press-through",
+  "name": "Press Through",
+  "description": "A crowd is not terrain. Put a shoulder in it and it opens.",
+  "jobId": "enforcer",
+  "standingCost": 500,
+  "slot": "movement",
+  "passive": {
+    "moveThroughEnemies": true,
+    "statMods": {
+      "move": 1
+    }
+  }
+}

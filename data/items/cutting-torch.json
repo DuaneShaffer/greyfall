@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "cutting-torch",
+  "name": "Cutting Torch",
+  "description": "Bottle on the hip, flame at the end of a wand. Cuts a beam in ninety seconds and a man in one.",
+  "equipTags": [
+    "saboteur-kit"
+  ],
+  "price": 880,
+  "slot": "weapon",
+  "power": 11,
+  "damageType": "thermal",
+  "range": {
+    "min": 1,
+    "max": 1,
+    "vertical": 1
+  },
+  "statMods": {
+    "phys": 1
+  }
+}

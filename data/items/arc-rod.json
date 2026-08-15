@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "arc-rod",
+  "name": "Arc Rod",
+  "description": "Assay-stamped rod with a seated cell in the shaft. Holds a draw long enough to matter.",
+  "equipTags": [
+    "conduit-gear"
+  ],
+  "price": 900,
+  "slot": "weapon",
+  "power": 8,
+  "damageType": "arc",
+  "range": {
+    "min": 1,
+    "max": 2,
+    "vertical": 2
+  },
+  "statMods": {
+    "mag": 3,
+    "charge": 2
+  }
+}

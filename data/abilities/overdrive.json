@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "overdrive",
+  "name": "Overdrive",
+  "description": "Open every governor at once. You get faster, you get stronger, and you get further from whoever you were.",
+  "jobId": "augmented",
+  "standingCost": 800,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 1,
+      "vertical": 0
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "self"
+    ]
+  },
+  "chargeCost": 6,
+  "hpCost": 8,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "overclocked",
+      "chance": 100
+    },
+    {
+      "kind": "modifyDisposition",
+      "stat": "attunement",
+      "amount": 6
+    },
+    {
+      "kind": "modifyDisposition",
+      "stat": "resolve",
+      "amount": -6
+    }
+  ]
+}

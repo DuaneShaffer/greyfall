@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "bench-grade",
+  "name": "Bench Grade",
+  "description": "Reagents cut properly, stored properly, and dosed by someone who reads the label. Everything in the satchel goes further.",
+  "jobId": "chemist",
+  "standingCost": 500,
+  "slot": "support",
+  "passive": {
+    "consumableEffectBonusPercent": 50
+  }
+}

@@ -46,12 +46,23 @@ export interface ProgressionIntents {
   openUnitSheet(unitId: string): void;
   openLearning(unitId: string): void;
   openEquipment(unitId: string): void;
+  openJobs(unitId: string): void;
   /** Confirmed spending Standing on an ability. */
   learnAbility(unitId: string, abilityId: string): void;
   /** Confirmed an equipment change; itemId null unequips the slot. */
   equipItem(unitId: string, slot: EquipSlot, itemId: string | null): void;
   /** Assigned a learned passive to its slot. */
   setAbilitySlot(unitId: string, slot: "reaction" | "support" | "movement", abilityId: string | null): void;
+  /** Confirmed a primary job change. */
+  changeJob(unitId: string, jobId: string): void;
+  /** Borrowed a second skillset; jobId null clears it. */
+  setSecondaryJob(unitId: string, jobId: string | null): void;
+  /** Left the roster for the formation screen. */
+  beginDeployment(): void;
+  /** Put a unit on the next free deployment tile, or pull it back off. */
+  toggleDeployment(unitId: string): void;
+  /** Formation locked in; the battle starts. */
+  confirmDeployment(): void;
   closeScreen(): void;
 }
 
@@ -82,9 +93,15 @@ export function noopIntents(): UiIntents {
     openUnitSheet: sink,
     openLearning: sink,
     openEquipment: sink,
+    openJobs: sink,
     learnAbility: sink,
     equipItem: sink,
     setAbilitySlot: sink,
+    changeJob: sink,
+    setSecondaryJob: sink,
+    beginDeployment: sink,
+    toggleDeployment: sink,
+    confirmDeployment: sink,
     closeScreen: sink,
   };
 }

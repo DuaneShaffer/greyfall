@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "caustic-flask",
+  "name": "Caustic Flask",
+  "description": "Refinery scrub concentrate, undiluted. Not intended for this and entirely suited to it.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 280,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "chemical",
+      "amount": {
+        "base": "fixed",
+        "power": 20
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "fouled",
+      "chance": 70
+    }
+  ]
+}

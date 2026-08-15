@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "yard-legs",
+  "name": "Yard Legs",
+  "description": "Twelve-hour shifts on live track. The legs never entirely stop working.",
+  "jobId": "railrunner",
+  "standingCost": 600,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "speed": 1,
+      "evade": 6
+    }
+  }
+}

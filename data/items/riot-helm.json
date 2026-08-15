@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riot-helm",
+  "name": "Riot Helm",
+  "description": "Steel pot with a fixed brow bar. Good against thrown brick, indifferent to everything else.",
+  "equipTags": [
+    "heavy-armor"
+  ],
+  "price": 300,
+  "slot": "head",
+  "statMods": {
+    "hp": 6,
+    "evade": -1
+  }
+}

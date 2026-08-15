@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "stimulant-shot",
+  "name": "Stimulant Shot",
+  "description": "One cartridge, one shift, one very bad evening. The Combine has been striking over these for two years.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 600,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "overclocked",
+      "chance": 100
+    }
+  ]
+}

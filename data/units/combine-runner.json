@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "combine-runner",
+  "name": "Yard Runner",
+  "spriteId": "railrunner",
+  "level": 1,
+  "jobId": "railrunner",
+  "disposition": {
+    "resolve": 52,
+    "attunement": 32
+  },
+  "learnedAbilityIds": [
+    "switch-kick"
+  ],
+  "movementAbilityId": "rail-dash",
+  "equipment": {
+    "weapon": "hook-bar",
+    "body": "canvas-coat"
+  }
+}

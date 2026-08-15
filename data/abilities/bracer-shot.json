@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "bracer-shot",
+  "name": "Bracer Shot",
+  "description": "Stimulant and analgesic in one cartridge. Half an hour of feeling nothing, and a week of paying for it.",
+  "jobId": "chemist",
+  "standingCost": 450,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 2,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 3,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "mods": {
+        "phys": 4,
+        "mag": 4,
+        "evade": 4
+      },
+      "duration": 3
+    }
+  ]
+}

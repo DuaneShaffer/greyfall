@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "smoke-canister",
+  "name": "Smoke Canister",
+  "description": "Rolled underhand into the middle of them. Buys thirty seconds of everyone guessing.",
+  "jobId": "saboteur",
+  "standingCost": 300,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 2,
+      "vertical": 2
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 2,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "smoked",
+      "chance": 85
+    }
+  ]
+}

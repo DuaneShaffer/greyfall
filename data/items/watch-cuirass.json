@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "watch-cuirass",
+  "name": "Watch Cuirass",
+  "description": "Corvane pattern, house mark on the breast. Heavy enough that the wearer is a statement, not a soldier.",
+  "equipTags": [
+    "heavy-armor"
+  ],
+  "price": 1100,
+  "slot": "body",
+  "statMods": {
+    "hp": 20,
+    "evade": -3,
+    "speed": -1
+  }
+}

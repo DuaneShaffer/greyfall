@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "dust-hood",
+  "name": "Dust Hood",
+  "description": "Cloth hood and a cartridge over the mouth. Keeps ash-fall out for about a shift.",
+  "equipTags": [
+    "light-armor"
+  ],
+  "price": 180,
+  "slot": "head",
+  "statMods": {
+    "hp": 3,
+    "evade": 2
+  }
+}

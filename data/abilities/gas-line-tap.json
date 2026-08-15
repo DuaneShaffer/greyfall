@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "gas-line-tap",
+  "name": "Gas Line Tap",
+  "description": "Open a line, wait for the smell to reach the far end, and give it a reason. The Works is plumbed for this whether it likes it or not.",
+  "jobId": "saboteur",
+  "standingCost": 500,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 1,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "line",
+      "length": 3
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile",
+      "object"
+    ]
+  },
+  "chargeCost": 4,
+  "castSpeed": 30,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "thermal",
+      "amount": {
+        "base": "phys",
+        "power": 4
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "scalded",
+      "chance": 70
+    },
+    {
+      "kind": "damageObject",
+      "amount": {
+        "base": "phys",
+        "power": 5
+      }
+    }
+  ]
+}

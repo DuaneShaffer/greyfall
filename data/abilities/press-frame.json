@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "press-frame",
+  "name": "Press Frame",
+  "description": "Both arms, full pressure, straight down. Named for what it does and for the machine that does it better.",
+  "jobId": "augmented",
+  "standingCost": 1000,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 2,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 1,
+      "vertical": 1
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 8,
+  "hpCost": 6,
+  "castSpeed": 30,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "kinetic",
+      "amount": {
+        "base": "weapon",
+        "power": 140
+      }
+    },
+    {
+      "kind": "forceMove",
+      "direction": "push",
+      "distance": 2
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "stunned",
+      "chance": 40
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riot-shield",
+  "name": "Riot Shield",
+  "description": "Curved plate with a full-length grip. The Watch's whole doctrine is a wall of these and patience.",
+  "equipTags": [
+    "shield"
+  ],
+  "price": 450,
+  "slot": "shield",
+  "statMods": {
+    "evade": 12,
+    "move": -1
+  }
+}

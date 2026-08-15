@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "rejection",
+  "name": "Rejection",
+  "description": "The body finally refuses the graft and vents what it was holding. Everyone standing close shares the opinion.",
+  "jobId": "augmented",
+  "standingCost": 700,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 1,
+      "vertical": 0
+    },
+    "area": {
+      "shape": "radius",
+      "size": 1,
+      "vertical": 1
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "self"
+    ]
+  },
+  "chargeCost": 0,
+  "hpCost": 10,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "chemical",
+      "amount": {
+        "base": "maxHpPercent",
+        "power": 12
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "scalded",
+      "chance": 50
+    }
+  ]
+}

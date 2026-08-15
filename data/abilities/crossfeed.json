@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "crossfeed",
+  "name": "Crossfeed",
+  "description": "Jumper off your own cells into somebody else's rig. Whatever they are running, they run it harder for a while.",
+  "jobId": "machinist",
+  "standingCost": 700,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 2,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 7,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "overclocked",
+      "chance": 100
+    }
+  ]
+}

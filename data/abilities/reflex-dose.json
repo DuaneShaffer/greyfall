@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "reflex-dose",
+  "name": "Reflex Dose",
+  "description": "The dose you keep in your off hand for yourself. Every chemist has one and none of them admit how often it gets used.",
+  "jobId": "chemist",
+  "standingCost": 600,
+  "slot": "reaction",
+  "trigger": "hpCritical",
+  "effects": [
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "mag",
+        "power": 6,
+        "attunementScaled": false
+      }
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "scalded"
+    }
+  ]
+}

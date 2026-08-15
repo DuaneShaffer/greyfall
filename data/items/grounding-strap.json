@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "grounding-strap",
+  "name": "Grounding Strap",
+  "description": "Braid from the belt to whatever you are standing on. Bleeds a stray flare into the deck instead of the wearer.",
+  "equipTags": [
+    "accessory"
+  ],
+  "price": 450,
+  "slot": "accessory",
+  "statMods": {
+    "mag": 3,
+    "hp": 4
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "visored-helm",
+  "name": "Visored Helm",
+  "description": "Full visor with a smoked lens. You see less of the street and the street sees none of you.",
+  "equipTags": [
+    "heavy-armor"
+  ],
+  "price": 750,
+  "slot": "head",
+  "statMods": {
+    "hp": 10,
+    "evade": -1,
+    "mag": -1
+  }
+}

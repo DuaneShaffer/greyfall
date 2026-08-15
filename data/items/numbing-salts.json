@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "numbing-salts",
+  "name": "Numbing Salts",
+  "description": "Crushed under the nose of anyone gone slack or blind. Unpleasant enough to be effective.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 220,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "removeStatus",
+      "statusId": "fouled"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "smoked"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "seized"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "kettled",
+  "name": "Kettled",
+  "description": "Penned by a closed line. The target can still swing; it cannot leave the ground it is standing on.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 2
+  },
+  "hooks": {
+    "preventsMove": true
+  }
+}

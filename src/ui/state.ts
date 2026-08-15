@@ -1,4 +1,4 @@
-import type { DamageType, DialogueLine, Disposition, Facing, StatKey, Team } from "../data/index.js";
+import type { DamageType, DialogueLine, Disposition, Facing, StatKey, Team, TileCoord } from "../data/index.js";
 
 // VIEW MODELS — the read side of the UI seam.
 //
@@ -242,6 +242,58 @@ export interface EquipmentView {
   slots: EquipSlotView[];
   /** Candidate items per slot, already filtered to the ones worth listing. */
   options: Record<EquipSlot, ItemOptionView[]>;
+}
+
+export interface JobOptionView {
+  jobId: string;
+  name: string;
+  description: string;
+  /** 1–8; rises with cumulative Standing banked in the job. */
+  jobLevel: number;
+  /** Unspent Standing sitting in this job. */
+  standing: number;
+  isPrimary: boolean;
+  isSecondary: boolean;
+  /** Set when prerequisites are unmet or the pick is nonsense. */
+  lockedReason?: string;
+}
+
+export interface JobsView {
+  unitId: string;
+  unitName: string;
+  primaryJobName: string;
+  secondaryJobName: string | null;
+  options: JobOptionView[];
+}
+
+export interface DeploymentSlotView {
+  tile: TileCoord;
+  unitId: string | null;
+  unitName: string | null;
+}
+
+export interface DeploymentCandidateView {
+  unitId: string;
+  name: string;
+  jobName: string;
+  level: number;
+  hp: number;
+  maxHp: number;
+  assigned: boolean;
+  /** Set when the unit cannot take the field at all. */
+  unavailableReason?: string;
+}
+
+/** The formation screen: who goes in, and onto which deployment tile. */
+export interface DeploymentView {
+  encounterId: string;
+  encounterName: string;
+  maxDeployed: number;
+  candidates: DeploymentCandidateView[];
+  slots: DeploymentSlotView[];
+  canConfirm: boolean;
+  /** Why Deploy is greyed: nobody assigned, roster empty. */
+  blockedReason?: string;
 }
 
 export function formatSigned(value: number): string {

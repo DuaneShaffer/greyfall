@@ -1,11 +1,13 @@
 import type { Ability, DialogueLine, Item, Job, Status, Unit } from "../data/index.js";
 import type {
   ActionMenuView,
+  DeploymentView,
   EquipSlot,
   EquipSlotView,
   EquipmentView,
   ForecastView,
   ItemOptionView,
+  JobsView,
   LearningView,
   PartyView,
   SkillsetView,
@@ -41,8 +43,17 @@ export const enforcerJob: Job = {
   baseJump: 2,
   baseEvade: 8,
   innateAbilityIds: [],
-  learnableAbilityIds: ["pin"],
-  equipTags: ["enforcer-arms", "heavy-armor", "shield"],
+  learnableAbilityIds: [
+    "pin",
+    "shield-advance",
+    "kettle",
+    "breach-posture",
+    "baton-answer",
+    "hold-the-line",
+    "riot-drill",
+    "press-through",
+  ],
+  equipTags: ["enforcer-arms", "heavy-armor", "shield", "accessory", "field-issue"],
   spriteId: "enforcer",
 };
 
@@ -64,8 +75,17 @@ export const conduitJob: Job = {
   baseJump: 1,
   baseEvade: 5,
   innateAbilityIds: [],
-  learnableAbilityIds: ["overload-cell"],
-  equipTags: ["conduit-gear", "light-armor"],
+  learnableAbilityIds: [
+    "arc",
+    "tap-line",
+    "throw-the-breaker",
+    "overload-cell",
+    "ground",
+    "flare",
+    "licensed-draw",
+    "earth-strap",
+  ],
+  equipTags: ["conduit-gear", "light-armor", "accessory", "field-issue"],
   spriteId: "conduit",
 };
 
@@ -144,6 +164,7 @@ export const rowen: Unit = {
   jobId: "enforcer",
   disposition: { resolve: 72, attunement: 38 },
   learnedAbilityIds: ["pin"],
+  reactionAbilityId: "baton-answer",
   equipment: { weapon: "shock-maul" },
 };
 
@@ -158,7 +179,7 @@ export const realContent = {
 
 // --- UI-only scaffolding ----------------------------------------------------
 
-/** Kit that has not been authored as content yet; UI layout fodder only. */
+/** Harness-only kit list: layout fodder, not held to data/items fidelity. */
 export const draftItems: Item[] = [
   shockMaul,
   {
@@ -485,3 +506,71 @@ export const mockDialogue: DialogueLine[] = [
 ];
 
 export const SLOT_LABELS = EQUIP_SLOT_LABELS;
+
+export function mockJobsView(overrides: Partial<JobsView> = {}): JobsView {
+  return {
+    unitId: "rowen",
+    unitName: "Rowen Corvane",
+    primaryJobName: "Enforcer",
+    secondaryJobName: "Conduit",
+    options: [
+      {
+        jobId: "enforcer",
+        name: enforcerJob.name,
+        description: enforcerJob.description,
+        jobLevel: 3,
+        standing: 320,
+        isPrimary: true,
+        isSecondary: false,
+      },
+      {
+        jobId: "conduit",
+        name: conduitJob.name,
+        description: conduitJob.description,
+        jobLevel: 1,
+        standing: 0,
+        isPrimary: false,
+        isSecondary: true,
+      },
+      {
+        jobId: "railrunner",
+        name: "Railrunner",
+        description: "Mobility specialist keyed to rails and machinery.",
+        jobLevel: 1,
+        standing: 0,
+        isPrimary: false,
+        isSecondary: false,
+        lockedReason: "Needs Enforcer level 4 (has 3)",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+export function mockDeploymentView(overrides: Partial<DeploymentView> = {}): DeploymentView {
+  const party = mockPartyView();
+  const assigned = new Set(["rowen", "sella-wick"]);
+  return {
+    encounterId: "e1-marshaling-yard",
+    encounterName: "The Marshaling Yard",
+    maxDeployed: 4,
+    candidates: party.members.map((member) => ({
+      unitId: member.unitId,
+      name: member.name,
+      jobName: member.jobName,
+      level: member.level,
+      hp: member.hp,
+      maxHp: member.maxHp,
+      assigned: assigned.has(member.unitId),
+      ...(member.hp === 0 ? { unavailableReason: "Downed" } : {}),
+    })),
+    slots: [
+      { tile: { x: 0, y: 4 }, unitId: "rowen", unitName: "Rowen Corvane" },
+      { tile: { x: 1, y: 4 }, unitId: "sella-wick", unitName: "Sella Wick" },
+      { tile: { x: 0, y: 5 }, unitId: null, unitName: null },
+      { tile: { x: 1, y: 5 }, unitId: null, unitName: null },
+    ],
+    canConfirm: true,
+    ...overrides,
+  };
+}

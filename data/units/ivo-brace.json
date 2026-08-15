@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "ivo-brace",
+  "name": "Ivo Brace",
+  "spriteId": "machinist",
+  "portraitId": "ivo-brace",
+  "level": 2,
+  "jobId": "machinist",
+  "secondaryJobId": "chemist",
+  "disposition": {
+    "resolve": 48,
+    "attunement": 50
+  },
+  "learnedAbilityIds": [
+    "tripwire-charge",
+    "field-repair",
+    "skitter-drone"
+  ],
+  "movementAbilityId": "gantry-step",
+  "equipment": {
+    "weapon": "spanner",
+    "body": "canvas-coat",
+    "accessory": "spare-cell"
+  }
+}

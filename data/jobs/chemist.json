@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "id": "chemist",
+  "name": "Chemist",
+  "description": "Bench chemistry carried into the yard. Coagulants, accelerants, and aerosolized misery, mixed to order and thrown by hand.",
+  "prerequisites": {},
+  "statCurve": {
+    "hp": {
+      "growth": 8,
+      "multiplierPercent": 100
+    },
+    "charge": {
+      "growth": 6,
+      "multiplierPercent": 100
+    },
+    "speed": {
+      "growth": 4,
+      "multiplierPercent": 100
+    },
+    "phys": {
+      "growth": 5,
+      "multiplierPercent": 90
+    },
+    "mag": {
+      "growth": 6,
+      "multiplierPercent": 105
+    }
+  },
+  "baseMove": 3,
+  "baseJump": 2,
+  "baseEvade": 6,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": [
+    "coagulant-jet",
+    "cinder-oil",
+    "triage",
+    "bracer-shot",
+    "numbing-fog",
+    "field-transfusion",
+    "bench-grade",
+    "reflex-dose"
+  ],
+  "equipTags": [
+    "chemist-kit",
+    "light-armor",
+    "accessory",
+    "field-issue"
+  ],
+  "spriteId": "chemist"
+}

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "cinder-oil",
+  "name": "Cinder Oil",
+  "description": "Thickened accelerant in a thin flask. Sticks to cloth, sticks to skin, and keeps burning after the flame looks out.",
+  "jobId": "chemist",
+  "standingCost": 350,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 1,
+      "vertical": 1
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 4,
+  "castSpeed": 40,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "thermal",
+      "amount": {
+        "base": "mag",
+        "power": 5,
+        "attunementScaled": false
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "scalded",
+      "chance": 75
+    }
+  ]
+}

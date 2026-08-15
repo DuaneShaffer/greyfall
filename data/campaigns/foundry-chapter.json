@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "foundry-chapter",
+  "name": "The Foundry Chapter",
+  "description": "Rowen Corvane's commission into the House Watch, from the Marshaling Yard blockade to the Charterhouse Steps.",
+  "encounterIds": [
+    "e1-marshaling-yard",
+    "e2-foundry-floor-nine",
+    "e3-tallow-row",
+    "e4-refinery-three",
+    "e5-charterhouse-steps"
+  ],
+  "startingRosterUnitIds": [
+    "rowen",
+    "vale",
+    "jory-slate",
+    "ivo-brace",
+    "della-tine",
+    "marek-sump",
+    "orin-vane"
+  ],
+  "startingStandingBonus": 250,
+  "startingInventory": [
+    { "itemId": "riot-shield", "count": 1 },
+    { "itemId": "riot-helm", "count": 1 },
+    { "itemId": "watch-cuirass", "count": 1 },
+    { "itemId": "canvas-coat", "count": 2 },
+    { "itemId": "dust-hood", "count": 2 },
+    { "itemId": "spare-cell", "count": 1 },
+    { "itemId": "grounding-strap", "count": 1 },
+    { "itemId": "coagulant-vial", "count": 3 }
+  ]
+}

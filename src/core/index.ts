@@ -84,6 +84,50 @@ export type { ReachableTile } from "./rules/movement.js";
 
 export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";
 
+export {
+  CAMPAIGN_STATE_VERSION,
+  JOB_LEVEL_THRESHOLDS,
+  MAX_JOB_LEVEL,
+  adjustInventory,
+  cloneCampaign,
+  createCampaign,
+  currentEncounterId,
+  currentStanding,
+  inventoryCount,
+  isCampaignComplete,
+  jobLevel,
+  jobLevelFor,
+  learnedAbilities,
+  rosterUnit,
+  standingToNextJobLevel,
+  unitProgress,
+  jobProgress,
+  type CampaignState,
+  type FallenRecord,
+  type InventoryStack,
+  type JobProgress,
+  type UnitProgress,
+} from "./progression/campaign.js";
+export {
+  applyBattleResults,
+  changeJob,
+  equipItem,
+  learnAbility,
+  setAbilitySlot,
+  setSecondaryJob,
+  unequipItem,
+  unmetPrerequisite,
+  type BattleOutcome,
+  type BattleResultsApplied,
+  type EquipmentSlot,
+  type PassiveSlot,
+  type ProgressionContent,
+  type ProgressionError,
+  type ProgressionErrorCode,
+  type ProgressionResult,
+  type StandingAward,
+} from "./progression/ops.js";
+
 export { standHeight } from "./rules/grid.js";
 export {
   CT_COST_MOVE_AND_ACT,
@@ -97,3 +141,4 @@ export {
   STAT_AMOUNT_DIVISOR,
   WEAPON_DAMAGE_DIVISOR,
 } from "./rules/damage.js";
+export { chooseCommand, enemyCommand, WEIGHTS, type AiWeights } from "./ai/index.js";

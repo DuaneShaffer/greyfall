@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shoulder-off",
+  "name": "Shoulder Off",
+  "description": "Yard reflex: whatever is closing on you gets a shoulder and the wrong footing.",
+  "jobId": "railrunner",
+  "standingCost": 550,
+  "slot": "reaction",
+  "trigger": "targetedByAction",
+  "effects": [
+    {
+      "kind": "forceMove",
+      "direction": "push",
+      "distance": 1
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "fouled",
+      "chance": 30
+    }
+  ]
+}

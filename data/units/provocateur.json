@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "provocateur",
+  "name": "Provocateur",
+  "spriteId": "enforcer",
+  "level": 1,
+  "jobId": "enforcer",
+  "disposition": {
+    "resolve": 40,
+    "attunement": 40
+  },
+  "learnedAbilityIds": [
+    "pin"
+  ],
+  "equipment": {
+    "weapon": "shock-maul"
+  }
+}

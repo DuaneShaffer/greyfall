@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "catwalk-sense",
+  "name": "Catwalk Sense",
+  "description": "You have crawled over enough condemned grating to know which of it holds. It usually holds.",
+  "jobId": "saboteur",
+  "standingCost": 400,
+  "slot": "movement",
+  "passive": {
+    "ignoresHazardTiles": true,
+    "statMods": {
+      "jump": 1,
+      "move": 1
+    }
+  }
+}

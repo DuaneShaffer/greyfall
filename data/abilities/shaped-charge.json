@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "shaped-charge",
+  "name": "Shaped Charge",
+  "description": "Payload cut to throw everything one way. Placed right it takes a wall; placed wrong it takes the placer.",
+  "jobId": "saboteur",
+  "standingCost": 400,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 1,
+      "vertical": 1
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile",
+      "object"
+    ]
+  },
+  "chargeCost": 3,
+  "castSpeed": 35,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "kinetic",
+      "amount": {
+        "base": "phys",
+        "power": 5
+      }
+    },
+    {
+      "kind": "damageObject",
+      "amount": {
+        "base": "phys",
+        "power": 8
+      }
+    }
+  ]
+}

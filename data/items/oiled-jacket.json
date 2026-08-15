@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "oiled-jacket",
+  "name": "Oiled Jacket",
+  "description": "Treated hide with cell loops sewn inside the breast. Sheds slag, sheds rain, sheds a light flare.",
+  "equipTags": [
+    "light-armor"
+  ],
+  "price": 700,
+  "slot": "body",
+  "statMods": {
+    "hp": 9,
+    "evade": 5,
+    "charge": 2
+  }
+}

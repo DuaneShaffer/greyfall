@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "earth-strap",
+  "name": "Earth Strap",
+  "description": "A strap off the belt to whatever the ground is made of. Standing water and live plate stop being reasons to walk around.",
+  "jobId": "conduit",
+  "standingCost": 350,
+  "slot": "movement",
+  "passive": {
+    "ignoresHazardTiles": true,
+    "statMods": {
+      "move": 1
+    }
+  }
+}

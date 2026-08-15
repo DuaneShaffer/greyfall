@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "coagulant-vial",
+  "name": "Coagulant Vial",
+  "description": "Standard field clotting compound. Every satchel in the Compact has three of these in it.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 120,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "fixed",
+        "power": 30
+      }
+    }
+  ]
+}

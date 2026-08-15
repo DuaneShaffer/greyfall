@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riot-drill",
+  "name": "Riot Drill",
+  "description": "Watch conditioning: load-bearing plate, closed stance, and enough hours on the yard to stand in it all day.",
+  "jobId": "enforcer",
+  "standingCost": 400,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "hp": 10,
+      "evade": 4
+    }
+  }
+}

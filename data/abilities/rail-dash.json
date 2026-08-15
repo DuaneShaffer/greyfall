@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "rail-dash",
+  "name": "Rail Dash",
+  "description": "On rail you move the way freight does. Off it you are just quick.",
+  "jobId": "railrunner",
+  "standingCost": 500,
+  "slot": "movement",
+  "passive": {
+    "railMoveMultiplier": 3
+  }
+}

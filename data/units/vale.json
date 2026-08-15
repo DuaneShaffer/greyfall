@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "vale",
+  "name": "Vale Tarn",
+  "spriteId": "conduit",
+  "portraitId": "vale",
+  "level": 1,
+  "jobId": "conduit",
+  "disposition": {
+    "resolve": 50,
+    "attunement": 70
+  },
+  "learnedAbilityIds": [
+    "arc",
+    "tap-line",
+    "throw-the-breaker",
+    "overload-cell"
+  ],
+  "supportAbilityId": "licensed-draw",
+  "equipment": {
+    "weapon": "tap-rod",
+    "body": "canvas-coat",
+    "head": "dust-hood"
+  }
+}

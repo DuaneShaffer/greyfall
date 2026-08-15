@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "running-coupling",
+  "name": "Running Coupling",
+  "description": "Take the hook up the line at speed and let everything on it come with you. This is how freight gets moved and how yards get people killed.",
+  "jobId": "railrunner",
+  "standingCost": 900,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "line",
+      "length": 4
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 6,
+  "castSpeed": 50,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "kinetic",
+      "amount": {
+        "base": "weapon",
+        "power": 130
+      }
+    },
+    {
+      "kind": "forceMove",
+      "direction": "pull",
+      "distance": 2
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "stunned",
+      "chance": 35
+    }
+  ]
+}

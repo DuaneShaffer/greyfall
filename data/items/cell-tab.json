@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "cell-tab",
+  "name": "Cell Tab",
+  "description": "A wafer cell you break against a contact to top off from. Tastes of copper for an hour after.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 260,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "modifyCharge",
+      "amount": 12
+    }
+  ]
+}

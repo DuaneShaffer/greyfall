@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "canvas-coat",
+  "name": "Canvas Coat",
+  "description": "Waxed foundry canvas, elbows patched twice. Half the Works is wearing one right now.",
+  "equipTags": [
+    "light-armor"
+  ],
+  "price": 260,
+  "slot": "body",
+  "statMods": {
+    "hp": 5,
+    "evade": 3
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "hydraulic-stride",
+  "name": "Hydraulic Stride",
+  "description": "Leg grafts geared for load, not for grace. Ledges are a suggestion.",
+  "jobId": "augmented",
+  "standingCost": 450,
+  "slot": "movement",
+  "passive": {
+    "statMods": {
+      "jump": 3,
+      "move": 1
+    }
+  }
+}

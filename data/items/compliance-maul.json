@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "compliance-maul",
+  "name": "Compliance Maul",
+  "description": "Longer haft, heavier head, a second discharge coil. Issued to Watch who have been trusted with a street.",
+  "equipTags": [
+    "enforcer-arms"
+  ],
+  "price": 900,
+  "slot": "weapon",
+  "power": 12,
+  "damageType": "kinetic",
+  "range": {
+    "min": 1,
+    "max": 1,
+    "vertical": 1
+  },
+  "statMods": {
+    "phys": 1
+  }
+}

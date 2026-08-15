@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "watch-enforcer",
+  "name": "Watch Enforcer",
+  "spriteId": "enforcer",
+  "level": 2,
+  "jobId": "enforcer",
+  "disposition": {
+    "resolve": 60,
+    "attunement": 35
+  },
+  "learnedAbilityIds": [
+    "pin"
+  ],
+  "reactionAbilityId": "baton-answer",
+  "equipment": {
+    "weapon": "shock-maul",
+    "shield": "riot-shield",
+    "body": "riot-plate",
+    "head": "riot-helm"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "flux-burn",
+  "name": "Flux Burn",
+  "description": "Raw discharge tracking under the skin. The Assay calls it acute exposure; the yard calls it a bad flare.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "tickDamage": {
+      "damageType": "arc",
+      "amount": 6
+    }
+  }
+}

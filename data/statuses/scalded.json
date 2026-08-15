@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "scalded",
+  "name": "Scalded",
+  "description": "Burning residue clinging to skin and cloth. Keeps working long after the flame is out.",
+  "category": "debuff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "tickDamage": {
+      "damageType": "thermal",
+      "amount": 8
+    }
+  }
+}

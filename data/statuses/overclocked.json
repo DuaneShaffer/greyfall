@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "overclocked",
+  "name": "Overclocked",
+  "description": "Grafts and cells running past rated draw. Faster and harder for as long as the housing holds.",
+  "category": "buff",
+  "duration": {
+    "kind": "turns",
+    "turns": 3
+  },
+  "hooks": {
+    "ctMultiplierPercent": 160,
+    "statMods": {
+      "phys": 4,
+      "evade": -4
+    }
+  }
+}

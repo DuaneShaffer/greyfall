@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "licensed-draw",
+  "name": "Licensed Draw",
+  "description": "Assay-certified draw rate. The paperwork is worthless; the training it certifies is not.",
+  "jobId": "conduit",
+  "standingCost": 450,
+  "slot": "support",
+  "passive": {
+    "statMods": {
+      "charge": 8
+    }
+  }
+}

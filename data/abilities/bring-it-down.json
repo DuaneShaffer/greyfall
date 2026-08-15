@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "bring-it-down",
+  "name": "Bring It Down",
+  "description": "Every structure has four places that matter. This is for the one you can reach.",
+  "jobId": "saboteur",
+  "standingCost": 750,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 3
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "chargeCost": 6,
+  "castSpeed": 25,
+  "effects": [
+    {
+      "kind": "damageObject",
+      "amount": {
+        "base": "phys",
+        "power": 18
+      }
+    }
+  ]
+}

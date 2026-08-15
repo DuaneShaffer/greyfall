@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "combine-hand",
+  "name": "Combine Hand",
+  "spriteId": "chemist",
+  "level": 1,
+  "jobId": "chemist",
+  "disposition": {
+    "resolve": 55,
+    "attunement": 45
+  },
+  "learnedAbilityIds": [
+    "coagulant-jet"
+  ],
+  "equipment": {
+    "weapon": "dosing-gun",
+    "body": "canvas-coat"
+  }
+}

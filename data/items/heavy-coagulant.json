@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "heavy-coagulant",
+  "name": "Heavy Coagulant",
+  "description": "Bench-grade compound at four times the dose. Closes what the standard vial only slows.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 400,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "fixed",
+        "power": 60
+      }
+    }
+  ]
+}

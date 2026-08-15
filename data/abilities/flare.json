@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "id": "flare",
+  "name": "Flare",
+  "description": "Dump every cell you are carrying at once and stand behind the discharge. The Assay files it as an unplanned release event.",
+  "jobId": "conduit",
+  "standingCost": 950,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 2,
+      "max": 5,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "radius",
+      "size": 2,
+      "vertical": 2
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy",
+      "emptyTile",
+      "object"
+    ]
+  },
+  "chargeCost": 12,
+  "castSpeed": 20,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "arc",
+      "amount": {
+        "base": "mag",
+        "power": 14
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "flux-burn",
+      "chance": 60
+    },
+    {
+      "kind": "damageObject",
+      "amount": {
+        "base": "mag",
+        "power": 8
+      }
+    }
+  ]
+}

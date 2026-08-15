@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "baton-answer",
+  "name": "Baton Answer",
+  "description": "Yard name for what the Watch does to whoever swung first. The maul comes back before the arm is down.",
+  "jobId": "enforcer",
+  "standingCost": 500,
+  "slot": "reaction",
+  "trigger": "damaged",
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "kinetic",
+      "amount": {
+        "base": "weapon",
+        "power": 50
+      }
+    }
+  ]
+}

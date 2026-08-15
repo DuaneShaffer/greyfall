@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shop-machinist",
+  "name": "Shop Machinist",
+  "spriteId": "machinist",
+  "level": 2,
+  "jobId": "machinist",
+  "disposition": {
+    "resolve": 46,
+    "attunement": 48
+  },
+  "learnedAbilityIds": [
+    "tripwire-charge",
+    "field-repair"
+  ],
+  "supportAbilityId": "bench-eye",
+  "equipment": {
+    "weapon": "spanner",
+    "body": "canvas-coat",
+    "accessory": "spare-cell"
+  }
+}

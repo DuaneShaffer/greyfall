@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "riot-plate",
+  "name": "Riot Plate",
+  "description": "Layered plate over quilted canvas. Stops a maul, slows everything you do in it.",
+  "equipTags": [
+    "heavy-armor"
+  ],
+  "price": 500,
+  "slot": "body",
+  "statMods": {
+    "hp": 12,
+    "evade": -2
+  }
+}

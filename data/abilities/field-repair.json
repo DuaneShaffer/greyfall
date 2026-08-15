@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "field-repair",
+  "name": "Field Repair",
+  "description": "Shim, re-seat, re-tension. Machines only — a Machinist who tries this on a person is a Machinist with a body to explain.",
+  "jobId": "machinist",
+  "standingCost": 200,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 2,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "chargeCost": 3,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "repairObject",
+      "amount": {
+        "base": "fixed",
+        "power": 20
+      }
+    }
+  ]
+}

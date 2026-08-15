@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "machinist",
+  "name": "Machinist",
+  "description": "Shop hand turned field engineer. Puts frames, wires, and charges on the ground and makes the ground do the fighting.",
+  "prerequisites": {
+    "chemist": 2
+  },
+  "statCurve": {
+    "hp": {
+      "growth": 8,
+      "multiplierPercent": 95
+    },
+    "charge": {
+      "growth": 7,
+      "multiplierPercent": 115
+    },
+    "speed": {
+      "growth": 4,
+      "multiplierPercent": 95
+    },
+    "phys": {
+      "growth": 5,
+      "multiplierPercent": 90
+    },
+    "mag": {
+      "growth": 5,
+      "multiplierPercent": 95
+    }
+  },
+  "baseMove": 3,
+  "baseJump": 2,
+  "baseEvade": 6,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": [
+    "tripwire-charge",
+    "field-repair",
+    "skitter-drone",
+    "sentry-frame",
+    "crossfeed",
+    "feedback-shunt",
+    "bench-eye",
+    "gantry-step"
+  ],
+  "equipTags": [
+    "machinist-tools",
+    "light-armor",
+    "accessory",
+    "field-issue"
+  ],
+  "spriteId": "machinist"
+}

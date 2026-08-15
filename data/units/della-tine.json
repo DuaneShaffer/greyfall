@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "della-tine",
+  "name": "Della Tine",
+  "spriteId": "railrunner",
+  "portraitId": "della-tine",
+  "level": 2,
+  "jobId": "railrunner",
+  "disposition": {
+    "resolve": 58,
+    "attunement": 35
+  },
+  "learnedAbilityIds": [
+    "switch-kick",
+    "coupling-hook",
+    "signal-jump"
+  ],
+  "movementAbilityId": "rail-dash",
+  "equipment": {
+    "weapon": "hook-bar",
+    "body": "canvas-coat",
+    "accessory": "runners-cleats"
+  }
+}

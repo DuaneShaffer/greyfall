@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "watch-conduit",
+  "name": "Watch Conduit",
+  "spriteId": "conduit",
+  "level": 2,
+  "jobId": "conduit",
+  "disposition": {
+    "resolve": 50,
+    "attunement": 68
+  },
+  "learnedAbilityIds": [
+    "arc",
+    "throw-the-breaker",
+    "tap-line"
+  ],
+  "supportAbilityId": "licensed-draw",
+  "equipment": {
+    "weapon": "tap-rod",
+    "body": "canvas-coat",
+    "head": "assay-visor"
+  }
+}

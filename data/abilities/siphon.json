@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "siphon",
+  "name": "Siphon",
+  "description": "Clamp on and draw. Their cells, your grafts; the Assay has a word for this and it is a criminal one.",
+  "jobId": "augmented",
+  "standingCost": 400,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 1,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy"
+    ]
+  },
+  "chargeCost": 0,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "modifyCharge",
+      "amount": -8,
+      "siphonToActor": true
+    },
+    {
+      "kind": "damage",
+      "damageType": "arc",
+      "amount": {
+        "base": "phys",
+        "power": 3
+      }
+    }
+  ]
+}

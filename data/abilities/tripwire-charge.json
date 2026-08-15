@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "tripwire-charge",
+  "name": "Tripwire Charge",
+  "description": "A pressure charge seated in the deck plate. Cheap, quick to lay, and impossible to walk over politely.",
+  "jobId": "machinist",
+  "standingCost": 250,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "emptyTile"
+    ]
+  },
+  "chargeCost": 4,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "spawnObject",
+      "object": "mine",
+      "hp": 8
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "coupling-hook",
+  "name": "Coupling Hook",
+  "description": "The hook is for freight. Freight does not usually object.",
+  "jobId": "railrunner",
+  "standingCost": 400,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 2,
+      "max": 5,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "enemy"
+    ]
+  },
+  "chargeCost": 2,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "kinetic",
+      "amount": {
+        "base": "weapon",
+        "power": 60
+      }
+    },
+    {
+      "kind": "forceMove",
+      "direction": "pull",
+      "distance": 3
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "brake-bar",
+  "name": "Brake Bar",
+  "description": "Long bar with a weighted heel for setting brakes on a rolling car. Reaches further than it looks.",
+  "equipTags": [
+    "railrunner-gear"
+  ],
+  "price": 880,
+  "slot": "weapon",
+  "power": 11,
+  "damageType": "kinetic",
+  "range": {
+    "min": 1,
+    "max": 2,
+    "vertical": 2
+  },
+  "statMods": {
+    "speed": 1,
+    "evade": 2
+  }
+}

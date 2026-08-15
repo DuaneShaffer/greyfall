@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "cinder-flask",
+  "name": "Cinder Flask",
+  "description": "Accelerant in thin glass with a friction cap. Thrown, not poured.",
+  "equipTags": [
+    "field-issue"
+  ],
+  "price": 300,
+  "slot": "consumable",
+  "effects": [
+    {
+      "kind": "damage",
+      "damageType": "thermal",
+      "amount": {
+        "base": "fixed",
+        "power": 25
+      }
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "scalded",
+      "chance": 60
+    }
+  ]
+}

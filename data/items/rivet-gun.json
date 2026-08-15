@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "rivet-gun",
+  "name": "Rivet Gun",
+  "description": "Cell-fed and meant for plate work. Nobody will say in writing what its effective range on a person is.",
+  "equipTags": [
+    "machinist-tools"
+  ],
+  "price": 850,
+  "slot": "weapon",
+  "power": 11,
+  "damageType": "kinetic",
+  "range": {
+    "min": 1,
+    "max": 3,
+    "vertical": 2
+  },
+  "statMods": {
+    "mag": 1
+  }
+}

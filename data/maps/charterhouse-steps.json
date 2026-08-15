@@ -1,0 +1,1716 @@
+{
+  "schemaVersion": 1,
+  "id": "charterhouse-steps",
+  "name": "The Charterhouse Steps",
+  "width": 16,
+  "depth": 18,
+  "tiles": [
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "impassable"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "impassable"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 9,
+      "terrain": "plain"
+    },
+    {
+      "height": 11,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "water"
+    },
+    {
+      "height": 8,
+      "terrain": "water"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 7,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 7,
+      "terrain": "plain"
+    },
+    {
+      "height": 7,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 7,
+      "terrain": "plain"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 8,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 5,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 5,
+      "terrain": "plain"
+    },
+    {
+      "height": 5,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 5,
+      "terrain": "plain"
+    },
+    {
+      "height": 6,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "rough"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "plain"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 4,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "rough"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    }
+  ],
+  "objects": [
+    {
+      "id": "balustrade-court-west",
+      "kind": "wall",
+      "name": "Court Balustrade, West",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-court-east",
+      "kind": "wall",
+      "name": "Court Balustrade, East",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 12,
+          "y": 4
+        },
+        {
+          "x": 13,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 4
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-upper-west",
+      "kind": "wall",
+      "name": "Upper Terrace Balustrade, West",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 2,
+          "y": 7
+        },
+        {
+          "x": 3,
+          "y": 7
+        },
+        {
+          "x": 4,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 7
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-upper-east",
+      "kind": "wall",
+      "name": "Upper Terrace Balustrade, East",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 10,
+          "y": 7
+        },
+        {
+          "x": 11,
+          "y": 7
+        },
+        {
+          "x": 12,
+          "y": 7
+        },
+        {
+          "x": 13,
+          "y": 7
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-mid-west",
+      "kind": "wall",
+      "name": "Middle Terrace Balustrade, West",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 3,
+          "y": 10
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-mid-east",
+      "kind": "wall",
+      "name": "Middle Terrace Balustrade, East",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 12,
+          "y": 10
+        },
+        {
+          "x": 13,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 10
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-lower-west",
+      "kind": "wall",
+      "name": "Lower Terrace Balustrade, West",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "balustrade-lower-east",
+      "kind": "wall",
+      "name": "Lower Terrace Balustrade, East",
+      "spriteId": "balustrade",
+      "tiles": [
+        {
+          "x": 10,
+          "y": 13
+        },
+        {
+          "x": 11,
+          "y": 13
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 13
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "founders-plinth",
+      "kind": "wall",
+      "name": "Founder's Plinth",
+      "spriteId": "statue-plinth",
+      "tiles": [
+        {
+          "x": 7,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 6
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "hedge-planter-west",
+      "kind": "wall",
+      "name": "Box Planter, West",
+      "spriteId": "hedge-planter",
+      "tiles": [
+        {
+          "x": 6,
+          "y": 9
+        },
+        {
+          "x": 7,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 20
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "hedge-planter-east",
+      "kind": "wall",
+      "name": "Box Planter, East",
+      "spriteId": "hedge-planter",
+      "tiles": [
+        {
+          "x": 8,
+          "y": 9
+        },
+        {
+          "x": 9,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 20
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "carriage-block-west",
+      "kind": "wall",
+      "name": "Carriage Block, West",
+      "spriteId": "carriage-block",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 15
+        },
+        {
+          "x": 4,
+          "y": 15
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "carriage-block-east",
+      "kind": "wall",
+      "name": "Carriage Block, East",
+      "spriteId": "carriage-block",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 15
+        },
+        {
+          "x": 12,
+          "y": 15
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "service-lift",
+      "kind": "lift",
+      "name": "Tradesmen's Lift",
+      "spriteId": "freight-lift",
+      "tiles": [
+        {
+          "x": 0,
+          "y": 11
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 3,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": true,
+      "operable": null
+    },
+    {
+      "id": "lift-cutout",
+      "kind": "switch",
+      "name": "Lift Cutout",
+      "spriteId": "switch-lever",
+      "tiles": [
+        {
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": null,
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "service-lift"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lamp-standard-west",
+      "kind": "cell",
+      "name": "Lamp Standard, West",
+      "spriteId": "lamp-standard",
+      "tiles": [
+        {
+          "x": 5,
+          "y": 2
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 24
+      },
+      "powered": true,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 4,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 5,
+            "y": 1
+          },
+          {
+            "x": 5,
+            "y": 3
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "lamp-standard-east",
+      "kind": "cell",
+      "name": "Lamp Standard, East",
+      "spriteId": "lamp-standard",
+      "tiles": [
+        {
+          "x": 10,
+          "y": 2
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 24
+      },
+      "powered": true,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 9,
+            "y": 2
+          },
+          {
+            "x": 11,
+            "y": 2
+          },
+          {
+            "x": 10,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 3
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "deploymentTiles": [
+    {
+      "x": 0,
+      "y": 17
+    },
+    {
+      "x": 2,
+      "y": 17
+    },
+    {
+      "x": 3,
+      "y": 17
+    },
+    {
+      "x": 4,
+      "y": 17
+    },
+    {
+      "x": 6,
+      "y": 17
+    },
+    {
+      "x": 7,
+      "y": 17
+    },
+    {
+      "x": 8,
+      "y": 17
+    },
+    {
+      "x": 9,
+      "y": 17
+    },
+    {
+      "x": 11,
+      "y": 17
+    },
+    {
+      "x": 13,
+      "y": 17
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "railrunner",
+  "name": "Railrunner",
+  "description": "Combine yard hand who works moving freight. Reads rail, hooks, and lifts as a road nobody else can use.",
+  "prerequisites": {
+    "enforcer": 2
+  },
+  "statCurve": {
+    "hp": {
+      "growth": 8,
+      "multiplierPercent": 95
+    },
+    "charge": {
+      "growth": 4,
+      "multiplierPercent": 85
+    },
+    "speed": {
+      "growth": 5,
+      "multiplierPercent": 115
+    },
+    "phys": {
+      "growth": 6,
+      "multiplierPercent": 100
+    },
+    "mag": {
+      "growth": 3,
+      "multiplierPercent": 80
+    }
+  },
+  "baseMove": 5,
+  "baseJump": 3,
+  "baseEvade": 14,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": [
+    "switch-kick",
+    "signal-jump",
+    "undercut",
+    "coupling-hook",
+    "running-coupling",
+    "shoulder-off",
+    "yard-legs",
+    "rail-dash"
+  ],
+  "equipTags": [
+    "railrunner-gear",
+    "light-armor",
+    "accessory",
+    "field-issue"
+  ],
+  "spriteId": "railrunner"
+}

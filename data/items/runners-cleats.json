@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "runners-cleats",
+  "name": "Runner's Cleats",
+  "description": "Studded soles cut for wet rail and greased plate. Yard hands are buried in them.",
+  "equipTags": [
+    "accessory"
+  ],
+  "price": 550,
+  "slot": "accessory",
+  "statMods": {
+    "move": 1,
+    "jump": 1,
+    "evade": 3
+  }
+}

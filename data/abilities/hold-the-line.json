@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "hold-the-line",
+  "name": "Hold the Line",
+  "description": "Someone in the rank goes down and the rank closes over the gap. Drilled until it happens without thinking.",
+  "jobId": "enforcer",
+  "standingCost": 600,
+  "slot": "reaction",
+  "trigger": "allyDowned",
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "braced",
+      "chance": 100
+    },
+    {
+      "kind": "modifyDisposition",
+      "stat": "resolve",
+      "amount": 4
+    }
+  ]
+}

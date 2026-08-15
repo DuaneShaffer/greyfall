@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "field-transfusion",
+  "name": "Field Transfusion",
+  "description": "Line in, pressure up, and a full bench's worth of compound run into one body. It does not work on the dead; nothing does.",
+  "jobId": "chemist",
+  "standingCost": 900,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 2,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "ally",
+      "self"
+    ]
+  },
+  "chargeCost": 8,
+  "castSpeed": 25,
+  "effects": [
+    {
+      "kind": "heal",
+      "amount": {
+        "base": "mag",
+        "power": 12,
+        "attunementScaled": false
+      }
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "flux-burn"
+    },
+    {
+      "kind": "removeStatus",
+      "statusId": "grounded"
+    }
+  ]
+}

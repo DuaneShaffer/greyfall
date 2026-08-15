@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "breach-posture",
+  "name": "Breach Posture",
+  "description": "Weight forward, shield up, feet set. Everything that comes at the front of it goes wide.",
+  "jobId": "enforcer",
+  "standingCost": 300,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 1,
+      "vertical": 0
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "self"
+    ]
+  },
+  "chargeCost": 2,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "applyStatus",
+      "statusId": "braced",
+      "chance": 100
+    }
+  ]
+}

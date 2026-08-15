@@ -81,11 +81,13 @@ export class RosterScreen implements Component<PartyView> {
         { id: "sheet", label: "Unit Sheet" },
         { id: "abilities", label: "Abilities" },
         { id: "equipment", label: "Equipment" },
+        { id: "jobs", label: "Jobs" },
       ],
       onSelect: (entry) => {
         if (entry.id === "sheet") this.intents.openUnitSheet(unitId);
         if (entry.id === "abilities") this.intents.openLearning(unitId);
         if (entry.id === "equipment") this.intents.openEquipment(unitId);
+        if (entry.id === "jobs") this.intents.openJobs(unitId);
       },
     };
   }

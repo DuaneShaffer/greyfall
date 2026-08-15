@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "saboteur",
+  "name": "Saboteur",
+  "description": "Charges, cutting gear, and a working knowledge of what holds a building up. Treats the map as the target.",
+  "prerequisites": {
+    "chemist": 3,
+    "machinist": 2
+  },
+  "statCurve": {
+    "hp": {
+      "growth": 8,
+      "multiplierPercent": 90
+    },
+    "charge": {
+      "growth": 4,
+      "multiplierPercent": 90
+    },
+    "speed": {
+      "growth": 4,
+      "multiplierPercent": 105
+    },
+    "phys": {
+      "growth": 7,
+      "multiplierPercent": 105
+    },
+    "mag": {
+      "growth": 3,
+      "multiplierPercent": 80
+    }
+  },
+  "baseMove": 4,
+  "baseJump": 2,
+  "baseEvade": 10,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": [
+    "rig-machinery",
+    "smoke-canister",
+    "shaped-charge",
+    "gas-line-tap",
+    "bring-it-down",
+    "bring-the-house",
+    "light-hands",
+    "catwalk-sense"
+  ],
+  "equipTags": [
+    "saboteur-kit",
+    "light-armor",
+    "accessory",
+    "field-issue"
+  ],
+  "spriteId": "saboteur"
+}
