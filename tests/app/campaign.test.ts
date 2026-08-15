@@ -111,13 +111,13 @@ function finished(options: {
   return state;
 }
 
-function harness(state?: CampaignState): Harness {
+function harness(state?: CampaignState, content: ContentLibrary = CONTENT): Harness {
   const campaign = chapter();
   const errors: ProgressionError[] = [];
   const saves: CampaignState[] = [];
   const session = new CampaignSession({
     campaign,
-    content: CONTENT,
+    content,
     state: state ?? createCampaign(campaign, UNITS),
     onChange: (next) => void saves.push(next),
     onError: (error) => void errors.push(error),
@@ -330,6 +330,11 @@ describe("CampaignRunner", () => {
   });
 
   it("falls back to replaying the last battle while later encounters are unauthored", () => {
+    const pruned: ContentLibrary = {
+      ...CONTENT,
+      encounters: { [ENCOUNTER_ID]: CONTENT.encounters[ENCOUNTER_ID]! },
+    };
+    h = harness(undefined, pruned);
     h.runner.start();
     h.runner.beginDeployment();
     h.runner.confirmDeployment();
