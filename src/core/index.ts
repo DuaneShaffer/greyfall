@@ -1,0 +1,81 @@
+/**
+ * Greyfall battle core — the headless, deterministic rules engine.
+ *
+ * This module is the entire public surface. Everything downstream (renderer,
+ * UI, AI, simulation harness, tests) builds a battle with {@link createBattle},
+ * changes it only through {@link applyCommand}, animates the returned
+ * {@link BattleEvent} stream, and reads the state through the selectors below.
+ * Nothing outside `src/core` may reach into `GameState` directly.
+ *
+ * The engine has no DOM, no timers, and no wall clock: the same seed and the
+ * same command log always reproduce the same battle.
+ */
+
+export { createBattle, DEFAULT_DEPLOY_FACING, type BattleStart, type Deployment } from "./setup.js";
+export { applyCommand } from "./commands/apply.js";
+
+export type {
+  Command,
+  CommandError,
+  CommandErrorCode,
+  CommandKind,
+  CommandResult,
+} from "./commands/types.js";
+export type { BattleEvent, BattleEventType } from "./events/types.js";
+
+export type {
+  ActionAbility,
+  ActiveStatus,
+  ActiveTurn,
+  BattleContent,
+  BattleResult,
+  BattleUnit,
+  ChargedAction,
+  GameState,
+  MapState,
+  MovementAbility,
+  ObjectRuntime,
+  ReactionAbility,
+  SupportAbility,
+  TargetRef,
+  TempStatMod,
+  WeaponItem,
+} from "./state/types.js";
+export type { ContentLibrary } from "./state/content.js";
+export { BASIC_ATTACK_ID } from "./state/content.js";
+export type { RngState } from "./rng/mulberry32.js";
+
+export {
+  activeUnit,
+  affectedTiles,
+  availableAbilities,
+  forecast,
+  getObject,
+  getUnit,
+  lineOfSight,
+  reachableTiles,
+  targetableTiles,
+  turnOrderPreview,
+  unitMaxCharge,
+  unitMaxHp,
+  unitStats,
+  type ForecastEntry,
+  type TurnOrderEntry,
+} from "./selectors.js";
+export type { ReachableTile } from "./rules/movement.js";
+
+export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";
+
+export { standHeight } from "./rules/grid.js";
+export {
+  CT_COST_MOVE_AND_ACT,
+  CT_COST_NEITHER,
+  CT_COST_SINGLE,
+  CT_TURN_THRESHOLD,
+} from "./rules/turn.js";
+export { STANDING_PER_ACTION } from "./rules/abilities.js";
+export {
+  MIN_HIT_CHANCE,
+  STAT_AMOUNT_DIVISOR,
+  WEAPON_DAMAGE_DIVISOR,
+} from "./rules/damage.js";

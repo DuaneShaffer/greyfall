@@ -66,6 +66,10 @@ function expectUnitRefs(unit: Unit, context: string): void {
 }
 
 describe("content cross-references", () => {
+  it("no ability claims the engine-reserved basic-attack id", () => {
+    expect(abilities.has("basic-attack")).toBe(false);
+  });
+
   it("abilities reference existing jobs and statuses", () => {
     for (const ability of abilities.values()) {
       expect(jobs.has(ability.jobId), `${ability.id}: unknown job ${ability.jobId}`).toBe(true);

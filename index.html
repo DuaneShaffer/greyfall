@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Greyfall — battlefield renderer</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: dark;
+        --soot: #2b2a28;
+        --amber: #f0a02c;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--soot);
+        font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: #d8d2c6;
+        overflow: hidden;
+      }
+      #viewport {
+        position: fixed;
+        inset: 0;
+      }
+      #viewport canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        outline: none;
+      }
+      /* Dev scaffolding only — the real HUD is src/ui's (DOM overlay). */
+      #debug-legend {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        padding: 8px 10px;
+        background: rgba(20, 19, 18, 0.72);
+        border: 1px solid rgba(240, 160, 44, 0.35);
+        border-radius: 3px;
+        pointer-events: none;
+        white-space: pre;
+      }
+      #debug-legend b {
+        color: var(--amber);
+        font-weight: 600;
+      }
+      #debug-status {
+        position: fixed;
+        right: 12px;
+        top: 12px;
+        padding: 6px 9px;
+        background: rgba(20, 19, 18, 0.72);
+        border: 1px solid rgba(216, 210, 198, 0.2);
+        border-radius: 3px;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="viewport"><canvas id="battle-canvas"></canvas></div>
+    <div id="debug-legend"><b>Q/E</b> orbit   <b>wheel</b> zoom   <b>WASD</b> pan   <b>click</b> select tile
+<b>P</b> play presentation demo   <b>X</b> skip   <b>R</b> rebuild from snapshot</div>
+    <div id="debug-status">loading…</div>
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
+</html>

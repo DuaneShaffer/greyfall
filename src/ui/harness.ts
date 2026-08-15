@@ -1,0 +1,229 @@
+import "./styles.css";
+import { el, replaceChildren } from "./dom.js";
+import { IntentCall, recordingIntents } from "./intents.js";
+import {
+  mockActionMenuView,
+  mockDialogue,
+  mockEnemyView,
+  mockEquipmentView,
+  mockForecastView,
+  mockLearningView,
+  mockPartyView,
+  mockTurnOrderView,
+  mockUnitSheetView,
+  mockUnitView,
+} from "./mock.js";
+import { BattleHud } from "./battle/hud.js";
+import { EquipmentScreen } from "./screens/equipment.js";
+import { LearningScreen } from "./screens/learning.js";
+import { RosterScreen } from "./screens/roster.js";
+import { UnitSheetScreen } from "./screens/unitSheet.js";
+import type { BattleHudView, EquipmentView, LearningView } from "./state.js";
+
+// Development harness only — mounts every screen against mock state so the
+// layouts and copy can be eyeballed before core integration. Not shipped.
+
+type ScreenId = "battle" | "roster" | "sheet" | "abilities" | "equipment";
+
+interface Screen {
+  label: string;
+  el: HTMLElement;
+  handleKey?: (event: KeyboardEvent) => void;
+  tick?: (deltaMs: number) => void;
+}
+
+const log: IntentCall[] = [];
+const logList = el("ol");
+const { intents } = recordingIntents((call) => {
+  log.unshift(call);
+  log.length = Math.min(log.length, 40);
+  replaceChildren(
+    logList,
+    log.map((entry) =>
+      el("li", {
+        children: [
+          el("span", { class: "gf-log-name", text: entry.name }),
+          ` ${entry.args.map((arg) => JSON.stringify(arg)).join(", ")}`,
+        ],
+      }),
+    ),
+  );
+});
+
+// --- battle -----------------------------------------------------------------
+
+const battleView: BattleHudView = {
+  action: mockActionMenuView(),
+  inspected: mockUnitView(),
+  turnOrder: mockTurnOrderView(),
+  forecast: null,
+  dialogue: mockDialogue,
+};
+
+const hud = new BattleHud({
+  intents: {
+    ...intents,
+    inspectUnit: (unitId) => {
+      intents.inspectUnit(unitId);
+      battleView.inspected = unitId === "provocateur-a" ? mockEnemyView() : mockUnitView();
+      hud.status.update(battleView.inspected);
+    },
+    selectAbility: (unitId, abilityId) => {
+      intents.selectAbility(unitId, abilityId);
+      hud.forecast.update(previewFor(abilityId));
+    },
+  },
+  onAbilityPreview: (abilityId) => hud.forecast.update(abilityId === null ? null : previewFor(abilityId)),
+});
+
+function previewFor(abilityId: string) {
+  if (abilityId === "overload-cell") {
+    return mockForecastView({
+      abilityId,
+      abilityName: "Overload Cell",
+      chargeCost: 8,
+      castSpeed: 25,
+      targets: [
+        {
+          unitId: "yard-cell",
+          name: "Yard Cell",
+          hitChancePercent: 100,
+          damage: { kind: "damage", min: 38, max: 46, damageType: "arc" },
+          statuses: [],
+          relativeFacing: null,
+          heightAdvantage: 0,
+        },
+      ],
+    });
+  }
+  return mockForecastView();
+}
+
+hud.update(battleView);
+
+// --- between-battle screens --------------------------------------------------
+
+const roster = new RosterScreen({ intents });
+roster.update(mockPartyView());
+
+const sheet = new UnitSheetScreen();
+sheet.update(mockUnitSheetView());
+
+let learningView: LearningView = mockLearningView({ standing: 320 });
+const learning = new LearningScreen({
+  intents: {
+    ...intents,
+    learnAbility: (unitId, abilityId) => {
+      intents.learnAbility(unitId, abilityId);
+      const entry = learningView.entries.find((e) => e.abilityId === abilityId);
+      if (!entry || entry.learned || entry.standingCost > learningView.standing) return;
+      learningView = {
+        ...learningView,
+        standing: learningView.standing - entry.standingCost,
+        entries: learningView.entries.map((e) => (e.abilityId === abilityId ? { ...e, learned: true } : e)),
+      };
+      learning.update(learningView);
+    },
+  },
+});
+learning.update(learningView);
+
+let equipmentView: EquipmentView = mockEquipmentView();
+const equipment = new EquipmentScreen({
+  intents: {
+    ...intents,
+    equipItem: (unitId, slot, itemId) => {
+      intents.equipItem(unitId, slot, itemId);
+      const option = equipmentView.options[slot]?.find((o) => o.itemId === itemId);
+      equipmentView = {
+        ...equipmentView,
+        slots: equipmentView.slots.map((s) =>
+          s.slot === slot
+            ? { ...s, itemId, itemName: option?.name ?? null, summary: option?.summary ?? "Empty" }
+            : s,
+        ),
+        options: {
+          ...equipmentView.options,
+          [slot]: (equipmentView.options[slot] ?? []).map((o) => ({ ...o, equipped: o.itemId === itemId })),
+        },
+      };
+      equipment.update(equipmentView);
+    },
+  },
+});
+equipment.update(equipmentView);
+
+// --- shell -------------------------------------------------------------------
+
+const screens: Record<ScreenId, Screen> = {
+  battle: {
+    label: "Battle HUD",
+    el: hud.el,
+    handleKey: (event) => {
+      if (hud.dialogue.isOpen && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        hud.dialogue.advance();
+        return;
+      }
+      if (hud.actionMenu.menus.handleKey(event)) event.preventDefault();
+    },
+    tick: (delta) => hud.dialogue.tick(delta),
+  },
+  roster: { label: "Roster", el: roster.el, handleKey: (event) => void roster.menus.handleKey(event) },
+  sheet: { label: "Unit Sheet", el: sheet.el },
+  abilities: { label: "Abilities", el: learning.el, handleKey: (event) => void learning.menus.handleKey(event) },
+  equipment: { label: "Equipment", el: equipment.el, handleKey: (event) => void equipment.menus.handleKey(event) },
+};
+
+const stage = el("div", { class: "gf-harness-canvas gf-root" });
+const tabs = el("div", { class: "gf-harness-bar", children: [el("span", { class: "gf-harness-brand", text: "Greyfall UI" })] });
+let current: ScreenId = "battle";
+
+function show(id: ScreenId): void {
+  current = id;
+  replaceChildren(stage, [screens[id].el]);
+  for (const button of tabs.querySelectorAll("button")) {
+    button.classList.toggle("is-active", button.dataset["screen"] === id);
+  }
+}
+
+for (const [id, screen] of Object.entries(screens) as [ScreenId, Screen][]) {
+  const button = el("button", {
+    class: "gf-harness-tab",
+    text: screen.label,
+    data: { screen: id },
+    attrs: { type: "button" },
+  });
+  button.addEventListener("click", () => show(id));
+  tabs.appendChild(button);
+}
+
+document.addEventListener("keydown", (event) => screens[current].handleKey?.(event));
+
+const root = el("div", {
+  class: "gf-harness",
+  children: [
+    tabs,
+    el("div", {
+      class: "gf-harness-stage",
+      children: [
+        stage,
+        el("aside", {
+          class: "gf-harness-log",
+          children: [el("h2", { text: "Intents" }), logList],
+        }),
+      ],
+    }),
+  ],
+});
+
+document.body.appendChild(root);
+show("battle");
+
+let last = performance.now();
+function frame(now: number): void {
+  screens[current].tick?.(now - last);
+  last = now;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);

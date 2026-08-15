@@ -185,6 +185,29 @@ Scope is a vertical slice, not a campaign:
   frame counts frozen in the art-direction doc so real assets drop in without
   code changes.
 
+## Phase 1 status (2026-08-15)
+
+Complete and green (220 tests, tsc clean): battle core (`src/core`,
+`docs/COMBAT_RULES.md`), renderer (`src/render`, `src/app`), UI framework
+(`src/ui`, `ui-harness.html`), art direction (`src/art`,
+`docs/ART_DIRECTION.md`). Built deliberately unintegrated — each workstream
+documented its seam. Phase 2 integration items:
+
+- Wire the app: core events → `render/adapter.ts` (`toRenderEvents`,
+  `viewModelFromGameState`); UI intents → core commands; UI view models from
+  core selectors; add `vite.config.ts` with `ui-harness.html` as a dev input.
+- Replace `src/render/palette.ts` stopgap with `src/art/palette.ts`
+  (migration table in ART_DIRECTION.md §10); renderer placeholder sprites →
+  `src/art/placeholders.ts` shape data.
+- Deliberate schema amendments from core-agent friction log: add `mine` and
+  `drone` to `MapObjectKind` (engine currently maps both to `machine`); an
+  explicit effect target-scope field if an ability ever needs to hit units
+  and objects in one area; a status-resistance hook if Resolve/Attunement
+  should modify status chance (COMBAT_RULES §8 documents the flat-chance
+  simplification); decide whether `data/units/` joins `ContentLibrary` for
+  the save/load layer. The reserved `basic-attack` ability id is now
+  guarded by a content test.
+
 ## Open decisions
 
 - **Retro-PS1 vs. HD-2D shader treatment** — decide once art direction
