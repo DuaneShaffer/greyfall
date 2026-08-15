@@ -19,6 +19,8 @@ export const MapObjectKind = z.enum([
   "catwalk",
   "lift",
   "turret",
+  "mine",
+  "drone",
 ]);
 export type MapObjectKind = z.infer<typeof MapObjectKind>;
 

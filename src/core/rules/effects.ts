@@ -37,9 +37,8 @@ export const SPAWNED_OBJECT_SHAPES: Readonly<
   Record<"turret" | "mine" | "drone", { kind: MapObjectKind; blocksMovement: boolean }>
 > = {
   turret: { kind: "turret", blocksMovement: true },
-  // `mine` and `drone` have no MapObjectKind of their own; both map to machine.
-  mine: { kind: "machine", blocksMovement: false },
-  drone: { kind: "machine", blocksMovement: true },
+  mine: { kind: "mine", blocksMovement: false },
+  drone: { kind: "drone", blocksMovement: true },
 };
 
 export interface EffectTargets {
