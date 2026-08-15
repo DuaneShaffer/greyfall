@@ -230,6 +230,28 @@ content agent's vocabulary-gap report (full detail in docs/CONTENT_NOTES.md):
    linear; L1 = 4 hits, L5 = 1). Slice (L1-3) playable; fix is a core
    formula lever (WEAPON_DAMAGE_DIVISOR scaling or STAT_BASE.hp raise) —
    assign to the balance-sim workstream with the sim as the measuring tool.
+   Bites concretely in e5: Aldric one-shots a L3 Conduit.
+
+From the encounter agent (full detail in docs/ENCOUNTER_NOTES.md):
+
+7. **`turnStart` trigger evaluation bug** — `state.turn` increments per unit
+   turn (not per round) and the condition uses `===`; a turn index consumed
+   entirely inside advanceClock never gets trigger evaluation, so
+   `turnStart: n` can silently skip. Real core bug; e4 works around it with
+   a widened tile trigger. Also add a regression test for
+   trigger-before-outcome ordering in settle(), which every closing-dialogue
+   beat depends on.
+8. Trigger vocabulary: `moveUnit`/`removeUnit` actions (Aldric's scripted
+   withdrawal is inexpressible), a unit-reaches-tiles LOSS condition (enemy
+   escape), unit-targeting trigger actions, persistent flags,
+   entered-vs-present semantics for unitEntersTiles.
+9. **Neutral team is hostile to both sides** in grid.ts and ai/context.ts —
+   blocks non-combatant placement (Jory, Quill are voices only, contra the
+   bible). Neutral should be non-hostile, AI-ignored, non-blocking to allies.
+10. Win-condition combinators (AND groups) for "defeat all provocateurs".
+11. e1 polish queue: provocateurs should demonstrably fire first (premise is
+    only asserted); rail-showcase triggers; Maren placement; consider
+    unitDowned:rowen loss to establish stakes at battle 1.
 
 ## Open decisions
 

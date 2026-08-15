@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 1,
+  "id": "e5-charterhouse-steps",
+  "name": "The Charterhouse Steps",
+  "mapId": "charterhouse-steps",
+  "rngSeed": 1005,
+  "maxDeployedUnits": 5,
+  "enemies": [
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "aldric",
+        "name": "Aldric Corvane",
+        "spriteId": "enforcer",
+        "portraitId": "aldric",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 84, "attunement": 28 },
+        "learnedAbilityIds": ["pin", "shield-advance", "breach-posture", "kettle"],
+        "reactionAbilityId": "hold-the-line",
+        "supportAbilityId": "riot-drill",
+        "movementAbilityId": "press-through",
+        "equipment": {
+          "weapon": "compliance-maul",
+          "shield": "breach-shield",
+          "body": "watch-cuirass",
+          "head": "visored-helm",
+          "accessory": "counterweight-belt"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 8, "y": 7 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-sergeant-steps",
+        "name": "Watch Sergeant",
+        "spriteId": "enforcer",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 78, "attunement": 34 },
+        "learnedAbilityIds": ["pin", "shield-advance", "kettle", "breach-posture"],
+        "reactionAbilityId": "hold-the-line",
+        "supportAbilityId": "riot-drill",
+        "equipment": {
+          "weapon": "compliance-maul",
+          "shield": "breach-shield",
+          "body": "watch-cuirass",
+          "head": "visored-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 6, "y": 7 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-conduit-upper",
+        "name": "Watch Conduit",
+        "spriteId": "conduit",
+        "level": 3,
+        "jobId": "conduit",
+        "disposition": { "resolve": 54, "attunement": 72 },
+        "learnedAbilityIds": ["arc", "ground", "throw-the-breaker", "flare"],
+        "supportAbilityId": "licensed-draw",
+        "movementAbilityId": "earth-strap",
+        "equipment": {
+          "weapon": "arc-rod",
+          "body": "oiled-jacket",
+          "head": "assay-visor",
+          "accessory": "grounding-strap"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 9, "y": 7 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-mid-west",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 64, "attunement": 33 },
+        "learnedAbilityIds": ["pin", "shield-advance", "breach-posture"],
+        "reactionAbilityId": "baton-answer",
+        "supportAbilityId": "riot-drill",
+        "equipment": {
+          "weapon": "compliance-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 5, "y": 10 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-mid-east",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 64, "attunement": 33 },
+        "learnedAbilityIds": ["pin", "shield-advance", "breach-posture"],
+        "reactionAbilityId": "baton-answer",
+        "supportAbilityId": "riot-drill",
+        "equipment": {
+          "weapon": "compliance-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 10, "y": 10 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-screen",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 62, "attunement": 33 },
+        "learnedAbilityIds": ["pin", "shield-advance"],
+        "reactionAbilityId": "baton-answer",
+        "equipment": {
+          "weapon": "shock-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 7, "y": 13 },
+      "facing": "south"
+    }
+  ],
+  "winConditions": [{ "kind": "defeatUnit", "unitId": "aldric" }],
+  "lossConditions": [
+    { "kind": "partyRout" },
+    { "kind": "unitDowned", "unitId": "rowen" }
+  ],
+  "triggers": [
+    {
+      "id": "the-steps-are-closed",
+      "when": { "kind": "battleStart" },
+      "once": true,
+      "actions": [
+        { "kind": "setPower", "objectId": "service-lift", "powered": false },
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Watch Sergeant",
+              "text": "The steps are closed, ma'am. The tradesmen's lift is cut. Turn around in the court."
+            },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "Let her climb. Whatever she has brought, she can carry it up herself."
+            },
+            { "speaker": "Rowen Corvane", "text": "Four terraces. He wants it slow." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terrace-one",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 0, "y": 13 },
+          { "x": 1, "y": 13 },
+          { "x": 6, "y": 13 },
+          { "x": 7, "y": 13 },
+          { "x": 8, "y": 13 },
+          { "x": 9, "y": 13 },
+          { "x": 14, "y": 13 },
+          { "x": 15, "y": 13 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Watch Sergeant", "text": "First terrace lost. Falling back to the planters." },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "Nobody fires until she is inside the balustrade line. I want her heard before she is stopped."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terrace-two-the-proof",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 0, "y": 10 },
+          { "x": 4, "y": 10 },
+          { "x": 5, "y": 10 },
+          { "x": 6, "y": 10 },
+          { "x": 7, "y": 10 },
+          { "x": 8, "y": 10 },
+          { "x": 9, "y": 10 },
+          { "x": 10, "y": 10 },
+          { "x": 11, "y": 10 },
+          { "x": 15, "y": 10 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Corvane requisition seals. On the charges that took four hands off Tallow Row. Your docket number, Aldric, and your yard."
+            },
+            { "speaker": "Aldric Corvane", "text": "Yes." },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "You expected me to lie about paperwork. It is a seam claim, Rowen. The Combine had to be a danger before the Council would let us take it. So it was made one."
+            },
+            { "speaker": "Rowen Corvane", "text": "You had them fire on their own line." },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "I had it done. Where a thing is signed is not where it happens. That is the whole use of signing."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aldric-to-the-court",
+      "when": { "kind": "unitHpBelowPercent", "unitId": "aldric", "percent": 55 },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Aldric Corvane", "text": "Up to the court. Reserve to the lamp line." },
+            { "speaker": "Watch Sergeant", "text": "Sir." },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "You will have to do it on the top step, Rowen. In front of the house."
+            }
+          ]
+        },
+        {
+          "kind": "spawnUnits",
+          "units": [
+            {
+              "unit": {
+                "schemaVersion": 1,
+                "id": "watch-enforcer-court-west",
+                "name": "Watch Enforcer",
+                "spriteId": "enforcer",
+                "level": 3,
+                "jobId": "enforcer",
+                "disposition": { "resolve": 66, "attunement": 32 },
+                "learnedAbilityIds": ["pin", "shield-advance", "breach-posture"],
+                "reactionAbilityId": "baton-answer",
+                "supportAbilityId": "riot-drill",
+                "equipment": {
+                  "weapon": "compliance-maul",
+                  "shield": "breach-shield",
+                  "body": "watch-cuirass",
+                  "head": "riot-helm"
+                }
+              },
+              "team": "enemy",
+              "position": { "x": 6, "y": 2 },
+              "facing": "south"
+            },
+            {
+              "unit": {
+                "schemaVersion": 1,
+                "id": "watch-conduit-court",
+                "name": "Watch Conduit",
+                "spriteId": "conduit",
+                "level": 3,
+                "jobId": "conduit",
+                "disposition": { "resolve": 52, "attunement": 70 },
+                "learnedAbilityIds": ["arc", "overload-cell", "tap-line"],
+                "supportAbilityId": "licensed-draw",
+                "equipment": {
+                  "weapon": "arc-rod",
+                  "body": "oiled-jacket",
+                  "head": "assay-visor"
+                }
+              },
+              "team": "enemy",
+              "position": { "x": 9, "y": 2 },
+              "facing": "south"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-top-step",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 0, "y": 4 },
+          { "x": 4, "y": 4 },
+          { "x": 5, "y": 4 },
+          { "x": 6, "y": 4 },
+          { "x": 7, "y": 4 },
+          { "x": 8, "y": 4 },
+          { "x": 9, "y": 4 },
+          { "x": 10, "y": 4 },
+          { "x": 11, "y": 4 },
+          { "x": 15, "y": 4 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Aldric Corvane",
+              "text": "There is no further up. Whatever you came to say, say it here, where the house can hear it."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "I did not come to say it. I came to keep the docket."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-record-closes",
+      "when": { "kind": "unitDowned", "unitId": "aldric" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Aldric Corvane",
+              "text": "You will not be in the record, Rowen. You will be in the refinery. It is already written and filed."
+            },
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "The Greyfall Inquiry will find that Ensign Rowen Corvane died in the Refinery Three incident. The Sodality does not dispute findings. It files them."
+            },
+            { "speaker": "Rowen Corvane", "text": "Then I go down by the tradesmen's lift." }
+          ]
+        }
+      ]
+    }
+  ]
+}

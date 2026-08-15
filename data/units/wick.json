@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "wick",
+  "name": "Wick",
+  "spriteId": "saboteur",
+  "portraitId": "wick",
+  "level": 3,
+  "jobId": "saboteur",
+  "disposition": {
+    "resolve": 58,
+    "attunement": 26
+  },
+  "learnedAbilityIds": [
+    "smoke-canister",
+    "rig-machinery",
+    "shaped-charge",
+    "gas-line-tap",
+    "bring-it-down"
+  ],
+  "supportAbilityId": "light-hands",
+  "movementAbilityId": "catwalk-sense",
+  "equipment": {
+    "weapon": "cutting-torch",
+    "body": "oiled-jacket",
+    "head": "dust-hood",
+    "accessory": "grounding-strap"
+  }
+}

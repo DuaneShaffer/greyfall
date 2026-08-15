@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "id": "e4-refinery-three",
+  "name": "Corvane Refinery Three",
+  "mapId": "refinery-three",
+  "rngSeed": 1004,
+  "maxDeployedUnits": 5,
+  "enemies": [
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "nessa-kiln",
+        "name": "Nessa Kiln",
+        "spriteId": "conduit",
+        "portraitId": "nessa-kiln",
+        "level": 3,
+        "jobId": "conduit",
+        "disposition": { "resolve": 52, "attunement": 76 },
+        "learnedAbilityIds": ["arc", "tap-line", "throw-the-breaker", "overload-cell", "ground"],
+        "supportAbilityId": "licensed-draw",
+        "movementAbilityId": "earth-strap",
+        "equipment": {
+          "weapon": "arc-rod",
+          "body": "oiled-jacket",
+          "head": "assay-visor",
+          "accessory": "spare-cell"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 7, "y": 2 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-gallery",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 2,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 60, "attunement": 35 },
+        "learnedAbilityIds": ["pin", "shield-advance"],
+        "reactionAbilityId": "baton-answer",
+        "equipment": {
+          "weapon": "shock-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 6, "y": 2 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-conduit-ring",
+        "name": "Watch Conduit",
+        "spriteId": "conduit",
+        "level": 2,
+        "jobId": "conduit",
+        "disposition": { "resolve": 50, "attunement": 68 },
+        "learnedAbilityIds": ["arc", "throw-the-breaker", "overload-cell", "tap-line"],
+        "supportAbilityId": "licensed-draw",
+        "equipment": { "weapon": "tap-rod", "body": "canvas-coat", "head": "assay-visor" }
+      },
+      "team": "enemy",
+      "position": { "x": 9, "y": 6 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-conduit-terrace",
+        "name": "Watch Conduit",
+        "spriteId": "conduit",
+        "level": 2,
+        "jobId": "conduit",
+        "disposition": { "resolve": 50, "attunement": 68 },
+        "learnedAbilityIds": ["arc", "throw-the-breaker", "tap-line"],
+        "supportAbilityId": "licensed-draw",
+        "equipment": { "weapon": "arc-rod", "body": "canvas-coat", "head": "assay-visor" }
+      },
+      "team": "enemy",
+      "position": { "x": 8, "y": 12 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-west-ramp",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 2,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 60, "attunement": 35 },
+        "learnedAbilityIds": ["pin", "shield-advance"],
+        "reactionAbilityId": "baton-answer",
+        "equipment": {
+          "weapon": "shock-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 5, "y": 8 },
+      "facing": "west"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-enforcer-east-ramp",
+        "name": "Watch Enforcer",
+        "spriteId": "enforcer",
+        "level": 2,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 60, "attunement": 35 },
+        "learnedAbilityIds": ["pin", "breach-posture"],
+        "reactionAbilityId": "baton-answer",
+        "equipment": {
+          "weapon": "shock-maul",
+          "shield": "riot-shield",
+          "body": "riot-plate",
+          "head": "riot-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 13, "y": 8 },
+      "facing": "east"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "watch-sergeant-floor",
+        "name": "Watch Sergeant",
+        "spriteId": "enforcer",
+        "level": 3,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 74, "attunement": 38 },
+        "learnedAbilityIds": ["pin", "shield-advance", "kettle", "breach-posture"],
+        "reactionAbilityId": "hold-the-line",
+        "supportAbilityId": "riot-drill",
+        "equipment": {
+          "weapon": "compliance-maul",
+          "shield": "breach-shield",
+          "body": "watch-cuirass",
+          "head": "visored-helm"
+        }
+      },
+      "team": "enemy",
+      "position": { "x": 10, "y": 12 },
+      "facing": "south"
+    }
+  ],
+  "winConditions": [
+    {
+      "kind": "reachTiles",
+      "tiles": [
+        { "x": 7, "y": 1 },
+        { "x": 6, "y": 1 },
+        { "x": 7, "y": 0 },
+        { "x": 7, "y": 2 }
+      ]
+    },
+    { "kind": "defeatUnit", "unitId": "nessa-kiln" }
+  ],
+  "lossConditions": [{ "kind": "partyRout" }],
+  "triggers": [
+    {
+      "id": "under-measurement",
+      "when": { "kind": "battleStart" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "The Sodality observes. It does not intervene. What this plant does today, it does under measurement."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "The bank is reading over line. Cells do not climb on their own. Somebody set them there."
+            },
+            {
+              "speaker": "Nessa Kiln",
+              "text": "The bank is reading what it was told to read, officer. Licensed, metered, and signed for."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Ma'am, our orders are the perimeter. Not the gallery."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "midpoint-overload",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 0, "y": 12 },
+          { "x": 2, "y": 12 },
+          { "x": 4, "y": 12 },
+          { "x": 5, "y": 12 },
+          { "x": 6, "y": 12 },
+          { "x": 7, "y": 12 },
+          { "x": 8, "y": 12 },
+          { "x": 9, "y": 12 },
+          { "x": 10, "y": 12 },
+          { "x": 11, "y": 12 },
+          { "x": 12, "y": 12 },
+          { "x": 13, "y": 12 },
+          { "x": 14, "y": 12 },
+          { "x": 15, "y": 12 },
+          { "x": 16, "y": 12 },
+          { "x": 17, "y": 12 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Nessa Kiln", "text": "Interlock is off the rack. Clear the terrace." },
+            { "speaker": "Prelate-Assayer Quill", "text": "Recording. Rack one, first cell." }
+          ]
+        },
+        { "kind": "destroyObject", "objectId": "bank-cell-one" },
+        { "kind": "destroyObject", "objectId": "tower-walk-south" },
+        { "kind": "setPower", "objectId": "charge-hoist-west", "powered": false },
+        { "kind": "setPower", "objectId": "charge-hoist-east", "powered": false },
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Rowen Corvane", "text": "South walk is gone. Everyone off the ring — the hoists are dead, you go by the ramps or you stay up there." },
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "Four cells in series, and the grid browns out on cue. Accidents are not this tidy."
+            },
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "The Inquiry will record this as a Combine act. I am recording what I saw. The two documents are not required to agree."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "on-the-ring",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 6, "y": 6 },
+          { "x": 7, "y": 6 },
+          { "x": 8, "y": 6 },
+          { "x": 9, "y": 6 },
+          { "x": 10, "y": 6 },
+          { "x": 11, "y": 6 },
+          { "x": 6, "y": 7 },
+          { "x": 6, "y": 8 },
+          { "x": 6, "y": 9 },
+          { "x": 6, "y": 10 },
+          { "x": 11, "y": 7 },
+          { "x": 11, "y": 8 },
+          { "x": 11, "y": 9 },
+          { "x": 11, "y": 10 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Nessa Kiln",
+              "text": "Height buys you nothing here. The tower does not care which side of it you are standing on."
+            },
+            { "speaker": "Rowen Corvane", "text": "It is not for seeing. It is the way to the board." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "at-the-switchboard",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 6, "y": 2 },
+          { "x": 7, "y": 2 },
+          { "x": 8, "y": 2 },
+          { "x": 9, "y": 2 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Nessa Kiln",
+              "text": "You are an hour and a half late. The load schedule was filed this morning."
+            },
+            { "speaker": "Rowen Corvane", "text": "Filed by whom." },
+            { "speaker": "Nessa Kiln", "text": "Corvane Freight. Same as everything else on this floor." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-licence-does-not-carry-her",
+      "when": { "kind": "unitHpBelowPercent", "unitId": "nessa-kiln", "percent": 40 },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Nessa Kiln",
+              "text": "I am licensed. Whatever happens on this floor, the Assay carries me."
+            },
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "The Sodality licenses attunement. It has never licensed conduct."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "id": "e2-foundry-floor-nine",
+  "name": "Foundry Floor Nine",
+  "mapId": "foundry-floor-nine",
+  "rngSeed": 1002,
+  "maxDeployedUnits": 4,
+  "enemies": [
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "provocateur-foreman",
+        "name": "Provocateur Foreman",
+        "spriteId": "enforcer",
+        "level": 2,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 48, "attunement": 36 },
+        "learnedAbilityIds": ["pin", "shield-advance"],
+        "equipment": { "weapon": "shock-maul" }
+      },
+      "team": "enemy",
+      "position": { "x": 9, "y": 1 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "torch-hand-gantry",
+        "name": "Torch-Hand",
+        "spriteId": "saboteur",
+        "level": 2,
+        "jobId": "saboteur",
+        "disposition": { "resolve": 45, "attunement": 28 },
+        "learnedAbilityIds": ["smoke-canister", "shaped-charge", "rig-machinery", "bring-it-down"],
+        "movementAbilityId": "catwalk-sense",
+        "equipment": { "weapon": "cutting-torch", "body": "canvas-coat", "head": "dust-hood" }
+      },
+      "team": "enemy",
+      "position": { "x": 6, "y": 4 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "provocateur-press",
+        "name": "Provocateur",
+        "spriteId": "enforcer",
+        "level": 1,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 40, "attunement": 40 },
+        "learnedAbilityIds": ["pin"],
+        "equipment": { "weapon": "shock-maul" }
+      },
+      "team": "enemy",
+      "position": { "x": 2, "y": 8 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "hand-perren",
+        "name": "Perren Ash",
+        "spriteId": "chemist",
+        "level": 1,
+        "jobId": "chemist",
+        "disposition": { "resolve": 58, "attunement": 42 },
+        "learnedAbilityIds": ["coagulant-jet", "cinder-oil"],
+        "equipment": { "weapon": "dosing-gun", "body": "canvas-coat" }
+      },
+      "team": "enemy",
+      "position": { "x": 8, "y": 9 },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "hand-runner-east",
+        "name": "Yard Runner",
+        "spriteId": "railrunner",
+        "level": 1,
+        "jobId": "railrunner",
+        "disposition": { "resolve": 52, "attunement": 32 },
+        "learnedAbilityIds": ["switch-kick", "coupling-hook"],
+        "movementAbilityId": "rail-dash",
+        "equipment": { "weapon": "hook-bar", "body": "canvas-coat" }
+      },
+      "team": "enemy",
+      "position": { "x": 14, "y": 9 },
+      "facing": "west"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "hand-machinist-gantry",
+        "name": "Shop Machinist",
+        "spriteId": "machinist",
+        "level": 2,
+        "jobId": "machinist",
+        "disposition": { "resolve": 46, "attunement": 48 },
+        "learnedAbilityIds": ["tripwire-charge", "skitter-drone", "field-repair"],
+        "supportAbilityId": "bench-eye",
+        "equipment": { "weapon": "spanner", "body": "canvas-coat", "accessory": "spare-cell" }
+      },
+      "team": "enemy",
+      "position": { "x": 13, "y": 6 },
+      "facing": "west"
+    }
+  ],
+  "winConditions": [
+    { "kind": "defeatUnit", "unitId": "provocateur-foreman" },
+    { "kind": "rout" }
+  ],
+  "lossConditions": [{ "kind": "partyRout" }],
+  "triggers": [
+    {
+      "id": "south-doors",
+      "when": { "kind": "battleStart" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Floor Nine. Stand down and clear the aisle. You are in breach of the charter's labour terms."
+            },
+            {
+              "speaker": "Jory Slate",
+              "text": "The floor's still running, Rowen. Nobody shut the tap off. Ask yourself who wants it hot in here."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Then get behind the presses, Jory."
+            },
+            {
+              "speaker": "Jory Slate",
+              "text": "There's no behind on a press line. There's in front of it and there's in it."
+            },
+            {
+              "speaker": "Provocateur Foreman",
+              "text": "Hold the aisle. Let them come up under the ladle."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "aisle-mouth",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          { "x": 6, "y": 11 },
+          { "x": 7, "y": 11 },
+          { "x": 8, "y": 11 },
+          { "x": 9, "y": 11 }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Perren Ash", "text": "Ladle's coming over! Off the channel, all of you, off the channel!" },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "He warned us. Whoever writes this up, that goes in it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bridge-in-the-bay",
+      "when": { "kind": "objectDestroyed", "objectId": "bay-bridge" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Watch Sergeant", "text": "Bridge is in the melt bay. Nothing crosses east now." },
+            { "speaker": "Jory Slate", "text": "That wasn't us. We work here." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mains-come-back",
+      "when": { "kind": "turnStart", "turn": 24 },
+      "once": true,
+      "actions": [
+        { "kind": "setPower", "objectId": "press-line-north", "powered": true },
+        { "kind": "setPower", "objectId": "press-line-mid", "powered": true },
+        { "kind": "setPower", "objectId": "press-line-south", "powered": true },
+        { "kind": "setPower", "objectId": "pour-ladle-tap", "powered": true },
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Provocateur Foreman", "text": "Tap deck holds the mains. Keep the line hot." },
+            { "speaker": "Jory Slate", "text": "Nobody on this floor gave that order." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "perren-goes-down",
+      "when": { "kind": "unitDowned", "unitId": "hand-perren" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Jory Slate",
+              "text": "That's Perren Ash. Thirty years on the pour. He has a wife on Tallow Row and a son in the yard."
+            },
+            { "speaker": "Rowen Corvane", "text": "Sergeant. Log the name." },
+            { "speaker": "Watch Sergeant", "text": "We log numbers, ma'am." }
+          ]
+        }
+      ]
+    }
+  ]
+}

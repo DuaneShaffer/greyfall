@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "aldric",
+  "name": "Aldric Corvane",
+  "spriteId": "enforcer",
+  "portraitId": "aldric",
+  "level": 3,
+  "jobId": "enforcer",
+  "disposition": {
+    "resolve": 84,
+    "attunement": 28
+  },
+  "learnedAbilityIds": [
+    "pin",
+    "shield-advance",
+    "breach-posture",
+    "kettle"
+  ],
+  "reactionAbilityId": "hold-the-line",
+  "supportAbilityId": "riot-drill",
+  "movementAbilityId": "press-through",
+  "equipment": {
+    "weapon": "compliance-maul",
+    "shield": "breach-shield",
+    "body": "watch-cuirass",
+    "head": "visored-helm",
+    "accessory": "counterweight-belt"
+  }
+}

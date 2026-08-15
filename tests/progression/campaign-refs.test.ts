@@ -34,12 +34,7 @@ const units = loadAll<Unit>("units");
 const items = loadAll<Item>("items");
 
 /** Slice battles 2–5: authored later, referenced now. Shrink this list, never grow it. */
-const PENDING_ENCOUNTER_IDS = new Set([
-  "e2-foundry-floor-nine",
-  "e3-tallow-row",
-  "e4-refinery-three",
-  "e5-charterhouse-steps",
-]);
+const PENDING_ENCOUNTER_IDS = new Set<string>([]);
 
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 

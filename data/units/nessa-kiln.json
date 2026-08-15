@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "nessa-kiln",
+  "name": "Nessa Kiln",
+  "spriteId": "conduit",
+  "portraitId": "nessa-kiln",
+  "level": 3,
+  "jobId": "conduit",
+  "disposition": {
+    "resolve": 52,
+    "attunement": 76
+  },
+  "learnedAbilityIds": [
+    "arc",
+    "tap-line",
+    "throw-the-breaker",
+    "overload-cell",
+    "ground"
+  ],
+  "supportAbilityId": "licensed-draw",
+  "movementAbilityId": "earth-strap",
+  "equipment": {
+    "weapon": "arc-rod",
+    "body": "oiled-jacket",
+    "head": "assay-visor",
+    "accessory": "spare-cell"
+  }
+}
