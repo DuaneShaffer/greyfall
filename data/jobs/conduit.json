@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "conduit",
+  "name": "Conduit",
+  "description": "Assay-licensed attuned. Taps lines, kills machines, and turns the map's own charge into a weapon.",
+  "prerequisites": {},
+  "statCurve": {
+    "hp": { "growth": 7, "multiplierPercent": 85 },
+    "charge": { "growth": 9, "multiplierPercent": 130 },
+    "speed": { "growth": 4, "multiplierPercent": 100 },
+    "phys": { "growth": 3, "multiplierPercent": 70 },
+    "mag": { "growth": 8, "multiplierPercent": 125 }
+  },
+  "baseMove": 3,
+  "baseJump": 1,
+  "baseEvade": 5,
+  "innateAbilityIds": [],
+  "learnableAbilityIds": ["overload-cell"],
+  "equipTags": ["conduit-gear", "light-armor"],
+  "spriteId": "conduit"
+}

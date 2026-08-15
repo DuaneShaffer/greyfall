@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "overload-cell",
+  "name": "Overload Cell",
+  "description": "Force charge into a machine past its rated draw until something gives. Voids the Assay warranty and usually the machine.",
+  "jobId": "conduit",
+  "standingCost": 250,
+  "slot": "action",
+  "targeting": {
+    "range": { "min": 1, "max": 4, "vertical": 2 },
+    "area": { "shape": "single" },
+    "requiresLos": true,
+    "validTargets": ["object"]
+  },
+  "chargeCost": 8,
+  "castSpeed": 25,
+  "effects": [
+    { "kind": "damageObject", "amount": { "base": "mag", "power": 16 } }
+  ]
+}

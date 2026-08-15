@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "rowen",
+  "name": "Rowen Corvane",
+  "spriteId": "enforcer",
+  "portraitId": "rowen",
+  "level": 1,
+  "jobId": "enforcer",
+  "disposition": { "resolve": 72, "attunement": 38 },
+  "learnedAbilityIds": ["pin"],
+  "equipment": { "weapon": "shock-maul" }
+}

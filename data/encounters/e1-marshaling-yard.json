@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "e1-marshaling-yard",
+  "name": "The Marshaling Yard",
+  "mapId": "marshaling-yard",
+  "rngSeed": 1001,
+  "maxDeployedUnits": 4,
+  "enemies": [
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "provocateur-a",
+        "name": "Provocateur",
+        "spriteId": "enforcer",
+        "level": 1,
+        "jobId": "enforcer",
+        "disposition": { "resolve": 55, "attunement": 45 },
+        "learnedAbilityIds": ["pin"],
+        "equipment": { "weapon": "shock-maul" }
+      },
+      "team": "enemy",
+      "position": { "x": 4, "y": 0 },
+      "facing": "south"
+    }
+  ],
+  "winConditions": [{ "kind": "rout" }],
+  "lossConditions": [{ "kind": "partyRout" }],
+  "triggers": [
+    {
+      "id": "opening-words",
+      "when": { "kind": "battleStart" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Maren Voss",
+              "text": "Nobody on this line raised a hand until your people showed up, officer. Ask yourself who fired first."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cell-goes-up",
+      "when": { "kind": "objectDestroyed", "objectId": "yard-cell" },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            { "speaker": "Watch Sergeant", "text": "There goes the cell! Mind the flare!" }
+          ]
+        }
+      ]
+    }
+  ]
+}

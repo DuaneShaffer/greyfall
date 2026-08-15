@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "marshaling-yard",
+  "name": "The Marshaling Yard",
+  "width": 6,
+  "depth": 6,
+  "tiles": [
+    { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 1, "terrain": "plain" }, { "height": 2, "terrain": "plain" },
+    { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 1, "terrain": "plain" }, { "height": 2, "terrain": "plain" },
+    { "height": 0, "terrain": "rough" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 1, "terrain": "plain" },
+    { "height": 0, "terrain": "rough" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 1, "terrain": "plain" },
+    { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" },
+    { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "rail" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }, { "height": 0, "terrain": "plain" }
+  ],
+  "objects": [
+    {
+      "id": "yard-switch",
+      "kind": "switch",
+      "name": "Signal Switch",
+      "spriteId": "switch-lever",
+      "tiles": [{ "x": 3, "y": 4 }],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": { "destructible": false },
+      "powered": null,
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": ["freight-lift"],
+        "targetTiles": [],
+        "effects": [{ "kind": "setPower", "mode": "toggle" }]
+      }
+    },
+    {
+      "id": "freight-lift",
+      "kind": "lift",
+      "name": "Freight Lift",
+      "spriteId": "freight-lift",
+      "tiles": [{ "x": 5, "y": 4 }],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 2,
+      "integrity": { "destructible": false },
+      "powered": true,
+      "operable": null
+    },
+    {
+      "id": "yard-cell",
+      "kind": "cell",
+      "name": "Flux Cell",
+      "spriteId": "flux-cell",
+      "tiles": [{ "x": 1, "y": 1 }],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": { "destructible": true, "hp": 20 },
+      "powered": true,
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          { "x": 0, "y": 1 }, { "x": 2, "y": 1 }, { "x": 1, "y": 0 }, { "x": 1, "y": 2 }
+        ],
+        "effects": [
+          { "kind": "damage", "damageType": "thermal", "amount": { "base": "fixed", "power": 24 } }
+        ]
+      }
+    },
+    {
+      "id": "crate-stack",
+      "kind": "wall",
+      "name": "Crate Stack",
+      "spriteId": "crate-stack",
+      "tiles": [{ "x": 4, "y": 2 }, { "x": 4, "y": 3 }],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": { "destructible": true, "hp": 30 },
+      "powered": null,
+      "operable": null
+    }
+  ],
+  "deploymentTiles": [
+    { "x": 0, "y": 4 }, { "x": 1, "y": 4 }, { "x": 0, "y": 5 }, { "x": 1, "y": 5 }, { "x": 3, "y": 5 }
+  ]
+}

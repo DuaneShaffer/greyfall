@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "pin",
+  "name": "Pin",
+  "description": "Drive the maul low and hold the target in place. Watch doctrine for taking someone alive.",
+  "jobId": "enforcer",
+  "standingCost": 100,
+  "slot": "action",
+  "targeting": {
+    "range": { "min": 1, "max": 1, "vertical": 1 },
+    "area": { "shape": "single" },
+    "requiresLos": true,
+    "validTargets": ["enemy"]
+  },
+  "chargeCost": 0,
+  "castSpeed": null,
+  "effects": [
+    { "kind": "damage", "damageType": "kinetic", "amount": { "base": "weapon", "power": 80 } },
+    { "kind": "applyStatus", "statusId": "stunned", "chance": 60 }
+  ]
+}
