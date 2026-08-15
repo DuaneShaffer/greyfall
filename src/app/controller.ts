@@ -424,7 +424,8 @@ export class BattleController {
   }
 
   private consume(events: readonly BattleEvent[], stateAfter: GameState): void {
-    if (events.some((event) => event.type === "UnitSpawned" || event.type === "ObjectSpawned")) {
+    const rebuilds = new Set(["UnitSpawned", "ObjectSpawned", "UnitRemoved", "ObjectTriggered", "ObjectAttacked"]);
+    if (events.some((event) => rebuilds.has(event.type))) {
       this.renderer.buildScene(viewModelFromGameState(stateAfter));
     }
     const renderEvents = toRenderEventList(events, stateAfter);
