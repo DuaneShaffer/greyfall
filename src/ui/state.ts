@@ -83,6 +83,11 @@ export interface SkillsetView {
   abilities: AbilityView[];
 }
 
+export interface OperableView {
+  objectId: string;
+  name: string;
+}
+
 export interface ActionMenuView {
   unit: UnitView;
   skillsets: SkillsetView[];
@@ -91,6 +96,8 @@ export interface ActionMenuView {
   /** Reasons shown on the greyed entries when the flags above are false. */
   moveBlockedReason?: string;
   actBlockedReason?: string;
+  /** Adjacent machinery the unit could operate; empty hides the entry. */
+  operables?: OperableView[];
 }
 
 export interface ForecastTargetView {

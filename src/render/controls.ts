@@ -7,6 +7,11 @@ const EDGE_SPEED = 5;
 export interface ControlsOptions {
   /** Disable edge panning when the pointer is over DOM UI. */
   edgePan?: boolean;
+  /**
+   * WASD/arrow panning is suppressed while this returns false — a menu owns
+   * those keys when one is open. Orbit and zoom stay live either way.
+   */
+  panKeysEnabled?: () => boolean;
 }
 
 /**
@@ -62,10 +67,12 @@ export const attachControls = (
   const frame = (delta: number): void => {
     let right = 0;
     let forward = 0;
-    if (held.has("a") || held.has("arrowleft")) right -= 1;
-    if (held.has("d") || held.has("arrowright")) right += 1;
-    if (held.has("w") || held.has("arrowup")) forward += 1;
-    if (held.has("s") || held.has("arrowdown")) forward -= 1;
+    if (options.panKeysEnabled?.() !== false) {
+      if (held.has("a") || held.has("arrowleft")) right -= 1;
+      if (held.has("d") || held.has("arrowright")) right += 1;
+      if (held.has("w") || held.has("arrowup")) forward += 1;
+      if (held.has("s") || held.has("arrowdown")) forward -= 1;
+    }
     if (right !== 0 || forward !== 0) {
       renderer.rig.pan(right * PAN_SPEED * delta, forward * PAN_SPEED * delta);
     }

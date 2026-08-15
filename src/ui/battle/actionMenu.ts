@@ -11,6 +11,7 @@ export interface ActionMenuOptions {
 
 const ROOT_ID = "action-root";
 const SKILLSETS_ID = "action-skillsets";
+const OPERABLES_ID = "action-operables";
 
 /** Move / Act / Wait, with Act opening the unit's skillsets. */
 export class ActionMenu implements Component<ActionMenuView> {
@@ -58,8 +59,12 @@ export class ActionMenu implements Component<ActionMenuView> {
         disabled: !view.canAct,
         ...(view.canAct ? {} : { disabledReason: view.actBlockedReason ?? "Action already spent" }),
       },
-      { id: "wait", label: "Wait" },
     ];
+    const operables = view.operables ?? [];
+    if (operables.length > 0) {
+      entries.push({ id: "operate", label: "Operate", detail: `${operables.length}` });
+    }
+    entries.push({ id: "wait", label: "Wait" });
     return {
       id: ROOT_ID,
       title: view.unit.name,
@@ -80,12 +85,27 @@ export class ActionMenu implements Component<ActionMenuView> {
       this.intents.wait(view.unit.id, view.unit.facing);
       return;
     }
+    if (entry.id === "operate") {
+      this.menus.push(this.operableMenu(view));
+      return;
+    }
     if (view.skillsets.length === 1) {
       const only = view.skillsets[0];
       if (only) this.menus.push(this.skillsetMenu(view, only));
       return;
     }
     this.menus.push(this.skillsetChooser(view));
+  }
+
+  private operableMenu(view: ActionMenuView): MenuDef {
+    const operables = view.operables ?? [];
+    return {
+      id: OPERABLES_ID,
+      title: "Operate",
+      entries: operables.map((operable) => ({ id: operable.objectId, label: operable.name })),
+      onSelect: (entry) => this.intents.activateObject(view.unit.id, entry.id),
+      onCancel: () => this.intents.cancelSelection(view.unit.id),
+    };
   }
 
   private skillsetChooser(view: ActionMenuView): MenuDef {

@@ -147,7 +147,7 @@ export class ObjectVisual {
         this.add(new THREE.BoxGeometry(0.34, 0.5, 0.28), this.mat(objectColor.frame), 0, 0.25, 0);
         const lever = this.add(
           new THREE.BoxGeometry(0.08, 0.44, 0.08),
-          this.mat(objectColor.unpowered, { powered: true }),
+          this.mat(objectColor.operable),
           0,
           0.68,
           0,

@@ -46,22 +46,40 @@ export { BASIC_ATTACK_ID } from "./state/content.js";
 export type { RngState } from "./rng/mulberry32.js";
 
 export {
+  abilityInfo,
+  activatableObjects,
+  activeTurnState,
   activeUnit,
   affectedTiles,
+  allCharges,
+  allObjects,
+  allUnits,
+  attackAngleAgainst,
   availableAbilities,
+  battleClock,
+  battleEncounter,
+  battleMap,
+  battleResult,
   forecast,
   getObject,
   getUnit,
+  itemInfo,
+  jobInfo,
   lineOfSight,
   reachableTiles,
+  statusInfo,
   targetableTiles,
+  turnNumber,
   turnOrderPreview,
+  unitCanAct,
+  unitCanMove,
   unitMaxCharge,
   unitMaxHp,
   unitStats,
   type ForecastEntry,
   type TurnOrderEntry,
 } from "./selectors.js";
+export type { AttackAngle } from "./rules/grid.js";
 export type { ReachableTile } from "./rules/movement.js";
 
 export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";

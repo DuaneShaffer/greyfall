@@ -14,7 +14,7 @@ import {
   tileIndex,
   type WorldPoint,
 } from "./grid.js";
-import { hexToRgb, railStripColor, scaleRgb, terrainSideColor, terrainTopColor, type Rgb } from "./palette.js";
+import { hexToRgb, railStripColor, scaleRgb, terrainFaceColor, type Rgb } from "./palette.js";
 
 export type TerrainQuadKind = "top" | "side" | "detail";
 
@@ -76,7 +76,7 @@ const topQuad = (
   terrain: TerrainType,
 ): TerrainQuad => {
   const c = tileCenter(map, x, y);
-  const color = scaleRgb(hexToRgb(terrainTopColor[terrain]), tileShade(x, y));
+  const color = scaleRgb(hexToRgb(terrainFaceColor(terrain, "top")), tileShade(x, y));
   return {
     kind: "top",
     tileX: x,
@@ -107,7 +107,7 @@ const sideQuad = (
   const perp = { x: -dz, z: dx };
   const a = { x: mid.x + perp.x * HALF, z: mid.z + perp.z * HALF };
   const b = { x: mid.x - perp.x * HALF, z: mid.z - perp.z * HALF };
-  const shade = tileShade(x, y) * (dz !== 0 ? 0.86 : 0.72);
+  const face = dz !== 0 ? "sideNorthSouth" : "sideEastWest";
   return {
     kind: "side",
     tileX: x,
@@ -119,7 +119,7 @@ const sideQuad = (
       { x: a.x, y: yHigh, z: a.z },
     ],
     normal: { x: dx, y: 0, z: dz },
-    color: scaleRgb(hexToRgb(terrainSideColor[terrain]), shade),
+    color: scaleRgb(hexToRgb(terrainFaceColor(terrain, face)), tileShade(x, y)),
   };
 };
 

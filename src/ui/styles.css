@@ -1,32 +1,35 @@
 /* Greyfall UI — dark industrial chrome over the battle canvas.
-   Palette per CREATIVE_BIBLE §10: soot greys, coal umber, oxidized copper,
-   flux amber as the scarce accent, white-violet for overload states.
+   Every value below is a canonical `src/art/palette.ts` color; the --gf-* names
+   are kept so the stylesheet reads the same, but no hex is authored here. Where
+   the UI declared more steps than the art ramp has, neighbouring tokens
+   deliberately collapse onto the same canonical step.
    The font stack is a placeholder; the real face is an art-direction call. */
 
 :root {
-  --gf-soot-900: #0a0b0c;
-  --gf-soot-800: #121417;
-  --gf-soot-700: #1b1e21;
-  --gf-soot-600: #262a2e;
-  --gf-soot-500: #383e44;
-  --gf-soot-400: #565d65;
-  --gf-ash: #949aa1;
-  --gf-bone: #d9d5cc;
+  --gf-soot-900: #0b0d10; /* SOOT_900 */
+  --gf-soot-800: #171c22; /* SOOT_800 */
+  --gf-soot-700: #2b333d; /* SOOT_700 */
+  --gf-soot-600: #2b333d; /* SOOT_700 */
+  --gf-soot-500: #4a545f; /* SOOT_500 */
+  --gf-soot-400: #4a545f; /* SOOT_500 */
+  --gf-ash: #78828e; /* SOOT_300 */
+  --gf-bone: #b3bcc5; /* SOOT_100 */
 
-  --gf-umber-900: #1a130d;
-  --gf-umber-700: #2e2117;
-  --gf-umber-500: #4a3524;
+  --gf-umber-900: #150e09; /* UMBER_900 */
+  --gf-umber-700: #2c1d12; /* UMBER_700 */
+  --gf-umber-500: #4e3320; /* UMBER_500 */
 
-  --gf-copper: #4f8577;
-  --gf-flux: #e2a63e;
-  --gf-flux-dim: #7d5c20;
-  --gf-overload: #c9b0ff;
-  --gf-veinglass: #86cf9a;
-  --gf-refuse: #b8493c;
+  --gf-copper: #2f7a6c; /* VERDIGRIS_500 */
+  --gf-flux: #f3b94a; /* AMBER_300 — UI.accent */
+  --gf-flux-dim: #8c5411; /* AMBER_700 */
+  --gf-overload: #9b7be3; /* OVERLOAD_500 */
+  --gf-veinglass: #5fbe95; /* VEINGLASS_500 */
+  --gf-refuse: #c64a47; /* BLOOD_300 */
+  --gf-hazard: #e8622a; /* HAZARD */
 
   --gf-text: var(--gf-bone);
   --gf-text-dim: var(--gf-ash);
-  --gf-text-disabled: #5f646a;
+  --gf-text-disabled: #4a545f; /* SOOT_500 */
 
   --gf-border: 2px solid var(--gf-soot-500);
   --gf-border-strong: 2px solid var(--gf-flux-dim);
@@ -720,8 +723,8 @@
   position: relative;
   min-height: 70vh;
   background:
-    repeating-linear-gradient(0deg, #0e1012 0 24px, #101315 24px 48px),
-    repeating-linear-gradient(90deg, #0e1012 0 24px, #101315 24px 48px);
+    repeating-linear-gradient(0deg, var(--gf-soot-900) 0 24px, var(--gf-soot-800) 24px 48px),
+    repeating-linear-gradient(90deg, var(--gf-soot-900) 0 24px, var(--gf-soot-800) 24px 48px);
   border: var(--gf-border);
   padding: 12px;
 }
@@ -793,4 +796,69 @@
 
 .gf-harness-log .gf-log-name {
   color: var(--gf-veinglass);
+}
+
+/* --- app overlay ---------------------------------------------------------- */
+/* The battle HUD floats over the WebGL canvas: the root must not eat pointer
+   events, only the chrome inside it does. */
+
+.gf-root.is-overlay {
+  position: fixed;
+  pointer-events: none;
+  /* Bottom room is the dev legend strip in index.html. */
+  padding: 12px 12px 40px;
+  display: grid;
+}
+
+.gf-root.is-overlay .gf-panel,
+.gf-root.is-overlay .gf-menu,
+.gf-root.is-overlay .gf-dialogue,
+.gf-root.is-overlay .gf-end-banner {
+  pointer-events: auto;
+}
+
+.gf-root.is-overlay .gf-battle-hud {
+  min-height: 0;
+  height: 100%;
+}
+
+.gf-end-banner {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 13, 16, 0.72);
+}
+
+.gf-end-banner.is-hidden {
+  display: none;
+}
+
+.gf-end-banner-plate {
+  background: linear-gradient(var(--gf-soot-800), var(--gf-soot-900));
+  border: var(--gf-border-strong);
+  padding: 18px 42px;
+  text-align: center;
+}
+
+.gf-end-banner-result {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gf-flux);
+}
+
+.gf-end-banner.is-loss .gf-end-banner-result {
+  color: var(--gf-refuse);
+}
+
+.gf-end-banner-note {
+  margin: 6px 0 0;
+  color: var(--gf-text-dim);
+}
+
+.gf-root.is-overlay .gf-action-menu.is-busy {
+  opacity: 0.35;
+  pointer-events: none;
 }

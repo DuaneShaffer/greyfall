@@ -53,7 +53,7 @@ export class UnitVisual {
     this.geometry = new THREE.PlaneGeometry(SPRITE_WIDTH, SPRITE_HEIGHT);
     this.geometry.translate(0, ANCHOR_LIFT, 0);
     this.material = new THREE.MeshBasicMaterial({
-      map: unitTexture(view.team, view.downed),
+      map: unitTexture(view.spriteId, view.team, view.downed),
       transparent: false,
       alphaTest: 0.5,
       side: THREE.DoubleSide,
@@ -96,7 +96,7 @@ export class UnitVisual {
 
   setView(view: UnitView): void {
     this.view = view;
-    this.material.map = unitTexture(view.team, view.downed);
+    this.material.map = unitTexture(view.spriteId, view.team, view.downed);
     this.material.needsUpdate = true;
     this.wedgeMaterial.color.setHex(teamColor[view.team]);
     this.setFacing(view.facing);
@@ -114,7 +114,7 @@ export class UnitVisual {
 
   setDowned(downed: boolean): void {
     this.view = { ...this.view, downed };
-    this.material.map = unitTexture(this.view.team, downed);
+    this.material.map = unitTexture(this.view.spriteId, this.view.team, downed);
     this.material.needsUpdate = true;
     this.wedge.visible = !downed;
     this.applyTint();
@@ -149,7 +149,7 @@ export class UnitVisual {
     const wounded = this.view.downed ? 0.55 : 0.78 + 0.22 * this.view.hpFraction;
     this.material.color.setScalar(wounded);
     if (this.flash > 0) {
-      this.material.color.lerp(new THREE.Color(palette.overloadViolet), this.flash);
+      this.material.color.lerp(new THREE.Color(palette.overloadCore), this.flash);
       this.material.color.addScalar(this.flash * 0.6);
     }
   }

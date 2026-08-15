@@ -1,9 +1,9 @@
-import type { TileCoord } from "../data/index.js";
+import type { Ability, Encounter, GameMap, Item, Job, Status, TileCoord } from "../data/index.js";
 import type { DerivedStats } from "./progression/stats.js";
 import { resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
 import { objectMaxHp } from "./rules/effects.js";
-import { objectById, unitById } from "./rules/grid.js";
+import { attackAngle, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
 import {
   CT_COST_MOVE_AND_ACT,
@@ -11,11 +11,19 @@ import {
   readyCharges,
   readyUnits,
 } from "./rules/turn.js";
-import { ctPerTick, effectiveStats, maxCharge, maxHp } from "./rules/status.js";
+import { canAct, canMove, ctPerTick, effectiveStats, maxCharge, maxHp } from "./rules/status.js";
 import { hasLos, targetableTiles as computeTargetable } from "./rules/targeting.js";
-import { getAbility, knownActionAbilityIds } from "./state/content.js";
+import { getAbility, getItem, getJob, getStatus, knownActionAbilityIds } from "./state/content.js";
 import { cloneState } from "./state/ctx.js";
-import type { BattleUnit, GameState, ObjectRuntime, TargetRef } from "./state/types.js";
+import type {
+  ActiveTurn,
+  BattleResult,
+  BattleUnit,
+  ChargedAction,
+  GameState,
+  ObjectRuntime,
+  TargetRef,
+} from "./state/types.js";
 
 /** The unit whose turn it is, or null between turns. */
 export function activeUnit(state: GameState): BattleUnit | null {
@@ -26,6 +34,108 @@ export function activeUnit(state: GameState): BattleUnit | null {
 
 export function getUnit(state: GameState, unitId: string): BattleUnit | null {
   return unitById(state, unitId) ?? null;
+}
+
+/** Every unit in the battle, downed included, in unit-id order. */
+export function allUnits(state: GameState): readonly BattleUnit[] {
+  return state.units;
+}
+
+/** Every map object, destroyed included, in object-id order. */
+export function allObjects(state: GameState): readonly ObjectRuntime[] {
+  return state.map.objects;
+}
+
+/** Abilities currently mid-cast, in the order they were started. */
+export function allCharges(state: GameState): readonly ChargedAction[] {
+  return state.charges;
+}
+
+export function battleMap(state: GameState): GameMap {
+  return state.content.map;
+}
+
+export function battleEncounter(state: GameState): Encounter {
+  return state.content.encounter;
+}
+
+/** Ticks elapsed since the battle began. */
+export function battleClock(state: GameState): number {
+  return state.clock;
+}
+
+/** Number of unit turns that have begun. */
+export function turnNumber(state: GameState): number {
+  return state.turn;
+}
+
+export function battleResult(state: GameState): BattleResult | null {
+  return state.result;
+}
+
+/** The active turn's move/act bookkeeping, or null between turns. */
+export function activeTurnState(state: GameState): ActiveTurn | null {
+  return state.activeTurn;
+}
+
+/** False when a status such as Stunned is holding the unit still. */
+export function unitCanMove(state: GameState, unitId: string): boolean {
+  const unit = unitById(state, unitId);
+  return unit === undefined ? false : canMove(state, unit);
+}
+
+/** False when a status such as Stunned is suppressing the unit's action. */
+export function unitCanAct(state: GameState, unitId: string): boolean {
+  const unit = unitById(state, unitId);
+  return unit === undefined ? false : canAct(state, unit);
+}
+
+/**
+ * Definition of an ability as this unit would use it, including the engine's
+ * synthesized `basic-attack` (which is not a content file).
+ */
+export function abilityInfo(state: GameState, unitId: string, abilityId: string): Ability | null {
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return null;
+  return getAbility(state, unit, abilityId) ?? null;
+}
+
+export function jobInfo(state: GameState, jobId: string): Job | null {
+  return getJob(state, jobId) ?? null;
+}
+
+export function statusInfo(state: GameState, statusId: string): Status | null {
+  return getStatus(state, statusId) ?? null;
+}
+
+export function itemInfo(state: GameState, itemId: string): Item | null {
+  return getItem(state, itemId) ?? null;
+}
+
+/** Where an attacker stands relative to the target's facing. */
+export function attackAngleAgainst(
+  state: GameState,
+  attackerUnitId: string,
+  targetUnitId: string,
+): AttackAngle | null {
+  const attacker = unitById(state, attackerUnitId);
+  const target = unitById(state, targetUnitId);
+  if (attacker === undefined || target === undefined) return null;
+  return attackAngle(attacker.position, target);
+}
+
+/**
+ * Objects the unit could `activateObject` right now: undestroyed, operable,
+ * powered when the controls need it, and within one tile of the unit.
+ */
+export function activatableObjects(state: GameState, unitId: string): readonly ObjectRuntime[] {
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return [];
+  return state.map.objects.filter((obj) => {
+    if (obj.destroyed || obj.def.operable === null) return false;
+    if (obj.def.operable.requiresPower && obj.powered !== true) return false;
+    return obj.def.tiles.some((tile) => manhattan(tile, unit.position) <= 1);
+  });
 }
 
 export function getObject(state: GameState, objectId: string): ObjectRuntime | null {

@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Greyfall — battlefield renderer</title>
+    <title>Greyfall — The Marshaling Yard</title>
     <link rel="icon" href="data:," />
     <style>
       :root {
         color-scheme: dark;
-        --soot: #2b2a28;
-        --amber: #f0a02c;
+        --soot: #0b0d10;
+        --amber: #f3b94a;
       }
       html,
       body {
@@ -17,7 +17,7 @@
         height: 100%;
         background: var(--soot);
         font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-        color: #d8d2c6;
+        color: #b3bcc5;
         overflow: hidden;
       }
       #viewport {
@@ -31,14 +31,17 @@
         outline: none;
       }
       /* Dev scaffolding only — the real HUD is src/ui's (DOM overlay). */
+      /* Dev strip pinned along the bottom; the HUD reserves room for it. */
       #debug-legend {
         position: fixed;
-        left: 12px;
-        bottom: 12px;
-        padding: 8px 10px;
-        background: rgba(20, 19, 18, 0.72);
-        border: 1px solid rgba(240, 160, 44, 0.35);
-        border-radius: 3px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+        padding: 6px 10px;
+        text-align: center;
+        background: rgba(11, 13, 16, 0.82);
+        border-top: 1px solid rgba(243, 185, 74, 0.28);
         pointer-events: none;
         white-space: pre;
       }
@@ -48,20 +51,21 @@
       }
       #debug-status {
         position: fixed;
-        right: 12px;
-        top: 12px;
-        padding: 6px 9px;
-        background: rgba(20, 19, 18, 0.72);
-        border: 1px solid rgba(216, 210, 198, 0.2);
-        border-radius: 3px;
+        left: 50%;
+        top: 8px;
+        transform: translateX(-50%);
+        z-index: 2;
+        padding: 4px 9px;
+        background: rgba(11, 13, 16, 0.82);
+        border: 1px solid rgba(120, 130, 142, 0.35);
         pointer-events: none;
       }
     </style>
   </head>
   <body>
     <div id="viewport"><canvas id="battle-canvas"></canvas></div>
-    <div id="debug-legend"><b>Q/E</b> orbit   <b>wheel</b> zoom   <b>WASD</b> pan   <b>click</b> select tile
-<b>P</b> play presentation demo   <b>X</b> skip   <b>R</b> rebuild from snapshot</div>
+    <div id="ui-root"></div>
+    <div id="debug-legend"><b>Q/E</b> orbit   <b>wheel</b> zoom   <b>WASD</b> pan (menus closed)   <b>click</b> pick a tile, click again to confirm   <b>X</b> skip presentation</div>
     <div id="debug-status">loading…</div>
     <script type="module" src="/src/app/main.ts"></script>
   </body>

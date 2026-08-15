@@ -26,6 +26,8 @@ export interface BattleIntents {
   selectAbility(unitId: string, abilityId: string): void;
   /** Player confirmed the target of the pending ability. -> UseAbility command. */
   confirmTarget(unitId: string, abilityId: string, target: TargetRef): void;
+  /** Player chose adjacent machinery to operate. -> ActivateObject command. */
+  activateObject(unitId: string, objectId: string): void;
   /** Backed out of targeting or a submenu without committing anything. */
   cancelSelection(unitId: string): void;
   /** End the turn, locking in facing. -> Wait command. */
@@ -70,6 +72,7 @@ export function noopIntents(): UiIntents {
     confirmMove: sink,
     selectAbility: sink,
     confirmTarget: sink,
+    activateObject: sink,
     cancelSelection: sink,
     wait: sink,
     inspectUnit: sink,

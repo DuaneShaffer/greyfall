@@ -34,4 +34,12 @@ export {
   type UnitView,
 } from "./viewmodel.js";
 export * from "./grid.js";
-export { palette, teamColor, terrainTopColor } from "./palette.js";
+export {
+  objectColor,
+  palette,
+  teamColor,
+  terrainFaceColor,
+  terrainTopColor,
+  type TerrainFace,
+} from "./palette.js";
+export { toRenderEvents, viewModelFromGameState } from "./adapter.js";
