@@ -3,6 +3,7 @@ import { inertAmountTarget, resolveAmount, unitAmountTarget } from "../rules/dam
 import { objectMaxHp } from "../rules/effects.js";
 import { areEnemies, manhattan, tileAt, tileIndex, unitById } from "../rules/grid.js";
 import { moveProfile, type MoveProfile } from "../rules/movement.js";
+import { maxHp } from "../rules/status.js";
 import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { resolveArea } from "../rules/abilities.js";
@@ -38,6 +39,16 @@ export interface Threat {
   ranged: boolean;
 }
 
+/**
+ * Tiles the encounter itself wants this unit standing on, and how much it wants
+ * it right now, as a percentage of the full weight.
+ */
+export interface Objective {
+  /** Travel cost to the nearest objective tile, by tile index. */
+  field: number[];
+  weightPercent: number;
+}
+
 export interface AiContext {
   state: GameState;
   actor: BattleUnit;
@@ -56,6 +67,8 @@ export interface AiContext {
   /** Per-tile-index penalty for standing there before anyone attacks. */
   hazard: number[];
   fields: Map<string, number[]>;
+  /** What the encounter's own conditions ask of this unit, or null if nothing. */
+  objective: Objective | null;
   quarry: BattleUnit | null;
   /** `positionValue` by tile index, filled by the search as it walks candidates. */
   placeMemo: Map<number, number>;
@@ -302,6 +315,59 @@ function hazardField(state: GameState, actor: BattleUnit, weights: AiWeights): n
   return hazard;
 }
 
+/**
+ * The tiles the encounter's own conditions ask this unit to stand on, and
+ * whether standing there is an escape or a win.
+ *
+ * The AI reads the win/loss list because otherwise it cannot see the thing the
+ * battle is actually about: a unit named by a `unitReachesTiles` loss is the
+ * one running for the stair its own dialogue announced, and a `reachTiles` win
+ * is where the party is being sent. Nothing else in `src/core/ai` knows what
+ * the encounter is for.
+ */
+function objectiveOf(state: GameState, actor: BattleUnit): { tiles: TileCoord[]; escape: boolean } {
+  const encounter = state.content.encounter;
+  const tiles: TileCoord[] = [];
+
+  if (actor.team === "player") {
+    for (const condition of encounter.winConditions) {
+      const simple = condition.kind === "all" ? condition.conditions : [condition];
+      for (const part of simple) {
+        if (part.kind !== "reachTiles") continue;
+        if (part.unitId !== undefined && part.unitId !== actor.id) continue;
+        tiles.push(...part.tiles);
+      }
+    }
+    return { tiles, escape: false };
+  }
+
+  for (const condition of encounter.lossConditions) {
+    if (condition.kind !== "unitReachesTiles") continue;
+    if (condition.unitId !== undefined && condition.unitId !== actor.id) continue;
+    if (condition.team !== undefined && condition.team !== actor.team) continue;
+    tiles.push(...condition.tiles);
+  }
+  return { tiles, escape: true };
+}
+
+/**
+ * An escape is what a unit does when it is losing, so its pull rides on how
+ * badly the unit has been hurt; a tile the battle is won by pulls at full
+ * weight from the first turn.
+ */
+function objectiveFor(
+  state: GameState,
+  actor: BattleUnit,
+  move: MoveProfile,
+  grid: ReturnType<typeof terrainGrid>,
+): Objective | null {
+  const { tiles, escape } = objectiveOf(state, actor);
+  if (tiles.length === 0) return null;
+  const max = maxHp(state, actor);
+  const hurt = max <= 0 ? 100 : Math.max(0, 100 - Math.floor((actor.hp * 100) / max));
+  return { field: distanceField(state, move, tiles, grid), weightPercent: escape ? hurt : 100 };
+}
+
 /** The hostile this unit means to fight: closest by path, unit id breaking ties. */
 function pickQuarry(
   state: GameState,
@@ -348,6 +414,7 @@ export function buildContext(state: GameState, actor: BattleUnit, weights: AiWei
     crowding: crowdingMap(state, actor, hostiles),
     hazard: hazardField(state, actor, weights),
     fields,
+    objective: objectiveFor(state, actor, move, grid),
     quarry: pickQuarry(state, hostiles, fields, actor.position),
     placeMemo: new Map<number, number>(),
     areaMemo: new Map(),

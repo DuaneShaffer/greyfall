@@ -23,11 +23,12 @@ interface Harness {
   screens: BetweenBattleScreens;
   deployRequests: number;
   confirmRequests: number;
+  replayRequests: string[];
 }
 
 function harness(): Harness {
   const campaign = chapter();
-  const h = { deployRequests: 0, confirmRequests: 0 } as Harness;
+  const h = { deployRequests: 0, confirmRequests: 0, replayRequests: [] } as unknown as Harness;
   h.session = new CampaignSession({
     campaign,
     content: CONTENT,
@@ -44,6 +45,7 @@ function harness(): Harness {
     confirmDeployment: () => {
       h.confirmRequests += 1;
     },
+    replayEncounter: (encounterId) => void h.replayRequests.push(encounterId),
   });
   h.screens.attach(document);
   h.screens.showRoster();
@@ -126,6 +128,25 @@ describe("BetweenBattleScreens", () => {
     const slots = h.screens.formation.el.querySelectorAll(".gf-deploy-slot");
     expect(slots.length).toBe(h.session.deployment!.assignments.length);
     expect(h.screens.formation.el.textContent).toContain("deployed");
+  });
+
+  it("offers the engagements already won, and nothing before one is", () => {
+    const returnTo = [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].find(
+      (node) => node.textContent === "Return to…",
+    );
+    expect(returnTo).toBeDefined();
+
+    returnTo!.click();
+    expect(h.screens.el.textContent).toContain("No engagement has been won yet.");
+
+    h.session.state.completedEncounterIds.push("e1-marshaling-yard");
+    returnTo!.click();
+    const entry = h.screens.roster.el.querySelector<HTMLElement>(
+      '.gf-menu-entry[data-entry="e1-marshaling-yard"]',
+    );
+    expect(entry).toBeDefined();
+    entry!.click();
+    expect(h.replayRequests).toEqual(["e1-marshaling-yard"]);
   });
 
   it("toggles a unit off the field from the formation list", () => {

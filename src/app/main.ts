@@ -13,7 +13,7 @@ import {
   type GameState,
   type InventoryStack,
 } from "../core/index.js";
-import type { DialogueLine, Facing, TileCoord, Unit } from "../data/index.js";
+import type { DialogueLine, Encounter, Facing, TileCoord, Unit } from "../data/index.js";
 import { BattleRenderer, attachControls, palette } from "../render/index.js";
 import { BattleHud, el, noopIntents, type BattleHudView, type MenuDef, type UiIntents } from "../ui/index.js";
 import { BetweenBattleScreens } from "./betweenBattles.js";
@@ -119,6 +119,8 @@ const focusDialogue = (open: boolean): void => {
 };
 
 let onBattleEnd: ((final: GameState) => void) | null = null;
+/** The engagement on the field, for the flavour the end banner reads. */
+let currentEncounter: Encounter | null = null;
 
 const uiPort: UiPort = {
   // Deliberately not `hud.update`: that would restart an open dialogue's reveal
@@ -139,8 +141,9 @@ const uiPort: UiPort = {
   },
   showResult: (result: BattleResult) => {
     bannerResult.textContent = result === "win" ? "Field Held" : "Line Broken";
+    const authored = result === "win" ? currentEncounter?.endText?.win : currentEncounter?.endText?.loss;
     bannerNote.textContent =
-      result === "win" ? "The provocateurs are down." : "The watch detail is spent.";
+      authored ?? (result === "win" ? "The field is yours." : "The line did not hold.");
     banner.classList.toggle("is-loss", result === "loss");
     banner.classList.remove("is-hidden");
     setStatus(`battle over — ${result}`);
@@ -208,6 +211,7 @@ const battlePort: BattlePort = {
 
     const battle = createBattle(CONTENT, encounterId, party, deployment, carried);
     onBattleEnd = onEnd;
+    currentEncounter = encounter;
     banner.classList.add("is-hidden");
 
     const next = new BattleController({
@@ -231,6 +235,7 @@ const battlePort: BattlePort = {
     banner.classList.add("is-hidden");
     controller = null;
     onBattleEnd = null;
+    currentEncounter = null;
   },
 };
 
@@ -239,6 +244,7 @@ const battlePort: BattlePort = {
 const screens: BetweenBattleScreens = new BetweenBattleScreens(session, {
   beginDeployment: () => void runner.beginDeployment(),
   confirmDeployment: () => void runner.confirmDeployment(),
+  replayEncounter: (encounterId) => void runner.replayEncounter(encounterId),
   save: () => {
     saveCampaign(session.state);
     screens.notify("Chapter saved.");

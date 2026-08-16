@@ -130,8 +130,8 @@ export class PresentationQueue {
       const left = step.animation.duration - step.elapsed;
       if (remaining < left) {
         step.elapsed += remaining;
-        step.animation.update(step.elapsed);
-        return;
+        if (this.tick(step)) return;
+        continue;
       }
       remaining -= left;
       this.complete(step);
@@ -164,24 +164,52 @@ export class PresentationQueue {
   private startNext(): boolean {
     while (this.queued.length > 0) {
       const event = this.queued.shift() as RenderEvent;
-      const animation = this.factory(event);
+      let animation: Animation | null = null;
+      try {
+        animation = this.factory(event);
+      } catch (error) {
+        report("building", event, error);
+      }
       if (!animation) {
         this.playedLog.push(event);
         continue;
       }
       this.active = { event, animation, elapsed: 0 };
-      animation.update(0);
-      return true;
+      if (this.tick(this.active)) return true;
     }
     return false;
   }
 
+  /**
+   * One update call. A throwing animation is failed straight to its terminal
+   * state and dropped: one broken presentation must not stall the queue behind
+   * it, and the queue is driven from the frame loop.
+   */
+  private tick(step: ActiveStep): boolean {
+    try {
+      step.animation.update(step.elapsed);
+      return true;
+    } catch (error) {
+      report("playing", step.event, error);
+      this.complete(step);
+      return false;
+    }
+  }
+
   private complete(step: ActiveStep): void {
-    step.animation.finish();
+    try {
+      step.animation.finish();
+    } catch (error) {
+      report("finishing", step.event, error);
+    }
     this.playedLog.push(step.event);
     if (this.active === step) this.active = null;
   }
 }
+
+const report = (stage: string, event: RenderEvent, error: unknown): void => {
+  console.error(`[greyfall] animation failed ${stage} ${event.kind}`, error);
+};
 
 export const easeInOut = (t: number): number =>
   t <= 0 ? 0 : t >= 1 ? 1 : t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;

@@ -133,9 +133,22 @@ function runActions(ctx: Ctx, trigger: Trigger): void {
 }
 
 /**
+ * A trigger's `afterTriggerId` gate. `firedTriggerIds` records every trigger
+ * that has ever fired, `once` or not, so the gate reads "has happened at least
+ * once" whichever kind of trigger it names.
+ */
+function hasFired(state: GameState, triggerId: string | undefined): boolean {
+  return triggerId === undefined || state.firedTriggerIds.includes(triggerId);
+}
+
+/**
  * Evaluate every encounter trigger against the current state. Trigger actions
  * go through the same effect functions commands do — there is no side channel
  * into `GameState`.
+ *
+ * Ordering: triggers are tried in author order and the pass repeats, so a
+ * trigger gated behind one listed after it still fires in the same batch, one
+ * pass later — always after the trigger it waits on.
  */
 export function evaluateTriggers(ctx: Ctx): void {
   const firedThisBatch = new Set<string>();
@@ -144,9 +157,12 @@ export function evaluateTriggers(ctx: Ctx): void {
     for (const trigger of ctx.state.content.encounter.triggers) {
       if (firedThisBatch.has(trigger.id)) continue;
       if (trigger.once && ctx.state.firedTriggerIds.includes(trigger.id)) continue;
+      if (!hasFired(ctx.state, trigger.afterTriggerId)) continue;
       if (!isConditionMet(ctx.state, trigger.when)) continue;
       firedThisBatch.add(trigger.id);
-      if (trigger.once) ctx.state.firedTriggerIds.push(trigger.id);
+      if (!ctx.state.firedTriggerIds.includes(trigger.id)) {
+        ctx.state.firedTriggerIds.push(trigger.id);
+      }
       emit(ctx, { type: "TriggerFired", triggerId: trigger.id });
       runActions(ctx, trigger);
       fired = true;

@@ -79,8 +79,25 @@ function guardValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
   return value;
 }
 
+/**
+ * The tile the encounter itself is asking for. Priced only once it is within a
+ * turn's reach: this closes an objective the unit can actually get to, it does
+ * not turn every battle into a footrace from turn one.
+ */
+function objectiveValue(ctx: AiContext, tile: TileCoord): number {
+  const objective = ctx.objective;
+  if (objective === null || objective.weightPercent <= 0) return 0;
+  const horizon = ctx.move.move + 1;
+  const distance = objective.field[tileIndex(ctx.state.content.map, tile)] ?? UNREACHABLE;
+  if (distance >= horizon) return 0;
+  return Math.floor(
+    ((horizon - distance) * ctx.weights.objectivePoint * objective.weightPercent) / 100,
+  );
+}
+
 function computeValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
   return (
+    objectiveValue(ctx, tile) +
     approachValue(ctx, tile) +
     exposureValue(ctx, tile) +
     coverValue(ctx, view, tile) +

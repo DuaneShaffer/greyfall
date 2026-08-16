@@ -66,6 +66,13 @@ const TriggerAction = z.discriminatedUnion("kind", [
 const Trigger = z.object({
   id: Id,
   when: TriggerCondition,
+  /**
+   * Ordering gate: the trigger stays shut until the named trigger has fired,
+   * ANDed with `when`. A scene that must not be reached out of order says so
+   * here — "he does not withdraw before he has answered" — instead of every
+   * downstream trigger restating the upstream one's condition.
+   */
+  afterTriggerId: Id.optional(),
   once: z.boolean(),
   actions: z.array(TriggerAction).min(1),
 });
@@ -83,6 +90,9 @@ export const Encounter = z.object({
   enemySatchel: z.array(ItemStack).optional(),
   winConditions: z.array(WinCondition).min(1),
   lossConditions: z.array(LossCondition).min(1),
+  // What the end banner says about THIS engagement. Optional: the shell falls
+  // back to neutral text for an encounter that has not been written up yet.
+  endText: z.object({ win: z.string().optional(), loss: z.string().optional() }).optional(),
   triggers: z.array(Trigger),
 });
 export type Encounter = z.infer<typeof Encounter>;

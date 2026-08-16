@@ -105,18 +105,25 @@ export class CampaignSession {
   }
 
   /**
-   * The next encounter that actually exists in `data/`. Battles 2–5 land in a
-   * later wave; until they do this falls back to replaying the last one won so
-   * the loop still closes.
+   * The next engagement to fight, or null once the chapter has run out of them.
+   * Null is the end of the chapter and is meant to be reached: replaying a
+   * finished engagement is `completedEncounters()`, an explicit choice, never a
+   * fallback that quietly hides the ending.
    */
   playableEncounterId(): string | null {
     const expected = this.expectedEncounterId();
     if (expected !== null && this.content.encounters[expected] !== undefined) return expected;
-    for (let i = this.campaignState.completedEncounterIds.length - 1; i >= 0; i -= 1) {
-      const id = this.campaignState.completedEncounterIds[i];
-      if (id !== undefined && this.content.encounters[id] !== undefined) return id;
-    }
     return null;
+  }
+
+  /** Won engagements the player may return to, in the order they were won. */
+  completedEncounters(): { id: string; name: string }[] {
+    const out: { id: string; name: string }[] = [];
+    for (const id of this.campaignState.completedEncounterIds) {
+      const encounter = this.content.encounters[id];
+      if (encounter !== undefined) out.push({ id, name: encounter.name });
+    }
+    return out;
   }
 
   /** True when the chapter has run out of authored encounters, not out of story. */

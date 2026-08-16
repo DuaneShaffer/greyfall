@@ -47,6 +47,10 @@
       "unitId": "rowen"
     }
   ],
+  "endText": {
+    "win": "The yard is quiet. The provocateurs are down, and not one of them will say who paid for the charges.",
+    "loss": "The watch detail is spent. By morning the yard is theirs and the freight is gone."
+  },
   "triggers": [
     {
       "id": "opening-words",

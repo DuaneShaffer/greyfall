@@ -27,9 +27,13 @@ export interface BetweenBattleHandlers {
   beginDeployment(): void;
   /** Formation locked in. */
   confirmDeployment(): void;
+  /** Player chose an engagement already won and wants it again. */
+  replayEncounter?(encounterId: string): void;
   save?(): void;
   load?(): void;
 }
+
+const REPLAY_MENU_ID = "replay-engagements";
 
 const TOAST_TICKS = 4;
 
@@ -154,6 +158,26 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.el.remove();
   }
 
+  /** The list of engagements already won, over the roster it deploys from. */
+  private openReplayMenu(replay: (encounterId: string) => void): void {
+    const completed = this.session.completedEncounters();
+    if (completed.length === 0) {
+      this.notify("No engagement has been won yet.");
+      return;
+    }
+    this.showRoster();
+    if (this.roster.menus.path.includes(REPLAY_MENU_ID)) return;
+    this.roster.menus.push({
+      id: REPLAY_MENU_ID,
+      title: "Return to",
+      entries: completed.map((entry) => ({ id: entry.id, label: entry.name })),
+      onSelect: (entry) => {
+        this.roster.menus.pop();
+        replay(entry.id);
+      },
+    });
+  }
+
   private openUnit(screen: BetweenScreenId, unitId: string): void {
     this.selectedUnitId = unitId;
     this.show(screen);
@@ -250,6 +274,8 @@ export class BetweenBattleScreens implements CampaignScreenPort {
       button("Roster", () => this.showRoster()),
       button("Move out", () => handlers.beginDeployment()),
     ];
+    const replay = handlers.replayEncounter;
+    if (replay) children.push(button("Return to…", () => this.openReplayMenu(replay)));
     if (handlers.save) children.push(button("Save", handlers.save));
     if (handlers.load) children.push(button("Load", handlers.load));
     replaceChildren(this.bar, children);

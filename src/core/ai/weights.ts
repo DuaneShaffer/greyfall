@@ -81,6 +81,12 @@ export interface AiWeights {
   moveCost: number;
   actThreshold: number;
 
+  /**
+   * Per step of travel saved toward a tile the encounter's own win/loss
+   * conditions name, inside one turn's reach. Priced to outweigh a kill: a unit
+   * standing on its escape ends the battle, which no attack does.
+   */
+  objectivePoint: number;
   approachPoint: number;
   standoffPoint: number;
   unreachablePenalty: number;
@@ -156,6 +162,7 @@ export const WEIGHTS: AiWeights = {
   moveCost: 25,
   actThreshold: 0,
 
+  objectivePoint: 400,
   approachPoint: 20,
   standoffPoint: 10,
   unreachablePenalty: 900,

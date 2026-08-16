@@ -290,6 +290,10 @@
       "kind": "partyRout"
     }
   ],
+  "endText": {
+    "win": "Three is gone. The Assay has already written down whose fault that was.",
+    "loss": "The floor goes under with the detail still standing on it."
+  },
   "triggers": [
     {
       "id": "under-measurement",

@@ -213,6 +213,10 @@
       "kind": "partyRout"
     }
   ],
+  "endText": {
+    "win": "Floor Nine holds. What was set to burn is out, and the shift is still standing on it.",
+    "loss": "Floor Nine goes to them with the shift still on it."
+  },
   "triggers": [
     {
       "id": "south-doors",

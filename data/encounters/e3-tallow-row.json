@@ -205,6 +205,10 @@
       ]
     }
   ],
+  "endText": {
+    "win": "The Row is out. The seals on the charges are House Corvane, and they are unbroken.",
+    "loss": "Tallow Row burns to the tram lane, and what was under the gallery stair burns with it."
+  },
   "triggers": [
     {
       "id": "foot-of-the-row",

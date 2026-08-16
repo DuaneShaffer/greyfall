@@ -192,6 +192,23 @@ describe("content cross-references", () => {
     }
   });
 
+  it("an afterTriggerId names a trigger in the same encounter", () => {
+    for (const enc of encounters.values()) {
+      const ids = new Set(enc.triggers.map((trigger) => trigger.id));
+      for (const trigger of enc.triggers) {
+        if (trigger.afterTriggerId === undefined) continue;
+        expect(
+          ids.has(trigger.afterTriggerId),
+          `${enc.id}/${trigger.id}: waits on ${trigger.afterTriggerId}, which the encounter has no trigger for`,
+        ).toBe(true);
+        expect(
+          trigger.afterTriggerId !== trigger.id,
+          `${enc.id}/${trigger.id}: waits on itself`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("encounters reference existing maps, units, and objects", () => {
     for (const enc of encounters.values()) {
       const map = maps.get(enc.mapId);

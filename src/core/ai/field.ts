@@ -77,24 +77,31 @@ export function terrainGrid(state: GameState, profile: MoveProfile): TerrainGrid
  * that really" primitive: unlike Manhattan distance it sees the crate stack
  * and the height wall, and unlike `reachableTiles` it is not capped by Move.
  *
+ * Several origins seed one walk, so the field reads "cost to the nearest of
+ * them" — what an objective made of a row of tiles actually asks.
+ *
  * Costs are packed as `cost * tileCount + tileIndex` in one numeric heap, so
  * ties break on tile index and the walk order never varies.
  */
 export function distanceField(
   state: GameState,
   profile: MoveProfile,
-  from: TileCoord,
+  from: TileCoord | readonly TileCoord[],
   grid: TerrainGrid = terrainGrid(state, profile),
 ): number[] {
   const map = state.content.map;
   const count = map.width * map.depth;
   const dist = new Array<number>(count).fill(UNREACHABLE);
-  if (!inBounds(map, from)) return dist;
+  const origins = Array.isArray(from) ? (from as readonly TileCoord[]) : [from as TileCoord];
 
-  const start = tileIndex(map, from);
-  dist[start] = 0;
   const heap: number[] = [];
-  push(heap, start);
+  for (const origin of origins) {
+    if (!inBounds(map, origin)) continue;
+    const start = tileIndex(map, origin);
+    if (dist[start] === 0) continue;
+    dist[start] = 0;
+    push(heap, start);
+  }
 
   while (heap.length > 0) {
     const packed = pop(heap);

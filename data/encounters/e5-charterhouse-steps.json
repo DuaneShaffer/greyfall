@@ -214,6 +214,10 @@
       "unitId": "rowen"
     }
   ],
+  "endText": {
+    "win": "Aldric Corvane is down on his own steps, in front of the house, with the docket open.",
+    "loss": "The steps hold. Whatever was carried up them goes back down the tradesmen's lift."
+  },
   "triggers": [
     {
       "id": "the-steps-are-closed",
@@ -304,7 +308,7 @@
       ]
     },
     {
-      "id": "terrace-two-the-proof",
+      "id": "terrace-two-reached",
       "when": {
         "kind": "unitEntersTiles",
         "team": "player",
@@ -357,6 +361,30 @@
           "kind": "dialogue",
           "lines": [
             {
+              "speaker": "Watch Sergeant",
+              "text": "She is inside the balustrade line, sir."
+            },
+            {
+              "speaker": "Aldric Corvane",
+              "text": "I can see where she is. Let her come the rest of the way up."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terrace-two-the-proof",
+      "when": {
+        "kind": "unitHpBelowPercent",
+        "unitId": "aldric",
+        "percent": 90
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
               "speaker": "Rowen Corvane",
               "text": "Corvane requisition seals. On the charges that took four hands off Tallow Row. Your docket number, Aldric, and your yard."
             },
@@ -387,6 +415,7 @@
         "unitId": "aldric",
         "percent": 55
       },
+      "afterTriggerId": "terrace-two-the-proof",
       "once": true,
       "actions": [
         {
@@ -456,6 +485,7 @@
     },
     {
       "id": "the-top-step",
+      "afterTriggerId": "aldric-to-the-court",
       "when": {
         "kind": "unitEntersTiles",
         "team": "player",

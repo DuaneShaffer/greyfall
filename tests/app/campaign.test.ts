@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  createBattle,
   createCampaign,
   inventoryCount,
   jobProgress,
@@ -111,6 +112,24 @@ function finished(options: {
     if (unit.team !== "player") continue;
     unit.standingEarned = options.earned?.[unit.id] ?? 0;
     unit.downed = options.downed?.includes(unit.id) ?? false;
+  }
+  return state;
+}
+
+/** A won battle in a named encounter, so the chapter can be walked end to end. */
+function won(encounterId: string, earned: Record<string, number> = {}): GameState {
+  const encounter = CONTENT.encounters[encounterId]!;
+  const map = CONTENT.maps[encounter.mapId]!;
+  const party = [UNITS["rowen"]!];
+  const start = createBattle(CONTENT, encounterId, party, [
+    { unitId: "rowen", position: { ...map.deploymentTiles[0]! }, facing: "north" },
+  ]);
+  const state = structuredClone(start.state);
+  state.result = "win";
+  for (const unit of state.units) {
+    if (unit.team !== "player") continue;
+    unit.standingEarned = earned[unit.id] ?? 0;
+    unit.downed = false;
   }
   return state;
 }
@@ -333,7 +352,7 @@ describe("CampaignRunner", () => {
     expect(h.screens.notices.at(-1)).toContain("Lost: Rowen Corvane");
   });
 
-  it("falls back to replaying the last battle while later encounters are unauthored", () => {
+  it("stops rather than replaying the last battle while later encounters are unauthored", () => {
     const pruned: ContentLibrary = {
       ...CONTENT,
       encounters: { [ENCOUNTER_ID]: CONTENT.encounters[ENCOUNTER_ID]! },
@@ -346,16 +365,58 @@ describe("CampaignRunner", () => {
 
     expect(h.session.expectedEncounterId()).toBe(chapter().encounterIds[1]);
     expect(h.session.awaitingContent()).toBe(true);
-    expect(h.session.playableEncounterId()).toBe(ENCOUNTER_ID);
+    expect(h.session.playableEncounterId()).toBeNull();
 
-    expect(h.runner.beginDeployment()).toBe(true);
+    expect(h.runner.beginDeployment()).toBe(false);
     expect(h.screens.notices.at(-1)).toContain("not authored yet");
+  });
+
+  it("runs the chapter out and reaches the end of it", () => {
+    h.runner.start();
+    for (const encounterId of chapter().encounterIds) {
+      expect(h.runner.beginDeployment(), encounterId).toBe(true);
+      expect(h.session.deployment?.encounterId).toBe(encounterId);
+      h.runner.confirmDeployment();
+      h.battle.finish(won(encounterId, { rowen: 20 }));
+    }
+
+    expect(h.runner.phase).toBe("complete");
+    expect(h.session.playableEncounterId()).toBeNull();
+
+    const closing = h.screens.notices.at(-1) ?? "";
+    expect(closing).toContain("no further engagements");
+    expect(closing).toContain("Rowen Corvane");
+    expect(closing).toContain("Standing banked");
+
+    expect(h.runner.beginDeployment()).toBe(false);
+    expect(h.screens.notices.at(-1)).toContain("Return to a completed engagement");
+  });
+
+  it("returns to a completed engagement, banking again without advancing", () => {
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    h.battle.finish(won(ENCOUNTER_ID));
+    const index = h.session.state.encounterIndex;
+    const banked = jobProgress(h.session.state, "rowen", "enforcer").balance;
+
+    expect(h.session.completedEncounters().map((entry) => entry.id)).toEqual([ENCOUNTER_ID]);
+    expect(h.runner.replayEncounter(ENCOUNTER_ID)).toBe(true);
+    expect(h.runner.phase).toBe("formation");
     expect(h.runner.confirmDeployment()).toBe(true);
     expect(h.battle.started.at(-1)?.encounterId).toBe(ENCOUNTER_ID);
+    h.battle.finish(won(ENCOUNTER_ID, { rowen: 35 }));
 
-    h.battle.finish(finished({ result: "win", earned: { rowen: 10 } }));
     expect(h.runner.lastOutcome?.advanced).toBe(false);
-    expect(h.session.state.encounterIndex).toBe(1);
+    expect(h.session.state.encounterIndex).toBe(index);
+    expect(jobProgress(h.session.state, "rowen", "enforcer").balance).toBe(banked + 35);
+  });
+
+  it("refuses to return to an engagement that has not been won", () => {
+    h.runner.start();
+    expect(h.runner.replayEncounter("e5-charterhouse-steps")).toBe(false);
+    expect(h.runner.phase).toBe("roster");
+    expect(h.screens.notices.at(-1)).toContain("not on the record");
   });
 
   it("goes complete when the chapter has no playable encounter at all", () => {

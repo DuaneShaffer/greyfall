@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   PresentationQueue,
   instantAnimation,
@@ -169,6 +169,55 @@ describe("presentation queue", () => {
 
     expect(log).toEqual(["start:unitMoved"]);
     expect(queue.isIdle).toBe(true);
+  });
+
+  it("fails a throwing animation to its terminal state and keeps the queue moving", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log: string[] = [];
+    const queue = new PresentationQueue((event) => {
+      if (event.kind !== "unitHit") {
+        return { duration: 0.2, update: () => {}, finish: () => log.push(`finish:${event.kind}`) };
+      }
+      return {
+        duration: 0.2,
+        update: () => {
+          throw new Error("bad frame");
+        },
+        finish: () => log.push("finish:unitHit"),
+      };
+    });
+    queue.pushAll([moved, hit, destroyed]);
+
+    queue.update(0.1);
+    queue.update(0.15);
+    queue.update(0.3);
+
+    expect(log).toEqual(["finish:unitMoved", "finish:unitHit", "finish:objectDestroyed"]);
+    expect(queue.played.map((event) => event.kind)).toEqual([
+      "unitMoved",
+      "unitHit",
+      "objectDestroyed",
+    ]);
+    expect(queue.isIdle).toBe(true);
+    expect(errors).toHaveBeenCalled();
+    errors.mockRestore();
+  });
+
+  it("survives a factory that throws", () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log: string[] = [];
+    const queue = new PresentationQueue((event) => {
+      if (event.kind === "unitMoved") throw new Error("no visual");
+      return instantAnimation(() => log.push(event.kind));
+    });
+    queue.pushAll([moved, hit]);
+
+    queue.update(0);
+
+    expect(log).toEqual(["unitHit"]);
+    expect(queue.isIdle).toBe(true);
+    expect(errors).toHaveBeenCalled();
+    errors.mockRestore();
   });
 
   it("applies terminal state exactly once per event", () => {

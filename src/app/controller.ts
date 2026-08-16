@@ -113,8 +113,12 @@ const LAYER_MOVE_PICK = "move-pick";
 const LAYER_TARGET = "target-range";
 const LAYER_AFFECTED = "affected";
 
-/** Seconds between AI commands, so enemy turns are watchable. */
-const AI_STEP_SECONDS = 0.3;
+/**
+ * Seconds between AI commands, so enemy turns are watchable. The animations
+ * either side of it already separate the beats; this is only the join, and a
+ * full enemy round pays it two or three times per unit.
+ */
+const AI_STEP_SECONDS = 0.18;
 
 const sameTile = (a: TileCoord, b: TileCoord): boolean => a.x === b.x && a.y === b.y;
 

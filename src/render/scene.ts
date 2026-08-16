@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { frameEndTick } from "../art/player.js";
 import { TICKS_PER_SECOND } from "../art/sprites.js";
-import type { DamageType, TileCoord } from "../data/schemas/common.js";
+import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import { TacticsCamera } from "./camera.js";
 import type { Vec3 } from "./effects.js";
@@ -20,14 +20,37 @@ import { palette } from "./palette.js";
 import { buildTerrainMeshData, tileFromTriangle, type TerrainMeshData } from "./terrain.js";
 import { UnitVisual } from "./units.js";
 import { VfxLayer } from "./vfxLayer.js";
-import { cloneViewModel, findObjectView, findUnitView, type BattleViewModel } from "./viewmodel.js";
+import {
+  cloneViewModel,
+  findObjectView,
+  findUnitView,
+  type BattleViewModel,
+  type UnitView,
+} from "./viewmodel.js";
 
 const STEP_SECONDS = 0.22;
+/**
+ * Enemy walks are watched, not steered, so they travel at a brisker tick than
+ * the player's own — the AI's turn is presentation, and a long approach across
+ * the board is the single biggest thing standing between two decisions.
+ */
+const AI_STEP_SECONDS = 0.13;
+/** Ceiling on one walk however long the path is; a march is not a cutscene. */
+const MAX_WALK_SECONDS = 1;
+/** A move onto the unit's own tile: nothing to walk, one idle beat to read. */
+const STAY_PUT_SECONDS = 0.14;
+/**
+ * Longest step one frame may advance the world by. It is a stall guard (a
+ * backgrounded tab hands back a delta of minutes), so it sits well above any
+ * frame a software GL context actually takes — clamp it tighter and every
+ * animation stretches to several times its authored length on a slow machine.
+ */
+const MAX_FRAME_SECONDS = 0.25;
 const HIT_SECONDS = 0.34;
 const DOWN_SECONDS = 0.45;
-const POWER_SECONDS = 0.28;
+const POWER_SECONDS = 0.12;
 const COLLAPSE_SECONDS = 0.6;
-const FOCUS_SECONDS = 0.28;
+const FOCUS_SECONDS = 0.12;
 /**
  * How long the actor gets before the hit lands: the anticipate frames plus the
  * strike (ART_DIRECTION §4). The swing's follow-through plays out underneath
@@ -55,6 +78,70 @@ const worldPositionOf = (map: GameMap, tile: TileCoord): THREE.Vector3 => {
   const center = tileCenter(map, tile.x, tile.y);
   return new THREE.Vector3(center.x, standingHeight(map, tile) * HEIGHT_STEP, center.z);
 };
+
+/** The part of a unit's visual a walk drives. `UnitVisual` satisfies it. */
+export interface Walker {
+  setWorldPosition(x: number, y: number, z: number): void;
+  setFacing(facing: Facing): void;
+  playWalk(): void;
+  rest(): void;
+}
+
+/**
+ * Walk a unit along `path`, tile by tile, and leave it standing on the last one.
+ *
+ * A one-tile path is a move onto the unit's own tile — a legal choice the move
+ * range offers — so there is no leg to interpolate along: it holds one idle
+ * beat and settles. Enemy walks run on a brisker tick, and no walk however long
+ * runs past `MAX_WALK_SECONDS`.
+ */
+export function walkAnimation(
+  map: GameMap,
+  path: readonly TileCoord[],
+  facing: Facing,
+  visual: Walker,
+  view: UnitView,
+): Animation | null {
+  const destination = path[path.length - 1];
+  if (destination === undefined) return null;
+  const points = path.map((tile) => worldPositionOf(map, tile));
+  const end = points[points.length - 1] as THREE.Vector3;
+
+  const settle = (): void => {
+    visual.setWorldPosition(end.x, end.y, end.z);
+    visual.setFacing(facing);
+    visual.rest();
+    view.position = { ...destination };
+    view.elevation = standingHeight(map, destination);
+    view.facing = facing;
+  };
+
+  const legs = points.length - 1;
+  if (legs < 1) return { duration: STAY_PUT_SECONDS, update: () => {}, finish: settle };
+
+  const step = view.team === "player" ? STEP_SECONDS : AI_STEP_SECONDS;
+  const duration = Math.min(MAX_WALK_SECONDS, legs * step);
+  return {
+    duration,
+    update: (elapsed) => {
+      visual.playWalk();
+      const progress = Math.min(1, elapsed / duration);
+      const scaled = progress * legs;
+      const leg = Math.min(legs - 1, Math.floor(scaled));
+      const t = scaled - leg;
+      const from = points[leg] as THREE.Vector3;
+      const to = points[leg + 1] as THREE.Vector3;
+      const hop = Math.sin(Math.PI * t) * (0.06 + Math.abs(to.y - from.y) * 0.35);
+      visual.setWorldPosition(
+        from.x + (to.x - from.x) * t,
+        from.y + (to.y - from.y) * t + hop,
+        from.z + (to.z - from.z) * t,
+      );
+      visual.setFacing(facingBetween(path[leg] as TileCoord, path[leg + 1] as TileCoord));
+    },
+    finish: settle,
+  };
+}
 
 /**
  * Owns the Three.js scene graph. Renderer state is derived: `buildScene` can be
@@ -269,10 +356,18 @@ export class BattleRenderer {
   start(): void {
     if (this.frameHandle !== 0) return;
     const loop = (nowMs: number): void => {
-      const delta = this.lastFrameMs === 0 ? 0 : Math.min(0.1, (nowMs - this.lastFrameMs) / 1000);
-      this.lastFrameMs = nowMs;
-      this.frame(delta);
+      // Scheduled before the frame runs, not after: whatever the frame throws,
+      // the loop lives. A `stop()` from inside the frame still cancels the
+      // handle this line just set.
       this.frameHandle = requestAnimationFrame(loop);
+      const delta =
+        this.lastFrameMs === 0 ? 0 : Math.min(MAX_FRAME_SECONDS, (nowMs - this.lastFrameMs) / 1000);
+      this.lastFrameMs = nowMs;
+      try {
+        this.frame(delta);
+      } catch (error) {
+        console.error("[greyfall] frame failed", error);
+      }
     };
     this.frameHandle = requestAnimationFrame(loop);
   }
@@ -376,41 +471,8 @@ export class BattleRenderer {
       case "unitMoved": {
         const visual = this.units.get(event.unitId);
         const view = findUnitView(viewModel, event.unitId);
-        if (!visual || !view || event.path.length === 0) return null;
-        const points = event.path.map((tile) => worldPositionOf(map, tile));
-        const legs = Math.max(1, points.length - 1);
-        const settle = (): void => {
-          const destination = event.path[event.path.length - 1] as TileCoord;
-          const end = points[points.length - 1] as THREE.Vector3;
-          visual.setWorldPosition(end.x, end.y, end.z);
-          visual.setFacing(event.facing);
-          visual.rest();
-          view.position = { ...destination };
-          view.elevation = standingHeight(map, destination);
-          view.facing = event.facing;
-        };
-        return {
-          duration: legs * STEP_SECONDS,
-          update: (elapsed) => {
-            visual.playWalk();
-            const progress = Math.min(1, elapsed / (legs * STEP_SECONDS));
-            const scaled = progress * legs;
-            const leg = Math.min(legs - 1, Math.floor(scaled));
-            const t = scaled - leg;
-            const from = points[leg] as THREE.Vector3;
-            const to = points[leg + 1] as THREE.Vector3;
-            const hop = Math.sin(Math.PI * t) * (0.06 + Math.abs(to.y - from.y) * 0.35);
-            visual.setWorldPosition(
-              from.x + (to.x - from.x) * t,
-              from.y + (to.y - from.y) * t + hop,
-              from.z + (to.z - from.z) * t,
-            );
-            const a = event.path[leg] as TileCoord;
-            const b = event.path[leg + 1] as TileCoord;
-            visual.setFacing(facingBetween(a, b));
-          },
-          finish: settle,
-        };
+        if (!visual || !view) return null;
+        return walkAnimation(map, event.path, event.facing, visual, view);
       }
       case "unitFaced": {
         const visual = this.units.get(event.unitId);
@@ -630,11 +692,15 @@ export class BattleRenderer {
       }
       case "cameraFocused": {
         const tile = event.tile;
-        return {
-          duration: FOCUS_SECONDS,
-          update: () => {},
-          finish: () => this.rig.focusOn(map, tile),
+        // The rig glides on its own clock, so the queue only holds long enough
+        // to read the cut; the pan finishes underneath whatever plays next.
+        let focused = false;
+        const focus = (): void => {
+          if (focused) return;
+          focused = true;
+          this.rig.focusOn(map, tile);
         };
+        return { duration: FOCUS_SECONDS, update: focus, finish: focus };
       }
       default:
         return null;
