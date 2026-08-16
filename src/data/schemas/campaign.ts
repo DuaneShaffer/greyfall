@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { Id, SchemaVersion } from "./common.js";
+import { Id, ItemStack, SchemaVersion } from "./common.js";
 
-const InventoryEntry = z.object({ itemId: Id, count: z.int().positive() });
+const InventoryEntry = ItemStack;
 export type InventoryEntry = z.infer<typeof InventoryEntry>;
 
 // A chapter: the ordered encounter list the campaign loop walks, plus the

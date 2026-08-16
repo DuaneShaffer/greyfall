@@ -65,7 +65,7 @@ describe("skillsetViews", () => {
       .flatMap((set) => set.abilities)
       .find((ability) => ability.id === "overload-cell");
     expect(valeOverload?.chargeCost).toBe(5);
-    expect(valeOverload?.castSpeed).toBe(25);
+    expect(valeOverload?.castSpeed).toBeNull();
     expect(valeOverload?.unavailableReason).toBeUndefined();
   });
 });

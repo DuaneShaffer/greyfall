@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Targeting } from "./ability.js";
 import { DamageType, Id, SchemaVersion, StatMods } from "./common.js";
 import { Effect } from "./effect.js";
 
@@ -27,6 +28,9 @@ const Armor = ItemBase.extend({
 
 const Consumable = ItemBase.extend({
   slot: z.literal("consumable"),
+  // How the item is applied. Optional: an item that omits it falls back to the
+  // engine's default consumable rule (reach 0-1, single tile, self or ally).
+  targeting: Targeting.optional(),
   effects: z.array(Effect).min(1),
 });
 

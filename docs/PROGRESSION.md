@@ -183,6 +183,36 @@ unauthored.
 - A job may equip an item when they share at least one `equipTag` — the rule
   the item schema already documents.
 - Consumables are never equipment; they sit in inventory only.
+
+### The satchel
+
+Consumables are the one part of inventory that a battle touches, so the flow is
+worth spelling out (design rationale in `docs/ITEMS.md`, rules in
+`COMBAT_RULES` §19):
+
+```
+CampaignState.inventory --consumableStock--> createBattle(carried)
+        ^                                            |
+        |                                     GameState.satchels
+        +----------- applyBattleResults <------------+
+```
+
+- **Out.** `CampaignSession.carriedItems()` filters the chapter's stock to
+  consumables and hands the whole pile to `createBattle`. Equipment stock stays
+  home; nothing in a battle equips. The formation screen and every equipment
+  screen show the pile, read-only — it is the force's kit, not a unit's.
+- **Back.** `applyBattleResults` compares the satchel that came home against
+  the stock that went out and strikes the difference. The battle owns the
+  decrement, so a replayed command log reproduces the same satchel and a save
+  taken after the fold is exact.
+- **A loss refunds it.** The doctrine in §3 is that a wipe changes nothing:
+  no Standing, no dead, and no flasks either. `BattleOutcome.consumed` is empty.
+- **The party shares one pile.** There is no per-unit carry slot; whoever can
+  reach the target spends from the same satchel. Two units cannot each drink
+  the last coagulant.
+- Nothing refills it. Until shops land (below), the chapter opens with
+  `startingInventory` and spends down from there — which is what makes an item
+  a decision rather than a free heal.
 - Stat previews on the equipment screen come from `deriveStats` with the
   candidate swapped in, so the deltas are the real numbers, not an estimate.
 

@@ -8,6 +8,7 @@ import {
   unitProgress,
   type CampaignState,
   type GameState,
+  type InventoryStack,
 } from "../../src/core/index.js";
 import { benchState } from "./fixtures.js";
 import { openBattle } from "../app/fixtures.js";
@@ -21,8 +22,10 @@ function finished(options: {
   result: "win" | "loss";
   earned?: Record<string, number>;
   downed?: string[];
+  /** Field kit still in the satchel when the dust settled. */
+  satchel?: InventoryStack[];
 }): GameState {
-  const battle = openBattle();
+  const battle = openBattle(undefined, undefined, options.satchel ?? []);
   const state = structuredClone(battle.state);
   state.result = options.result;
   for (const unit of state.units) {
@@ -124,6 +127,7 @@ describe("applyBattleResults — loss", () => {
       encounterId: ENCOUNTER_ID,
       standing: [],
       fallen: [],
+      consumed: [],
       advanced: false,
     });
   });
@@ -135,5 +139,57 @@ describe("applyBattleResults — loss", () => {
     expect(state).toBe(before);
     expect(outcome.result).toBe("loss");
     expect(outcome.advanced).toBe(false);
+  });
+});
+
+describe("applyBattleResults — the satchel", () => {
+  const withKit = (count: number): CampaignState =>
+    benchState({
+      startingRosterUnitIds: ["rowen"],
+      encounterIds: [ENCOUNTER_ID, "e2-elsewhere"],
+      startingInventory: [
+        { itemId: "watch-plate", count: 1 },
+        { itemId: "coagulant-vial", count },
+      ],
+    });
+
+  it("strikes what the battle spent from stock", () => {
+    const before = withKit(3);
+    const { state, outcome } = applyBattleResults(
+      before,
+      finished({ result: "win", satchel: [{ itemId: "coagulant-vial", count: 1 }] }),
+    );
+    expect(outcome.consumed).toEqual([{ itemId: "coagulant-vial", count: 2 }]);
+    expect(inventoryCount(state, "coagulant-vial")).toBe(1);
+    expect(inventoryCount(before, "coagulant-vial")).toBe(3);
+  });
+
+  it("drops the stack entirely when the last one is spent", () => {
+    const { state, outcome } = applyBattleResults(withKit(1), finished({ result: "win" }));
+    expect(outcome.consumed).toEqual([{ itemId: "coagulant-vial", count: 1 }]);
+    expect(inventoryCount(state, "coagulant-vial")).toBe(0);
+    expect(state.inventory.map((stack) => stack.itemId)).toEqual(["watch-plate"]);
+  });
+
+  it("leaves equipment stock alone", () => {
+    const { state } = applyBattleResults(withKit(2), finished({ result: "win" }));
+    expect(inventoryCount(state, "watch-plate")).toBe(1);
+  });
+
+  it("reports nothing spent when the satchel comes home full", () => {
+    const { state, outcome } = applyBattleResults(
+      withKit(2),
+      finished({ result: "win", satchel: [{ itemId: "coagulant-vial", count: 2 }] }),
+    );
+    expect(outcome.consumed).toEqual([]);
+    expect(inventoryCount(state, "coagulant-vial")).toBe(2);
+  });
+
+  it("refunds the whole satchel on a loss, like everything else", () => {
+    const before = withKit(3);
+    const { state, outcome } = applyBattleResults(before, finished({ result: "loss" }));
+    expect(state).toBe(before);
+    expect(outcome.consumed).toEqual([]);
+    expect(inventoryCount(state, "coagulant-vial")).toBe(3);
   });
 });

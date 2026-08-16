@@ -235,17 +235,20 @@ Every schema change is additive; every shipped `data/` file still validates.
    (`toward-target` / `away-from-target` / `forward`), same legality rules as
    `forceMove` (`COMBAT_RULES` §10). Not yet wired into Piston Lunge or Signal
    Jump: that is a content edit.
-4. **Consumables are inert** — **DEFERRED**, with a sketch. Consumables already
-   carry `effects`, but they carry no targeting block, `Unit` has no carry
-   slot, and campaign inventory has no per-battle hand-off. Sketch: add
-   `carriedItemIds` to `Unit`; mirror it onto `BattleUnit`; add a `useItem`
-   command validated against a default consumable targeting rule (range 1,
-   area single, self/ally/enemy) and against the carry list; spend the entry;
-   route the item's `effects` through `applyEffects` with
-   `consumableEffectBonusPercent` scaling the `heal` and `damage` amounts. The
-   open question is authoring rather than plumbing — every consumable needs a
-   targeting rule and the deployment screen needs to hand items to units — so
-   this wants a design call before code.
+4. **Consumables are inert** — **DONE.** `Consumable` takes an optional
+   `targeting` block (engine default: reach 0–1, single, self/ally); a `useItem`
+   command spends the acting unit's action and one entry from
+   `GameState.satchels`, a per-team shared pool that enters at `createBattle`
+   and folds back through `applyBattleResults`. An item use resolves as an
+   ability the engine synthesizes from the item (`item:<id>`), so targeting,
+   forecast, reactions, and AI scoring are the ability path unchanged. Bench
+   Grade's `consumableEffectBonusPercent` scales damage and heal power, and a
+   new sibling `consumableRangeBonus` extends the throw. Every job carries
+   `field-issue`, so items are universal and the Chemist's edge is mastery
+   rather than exclusivity. The sketch's per-unit `carriedItemIds` was
+   deliberately **not** taken — rationale, the seven items' targeting, and the
+   deferrals are in `docs/ITEMS.md`; rules in `COMBAT_RULES` §19; inventory flow
+   in `PROGRESSION` §4.
 5. Minor: no accuracy stat (blind modeled as stat loss); no on-expiry status
    cost; reaction trigger vocabulary can't express ally-protection. **OPEN.**
 6. **Balance escalation**: TTK collapses with level — **DONE.** The damage

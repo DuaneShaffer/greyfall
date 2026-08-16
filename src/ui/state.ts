@@ -88,6 +88,16 @@ export interface OperableView {
   name: string;
 }
 
+/** One consumable in the party's shared satchel, as the Item submenu lists it. */
+export interface ItemEntryView {
+  itemId: string;
+  name: string;
+  description: string;
+  /** Stock left in the satchel; the whole force draws on the same pile. */
+  count: number;
+  unavailableReason?: string;
+}
+
 export interface ActionMenuView {
   unit: UnitView;
   skillsets: SkillsetView[];
@@ -98,6 +108,8 @@ export interface ActionMenuView {
   actBlockedReason?: string;
   /** Adjacent machinery the unit could operate; empty hides the entry. */
   operables?: OperableView[];
+  /** The satchel, shared by the whole force; empty hides the Item entry. */
+  items?: ItemEntryView[];
 }
 
 export interface ForecastTargetView {
@@ -124,6 +136,8 @@ export interface ForecastView {
   chargeCost: number;
   /** null = resolves immediately; otherwise it enters the turn order as a cast. */
   castSpeed: number | null;
+  /** Set when the pending action is a consumable rather than an ability. */
+  item?: { itemId: string; remaining: number };
   targets: ForecastTargetView[];
 }
 
@@ -242,6 +256,8 @@ export interface EquipmentView {
   slots: EquipSlotView[];
   /** Candidate items per slot, already filtered to the ones worth listing. */
   options: Record<EquipSlot, ItemOptionView[]>;
+  /** Consumables in stock. Read-only here: they are carried, never equipped. */
+  satchel: ItemEntryView[];
 }
 
 export interface JobOptionView {
@@ -291,6 +307,8 @@ export interface DeploymentView {
   maxDeployed: number;
   candidates: DeploymentCandidateView[];
   slots: DeploymentSlotView[];
+  /** The satchel that goes out with them; spent stock does not come back. */
+  satchel: ItemEntryView[];
   canConfirm: boolean;
   /** Why Deploy is greyed: nobody assigned, roster empty. */
   blockedReason?: string;

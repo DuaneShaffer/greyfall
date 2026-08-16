@@ -110,7 +110,8 @@
         "equipment": {
           "weapon": "dosing-gun",
           "body": "canvas-coat"
-        }
+        },
+        "supportAbilityId": "bench-grade"
       },
       "team": "enemy",
       "position": {
@@ -178,6 +179,16 @@
         "y": 6
       },
       "facing": "west"
+    }
+  ],
+  "enemySatchel": [
+    {
+      "itemId": "coagulant-vial",
+      "count": 2
+    },
+    {
+      "itemId": "caustic-flask",
+      "count": 1
     }
   ],
   "winConditions": [

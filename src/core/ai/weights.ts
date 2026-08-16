@@ -49,6 +49,8 @@ export interface AiWeights {
 
   chargePoint: number;
   hpPoint: number;
+  /** Price of burning one consumable: the satchel does not refill mid-chapter. */
+  itemUsePoint: number;
   /** Extra price per flux point as the cost eats the pool the unit has left. */
   fluxScarcityPercent: number;
   /** Gross value under which spending flux still counts as chip damage. */
@@ -135,6 +137,7 @@ export const WEIGHTS: AiWeights = {
 
   chargePoint: 12,
   hpPoint: 14,
+  itemUsePoint: 120,
   fluxScarcityPercent: 120,
   chipThreshold: 60,
   chipPenalty: 40,

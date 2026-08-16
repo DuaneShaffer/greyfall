@@ -18,6 +18,7 @@ import {
   allUnits,
   battleMap,
   getUnit,
+  itemIdFromAbilityId,
   standHeight,
   unitMaxHp,
   type BattleEvent,
@@ -91,9 +92,11 @@ const hitEvent = (
 
 /**
  * Charged abilities announce themselves with `AbilityCharging`, so an
- * `AbilityUsed` naming one is the release, not the wind-up.
+ * `AbilityUsed` naming one is the release, not the wind-up. An item is applied
+ * rather than swung, so it borrows the cast pose whatever it does.
  */
 const poseFor = (state: GameState, unitId: string, abilityId: string): ActorPose => {
+  if (itemIdFromAbilityId(abilityId) !== null) return "cast";
   const ability = abilityInfo(state, unitId, abilityId);
   if (ability !== null && ability.slot === "action" && ability.castSpeed !== null) return "cast";
   return "attack";

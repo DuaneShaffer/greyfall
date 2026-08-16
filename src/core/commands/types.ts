@@ -9,6 +9,7 @@ import type { GameState, TargetRef } from "../state/types.js";
 export type Command =
   | { kind: "move"; unitId: string; to: TileCoord }
   | { kind: "act"; unitId: string; abilityId: string; target: TargetRef }
+  | { kind: "useItem"; unitId: string; itemId: string; target: TargetRef }
   | { kind: "activateObject"; unitId: string; objectId: string }
   | { kind: "wait"; unitId: string; facing: Facing }
   | { kind: "endTurn"; unitId: string };
@@ -22,6 +23,9 @@ export type CommandErrorCode =
   | "unknown-unit"
   | "unknown-object"
   | "unknown-ability"
+  | "unknown-item"
+  | "item-not-carried"
+  | "item-not-issued"
   | "unit-downed"
   | "already-moved"
   | "already-acted"

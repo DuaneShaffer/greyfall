@@ -101,6 +101,14 @@ function commandFor(ctx: AiContext, plan: Plan | null, mayMove: boolean): Comman
         target: plan.action.target,
       };
     }
+    if (plan.action.itemId !== null && plan.action.target !== null) {
+      return {
+        kind: "useItem",
+        unitId: actor.id,
+        itemId: plan.action.itemId,
+        target: plan.action.target,
+      };
+    }
     if (plan.action.objectId !== null) {
       return { kind: "activateObject", unitId: actor.id, objectId: plan.action.objectId };
     }

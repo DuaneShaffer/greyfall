@@ -62,7 +62,10 @@ const SupportAbility = AbilityBase.extend({
     .object({
       statMods: StatMods,
       ignoreHeightPenalty: z.boolean(),
+      // Item mastery, the two halves the Chemist's bench buys: potency scales a
+      // consumable's damage and heal power, reach extends how far it is thrown.
       consumableEffectBonusPercent: z.int(),
+      consumableRangeBonus: z.int().nonnegative(),
     })
     .partial(),
 });

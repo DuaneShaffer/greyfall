@@ -26,6 +26,10 @@ export interface BattleIntents {
   selectAbility(unitId: string, abilityId: string): void;
   /** Player confirmed the target of the pending ability. -> UseAbility command. */
   confirmTarget(unitId: string, abilityId: string, target: TargetRef): void;
+  /** Player picked a consumable from the Item submenu; targeting begins. */
+  selectItem(unitId: string, itemId: string): void;
+  /** Player confirmed the target of the pending item. -> UseItem command. */
+  confirmItemTarget(unitId: string, itemId: string, target: TargetRef): void;
   /** Player chose adjacent machinery to operate. -> ActivateObject command. */
   activateObject(unitId: string, objectId: string): void;
   /** Backed out of targeting or a submenu without committing anything. */
@@ -83,6 +87,8 @@ export function noopIntents(): UiIntents {
     confirmMove: sink,
     selectAbility: sink,
     confirmTarget: sink,
+    selectItem: sink,
+    confirmItemTarget: sink,
     activateObject: sink,
     cancelSelection: sink,
     wait: sink,

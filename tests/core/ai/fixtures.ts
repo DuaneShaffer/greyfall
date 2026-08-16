@@ -74,6 +74,8 @@ export function watchman(id: string, name = "Watchman", extra: Partial<Unit> = {
 export interface YardOptions {
   id?: string;
   rngSeed?: number;
+  /** Consumables the hostile force shares. */
+  satchel?: Encounter["enemySatchel"];
   winConditions?: Encounter["winConditions"];
   lossConditions?: Encounter["lossConditions"];
 }
@@ -99,6 +101,7 @@ export function yardBattle(placements: Placement[], options: YardOptions = {}): 
   const encounter = yardEncounter(aiContent(), {
     id,
     enemies: placements,
+    ...(options.satchel === undefined ? {} : { enemySatchel: options.satchel }),
     ...(options.rngSeed === undefined ? {} : { rngSeed: options.rngSeed }),
     ...(options.winConditions === undefined ? {} : { winConditions: options.winConditions }),
     ...(options.lossConditions === undefined ? {} : { lossConditions: options.lossConditions }),

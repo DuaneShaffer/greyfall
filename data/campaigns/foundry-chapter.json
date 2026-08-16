@@ -52,6 +52,18 @@
     {
       "itemId": "coagulant-vial",
       "count": 3
+    },
+    {
+      "itemId": "numbing-salts",
+      "count": 1
+    },
+    {
+      "itemId": "cell-tab",
+      "count": 1
+    },
+    {
+      "itemId": "caustic-flask",
+      "count": 1
     }
   ]
 }

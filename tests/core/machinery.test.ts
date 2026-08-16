@@ -33,10 +33,8 @@ describe("the flux cell chain", () => {
       target: { kind: "object", objectId: "yard-cell" },
     });
     expect(cast.error).toBeNull();
-    // The cast is charging; the yard hand takes its turn before it lands.
-    expect(getObject(cast.state, "yard-cell")?.destroyed).toBe(false);
-
-    const fired = applyCommand(cast.state, { kind: "endTurn", unitId: "yard-hand" });
+    // Instant cast: the whole chain lands in the same command batch.
+    const fired = cast;
 
     // 70 integrity damage against 20 hp destroys the cell outright.
     const damaged = fired.events.find((e) => e.type === "ObjectDamaged");

@@ -30,6 +30,11 @@ export const Disposition = z.object({
 });
 export type Disposition = z.infer<typeof Disposition>;
 
+// A counted pile of one item: the shape both the chapter's stock and a battle
+// satchel are lists of.
+export const ItemStack = z.object({ itemId: Id, count: z.int().positive() });
+export type ItemStack = z.infer<typeof ItemStack>;
+
 export const DialogueLine = z.object({
   speaker: z.string(),
   portraitId: Id.optional(),

@@ -8,6 +8,12 @@ const FACING_LABELS: Record<NonNullable<ForecastTargetView["relativeFacing"]>, s
   back: "Back",
 };
 
+/** An item costs no flux and no cast time; what it costs is itself. */
+function costLine(view: ForecastView): string {
+  if (view.item) return `Field kit · ${view.item.remaining} left after use`;
+  return `Charge ${view.chargeCost} · ${view.castSpeed === null ? "Immediate" : `Cast ${view.castSpeed}`}`;
+}
+
 /** The commit-or-back-out panel: who, at what odds, for how much. */
 export class ForecastPanel implements Component<ForecastView | null> {
   readonly el: HTMLElement;
@@ -45,10 +51,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
                 class: "gf-forecast-attacker",
                 text: `${view.attacker.name} · ${view.attacker.jobName}`,
               }),
-              el("p", {
-                class: "gf-forecast-cost",
-                text: `Charge ${view.chargeCost} · ${view.castSpeed === null ? "Immediate" : `Cast ${view.castSpeed}`}`,
-              }),
+              el("p", { class: "gf-forecast-cost", text: costLine(view) }),
             ],
           }),
         ],
@@ -78,10 +81,12 @@ export class ForecastPanel implements Component<ForecastView | null> {
     const view = this.view;
     const first = view?.targets[0];
     if (!view || !first) return;
-    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, {
-      kind: "unit",
-      unitId: first.unitId,
-    });
+    const target = { kind: "unit" as const, unitId: first.unitId };
+    if (view.item) {
+      this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, target);
+      return;
+    }
+    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, target);
   }
 
   destroy(): void {

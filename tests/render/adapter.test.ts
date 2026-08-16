@@ -26,13 +26,37 @@ describe("actor threading", () => {
     ]);
   });
 
+  it("plays an item as a cast: a compound is applied, not swung", () => {
+    expect(
+      toRenderEvents(
+        {
+          type: "AbilityUsed",
+          unitId: "rowen",
+          abilityId: "item:coagulant-vial",
+          target: { kind: "unit", unitId: "vale" },
+          tiles: [{ x: 1, y: 4 }],
+        },
+        state,
+      ),
+    ).toEqual([{ kind: "unitActed", unitId: "rowen", pose: "cast" }]);
+  });
+
+  it("leaves ItemUsed to the AbilityUsed that follows it", () => {
+    expect(
+      toRenderEvents(
+        { type: "ItemUsed", unitId: "rowen", itemId: "coagulant-vial", team: "player", remaining: 1 },
+        state,
+      ),
+    ).toEqual([]);
+  });
+
   it("plays a charged ability's resolution as a cast release", () => {
     expect(
       toRenderEvents(
         {
           type: "AbilityUsed",
           unitId: "vale",
-          abilityId: "overload-cell",
+          abilityId: "ground",
           target: { kind: "object", objectId: "yard-cell" },
           tiles: [{ x: 1, y: 1 }],
         },
@@ -47,10 +71,10 @@ describe("actor threading", () => {
         {
           type: "AbilityCharging",
           unitId: "vale",
-          abilityId: "overload-cell",
+          abilityId: "ground",
           target: { kind: "tile", tile: { x: 1, y: 1 } },
           chargeId: "charge-1",
-          castSpeed: 25,
+          castSpeed: 60,
         },
         state,
       ),
@@ -60,7 +84,7 @@ describe("actor threading", () => {
         {
           type: "AbilityChargeCancelled",
           unitId: "vale",
-          abilityId: "overload-cell",
+          abilityId: "ground",
           chargeId: "charge-1",
         },
         state,

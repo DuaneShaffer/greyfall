@@ -1,8 +1,16 @@
-import type { Ability, Encounter, GameMap, Item, Job, Status, TileCoord } from "../data/index.js";
+import type { Ability, Encounter, GameMap, Item, ItemStack, Job, Status, Team, TileCoord } from "../data/index.js";
 import type { DerivedStats } from "./progression/stats.js";
 import { resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
 import { objectMaxHp } from "./rules/effects.js";
+import {
+  canCarryItem,
+  carriedItemIds,
+  consumableItem,
+  itemAbilityId,
+  satchelCount,
+  teamSatchel as satchelOf,
+} from "./rules/items.js";
 import { areEnemies, attackAngle, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
 import {
@@ -172,6 +180,57 @@ export function availableAbilities(state: GameState, unitId: string): string[] {
     if (ability === undefined || ability.slot !== "action") return false;
     return unmetRequirement(state, unit, ability, null) === null;
   });
+}
+
+/** One team's shared field kit, in item-id order. */
+export function teamSatchel(state: GameState, team: Team): readonly ItemStack[] {
+  return satchelOf(state, team);
+}
+
+export interface UsableItemEntry {
+  itemId: string;
+  name: string;
+  description: string;
+  /** Stock left in the team satchel. */
+  count: number;
+  /** Ability id this item resolves through: `targetableTiles`, `forecast`. */
+  abilityId: string;
+  /** Set when the unit cannot use it right now; the entry still lists. */
+  unavailableReason?: string;
+}
+
+/**
+ * The unit's satchel as a menu: everything its team is carrying, with the
+ * reason greyed out when this unit in particular cannot reach for it.
+ */
+export function usableItems(state: GameState, unitId: string): UsableItemEntry[] {
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return [];
+  const turn = state.activeTurn;
+  const spent = turn !== null && turn.unitId === unitId && turn.acted;
+  const held = !canAct(state, unit);
+
+  const out: UsableItemEntry[] = [];
+  for (const itemId of carriedItemIds(state, unit)) {
+    const item = consumableItem(state, itemId);
+    if (item === undefined) continue;
+    const reason = !canCarryItem(state, unit, item)
+      ? "Not issued to this job"
+      : held
+        ? "Cannot act"
+        : spent
+          ? "Action already spent"
+          : undefined;
+    out.push({
+      itemId,
+      name: item.name,
+      description: item.description,
+      count: satchelCount(state, unit.team, itemId),
+      abilityId: itemAbilityId(itemId),
+      ...(reason === undefined ? {} : { unavailableReason: reason }),
+    });
+  }
+  return out;
 }
 
 /** Every tile the unit can move to, with its path cost. */

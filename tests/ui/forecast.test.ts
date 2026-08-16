@@ -65,4 +65,27 @@ describe("ForecastPanel", () => {
       { name: "confirmTarget", args: ["rowen", "pin", { kind: "unit", unitId: "provocateur-a" }] },
     ]);
   });
+
+  it("prices an item by what the satchel has left and commits it as an item", () => {
+    const { intents, calls } = recordingIntents();
+    const panel = new ForecastPanel({ intents });
+    panel.update(
+      mockForecastView({
+        abilityId: "item:coagulant-vial",
+        abilityName: "Coagulant Vial",
+        chargeCost: 0,
+        castSpeed: null,
+        item: { itemId: "coagulant-vial", remaining: 2 },
+      }),
+    );
+
+    expect(textOf(panel.el, ".gf-forecast-cost")).toBe("Field kit · 2 left after use");
+    panel.el.querySelector<HTMLButtonElement>(".gf-button")?.click();
+    expect(calls).toEqual([
+      {
+        name: "confirmItemTarget",
+        args: ["rowen", "coagulant-vial", { kind: "unit", unitId: "provocateur-a" }],
+      },
+    ]);
+  });
 });

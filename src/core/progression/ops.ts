@@ -1,15 +1,17 @@
 import type { Ability, Item, Job, Unit } from "../../data/index.js";
-import { allUnits, battleEncounter, battleResult } from "../selectors.js";
+import { allUnits, battleEncounter, battleResult, teamSatchel } from "../selectors.js";
 import type { BattleResult, GameState } from "../state/types.js";
 import {
   adjustInventory,
   bankStanding,
   cloneCampaign,
+  inventoryCount,
   jobLevel,
   rosterUnit,
   unitProgress,
   type CampaignState,
   type FallenRecord,
+  type InventoryStack,
   type UnitProgress,
 } from "./campaign.js";
 import { EQUIPMENT_SLOT_ORDER } from "./stats.js";
@@ -363,6 +365,8 @@ export interface BattleOutcome {
   encounterId: string;
   standing: StandingAward[];
   fallen: FallenRecord[];
+  /** Consumables the party spent, in item-id order. Empty after a loss. */
+  consumed: InventoryStack[];
   /** True when the encounter index moved on — a first win, not a replay. */
   advanced: boolean;
 }
@@ -387,6 +391,10 @@ export interface BattleResultsApplied {
  *
  * Replays of an already-won encounter bank and bury as usual but do not
  * advance the index.
+ *
+ * The party satchel folds back on the same terms: what the battle spent is
+ * struck from stock on a win, and a loss refunds it along with everything else
+ * (`docs/ITEMS.md` §4).
  */
 export function applyBattleResults(
   state: CampaignState,
@@ -403,6 +411,7 @@ export function applyBattleResults(
         encounterId,
         standing: [],
         fallen: [],
+        consumed: [],
         advanced: false,
       },
     };
@@ -411,6 +420,7 @@ export function applyBattleResults(
   const next = cloneCampaign(state);
   const standing: StandingAward[] = [];
   const fallen: FallenRecord[] = [];
+  const consumed = spendSatchel(state, next, final);
 
   for (const battleUnit of allUnits(final)) {
     if (battleUnit.team !== "player") continue;
@@ -447,5 +457,35 @@ export function applyBattleResults(
     next.encounterIndex += 1;
   }
 
-  return { state: next, outcome: { result, encounterId, standing, fallen, advanced } };
+  return { state: next, outcome: { result, encounterId, standing, fallen, consumed, advanced } };
+}
+
+/**
+ * Strike from stock what the party satchel came home lighter by. The chapter
+ * state cannot change while a battle runs, so the shortfall against `before` is
+ * exactly what was drunk, thrown, or cracked open.
+ */
+function spendSatchel(
+  before: CampaignState,
+  next: CampaignState,
+  final: GameState,
+): InventoryStack[] {
+  const items = final.content.items;
+  const remaining = new Map<string, number>();
+  for (const stack of teamSatchel(final, "player")) remaining.set(stack.itemId, stack.count);
+
+  const ids = new Set<string>(remaining.keys());
+  for (const stack of before.inventory) {
+    if (items[stack.itemId]?.slot === "consumable") ids.add(stack.itemId);
+  }
+
+  const consumed: InventoryStack[] = [];
+  for (const itemId of [...ids].sort()) {
+    if (items[itemId]?.slot !== "consumable") continue;
+    const spent = inventoryCount(before, itemId) - (remaining.get(itemId) ?? 0);
+    if (spent <= 0) continue;
+    adjustInventory(next.inventory, itemId, -spent);
+    consumed.push({ itemId, count: spent });
+  }
+  return consumed;
 }

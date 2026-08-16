@@ -46,8 +46,8 @@ function playOut(start: GameState, maxCommands = 2000): GameState {
 function autoBattlePort(content: ContentLibrary): BattlePort & { finals: GameState[] } {
   const port: BattlePort & { finals: GameState[] } = {
     finals: [],
-    start: (encounterId, party, deployment, onEnd) => {
-      const battle = createBattle(content, encounterId, party, deployment);
+    start: (encounterId, party, deployment, carried, onEnd) => {
+      const battle = createBattle(content, encounterId, party, deployment, carried);
       const final = playOut(battle.state);
       port.finals.push(final);
       onEnd(final);

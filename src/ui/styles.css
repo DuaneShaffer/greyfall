@@ -605,6 +605,12 @@
   color: var(--gf-text-dim);
 }
 
+/* The shared field kit: a stock readout, not a caption. */
+.gf-satchel {
+  color: var(--gf-flux);
+  letter-spacing: 0.02em;
+}
+
 .gf-detail-cost,
 .gf-detail-standing {
   color: var(--gf-flux);

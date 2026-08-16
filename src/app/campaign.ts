@@ -9,6 +9,7 @@
 import {
   applyBattleResults,
   changeJob,
+  consumableStock,
   currentEncounterId,
   equipItem,
   learnAbility,
@@ -22,6 +23,7 @@ import {
   type Deployment,
   type EquipmentSlot,
   type GameState,
+  type InventoryStack,
   type PassiveSlot,
   type ProgressionError,
   type ProgressionResult,
@@ -251,6 +253,14 @@ export class CampaignSession {
       out.push({ unitId, position: { ...tile }, facing: "north" });
     });
     return out;
+  }
+
+  /**
+   * The satchel that goes out with them: the whole chapter's consumable stock,
+   * shared by everyone deployed. Whatever comes back is what is left.
+   */
+  carriedItems(): InventoryStack[] {
+    return consumableStock(this.campaignState, this.content.items);
   }
 
   /** The roster units the staged formation puts on the field, deep-copied. */

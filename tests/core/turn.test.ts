@@ -104,13 +104,13 @@ describe("charged abilities", () => {
     const cast = applyCommand(state, {
       kind: "act",
       unitId: "vale",
-      abilityId: "overload-cell",
+      abilityId: "rig-burst",
       target: { kind: "object", objectId: "yard-cell" },
     });
     expect(cast.error).toBeNull();
     expect(cast.events.some((e) => e.type === "AbilityCharging")).toBe(true);
     const charging = cast.events.find((e) => e.type === "AbilityCharging");
-    expect(charging).toMatchObject({ abilityId: "overload-cell", castSpeed: 25 });
+    expect(charging).toMatchObject({ abilityId: "rig-burst", castSpeed: 25 });
     // Flux is spent up front: 22 charge minus the ability's 5.
     expect(getUnit(cast.state, "vale")?.charge).toBe(17);
     expect(cast.state.activeTurn?.unitId).not.toBe("vale");

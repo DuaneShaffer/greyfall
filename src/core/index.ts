@@ -31,6 +31,7 @@ export type {
   BattleResult,
   BattleUnit,
   ChargedAction,
+  ConsumableItem,
   GameState,
   MapState,
   MovementAbility,
@@ -38,6 +39,7 @@ export type {
   ReactionAbility,
   SupportAbility,
   TargetRef,
+  TeamSatchel,
   TempStatMod,
   WeaponItem,
 } from "./state/types.js";
@@ -69,6 +71,7 @@ export {
   reachableTiles,
   statusInfo,
   targetableTiles,
+  teamSatchel,
   turnNumber,
   turnOrderPreview,
   unitCanAct,
@@ -76,9 +79,20 @@ export {
   unitMaxCharge,
   unitMaxHp,
   unitStats,
+  usableItems,
   type ForecastEntry,
   type TurnOrderEntry,
+  type UsableItemEntry,
 } from "./selectors.js";
+export {
+  DEFAULT_CONSUMABLE_TARGETING,
+  ITEM_ABILITY_PREFIX,
+  consumablePotencyBonus,
+  consumableRangeBonus,
+  itemAbility,
+  itemAbilityId,
+  itemIdFromAbilityId,
+} from "./rules/items.js";
 export type { AttackAngle } from "./rules/grid.js";
 export type { ReachableTile } from "./rules/movement.js";
 
@@ -90,6 +104,7 @@ export {
   MAX_JOB_LEVEL,
   adjustInventory,
   cloneCampaign,
+  consumableStock,
   createCampaign,
   currentEncounterId,
   currentStanding,

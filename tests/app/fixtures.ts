@@ -4,7 +4,7 @@ import {
   type Deployment,
   type GameState,
 } from "../../src/core/index.js";
-import type { DialogueLine, Facing, TileCoord, Unit } from "../../src/data/index.js";
+import type { DialogueLine, Facing, ItemStack, TileCoord, Unit } from "../../src/data/index.js";
 import type { HighlightStyle, RendererPort, UiPort } from "../../src/app/controller.js";
 import type { RenderEvent } from "../../src/render/presentation.js";
 import type { BattleViewModel } from "../../src/render/viewmodel.js";
@@ -27,7 +27,11 @@ export const VALE: Unit = {
 export const ROWEN_TILE: TileCoord = { x: 0, y: 4 };
 export const VALE_TILE: TileCoord = { x: 1, y: 4 };
 
-export function openBattle(party: Unit[] = [rowen()], deployment?: Deployment[]) {
+export function openBattle(
+  party: Unit[] = [rowen()],
+  deployment?: Deployment[],
+  carried: readonly ItemStack[] = [],
+) {
   const placements: Deployment[] =
     deployment ??
     party.map((unit, index) => ({
@@ -35,7 +39,7 @@ export function openBattle(party: Unit[] = [rowen()], deployment?: Deployment[])
       position: index === 0 ? ROWEN_TILE : VALE_TILE,
       facing: "north" as Facing,
     }));
-  return createBattle(loadContent(), YARD_ENCOUNTER_ID, party, placements);
+  return createBattle(loadContent(), YARD_ENCOUNTER_ID, party, placements, carried);
 }
 
 export interface FakeRenderer {

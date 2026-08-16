@@ -101,7 +101,7 @@ towards the Enforcer's because the Enforcer's ×120 is asserted by
 | Conduit | 22 (+8 with Licensed Draw) | Flare 9 | one Flare, or two Grounds, or four Arcs |
 | Chemist | 14 | Field Transfusion 6 | one big heal or four small ones |
 | Machinist | 18 (+4 with Bench Eye) | Sentry Frame 12 | one frame and a drone, or a frame and a Crossfeed |
-| Saboteur | 12 | Bring the House 9 | exactly one; Rig Machinery costs 0 on purpose |
+| Saboteur | 12 | Bring the House **7** | one, and a Shaped Charge after it; Rig Machinery costs 0 on purpose |
 | Railrunner | 10 | Running Coupling 6 | the rest of the kit is 0–2, so mobility never runs dry |
 | Augmented | 14 (+4 with Graft Tolerance) | Press Frame 8 | Siphon *refills* — the intended loop is steal, then spend |
 
@@ -128,7 +128,7 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 | Arc | action | 150 / 5 | line 3, mag 21 arc (Attunement-scaled both ends) |
 | Tap Line | action | 200 / 0, requires `adjacentPoweredObject` | ally/self charge +10 — the answer to "where does the power come from" |
 | Throw the Breaker | action | 250 / 1 | object setPower toggle, range 5 |
-| Overload Cell | action | 250 / **5**, cast 25, requires `targetPowered` | object mag **20** |
+| Overload Cell | action | 250 / 5, **instant**, requires `targetPowered` | object mag 20 |
 | Ground | action | 550 / 5, cast 60 | Grounded 80% + charge −10 siphoned to the caster + setPower off |
 | Flare | action | 950 / 9, cast 20 | radius 2, mag 14 arc + Flux Burn 60% + object mag 8 |
 | Licensed Draw | support | 450 | charge +8 |
@@ -137,6 +137,15 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 Ground is the one ability that hits a machine, an Augmented, and a Conduit's
 own reserve with the same verb — bible §6's "Conduits can *Ground* them",
 mechanized as `applyStatus` + `modifyCharge{siphonToActor}` + `setPower`.
+
+Overload Cell lost its 25-speed cast in the content follow-up
+(`BALANCE_REPORT` §7.8, G11). A cast on an object-only ability buys nothing —
+an object does not walk out of the blast the way a unit does — so the cast was
+pure price, and at 5 flux on top of it the ability could not clear its own cost
+against an unmanned machine. It is now what the fiction always said it was: a
+shove past the rated draw, done in the time it takes to do it. The `targetPowered`
+requirement is what keeps it honest — it only answers a machine somebody is
+still running.
 
 ### Chemist — the portable lab
 | Ability | Slot | Standing / Charge | Effect |
@@ -147,7 +156,7 @@ mechanized as `applyStatus` + `modifyCharge{siphonToActor}` + `setPower`.
 | Bracer Shot | action | 450 / 3 | modifyStats phys/mag/evade +5 for 3 turns |
 | Numbing Fog | action | 550 / 5, cast 30 | radius 2, Fouled 80% (CT ×60%) |
 | Field Transfusion | action | 900 / 6, cast 35 | heal mag 14 + clears Flux Burn and Grounded |
-| Bench Grade | support | 500 | consumableEffectBonusPercent 50 — the job identity |
+| Bench Grade | support | 500 | consumableEffectBonusPercent 50 + consumableRangeBonus 2 — the job identity |
 | Reflex Dose | reaction (hpCritical) | 600 | self heal mag 6 + clears Scalded |
 
 **Every Chemist heal and compound is `attunementScaled: false`.** Bible §5.4:
@@ -163,10 +172,16 @@ Conduit-only signature.
 | Field Repair | action | 200 / 3 | repairObject fixed 20 — machines only, per bible |
 | Skitter Drone | action | 400 / 6 | drone, hp 12, `attack` mag 5 unscaled, range 1–2, speed 5, no LoS needed |
 | Sentry Frame | action | 500 / 12 | turret, hp 24, `attack` mag 9 unscaled, range 1–4 vertical 2, speed 6 |
-| Crossfeed | action | 700 / 4 | **ally only**: Overclocked + charge +10 |
+| Crossfeed | action | 700 / 4, range **1–2** | **ally only**: Overclocked + charge +10 |
 | Feedback Shunt | reaction (damaged) | 550 | arc fixed 12 + Seized 25% |
 | Bench Eye | support | 400 | mag +3, charge +4 |
 | Gantry Step | movement | 450 | ignoresHazardTiles, jump +2 |
+
+Crossfeed's `range.min` is 1 because "ally" includes the caster
+(`BALANCE_REPORT` §7.8, G10). At min 0 it was Overclocked on yourself for 4
+flux — strictly better than the Augmented's own Overdrive at 7 flux and 5 HP,
+and 41% of everything a Machinist did on an authored map. A jumper needs two
+rigs; it cannot be run off the cells it is drawing from.
 
 See §7.1 — deployables are currently inert obstacles, which is the single
 biggest gap between this kit and its bible fantasy.
@@ -179,7 +194,7 @@ biggest gap between this kit and its bible fantasy.
 | Shaped Charge | action | 400 / 3, cast 35 | radius 1, phys 7 to units + phys 8 to objects |
 | Gas Line Tap | action | 500 / 4 | line 3 at range 2, thermal phys 4 + Scalded 70% + object phys 5, instant |
 | Bring It Down | action | 750 / 3 | object phys 28 — a structure killer, instant |
-| Bring the House | action | 1100 / 9, cast 15 | radius 3, phys 8 + shove 2 + object phys 14 |
+| Bring the House | action | 1100 / **7**, cast 15 | radius 3, phys 8 + shove 2 + object phys 14 |
 | Light Hands | support | 500 | evade +6, speed +1 |
 | Catwalk Sense | movement | 400 | ignoresHazardTiles, jump +1, move +1 |
 
@@ -191,6 +206,13 @@ the Conduit is (correctly) weak.
 Rig Machinery costs 0 charge on purpose: it is a wrench, not a license, and
 it gives the Saboteur an answer to a powered map that does not compete with
 the Conduit's.
+
+Bring the House came down 9 → 7 flux in the content follow-up
+(`BALANCE_REPORT` §7.8, G12). At 9 of a level-3 Saboteur's 20 it was the
+kit's least affordable ability and Shaped Charge did all of its work; at 6 it
+becomes the default and Shaped Charge dies instead. Seven is the price at
+which both are real: the sequence is still most of a battle's flux, and there
+is a Shaped Charge left after it.
 
 ### Railrunner — terrain-conditional excellence
 | Ability | Slot | Standing / Charge | Effect |
@@ -244,6 +266,11 @@ Consumables mirror the Chemist's kit one rung down (Coagulant Vial to
 Coagulant Jet, Cinder Flask to Cinder Oil, Numbing Salts to Triage) so the
 `consumableEffectBonusPercent` support has something to be a bonus *on*, and
 so a party without a Chemist is inconvenienced rather than crippled.
+
+All seven now carry a `targeting` block and are usable in battle: the five
+compounds are hand-applied at reach 0–1 on self or an ally, the two flasks are
+thrown 1–3 with line of sight at an enemy. The `field-issue` tag is what makes
+them universal — see `docs/ITEMS.md` for the design record and the table.
 
 ## 6. Balance assumptions
 
@@ -300,6 +327,14 @@ radius of 2 or more is charged — Smoke Canister is the one instant at that
 size and it deals none. The only instants costing more than 6 charge are the
 Machinist's deployables, which already cost a full turn of setup and put
 nothing on the board that acts.
+
+**An ability that can only be aimed at an object should not carry a cast.**
+A charge is priced against the chance the target walks out of it, and a
+machine does not walk; the delay is a cost with nothing on the other side of
+it. Overload Cell is the one that was authored the wrong way and it is fixed
+(`BALANCE_REPORT` §7.8, G11). Bring It Down and Rig Machinery were always
+instant, and Ground and Flare keep their casts because both can be aimed at a
+unit.
 
 **Application chances** run 50–85%, with 100% only on self-buffs. Resolve and
 Attunement do not modify them (COMBAT_RULES §8), so these are raw numbers,
@@ -368,11 +403,14 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
    attacker's accuracy. `Smoked` is therefore modelled as phys/mag/evade loss
    — "swings worse and dodges worse" — which reads acceptably but makes the
    target *easier* to hit, the opposite of the intent.
-4. **`consumableEffectBonusPercent` is unread by the engine.** The key exists
-   in `src/data/schemas/ability.ts` and appears nowhere in `src/core`. There
-   is also no consumable slot on `Unit` and no use-item command. The seven
-   consumables and the Chemist's Bench Grade support are authored to schema
-   but currently inert; Chemist item mastery is not yet playable.
+4. ~~**`consumableEffectBonusPercent` is unread by the engine.**~~ **Closed and
+   used.** A `useItem` command spends the acting unit's action and one entry
+   from a per-team shared satchel that enters at `createBattle` and folds back
+   through `applyBattleResults`; the seven consumables now author a `targeting`
+   block, and Bench Grade reads as +50% to every damage and heal power plus a
+   new `consumableRangeBonus: 2` for the throw. There is deliberately no
+   per-unit carry slot — the chapter's stock *is* the pool. `docs/ITEMS.md`,
+   `COMBAT_RULES` §19, `PROGRESSION` §4.
 5. **Statuses cannot carry a delayed or on-expiry cost.** Overclocked should
    hurt when it ends — bible §6 says every Augmented strength has a
    body-horror price. Expressed instead as up-front `hpCost` on the ability

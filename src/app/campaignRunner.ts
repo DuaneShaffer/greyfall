@@ -13,7 +13,7 @@
 //
 // `complete` is terminal: the chapter's encounter list ran out.
 
-import type { Deployment, GameState } from "../core/index.js";
+import type { Deployment, GameState, InventoryStack } from "../core/index.js";
 import type { Unit } from "../data/index.js";
 import type { BattleOutcome } from "../core/index.js";
 import { CampaignSession } from "./campaign.js";
@@ -23,13 +23,14 @@ export type CampaignPhase = "roster" | "formation" | "battle" | "complete";
 /** What the runner needs from the battle layer. */
 export interface BattlePort {
   /**
-   * Open `encounterId` with this party and formation. The runner is handed the
-   * final `GameState` through `onEnd` once the battle resolves.
+   * Open `encounterId` with this party, formation, and field kit. The runner is
+   * handed the final `GameState` through `onEnd` once the battle resolves.
    */
   start(
     encounterId: string,
     party: readonly Unit[],
     deployment: readonly Deployment[],
+    carried: readonly InventoryStack[],
     onEnd: (final: GameState) => void,
   ): void;
   /** Tear the battle down before the roster comes back up. */
@@ -126,9 +127,12 @@ export class CampaignRunner {
       return false;
     }
     const party = this.session.deployedParty();
+    const carried = this.session.carriedItems();
     this.currentPhase = "battle";
     this.screens.hide();
-    this.battle.start(pending.encounterId, party, placements, (final) => this.finishBattle(final));
+    this.battle.start(pending.encounterId, party, placements, carried, (final) =>
+      this.finishBattle(final),
+    );
     return true;
   }
 
@@ -151,5 +155,7 @@ export function summarize(outcome: BattleOutcome): string {
     outcome.fallen.length === 0
       ? ""
       : ` Lost: ${outcome.fallen.map((entry) => entry.name).join(", ")}.`;
-  return `Field held. ${banked} Standing banked.${lost}`;
+  const spent = outcome.consumed.reduce((total, stack) => total + stack.count, 0);
+  const kit = spent === 0 ? "" : ` Field kit down ${spent}.`;
+  return `Field held. ${banked} Standing banked.${kit}${lost}`;
 }

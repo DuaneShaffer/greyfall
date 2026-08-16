@@ -1,4 +1,5 @@
 import type { Ability, Encounter, GameMap, Item, Job, Status } from "../../data/index.js";
+import { itemAbility, itemIdFromAbilityId } from "../rules/items.js";
 import type { ActionAbility, BattleUnit, GameState, WeaponItem } from "./types.js";
 
 /** Everything loaded from `data/`, keyed by id. Input to `createBattle`. */
@@ -74,9 +75,17 @@ export function basicAttack(state: GameState, unit: BattleUnit): ActionAbility {
   };
 }
 
-/** Ability lookup that also resolves the synthesized weapon attack. */
+/**
+ * Ability lookup that also resolves the two abilities the engine synthesizes:
+ * the weapon attack, and `item:<id>` for a consumable as this unit would use it.
+ */
 export function getAbility(state: GameState, unit: BattleUnit, id: string): Ability | undefined {
   if (id === BASIC_ATTACK_ID) return basicAttack(state, unit);
+  const itemId = itemIdFromAbilityId(id);
+  if (itemId !== null) {
+    const item = state.content.items[itemId];
+    return item === undefined || item.slot !== "consumable" ? undefined : itemAbility(state, unit, item);
+  }
   return state.content.abilities[id];
 }
 

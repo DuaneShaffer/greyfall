@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DialogueLine, Facing, Id, SchemaVersion, Team, TileCoord } from "./common.js";
+import { DialogueLine, Facing, Id, ItemStack, SchemaVersion, Team, TileCoord } from "./common.js";
 import { Unit } from "./unit.js";
 
 const PlacedUnit = z.object({
@@ -78,6 +78,9 @@ export const Encounter = z.object({
   rngSeed: z.int().nonnegative(),
   maxDeployedUnits: z.int().positive(),
   enemies: z.array(PlacedUnit).min(1),
+  // Consumables the hostile force shares for this battle, the enemy mirror of
+  // the party satchel the chapter hands down.
+  enemySatchel: z.array(ItemStack).optional(),
   winConditions: z.array(WinCondition).min(1),
   lossConditions: z.array(LossCondition).min(1),
   triggers: z.array(Trigger),

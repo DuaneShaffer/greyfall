@@ -2,6 +2,7 @@ import { Component, el, meter, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
 import { DeploymentView } from "../state.js";
+import { summarizeSatchel } from "./equipment.js";
 
 const LIST_ID = "deployment-roster";
 
@@ -95,6 +96,7 @@ export class DeploymentScreen implements Component<DeploymentView> {
   private renderSlots(view: DeploymentView): void {
     replaceChildren(this.detail, [
       el("h2", { class: "gf-detail-title", text: "Deployment tiles" }),
+      el("p", { class: "gf-detail-sub gf-satchel", text: summarizeSatchel(view.satchel) }),
       el("ul", {
         class: "gf-deploy-slots",
         children: view.slots.map((slot) =>

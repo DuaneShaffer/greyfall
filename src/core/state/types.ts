@@ -4,6 +4,7 @@ import type {
   Facing,
   GameMap,
   Item,
+  ItemStack,
   Job,
   MapObject,
   Status,
@@ -20,6 +21,17 @@ export type ReactionAbility = Extract<Ability, { slot: "reaction" }>;
 export type SupportAbility = Extract<Ability, { slot: "support" }>;
 export type MovementAbility = Extract<Ability, { slot: "movement" }>;
 export type WeaponItem = Extract<Item, { slot: "weapon" }>;
+export type ConsumableItem = Extract<Item, { slot: "consumable" }>;
+
+/**
+ * One team's shared field kit for this battle. FFT's item pool: whoever can
+ * reach the target spends from the same satchel, and what is spent is gone.
+ */
+export interface TeamSatchel {
+  team: Team;
+  /** Sorted by item id; a stack that hits zero is removed. */
+  items: ItemStack[];
+}
 
 /** What a command or effect points at. Serializable; never holds object refs. */
 export type TargetRef =
@@ -120,6 +132,8 @@ export interface GameState {
   map: MapState;
   /** Sorted by unit id — the canonical iteration order for every rule. */
   units: BattleUnit[];
+  /** Carry pools by team, sorted by team name. Consumption is permanent. */
+  satchels: TeamSatchel[];
   charges: ChargedAction[];
   /** Ticks elapsed since battle start. */
   clock: number;

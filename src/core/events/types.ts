@@ -23,6 +23,9 @@ export type BattleEvent =
   | { type: "UnitForcedMove"; unitId: string; from: TileCoord; to: TileCoord }
   | { type: "UnitFacingChanged"; unitId: string; facing: Facing }
   | { type: "AbilityUsed"; unitId: string; abilityId: string; target: TargetRef; tiles: TileCoord[] }
+  // Precedes the `AbilityUsed` the item resolves through; `remaining` is what
+  // the team satchel has left of it afterwards.
+  | { type: "ItemUsed"; unitId: string; itemId: string; team: Team; remaining: number }
   | { type: "AbilityCharging"; unitId: string; abilityId: string; target: TargetRef; chargeId: string; castSpeed: number }
   | { type: "AbilityChargeCancelled"; unitId: string; abilityId: string; chargeId: string }
   | { type: "AbilityMissed"; unitId: string; abilityId: string; targetUnitId: string }

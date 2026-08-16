@@ -11,6 +11,7 @@ import {
   type BattleResult,
   type Deployment,
   type GameState,
+  type InventoryStack,
 } from "../core/index.js";
 import type { DialogueLine, Facing, TileCoord, Unit } from "../data/index.js";
 import { BattleRenderer, attachControls, palette } from "../render/index.js";
@@ -192,14 +193,20 @@ function forwardingIntents(): UiIntents {
 const hud = new BattleHud({ intents: forwardingIntents() });
 
 const battlePort: BattlePort = {
-  start: (encounterId, party: readonly Unit[], deployment: readonly Deployment[], onEnd) => {
+  start: (
+    encounterId,
+    party: readonly Unit[],
+    deployment: readonly Deployment[],
+    carried: readonly InventoryStack[],
+    onEnd,
+  ) => {
     const encounter = CONTENT.encounters[encounterId];
     if (encounter === undefined) throw new Error(`missing encounter ${encounterId}`);
     const map = CONTENT.maps[encounter.mapId];
     if (map === undefined) throw new Error(`missing map ${encounter.mapId}`);
     deploymentTiles = map.deploymentTiles;
 
-    const battle = createBattle(CONTENT, encounterId, party, deployment);
+    const battle = createBattle(CONTENT, encounterId, party, deployment, carried);
     onBattleEnd = onEnd;
     banner.classList.add("is-hidden");
 

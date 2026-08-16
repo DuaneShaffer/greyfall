@@ -4,6 +4,7 @@ import { TurnOrderStrip } from "../../src/ui/battle/turnOrder.js";
 import { UnitStatusPanel } from "../../src/ui/battle/unitStatus.js";
 import { recordingIntents } from "../../src/ui/intents.js";
 import {
+  mockDeploymentView,
   mockEnemyView,
   mockEquipmentView,
   mockPartyView,
@@ -11,6 +12,7 @@ import {
   mockUnitSheetView,
   mockUnitView,
 } from "../../src/ui/mock.js";
+import { DeploymentScreen } from "../../src/ui/screens/deployment.js";
 import { EquipmentScreen } from "../../src/ui/screens/equipment.js";
 import { RosterScreen } from "../../src/ui/screens/roster.js";
 import { UnitSheetScreen } from "../../src/ui/screens/unitSheet.js";
@@ -97,6 +99,22 @@ describe("UnitSheetScreen", () => {
 });
 
 describe("EquipmentScreen", () => {
+  it("reports the shared field kit without offering to equip it", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe(
+      "Field kit: Coagulant Vial x3 · Cinder Flask x1",
+    );
+    const slots = [...screen.el.querySelectorAll<HTMLElement>('[data-menu="equipment-slots"] .gf-menu-entry')];
+    expect(slots.map((node) => node.dataset["entry"])).not.toContain("consumable");
+  });
+
+  it("says so when the satchel is empty", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView({ satchel: [] }));
+    expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe("Field kit: empty");
+  });
+
   it("filters candidates by slot and flags kit the job cannot bear", () => {
     const screen = new EquipmentScreen();
     screen.update(mockEquipmentView());
@@ -138,5 +156,15 @@ describe("EquipmentScreen", () => {
     screen.menus.handleKey(key("ArrowDown"));
     screen.menus.handleKey(key("Enter"));
     expect(calls.at(-1)).toEqual({ name: "equipItem", args: ["rowen", "weapon", "shock-maul"] });
+  });
+});
+
+describe("DeploymentScreen", () => {
+  it("shows the field kit that goes out with the formation", () => {
+    const screen = new DeploymentScreen();
+    screen.update(mockDeploymentView());
+    expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe(
+      "Field kit: Coagulant Vial x3 · Cinder Flask x1",
+    );
   });
 });

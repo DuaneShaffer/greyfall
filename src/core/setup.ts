@@ -1,5 +1,6 @@
-import type { Facing, TileCoord, Unit } from "../data/index.js";
+import type { Facing, ItemStack, TileCoord, Unit } from "../data/index.js";
 import type { BattleEvent } from "./events/types.js";
+import { buildSatchels } from "./rules/items.js";
 import { advanceClock } from "./rules/turn.js";
 import { evaluateOutcome } from "./rules/outcome.js";
 import { evaluateTriggers } from "./rules/triggers.js";
@@ -61,6 +62,10 @@ function initialObjects(content: BattleContent): ObjectRuntime[] {
  * encounter. Battle stats are derived here once, from the job stat curve,
  * equipment, and passive abilities.
  *
+ * `carried` is the party's field kit for this battle — the chapter's consumable
+ * stock, drawn from and spent down as one shared pool (`docs/ITEMS.md`). The
+ * hostile force's own pool comes from the encounter's `enemySatchel`.
+ *
  * Throws on invalid setup — deployment is authoring, not a player command.
  */
 export function createBattle(
@@ -68,6 +73,7 @@ export function createBattle(
   encounterId: string,
   party: readonly Unit[],
   deployment: readonly Deployment[],
+  carried: readonly ItemStack[] = [],
 ): BattleStart {
   const battleContent = snapshotContent(content, encounterId);
   const encounter = battleContent.encounter;
@@ -83,6 +89,10 @@ export function createBattle(
     rng: createRng(encounter.rngSeed),
     map: { objects: initialObjects(battleContent) },
     units: [],
+    satchels: buildSatchels([
+      { team: "player", items: carried },
+      { team: "enemy", items: encounter.enemySatchel ?? [] },
+    ]),
     charges: [],
     clock: 0,
     turn: 0,

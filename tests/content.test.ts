@@ -70,6 +70,39 @@ describe("content cross-references", () => {
     expect(abilities.has("basic-attack")).toBe(false);
   });
 
+  // `getAbility` resolves `item:<id>` to a synthesized consumable ability, so
+  // the colon has to stay out of authored ids. The `Id` regex already forbids
+  // it; this guards the reason.
+  it("no ability or item id reaches into the item: namespace", () => {
+    for (const id of [...abilities.keys(), ...items.keys()]) {
+      expect(id.includes(":"), `${id} collides with the synthesized item namespace`).toBe(false);
+    }
+  });
+
+  it("every consumable says how it is applied and who is issued it", () => {
+    for (const item of items.values()) {
+      if (item.slot !== "consumable") continue;
+      expect(item.targeting, `${item.id}: no targeting authored`).toBeDefined();
+      const validTargets = item.targeting?.validTargets ?? [];
+      expect(validTargets.length, `${item.id}: no valid targets`).toBeGreaterThan(0);
+      expect(item.equipTags.length, `${item.id}: nobody is issued it`).toBeGreaterThan(0);
+      const issued = [...jobs.values()].some((job) =>
+        item.equipTags.some((tag) => job.equipTags.includes(tag)),
+      );
+      expect(issued, `${item.id}: no job carries any of ${item.equipTags.join(", ")}`).toBe(true);
+    }
+  });
+
+  it("encounter satchels name consumables that exist", () => {
+    for (const enc of encounters.values()) {
+      for (const stack of enc.enemySatchel ?? []) {
+        const item = items.get(stack.itemId);
+        expect(item, `${enc.id}: unknown satchel item ${stack.itemId}`).toBeDefined();
+        expect(item!.slot, `${enc.id}: ${stack.itemId} is not a consumable`).toBe("consumable");
+      }
+    }
+  });
+
   it("abilities reference existing jobs and statuses", () => {
     for (const ability of abilities.values()) {
       expect(jobs.has(ability.jobId), `${ability.id}: unknown job ${ability.jobId}`).toBe(true);

@@ -58,7 +58,7 @@ export const VALE: Unit = {
   level: 1,
   jobId: "conduit",
   disposition: { resolve: 50, attunement: 70 },
-  learnedAbilityIds: ["overload-cell", "surge", "arc", "tap", "patch", "shove", "frame", "jolt", "siphon", "kettle", "lance"],
+  learnedAbilityIds: ["overload-cell", "rig-burst", "surge", "arc", "tap", "patch", "shove", "frame", "jolt", "siphon", "kettle", "lance"],
   equipment: {},
 };
 
@@ -173,6 +173,13 @@ export const BENCH_ABILITIES: Ability[] = [
   action("tap", "Tap", reach(3, ["object"]), [
     { kind: "damageObject", amount: { base: "fixed", power: 5 } },
   ]),
+  {
+    ...action("rig-burst", "Rig Burst", reach(4, ["object"]), [
+      { kind: "damageObject", amount: { base: "fixed", power: 25 } },
+    ]),
+    chargeCost: 5,
+    castSpeed: 25,
+  },
   action("patch", "Patch", reach(3, ["object"]), [
     { kind: "repairObject", amount: { base: "fixed", power: 3 } },
   ]),
@@ -218,6 +225,7 @@ export interface EncounterOverrides {
   id: string;
   rngSeed?: number;
   enemies: Encounter["enemies"];
+  enemySatchel?: Encounter["enemySatchel"];
   winConditions?: Encounter["winConditions"];
   lossConditions?: Encounter["lossConditions"];
   triggers?: Encounter["triggers"];
@@ -235,6 +243,7 @@ export function yardEncounter(base: ContentLibrary, o: EncounterOverrides): Enco
     rngSeed: o.rngSeed ?? 1001,
     maxDeployedUnits: 4,
     enemies: o.enemies,
+    ...(o.enemySatchel === undefined ? {} : { enemySatchel: o.enemySatchel }),
     winConditions: o.winConditions ?? [{ kind: "rout" }],
     lossConditions: o.lossConditions ?? [{ kind: "partyRout" }],
     triggers: o.triggers ?? structuredClone(original.triggers),

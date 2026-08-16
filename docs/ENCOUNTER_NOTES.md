@@ -111,22 +111,31 @@ until the player walks into a ground-floor room and finds House Corvane
 requisition seals, unbroken, on the charges. Everything after this battle is
 a different story than everything before it.
 
-**Composition (6 + 1 reinforcement, L1 with an L2 leader; 6 deployed).**
+**Composition (5 + 1 reinforcement, L1 with an L2 leader; 6 deployed).**
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
 | `wick` | **new** `wick` | 2 | (8,2) | Head of the Row, beside `gas-main-north` under the gallery stair — MAP_NOTES' pivot. |
-| `torch-hand-east-room` | provocateur-torch | 1 | (11,8) | *Inside* the east-mid tenement, per MAP_NOTES: "they're in the house" must read immediately. |
+| `torch-hand-east-room` | provocateur-torch | 1 | (11,8) | *Inside* the east-mid tenement, per MAP_NOTES: "they're in the house" must read immediately. Also covers the tram lane two tiles east. |
 | `torch-hand-south-room` | provocateur-torch | 1 | (3,13) | Inside the west-south tenement, above the player's deployment. |
 | `cell-machinist` | shop-machinist | 1 | (8,10) | Behind `refuse-barricade`, holding the mid chokepoint. |
 | `provocateur-barricade` | provocateur | 1 | (6,10) | The other side of the squeeze. |
-| `provocateur-tram` | provocateur | 1 | (14,8) | Tram lane, near `gas-main-alley` — the Railrunner's dilemma has a defender. |
 | `provocateur-gutter` | provocateur | 1 | spawn (1,11) | One reinforcement down the west gutter when the player commits to the barricade. The second was cut in the rebalance pass; two put the fight out of reach at the roster's real levels. |
+
+A sixth body, `provocateur-tram` at (14,8), stood in the tram lane until the
+content follow-up (`BALANCE_REPORT` §7.8). It came out because seven against
+six wiped the party in seventeen of twenty-four runs and it was the one
+placement the map could carry without it: the tram lane's dilemma is the
+`tram-cart`, the `gas-main-alley` and the drop, and the east-room torch-hand
+is two tiles from it. Nothing scripted referred to him.
 
 Both torch-hands carry `gas-line-tap`, which turns the risers and mains into
 their weapon as much as the player's — the mutual-threat reading MAP_NOTES
 asks for. Wick carries the full demolition kit including `bring-it-down`, so
-he can open his own routes through frontages.
+he can open his own routes through frontages, and he is now the **only**
+`smoke-canister` in the cell: three saboteurs all laying the same blanket over
+a map that is already mostly wall was weather, not tactics. The smoke is
+Wick's, and it reads as a man covering his own withdrawal.
 
 **Win: `defeatUnit: wick`, then `rout`. Loss: `partyRout`, or Wick standing on
 the gallery landing `(5,0)…(10,0)`.** MAP_NOTES §3 wanted "if a named saboteur
@@ -140,19 +149,33 @@ pursuit should: with a man you can still lose.
 | trigger | condition | beat |
 |---|---|---|
 | `foot-of-the-row` | `battleStart` | The writ; Rowen's rules of engagement; Wick's warning that the gas is live under the whole street. |
-| `barricade-stand` | player anywhere on the mid cross-alley (y 11, both alleys and both street columns) | The chokepoint stand + `spawnUnits` of two from the west gutter. Widened from MAP_NOTES' four street tiles because (7,11)–(8,11) *are* the barricade and because the west alley and the tram are legal bypasses. |
+| `barricade-stand` | player anywhere on the mid cross-alley (y 11, both alleys and both street columns) | The chokepoint stand + `spawnUnits` of one from the west gutter. Widened from MAP_NOTES' four street tiles because (7,11)–(8,11) *are* the barricade and because the west alley and the tram are legal bypasses. Wick's line said "two down the gutter" and one arrived; it now says one. |
 | `requisition-seals` | player on (3,3),(4,3),(3,4),(4,4) | **The chapter's turn.** MAP_NOTES' "cleanest" room. Corvane Freight stencils, unbroken seals, Wick's "we've been carrying your name up this street for a month", and the sergeant's "that is a paperwork matter." |
 | `main-at-the-stair` | `objectDestroyed: gas-main-north` | The head of the Row alight. Gallows wit — "somebody's supper, that." |
 | `wick-breaks-for-the-stair` | `unitHpBelowPercent: wick 40` | He announces the stair and `moveUnit` puts him on it, at (8,1). Rowen's counter-order is now a real order: the landing above him is a loss condition. |
 | `wick-down` | `unitDowned: wick` | No name to give — a docket, a yard, and a man who never comes down to the yard. Rowen takes the evidence out of procedure and into her coat. |
 
-**Difficulty.** Party at its authored levels, six deployed, seven enemies
-across the battle: **40%** win, 5.0 of 6 lost — the wall of the chapter, and
-the right shape for the battle the story turns on. The
-count is high because the map is a maze of walls and half of it is a
+**Difficulty.** Party at its authored levels, six deployed, six enemies across
+the battle: **45.8%** win at 24 seeds, 3.8 of 6 lost, 74 turns — the wall of
+the chapter, and the right shape for the battle the story turns on. The count
+of the lost is high because the map is a maze of walls and half of it is a
 one-tile doorway at a time; the enemy is never all in contact. Expect the
 player to blow a frontage rather than walk 8 rough tiles — that trade *is*
 the battle.
+
+**How it got there.** The ten-seed read behind the rebalance pass said 40%;
+the 24-seed instrument built for the AI pass said **29.2%**, before and after
+that pass alike, and named it a content number (`BALANCE_REPORT` §7.5). It
+was: every one of the seventeen losses was a `partyRout`, in ninety-odd turns,
+with the enemy having lost three of seven and Wick untouched at the head of
+the Row. The party was not losing the pursuit, it was being ground down in the
+mid-Row and never reaching him. Dropping the tram provocateur and taking Smoke
+Canister off the two torch-hands lands it at **45.8%** on the primary
+seed set and **58.3%** on a second, mean turns 94 → 74. Every beat is intact:
+the house, the squeeze, the gutter reinforcement, the seals, and the stair.
+**Wick's escape loss never fired in either arm at forty-eight seeds** — a
+party that gets him to 40% HP is a party that finishes him. That is a hole in
+the drama worth an encounter-workstream look, not a balance one.
 
 ---
 

@@ -8,6 +8,21 @@
   ],
   "price": 400,
   "slot": "consumable",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 1,
+      "vertical": 1
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "self",
+      "ally"
+    ]
+  },
   "effects": [
     {
       "kind": "heal",

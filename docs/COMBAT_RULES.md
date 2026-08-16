@@ -579,3 +579,68 @@ them falling out of that one rule:
 A neutral is still a legal target for a deliberately aimed `enemy`-scoped
 ability — shooting a bystander is a thing a *player* can choose to do, and what
 it costs is a content question, not a rules one.
+
+## 19. Items
+
+Consumables are the Chemist's half of the game and everyone else's insurance.
+The design rationale lives in `docs/ITEMS.md`; this section is the rules.
+
+**The satchel.** Each team carries one shared pool, `state.satchels`, keyed by
+team and sorted by team name; each pool's stacks are sorted by item id and a
+stack that reaches zero is removed. The player's pool is the chapter's whole
+consumable stock, handed to `createBattle` as `carried`; the hostile force's
+comes from the encounter's `enemySatchel`. There are no per-unit carry slots:
+whoever can reach the target spends from the same pile.
+
+**Who may use one.** The `equipTag` rule that governs equipping governs
+reaching too — the acting unit's *primary* job must share at least one tag with
+the item. Every job in the slice carries `field-issue`, so the seven shipped
+consumables are universal; a compound tagged `chemist-kit` would not be.
+Refusals are `item-not-issued`.
+
+**The command.** `useItem` spends the unit's action and nothing else: no flux,
+no HP, no cast time, and the turn is not ended, so the unit may still move.
+It awards `STANDING_PER_ACTION` like any other action. Validation, in order:
+
+| Code | Cause |
+|---|---|
+| `already-acted` / `action-prevented` | the action is spent, or a status suppresses it |
+| `unknown-item` | no such item, or it is not a consumable |
+| `item-not-issued` | the unit's job shares no `equipTag` with the item |
+| `item-not-carried` | the team satchel has none left |
+| `invalid-target`, `object-destroyed`, `out-of-range`, `no-line-of-sight` | the shared aiming rules (§12) |
+
+**Targeting.** A consumable may author a `targeting` block with exactly the
+shape an ability's takes. Omitting it falls back to the engine default —
+range 0–1, vertical 1, single tile, no line of sight, `self` or `ally` — which
+is FFT's Item rule: pressed into a hand at arm's length. A thrown item says so
+in its own block.
+
+**Item mastery.** A slotted support ability may carry two passives that only
+consumables read:
+
+- `consumableEffectBonusPercent` scales the `power` of every `damage` and
+  `heal` amount in the item: `power' = floor(power * (100 + bonus) / 100)`.
+  Status chances, charge top-ups, and cures are untouched — a compound either
+  works or it does not.
+- `consumableRangeBonus` adds tiles to the item's maximum range. It never
+  changes the minimum, the vertical, or the area.
+
+Both are read from the acting unit, so the same flask reaches further and bites
+harder in a Chemist's hand than in an Enforcer's. `data/abilities/bench-grade.json`
+carries +50% and +2.
+
+**Resolution.** The engine synthesizes an action ability from the item —
+`item:<itemId>`, scaled and widened as above — and runs it through the ordinary
+ability path, so area resolution, accuracy, reactions, `forecast`, and
+`targetableTiles` all behave exactly as they do for an ability. The colon keeps
+the id out of the authored namespace (`Id` forbids it), and `useItem` is the
+only way to issue one: `act` rejects it as not learned.
+
+**Events.** `ItemUsed { unitId, itemId, team, remaining }` is emitted before the
+item resolves, followed by the ordinary `AbilityUsed` naming the synthesized
+ability. The renderer poses an item use as a cast.
+
+**Coming home.** `applyBattleResults` folds the satchel back: on a win the
+shortfall against the chapter's stock is struck from it, on a loss nothing
+changes, exactly as with Standing and the fallen (`docs/PROGRESSION.md` §4).

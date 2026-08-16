@@ -12,8 +12,9 @@ export interface ActionMenuOptions {
 const ROOT_ID = "action-root";
 const SKILLSETS_ID = "action-skillsets";
 const OPERABLES_ID = "action-operables";
+const ITEMS_ID = "action-items";
 
-/** Move / Act / Wait, with Act opening the unit's skillsets. */
+/** Move / Act / Item / Wait, with Act opening the unit's skillsets. */
 export class ActionMenu implements Component<ActionMenuView> {
   readonly el: HTMLElement;
   readonly menus: MenuStack;
@@ -60,6 +61,17 @@ export class ActionMenu implements Component<ActionMenuView> {
         ...(view.canAct ? {} : { disabledReason: view.actBlockedReason ?? "Action already spent" }),
       },
     ];
+    const items = view.items ?? [];
+    if (items.length > 0) {
+      const carried = items.reduce((total, item) => total + item.count, 0);
+      entries.push({
+        id: "item",
+        label: "Item",
+        detail: `${carried}`,
+        disabled: !view.canAct,
+        ...(view.canAct ? {} : { disabledReason: view.actBlockedReason ?? "Action already spent" }),
+      });
+    }
     const operables = view.operables ?? [];
     if (operables.length > 0) {
       entries.push({ id: "operate", label: "Operate", detail: `${operables.length}` });
@@ -85,6 +97,10 @@ export class ActionMenu implements Component<ActionMenuView> {
       this.intents.wait(view.unit.id, view.unit.facing);
       return;
     }
+    if (entry.id === "item") {
+      this.menus.push(this.itemMenu(view));
+      return;
+    }
     if (entry.id === "operate") {
       this.menus.push(this.operableMenu(view));
       return;
@@ -95,6 +111,25 @@ export class ActionMenu implements Component<ActionMenuView> {
       return;
     }
     this.menus.push(this.skillsetChooser(view));
+  }
+
+  /** The shared satchel. Counts are the force's, not this unit's. */
+  private itemMenu(view: ActionMenuView): MenuDef {
+    const items = view.items ?? [];
+    return {
+      id: ITEMS_ID,
+      title: "Field Kit",
+      entries: items.map((item) => ({
+        id: item.itemId,
+        label: item.name,
+        detail: `x${item.count}`,
+        note: item.description,
+        disabled: item.unavailableReason !== undefined,
+        ...(item.unavailableReason === undefined ? {} : { disabledReason: item.unavailableReason }),
+      })),
+      onSelect: (entry) => this.intents.selectItem(view.unit.id, entry.id),
+      onCancel: () => this.intents.cancelSelection(view.unit.id),
+    };
   }
 
   private operableMenu(view: ActionMenuView): MenuDef {

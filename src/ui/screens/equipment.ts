@@ -1,7 +1,14 @@
 import { Component, el, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuEntry, MenuStack } from "../menu.js";
-import { EQUIP_SLOT_LABELS, EquipSlot, EquipmentView, ItemOptionView, formatSigned } from "../state.js";
+import {
+  EQUIP_SLOT_LABELS,
+  EquipSlot,
+  EquipmentView,
+  ItemEntryView,
+  ItemOptionView,
+  formatSigned,
+} from "../state.js";
 
 const SLOTS_ID = "equipment-slots";
 
@@ -12,6 +19,7 @@ export class EquipmentScreen implements Component<EquipmentView> {
   private readonly intents: UiIntents;
   private readonly detail: HTMLElement;
   private readonly headerEl: HTMLElement;
+  private readonly satchelEl: HTMLElement;
   private view: EquipmentView | null = null;
 
   constructor(options: { intents?: Partial<UiIntents> } = {}) {
@@ -19,12 +27,17 @@ export class EquipmentScreen implements Component<EquipmentView> {
     this.menus = new MenuStack();
     this.detail = el("aside", { class: "gf-panel gf-equip-detail" });
     this.headerEl = el("p", { class: "gf-screen-note" });
+    this.satchelEl = el("p", { class: "gf-screen-note gf-satchel" });
     this.el = el("section", {
       class: "gf-screen gf-equipment",
       children: [
         el("header", {
           class: "gf-screen-head",
-          children: [el("h1", { class: "gf-screen-title", text: "Equipment" }), this.headerEl],
+          children: [
+            el("h1", { class: "gf-screen-title", text: "Equipment" }),
+            this.headerEl,
+            this.satchelEl,
+          ],
         }),
         el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
       ],
@@ -34,6 +47,7 @@ export class EquipmentScreen implements Component<EquipmentView> {
   update(view: EquipmentView): void {
     this.view = view;
     this.headerEl.textContent = `${view.unitName} · ${view.jobName} · ${view.jobEquipTags.join(", ")}`;
+    this.satchelEl.textContent = summarizeSatchel(view.satchel);
     const menu = this.slotsMenu(view);
     if (this.menus.path[0] === SLOTS_ID) this.menus.refresh(menu);
     else this.menus.push(menu);
@@ -139,6 +153,12 @@ export class EquipmentScreen implements Component<EquipmentView> {
         el("p", { class: "gf-detail-note is-refused", text: option.unavailableReason }),
     ]);
   }
+}
+
+/** Consumables are carried, not worn: the screen reports the pool, never edits it. */
+export function summarizeSatchel(satchel: readonly ItemEntryView[]): string {
+  if (satchel.length === 0) return "Field kit: empty";
+  return `Field kit: ${satchel.map((entry) => `${entry.name} x${entry.count}`).join(" · ")}`;
 }
 
 function summarizeDeltas(option: ItemOptionView): string {

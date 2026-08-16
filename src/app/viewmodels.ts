@@ -21,6 +21,7 @@ import {
   forecast,
   getObject,
   getUnit,
+  itemIdFromAbilityId,
   itemInfo,
   jobInfo,
   standHeight,
@@ -31,6 +32,7 @@ import {
   unitMaxCharge,
   unitMaxHp,
   unitStats,
+  usableItems,
   type ActionAbility,
   type BattleUnit,
   type GameState,
@@ -47,6 +49,7 @@ import {
   type EquipSlotView,
   type ForecastTargetView,
   type ForecastView,
+  type ItemEntryView,
   type PartyView,
   type RosterEntryView,
   type SkillsetView,
@@ -170,7 +173,19 @@ export function actionMenuView(state: GameState, unitId: string): ActionMenuView
       ? { actBlockedReason: heldBack ? "Cannot act" : "Action already spent" }
       : {}),
     operables,
+    items: satchelViews(state, unitId),
   };
+}
+
+/** The force's shared satchel as this unit's Item submenu reads it. */
+export function satchelViews(state: GameState, unitId: string): ItemEntryView[] {
+  return usableItems(state, unitId).map((entry) => ({
+    itemId: entry.itemId,
+    name: entry.name,
+    description: entry.description,
+    count: entry.count,
+    ...(entry.unavailableReason === undefined ? {} : { unavailableReason: entry.unavailableReason }),
+  }));
 }
 
 /** Adjacent operable machinery, as action-menu entries. */
@@ -203,6 +218,7 @@ export function forecastView(
   const ability = abilityInfo(state, unitId, abilityId);
   if (attacker === null || ability === null || ability.slot !== "action") return null;
 
+  const itemId = itemIdFromAbilityId(abilityId);
   const damageType = damageTypeOf(ability);
   const targets: ForecastTargetView[] = [];
   for (const entry of forecast(state, unitId, abilityId, target)) {
@@ -261,8 +277,15 @@ export function forecastView(
     abilityName: ability.name,
     chargeCost: ability.chargeCost,
     castSpeed: ability.castSpeed,
+    ...(itemId === null ? {} : { item: { itemId, remaining: itemRemaining(state, unitId, itemId) } }),
     targets,
   };
+}
+
+/** Stock the satchel would hold after this use, for the forecast's cost line. */
+function itemRemaining(state: GameState, unitId: string, itemId: string): number {
+  const entry = usableItems(state, unitId).find((candidate) => candidate.itemId === itemId);
+  return Math.max(0, (entry?.count ?? 0) - 1);
 }
 
 export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT): TurnOrderView {

@@ -3,12 +3,14 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   createCampaign,
+  inventoryCount,
   jobProgress,
   rosterUnit,
   type CampaignState,
   type ContentLibrary,
   type Deployment,
   type GameState,
+  type InventoryStack,
   type ProgressionError,
 } from "../../src/core/index.js";
 import { Campaign, type Unit } from "../../src/data/index.js";
@@ -47,7 +49,7 @@ interface FakeScreens extends CampaignScreenPort {
 }
 
 interface FakeBattle extends BattlePort {
-  started: { encounterId: string; party: string[]; deployment: Deployment[] }[];
+  started: { encounterId: string; party: string[]; deployment: Deployment[]; carried: InventoryStack[] }[];
   ends: number;
   finish(final: GameState): void;
 }
@@ -75,11 +77,12 @@ function fakeBattle(): FakeBattle {
   const fake: FakeBattle = {
     started: [],
     ends: 0,
-    start: (encounterId, party, deployment, onEnd) => {
+    start: (encounterId, party, deployment, carried, onEnd) => {
       fake.started.push({
         encounterId,
         party: party.map((unit) => unit.id),
         deployment: deployment.map((placement) => ({ ...placement })),
+        carried: carried.map((stack) => ({ ...stack })),
       });
       pending = onEnd;
     },
@@ -100,8 +103,9 @@ function finished(options: {
   result: "win" | "loss";
   earned?: Record<string, number>;
   downed?: string[];
+  satchel?: InventoryStack[];
 }): GameState {
-  const state = structuredClone(openBattle().state);
+  const state = structuredClone(openBattle(undefined, undefined, options.satchel ?? []).state);
   state.result = options.result;
   for (const unit of state.units) {
     if (unit.team !== "player") continue;
@@ -388,6 +392,7 @@ describe("summarize", () => {
         fallen: [
           { unitId: "vale", name: "Vale Tarn", jobId: "conduit", level: 1, encounterId: ENCOUNTER_ID },
         ],
+        consumed: [],
         advanced: true,
       }),
     ).toBe("Field held. 60 Standing banked. Lost: Vale Tarn.");
@@ -400,8 +405,54 @@ describe("summarize", () => {
         encounterId: ENCOUNTER_ID,
         standing: [],
         fallen: [],
+        consumed: [],
         advanced: false,
       }),
     ).toContain("nothing banked");
+  });
+});
+
+describe("the chapter satchel", () => {
+  it("hands the whole consumable stock to the battle, and nothing else", () => {
+    const h = harness();
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    const carried = h.battle.started[0]?.carried ?? [];
+    expect(carried.length).toBeGreaterThan(0);
+    for (const stack of carried) {
+      expect(CONTENT.items[stack.itemId]?.slot, `${stack.itemId} is not a consumable`).toBe(
+        "consumable",
+      );
+      expect(stack.count).toBe(inventoryCount(h.session.state, stack.itemId));
+    }
+    expect(carried.map((stack) => stack.itemId)).not.toContain("riot-shield");
+  });
+
+  it("takes the spent stock out of stock when the field is held", () => {
+    const h = harness();
+    const before = inventoryCount(h.session.state, "coagulant-vial");
+    expect(before).toBeGreaterThan(1);
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    const carried = h.battle.started[0]?.carried ?? [];
+    const home = carried.map((stack) =>
+      stack.itemId === "coagulant-vial" ? { ...stack, count: stack.count - 2 } : { ...stack },
+    );
+    h.battle.finish(finished({ result: "win", satchel: home }));
+    expect(inventoryCount(h.session.state, "coagulant-vial")).toBe(before - 2);
+    expect(h.runner.lastOutcome?.consumed).toEqual([{ itemId: "coagulant-vial", count: 2 }]);
+    expect(h.screens.notices.at(-1)).toContain("Field kit down 2");
+  });
+
+  it("gives it all back after a wipe", () => {
+    const h = harness();
+    const before = inventoryCount(h.session.state, "coagulant-vial");
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    h.battle.finish(finished({ result: "loss", satchel: [] }));
+    expect(inventoryCount(h.session.state, "coagulant-vial")).toBe(before);
   });
 });

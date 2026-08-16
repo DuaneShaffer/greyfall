@@ -1,6 +1,6 @@
 import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import { cloneState, emit, type Ctx } from "../state/ctx.js";
-import type { ActionAbility, BattleUnit, GameState } from "../state/types.js";
+import type { ActionAbility, BattleUnit, ConsumableItem, GameState, TargetRef } from "../state/types.js";
 import {
   activateObject as fireObject,
   awardStanding,
@@ -10,6 +10,7 @@ import {
   STANDING_PER_ACTION,
 } from "../rules/abilities.js";
 import { checkContact, emptyOutcome, spendCharge } from "../rules/effects.js";
+import { canCarryItem, consumableItem, itemAbility, satchelCount, spendItem } from "../rules/items.js";
 import { coordEq, facingToward, manhattan, objectById, unitById } from "../rules/grid.js";
 import { findPath } from "../rules/movement.js";
 import { evaluateOutcome } from "../rules/outcome.js";
@@ -45,18 +46,70 @@ function resolveActor(state: GameState, cmd: Command): Actor | { unit: null; err
   return { unit, error: null };
 }
 
+/** Whether the unit is free to spend its action at all. */
+function actionAvailable(state: GameState, unit: BattleUnit): CommandError | null {
+  const turn = state.activeTurn;
+  if (turn !== null && turn.acted) return commandError("already-acted", `${unit.id} has already acted`);
+  if (!canAct(state, unit)) return commandError("action-prevented", `${unit.id} cannot act`);
+  return null;
+}
+
+/** Targeting legality shared by every aimed action: abilities and items alike. */
+function validateAim(
+  state: GameState,
+  unit: BattleUnit,
+  ability: ActionAbility,
+  target: TargetRef,
+): CommandError | null {
+  const aimed = aimedTile(state, target);
+  if (aimed === undefined) return commandError("invalid-target", "target does not exist");
+  if (!isValidTargetKind(state, unit, ability, target)) {
+    return commandError("invalid-target", `${ability.name} cannot target that`);
+  }
+  if (target.kind === "object" && objectById(state, target.objectId)?.destroyed === true) {
+    return commandError("object-destroyed", "target object is destroyed");
+  }
+  if (!inRange(state, unit.position, aimed, ability.targeting.range)) {
+    return commandError("out-of-range", `${ability.name} cannot reach that tile`);
+  }
+  if (ability.targeting.requiresLos && !hasLos(state, unit.position, aimed)) {
+    return commandError("no-line-of-sight", "nothing in sight there");
+  }
+  const requirement = unmetRequirement(state, unit, ability, target);
+  if (requirement !== null) {
+    return commandError("requirement-unmet", `${ability.id} needs ${requirement}`);
+  }
+  return null;
+}
+
+function validateUseItem(
+  state: GameState,
+  unit: BattleUnit,
+  cmd: Extract<Command, { kind: "useItem" }>,
+): { item: ConsumableItem; error: null } | { item: null; error: CommandError } {
+  const blocked = actionAvailable(state, unit);
+  if (blocked !== null) return { item: null, error: blocked };
+  const item = consumableItem(state, cmd.itemId);
+  if (item === undefined) {
+    return { item: null, error: commandError("unknown-item", `no consumable ${cmd.itemId}`) };
+  }
+  if (!canCarryItem(state, unit, item)) {
+    return { item: null, error: commandError("item-not-issued", `${unit.id} is not issued ${item.name}`) };
+  }
+  if (satchelCount(state, unit.team, cmd.itemId) <= 0) {
+    return { item: null, error: commandError("item-not-carried", `no ${item.name} left in the satchel`) };
+  }
+  const error = validateAim(state, unit, itemAbility(state, unit, item), cmd.target);
+  return error === null ? { item, error: null } : { item: null, error };
+}
+
 function validateAct(
   state: GameState,
   unit: BattleUnit,
   cmd: Extract<Command, { kind: "act" }>,
 ): { ability: ActionAbility; error: null } | { ability: null; error: CommandError } {
-  const turn = state.activeTurn;
-  if (turn !== null && turn.acted) {
-    return { ability: null, error: commandError("already-acted", `${unit.id} has already acted`) };
-  }
-  if (!canAct(state, unit)) {
-    return { ability: null, error: commandError("action-prevented", `${unit.id} cannot act`) };
-  }
+  const blocked = actionAvailable(state, unit);
+  if (blocked !== null) return { ability: null, error: blocked };
   const ability = getAbility(state, unit, cmd.abilityId);
   if (ability === undefined || ability.slot !== "action") {
     return { ability: null, error: commandError("unknown-ability", `no action ability ${cmd.abilityId}`) };
@@ -74,27 +127,8 @@ function validateAct(
   if (hpCost > 0 && unit.hp <= hpCost) {
     return { ability: null, error: commandError("insufficient-hp", `${cmd.abilityId} would down ${unit.id}`) };
   }
-  const aimed = aimedTile(state, cmd.target);
-  if (aimed === undefined) {
-    return { ability: null, error: commandError("invalid-target", "target does not exist") };
-  }
-  if (!isValidTargetKind(state, unit, ability, cmd.target)) {
-    return { ability: null, error: commandError("invalid-target", `${cmd.abilityId} cannot target that`) };
-  }
-  if (cmd.target.kind === "object" && objectById(state, cmd.target.objectId)?.destroyed === true) {
-    return { ability: null, error: commandError("object-destroyed", "target object is destroyed") };
-  }
-  if (!inRange(state, unit.position, aimed, ability.targeting.range)) {
-    return { ability: null, error: commandError("out-of-range", `${cmd.abilityId} cannot reach that tile`) };
-  }
-  if (ability.targeting.requiresLos && !hasLos(state, unit.position, aimed)) {
-    return { ability: null, error: commandError("no-line-of-sight", "nothing in sight there") };
-  }
-  const requirement = unmetRequirement(state, unit, ability, cmd.target);
-  if (requirement !== null) {
-    return { ability: null, error: commandError("requirement-unmet", `${cmd.abilityId} needs ${requirement}`) };
-  }
-  return { ability, error: null };
+  const error = validateAim(state, unit, ability, cmd.target);
+  return error === null ? { ability, error: null } : { ability: null, error };
 }
 
 function validate(state: GameState, cmd: Command, unit: BattleUnit): CommandError | null {
@@ -110,9 +144,11 @@ function validate(state: GameState, cmd: Command, unit: BattleUnit): CommandErro
     }
     case "act":
       return validateAct(state, unit, cmd).error;
+    case "useItem":
+      return validateUseItem(state, unit, cmd).error;
     case "activateObject": {
-      if (turn !== null && turn.acted) return commandError("already-acted", `${unit.id} has already acted`);
-      if (!canAct(state, unit)) return commandError("action-prevented", `${unit.id} cannot act`);
+      const blocked = actionAvailable(state, unit);
+      if (blocked !== null) return blocked;
       const obj = objectById(state, cmd.objectId);
       if (obj === undefined) return commandError("unknown-object", `no object ${cmd.objectId}`);
       if (obj.destroyed) return commandError("object-destroyed", `${cmd.objectId} is destroyed`);
@@ -212,6 +248,24 @@ export function applyCommand(state: GameState, cmd: Command): CommandResult {
         executeAbility(ctx, unit, ability, cmd.target, true);
         awardStanding(ctx, unit, STANDING_PER_ACTION);
       }
+      break;
+    }
+    case "useItem": {
+      const resolved = validateUseItem(ctx.state, unit, cmd);
+      if (resolved.item === null) break;
+      const item = resolved.item;
+      turn.acted = true;
+      const ability = itemAbility(ctx.state, unit, item);
+      const remaining = spendItem(ctx, unit.team, item.id);
+      emit(ctx, {
+        type: "ItemUsed",
+        unitId: unit.id,
+        itemId: item.id,
+        team: unit.team,
+        remaining,
+      });
+      executeAbility(ctx, unit, ability, cmd.target, true);
+      awardStanding(ctx, unit, STANDING_PER_ACTION);
       break;
     }
     case "activateObject": {

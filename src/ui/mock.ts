@@ -6,6 +6,7 @@ import type {
   EquipSlotView,
   EquipmentView,
   ForecastView,
+  ItemEntryView,
   ItemOptionView,
   JobsView,
   LearningView,
@@ -128,7 +129,7 @@ export const overloadCellAbility: Ability = {
   },
   requires: ["targetPowered"],
   chargeCost: 5,
-  castSpeed: 25,
+  castSpeed: null,
   effects: [{ kind: "damageObject", amount: { base: "mag", power: 20 } }],
 };
 
@@ -319,6 +320,24 @@ export function mockSkillsets(unit: UnitView, learnedAbilityIds: string[] = ["pi
   }));
 }
 
+/** The shared field kit, in the Chemist register the item files use. */
+export function mockSatchel(): ItemEntryView[] {
+  return [
+    {
+      itemId: "coagulant-vial",
+      name: "Coagulant Vial",
+      description: "Standard field clotting compound.",
+      count: 3,
+    },
+    {
+      itemId: "cinder-flask",
+      name: "Cinder Flask",
+      description: "Accelerant in thin glass with a friction cap.",
+      count: 1,
+    },
+  ];
+}
+
 export function mockActionMenuView(overrides: Partial<ActionMenuView> = {}): ActionMenuView {
   const unit = overrides.unit ?? mockUnitView();
   return {
@@ -326,6 +345,7 @@ export function mockActionMenuView(overrides: Partial<ActionMenuView> = {}): Act
     skillsets: mockSkillsets(unit),
     canMove: true,
     canAct: true,
+    items: mockSatchel(),
     ...overrides,
   };
 }
@@ -486,6 +506,7 @@ export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): Equip
     jobEquipTags: job.equipTags,
     slots: equipSlotViews(equipped),
     options,
+    satchel: mockSatchel(),
     ...overrides,
   };
 }
@@ -571,6 +592,7 @@ export function mockDeploymentView(overrides: Partial<DeploymentView> = {}): Dep
       { tile: { x: 0, y: 5 }, unitId: null, unitName: null },
       { tile: { x: 1, y: 5 }, unitId: null, unitName: null },
     ],
+    satchel: mockSatchel(),
     canConfirm: true,
     ...overrides,
   };

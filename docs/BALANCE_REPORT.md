@@ -881,7 +881,7 @@ flanking — that is the case `tests/core/ai/decisions.test.ts` already asserts 
 the yard — but it does not manoeuvre to *create* that case, and Refinery Three's
 charging rack sits where units do not stand. **This is a content note, not an AI
 one:** either the rack moves onto a tile the fight crosses, or `overload-cell`
-loses its cast time.
+loses its cast time. It lost its cast time — §7.8.1.
 
 ### 7.5 Encounters
 
@@ -901,7 +901,7 @@ middle. Four of five are inside the 40–100% band. **e3 Tallow Row reads 29.1%
 before *and* after** — this instrument's 24-seed read of e3 is below the band
 whatever the AI does, against §6.4's ten-seed read of 40%, and the AI pass moves
 it by exactly zero. It is a content number and it belongs to the encounter
-workstream.
+workstream, which took it: **45.8%** in §7.8.1.
 
 **Every encounter number here is both sides improving at once.** A win rate
 falling is not evidence the search plays worse; it is evidence that the side
@@ -974,6 +974,185 @@ per-tile term came down 30% as well.
 | G10 | `data/abilities/crossfeed.json` | **`crossfeed` is still a self-buff loop.** §6.2 redesigned it to `ally`-only "so it cannot be a self-buff loop", but `isValidTargetKind` counts the caster as an ally (`allowed.includes("self") || allowed.includes("ally")`), and the ability's `range.min` is 0. It is Overclocked for 4 flux, which is strictly better than the Augmented's own Overdrive at 7 flux and 5 HP. It was invisible only because Sentry Frame outscored it; once G6 priced the frame honestly it surfaced. | 21% of Machinist actions in duels, **41% on both authored maps**. The AI is reading it correctly — the loop is real. Fix is one character of content: `range.min` 0 → 1. |
 | G11 | `data/maps/refinery-three.json` or `data/abilities/overload-cell.json` | **`overload-cell` cannot pay for its own cast time.** 5 flux plus a 25-speed cast is ~190 points of gross before it clears zero, and an unmanned cell is not worth that however well the map is priced. Refinery Three's charging rack is four cells on tiles the fight does not cross. | 1 cast in ten runs of e4. See §7.4. |
 | G12 | `data/abilities/bring-the-house.json` | **9 flux out of a 20-point pool is most of a Saboteur's battle.** Now that flux is priced against the pool, the kit's signature is its least affordable ability and Shaped Charge does the work instead. | `bring-the-house` 42% → 10%, `shaped-charge` 16% → 46%, Saboteur win rate 45.8% → 41.7%. |
+
+### 7.8.1 Content follow-up applied
+
+G10–G12 and e3 Tallow Row are all discharged in `data/`. Four files:
+
+| file | change |
+|---|---|
+| `data/abilities/crossfeed.json` | `range.min` 0 → **1** |
+| `data/abilities/overload-cell.json` | `castSpeed` 25 → **null**; flux and power unchanged |
+| `data/abilities/bring-the-house.json` | `chargeCost` 9 → **7**; powers unchanged |
+| `data/encounters/e3-tallow-row.json` | `provocateur-tram` removed; `smoke-canister` off both torch-hands; the gutter line says "one" where one spawns |
+
+**The instrument is §7's**, re-run as two arms in one process — the pre-follow-up
+content and the applied content, both against the same working tree — because
+the use-item workstream was changing `src/core` underneath this pass. The
+before arm reproduces §7.2, §7.3 and §7.5 to the digit **except e2**, which
+reads 12.5% in both arms against §7.5's 45.8%: e2's enemies gained an
+`enemySatchel` and a Bench Grade in that concurrent pass. e2's number below is
+therefore not this pass's to read, and is quoted only so both arms agree.
+
+#### Job spread — 294 duels, mirrors excluded
+
+| job | before | **after** |
+|---|---|---|
+| enforcer | 56.9% | **59.7%** |
+| conduit | 55.6% | **59.7%** |
+| chemist | 56.9% | **54.2%** |
+| railrunner | 51.4% | **47.2%** |
+| augmented | 47.2% | **45.8%** |
+| machinist | 40.3% | **41.7%** |
+| saboteur | 41.7% | **41.7%** |
+
+Spread **40.3–56.9% → 41.7–59.7%**, inside the 34–68% band and no wider. No
+job moved further than the sweep's own ±6.
+
+#### Over 40% of its job's actions
+
+| | before | **after** |
+|---|---|---|
+| conduit \| arc | 87% | 88% |
+| enforcer \| pin | 53% | 51% |
+| railrunner \| coupling-hook | 49% | 49% |
+| saboteur \| shaped-charge | 46% | **25%** |
+| machinist \| sentry-frame | 36% | **41%** |
+
+Four over-users to four. Shaped Charge leaves the table because Bring the
+House can now be afforded beside it. Sentry Frame enters it at 41%, one point
+over the line, and it is a denominator: **the frame is built the same 154
+times it was built before**, out of 376 Machinist actions instead of 431. The
+92 casts that were Crossfeed went mostly to the mine (`tripwire-charge` 86 →
+114) and the rest to the weapon. G6 brought the frame 55% → 36% by pricing it
+honestly and nothing about that pricing changed. Worth a watch, not a finding.
+
+#### Never chosen
+
+| sweep | before | **after** | what moved |
+|---|---|---|---|
+| duels, 294 | 8 | **8** | `conduit \| tap-line` out, `machinist \| crossfeed` in |
+| Foundry Floor Nine, 98 | 4 | **5** | `machinist \| crossfeed` in |
+| Refinery Three, 98 | 5 | **7** | `machinist \| crossfeed` and `saboteur \| bring-it-down` in |
+| comps, 84 | 10 | **10** | unchanged; `crossfeed` is chosen **40** times |
+
+**`crossfeed` reading as never-chosen in every duel sweep is the instrument,
+not the ability.** A duel is one unit a side and Crossfeed is ally-only at
+range 1–2, so there is no legal target on the field — the same artefact §7.3
+names for the four object-keyed abilities in the objectless arena. Put an ally
+next to it and it is **25% of Machinist actions** in the 84-battle comp sweep,
+against 28% before. That is the whole of G10: the self-cast is gone, the ally
+cast is untouched.
+
+#### The three abilities
+
+| | before | **after** |
+|---|---|---|
+| `crossfeed`, duels | 21% (92) | **0%** |
+| `crossfeed`, Floor Nine / Refinery | 41% / 41% | **0% / 0%** |
+| `crossfeed`, comps | 28% (43) | **25% (40)** |
+| `overload-cell`, e4 casts / 24 seeds | 4 | **27** |
+| `overload-cell`, e1 casts / 24 seeds | 24 | **24** |
+| `bring-the-house`, duels | 10% (37) | **28% (103)** |
+| `shaped-charge`, duels | 46% (179) | **25% (92)** |
+| `bring-the-house`, Floor Nine / Refinery | 14% / 12% | **20% / 19%** |
+| `bring-the-house`, comps | 25% (51) | **35% (69)** |
+
+#### Encounters — campaign roster, authored levels, 24 seeds
+
+| encounter | before | **after** |
+|---|---|---|
+| e1 Marshaling Yard | 100.0% | **100.0%** |
+| e2 Foundry Floor Nine | 12.5% | **12.5%** (not this pass's — see above) |
+| e3 Tallow Row | 29.1% | **45.8%** |
+| e4 Refinery Three | 62.5% | **83.3%** |
+| e5 Charterhouse Steps | 66.6% | **66.6%** |
+
+e3 on a second, disjoint 24-seed set (`103 + 41n`): **25.0% → 58.3%**. Pooled
+over both sets, 48 runs: **27.1% → 52.1%**. e3 is in the 40–80% band on the
+primary instrument and mid-band on the pooled one, and mean turns fall 94 → 74.
+
+**e4 is the cost of G11 and it is worth naming.** Overload Cell going from
+four casts to twenty-seven takes Refinery Three from 62.5% to 83.3%, which is
+exactly the outlier §7.5's AI pass had flattened. It is inside the 40–100%
+band, `data/encounters/e4-refinery-three.json` is outside this pass's remit,
+and the honest reading is that the encounter was authored against an ability
+that did not work. It should be re-priced against one that does.
+
+#### Why each fix, and what would not tune
+
+**G10** is the one-character fix the finding named and it needed no
+compensating tweak. Nothing else in the Machinist's kit moved.
+
+**G11's middle path does not exist.** `castSpeed`'s magnitude is invisible to
+the search for an object-only ability: `castEscapePercent` decay is applied
+only when `target.kind === "unit"`, and `castTurnCost` (60) is a flat charge
+for any non-null `castSpeed`. A "much faster cast" therefore buys exactly
+nothing, and the levers reduce to null-vs-not and flux. The ladder, e4 at 24
+seeds:
+
+| `overload-cell` | e4 win% | casts |
+|---|---|---|
+| cast 25, 5 flux, mag 20 *(shipped)* | 62.5% | 4 |
+| **instant, 5 flux, mag 20** | **83.3%** | **27** |
+| instant, 7 flux, mag 20 | 83.3% | 27 |
+| instant, 8 flux, mag 20 | 66.7% | 4 |
+| cast 25, 2 flux, mag 20 | 79.2% | 26 |
+| cast 25, 1 flux, mag 20 | 79.2% | 27 |
+| instant, 6 flux, mag 14 | 83.3% | 28 |
+
+It is a cliff, not a slope — every setting that clears the cost bar lands on
+27 casts and every setting that does not lands on 4. Instant at the shipped 5
+flux is the cheapest change that clears it, is what §7.4 itself prescribed,
+and is the only one that also makes sense as content: 2 flux would make a
+machine-killer free, and the cast was never doing work.
+
+**G12's ladder**, 294 duels:
+
+| `bring-the-house` | share | `shaped-charge` | saboteur win% |
+|---|---|---|---|
+| 9 flux, phys 8 / obj 14 *(shipped)* | 10% | 46% | 41.7% |
+| **7 flux, phys 8 / obj 14** | **28%** | **25%** | **41.7%** |
+| 6 flux, phys 8 / obj 14 | 44% | 11% | 41.7% |
+| 5 flux, phys 8 / obj 14 | 62% | 6% | 45.8% |
+| 6 flux, phys 10 / obj 18 | 68% | 13% | 52.8% |
+| 7 flux, phys 10 / obj 18 | 50% | 16% | 51.4% |
+| 8 flux, phys 10 / obj 18 | 43% | 14% | 48.6% |
+
+Seven flux is the only setting where both explosives are real and neither is
+over 40%. Everything cheaper, and everything with more power behind it, just
+swaps which of the two is dead — and every version that lifts the Saboteur's
+win rate does it by making Bring the House a new over-user. **The Saboteur's
+−4.1 in §7.2 was not the price of Bring the House.** The kit wins at 41.7%
+whether it spends its flux on one big charge or three small ones, which points
+the next look at the job's damage rather than at its bill.
+
+**e3 would not tune on kit alone.** Every loss in the before arm is a
+`partyRout`; Wick's escape condition never fired at forty-eight seeds. The
+ladder, 24 seeds each, primary set unless a second is given:
+
+| e3 variant | win% |
+|---|---|
+| shipped | 29.2% (alt 25.0%) |
+| Wick L2 → L1 | 83.3% |
+| no `torch-hand-east-room` | 54.2% |
+| no `provocateur-barricade` | 50.0% |
+| no gutter reinforcement | 50.0% |
+| **no `provocateur-tram`, `smoke-canister` off both torch-hands** | **45.8% (alt 58.3%)** |
+| no `provocateur-tram` | 33.3% |
+| `smoke-canister` off both torch-hands | 33.3% (alt 37.5%) |
+| `smoke-canister` off all three saboteurs | 25.0% (alt 54.2%) |
+| `provocateur-tram` → a lighter Row runner | 37.5% (alt 41.7%) |
+| `cell-machinist` loses `tripwire-charge` | 29.2% |
+| gutter reinforcement loses `shield-advance` | 29.2% |
+
+No kit-only change reached the band; body count is the lever, and the
+non-monotone rows (a *weaker* tram defender scores below no defender at all)
+are why the landing was confirmed on a second seed set. The tram provocateur
+was the placement `ENCOUNTER_NOTES` could carry without — nothing scripted
+referred to him and the east-room torch-hand covers the lane — and Smoke
+Canister on all three saboteurs was never justified by the encounter's notes.
+Wick's level is untouched: he is the fight's one L2 and its win condition.
 
 ### 7.9 Regenerated test expectations
 

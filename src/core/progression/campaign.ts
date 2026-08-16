@@ -1,4 +1,4 @@
-import type { Campaign, Unit } from "../../data/index.js";
+import type { Campaign, Item, Unit } from "../../data/index.js";
 
 /**
  * The between-battle layer's state. Everything a chapter carries from one
@@ -141,6 +141,19 @@ export function learnedAbilities(state: CampaignState, unitId: string): readonly
 
 export function inventoryCount(state: CampaignState, itemId: string): number {
   return state.inventory.find((stack) => stack.itemId === itemId)?.count ?? 0;
+}
+
+/**
+ * The chapter's consumables, in item-id order — the satchel the party takes
+ * into a battle. Equipment stock stays behind: nothing in a battle equips.
+ */
+export function consumableStock(
+  state: CampaignState,
+  items: Readonly<Record<string, Item>>,
+): InventoryStack[] {
+  return state.inventory
+    .filter((stack) => items[stack.itemId]?.slot === "consumable" && stack.count > 0)
+    .map((stack) => ({ itemId: stack.itemId, count: stack.count }));
 }
 
 /** The encounter the chapter is waiting on, or null once the list runs out. */

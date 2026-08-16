@@ -117,6 +117,17 @@ ability whatever its merits (`BALANCE_REPORT` G3).
 Abilities whose `requires` the battlefield does not satisfy
 (`COMBAT_RULES` §13a) never enter the candidate list at all.
 
+**Items are abilities with a different price.** Anything in the acting unit's
+team satchel (`COMBAT_RULES` §19) enters the candidate list as the ability the
+engine synthesizes from it, and is scored by the same `abilityValue` — a heal
+item is a heal, a thrown flask is a ranged attack with a status rider. The only
+new term is a flat `itemUsePoint` subtracted for spending it, because a
+consumable is the one resource that does not come back at the end of the
+battle: the pool is the whole chapter's, not the turn's. At 120 (about twelve
+hit points of value) a hand doses an ally who is genuinely hurt and leaves the
+vial in the satchel for a scratch. A team with an empty satchel pays nothing
+for the check.
+
 ### What the battlefield is worth
 
 Objects are scored by what breaking them does, not by their integrity bar:

@@ -5,6 +5,7 @@
 // `src/ui/mock.ts` stays the harness's fixture source; this is the app path.
 
 import {
+  consumableStock,
   deriveStats,
   equippedItems,
   inventoryCount,
@@ -29,6 +30,7 @@ import {
   type EquipSlot,
   type EquipSlotView,
   type EquipmentView,
+  type ItemEntryView,
   type ItemOptionView,
   type JobOptionView,
   type JobsView,
@@ -247,6 +249,28 @@ function statDeltas(
 const itemSummary = (item: Item): string =>
   item.slot === "weapon" ? `Power ${item.power}` : item.description;
 
+/**
+ * The chapter's consumables. One shared pile: it is not per-unit kit, so it
+ * reads the same on every unit's equipment screen and on the formation screen.
+ */
+export function campaignSatchelView(
+  state: CampaignState,
+  content: CampaignContent,
+): ItemEntryView[] {
+  const out: ItemEntryView[] = [];
+  for (const stack of consumableStock(state, content.items)) {
+    const item = content.items[stack.itemId];
+    if (item === undefined) continue;
+    out.push({
+      itemId: item.id,
+      name: item.name,
+      description: item.description,
+      count: stack.count,
+    });
+  }
+  return out;
+}
+
 export function campaignEquipmentView(
   state: CampaignState,
   content: CampaignContent,
@@ -305,6 +329,7 @@ export function campaignEquipmentView(
     jobEquipTags: [...job.equipTags],
     slots: equipSlotViews(content, unit),
     options,
+    satchel: campaignSatchelView(state, content),
   };
 }
 
@@ -401,6 +426,7 @@ export function campaignDeploymentView(
     maxDeployed: tiles.length,
     candidates,
     slots,
+    satchel: campaignSatchelView(state, content),
     canConfirm: deployed > 0,
     ...(deployed > 0 ? {} : { blockedReason: "Deploy at least one unit" }),
   };

@@ -14,7 +14,7 @@
   },
   "requires": ["targetPowered"],
   "chargeCost": 5,
-  "castSpeed": 25,
+  "castSpeed": null,
   "effects": [
     { "kind": "damageObject", "amount": { "base": "mag", "power": 20 } }
   ]

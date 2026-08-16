@@ -28,6 +28,8 @@ import {
   battleMap,
   battleResult,
   getUnit,
+  itemAbilityId,
+  itemIdFromAbilityId,
   reachableTiles,
   targetableTiles,
   type BattleEvent,
@@ -287,6 +289,14 @@ export class BattleController {
       selectAbility: (unitId, abilityId) => this.selectAbility(unitId, abilityId),
       confirmTarget: (unitId, abilityId, target) =>
         this.commitAct(unitId, abilityId, this.resolveUiTarget(unitId, abilityId, target)),
+      // An item is aimed through its synthesized ability, so targeting, the
+      // affected-tile overlay and the forecast are the ability path unchanged;
+      // only the command that finally goes out is different.
+      selectItem: (unitId, itemId) => this.selectAbility(unitId, itemAbilityId(itemId)),
+      confirmItemTarget: (unitId, itemId, target) => {
+        const abilityId = itemAbilityId(itemId);
+        this.commitAct(unitId, abilityId, this.resolveUiTarget(unitId, abilityId, target));
+      },
       activateObject: (unitId, objectId) =>
         this.dispatch({ kind: "activateObject", unitId, objectId }),
       cancelSelection: () => {
@@ -373,6 +383,11 @@ export class BattleController {
 
   private commitAct(unitId: string, abilityId: string, target: TargetRef | null): void {
     if (target === null) return;
+    const itemId = itemIdFromAbilityId(abilityId);
+    if (itemId !== null) {
+      this.dispatch({ kind: "useItem", unitId, itemId, target });
+      return;
+    }
     this.dispatch({ kind: "act", unitId, abilityId, target });
   }
 

@@ -55,7 +55,6 @@
           "attunement": 28
         },
         "learnedAbilityIds": [
-          "smoke-canister",
           "shaped-charge",
           "gas-line-tap",
           "rig-machinery"
@@ -87,7 +86,6 @@
           "attunement": 30
         },
         "learnedAbilityIds": [
-          "smoke-canister",
           "shaped-charge",
           "gas-line-tap"
         ],
@@ -159,32 +157,6 @@
       "position": {
         "x": 6,
         "y": 10
-      },
-      "facing": "south"
-    },
-    {
-      "unit": {
-        "schemaVersion": 1,
-        "id": "provocateur-tram",
-        "name": "Provocateur",
-        "spriteId": "enforcer",
-        "level": 1,
-        "jobId": "enforcer",
-        "disposition": {
-          "resolve": 44,
-          "attunement": 38
-        },
-        "learnedAbilityIds": [
-          "pin"
-        ],
-        "equipment": {
-          "weapon": "shock-maul"
-        }
-      },
-      "team": "enemy",
-      "position": {
-        "x": 14,
-        "y": 8
       },
       "facing": "south"
     }
@@ -327,7 +299,7 @@
           "lines": [
             {
               "speaker": "Wick",
-              "text": "Hold the refuse. Two down the gutter \u2014 take them off it from the side."
+              "text": "Hold the refuse. One down the gutter \u2014 take them off it from the side."
             }
           ]
         },

@@ -17,10 +17,11 @@ import {
   unitAt,
   unitById,
 } from "../rules/grid.js";
+import { consumableItem, itemAbility } from "../rules/items.js";
 import { getStatus } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
 import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
-import { forecast, turnOrderPreview, type ForecastEntry } from "../selectors.js";
+import { forecast, turnOrderPreview, usableItems, type ForecastEntry } from "../selectors.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
 import { damageBite, effectiveHp, fieldDistance, type AiContext } from "./context.js";
 import { UNREACHABLE } from "./field.js";
@@ -706,8 +707,27 @@ export function targetCandidates(ctx: AiContext, view: GameState, ability: Actio
 export interface ActionOption {
   score: number;
   abilityId: string | null;
+  /** Set instead of `abilityId` when the action is spending a consumable. */
+  itemId: string | null;
   objectId: string | null;
   target: TargetRef | null;
+}
+
+/** Whether an aimed action is legal from `at`; the gate both action loops share. */
+function aimable(
+  view: GameState,
+  actor: BattleUnit,
+  ability: ActionAbility,
+  target: TargetRef,
+  at: TileCoord,
+): boolean {
+  const aimed = aimedTile(view, target);
+  if (aimed === undefined) return false;
+  if (!inRange(view, at, aimed, ability.targeting.range)) return false;
+  if (!isValidTargetKind(view, actor, ability, target)) return false;
+  if (target.kind === "object" && objectById(view, target.objectId)?.destroyed === true) return false;
+  if (ability.targeting.requiresLos && !hasLos(view, at, aimed)) return false;
+  return unmetRequirement(view, actor, ability, target) === null;
 }
 
 /**
@@ -726,18 +746,31 @@ export function actionOptions(ctx: AiContext, view: GameState, at: TileCoord): A
     if (hpCost > 0 && actor.hp <= hpCost) continue;
     if (unmetRequirement(view, actor, ability, null) !== null) continue;
     for (const target of targetCandidates(ctx, view, ability)) {
-      const aimed = aimedTile(view, target);
-      if (aimed === undefined) continue;
-      if (!inRange(view, at, aimed, ability.targeting.range)) continue;
-      if (!isValidTargetKind(view, actor, ability, target)) continue;
-      if (target.kind === "object" && objectById(view, target.objectId)?.destroyed === true) continue;
-      if (ability.targeting.requiresLos && !hasLos(view, at, aimed)) continue;
-      if (unmetRequirement(view, actor, ability, target) !== null) continue;
+      if (!aimable(view, actor, ability, target, at)) continue;
       const area = shapedArea(ctx, view, actor, ability, target);
       if (area.tiles.length === 0) continue;
       const score = abilityValue(ctx, view, ability, target, area);
       if (score > ctx.weights.actThreshold) {
-        out.push({ score, abilityId: ability.id, objectId: null, target });
+        out.push({ score, abilityId: ability.id, itemId: null, objectId: null, target });
+      }
+    }
+  }
+
+  // The satchel. An item costs no flux and no cast, so the only thing holding
+  // the search back from spending one on chip damage is `itemUsePoint`: what is
+  // drunk here is gone for the rest of the chapter.
+  for (const entry of usableItems(view, actor.id)) {
+    if (entry.unavailableReason !== undefined) continue;
+    const item = consumableItem(view, entry.itemId);
+    if (item === undefined) continue;
+    const ability = itemAbility(view, actor, item);
+    for (const target of targetCandidates(ctx, view, ability)) {
+      if (!aimable(view, actor, ability, target, at)) continue;
+      const area = shapedArea(ctx, view, actor, ability, target);
+      if (area.tiles.length === 0) continue;
+      const score = abilityValue(ctx, view, ability, target, area) - ctx.weights.itemUsePoint;
+      if (score > ctx.weights.actThreshold) {
+        out.push({ score, abilityId: null, itemId: entry.itemId, objectId: null, target });
       }
     }
   }
@@ -748,7 +781,7 @@ export function actionOptions(ctx: AiContext, view: GameState, at: TileCoord): A
     if (!obj.def.tiles.some((tile) => manhattan(tile, at) <= 1)) continue;
     const score = activateValue(ctx, view, obj);
     if (score > ctx.weights.actThreshold) {
-      out.push({ score, abilityId: null, objectId: obj.def.id, target: null });
+      out.push({ score, abilityId: null, itemId: null, objectId: obj.def.id, target: null });
     }
   }
   return out;
