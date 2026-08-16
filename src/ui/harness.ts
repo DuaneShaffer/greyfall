@@ -85,7 +85,7 @@ function previewFor(abilityId: string) {
     return mockForecastView({
       abilityId,
       abilityName: "Overload Cell",
-      chargeCost: 8,
+      chargeCost: 5,
       castSpeed: 25,
       targets: [
         {

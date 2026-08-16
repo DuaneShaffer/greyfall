@@ -143,8 +143,8 @@ Worked examples:
 
 - Rowen's weapon attack: `floor(9 * 9 * 100 / 400)` = **20**.
 - Rowen's Pin (`weapon`, power 80): `floor(9 * 9 * 80 / 400)` = **16**.
-- Vale (Mag 10, Attunement 70) casting Overload Cell (`mag`, power 16) on the
-  yard cell: `floor(10 * 16 / 2)` = 80, `floor(80 * 70 / 100)` = **56**.
+- Vale (Mag 10, Attunement 70) casting Overload Cell (`mag`, power 20) on the
+  yard cell: `floor(10 * 20 / 2)` = 100, `floor(100 * 70 / 100)` = **70**.
 - The same caster's Arc (`mag`, power 8) onto a unit with Attunement 45:
   `floor(10 * 8 / 2)` = 40, `floor(40 * 70 / 100)` = 28,
   `floor(28 * 45 / 100)` = **12**.

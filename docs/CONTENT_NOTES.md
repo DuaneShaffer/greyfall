@@ -113,7 +113,7 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 ### Enforcer — hold the line
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
-| Pin | action | 100 / 0 | weapon 80, Stunned 60% *(pre-existing)* |
+| Pin | action | 100 / 0 | weapon 80, Stunned **35%** |
 | Shield Advance | action | 150 / 0 | line 2, weapon 60 + shove 1 along facing |
 | Breach Posture | action | 300 / 2 | self, Braced (evade +18, move −1) |
 | Kettle | action | 450 / 3 | radius 2, Kettled 80% — a zone root, not a stun, and instant |
@@ -128,7 +128,7 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 | Arc | action | 150 / 5 | line 3, mag 21 arc (Attunement-scaled both ends) |
 | Tap Line | action | 200 / 0, requires `adjacentPoweredObject` | ally/self charge +10 — the answer to "where does the power come from" |
 | Throw the Breaker | action | 250 / 1 | object setPower toggle, range 5 |
-| Overload Cell | action | 250 / 8, cast 25 | object mag 16 *(pre-existing)* |
+| Overload Cell | action | 250 / **5**, cast 25, requires `targetPowered` | object mag **20** |
 | Ground | action | 550 / 5, cast 60 | Grounded 80% + charge −10 siphoned to the caster + setPower off |
 | Flare | action | 950 / 9, cast 20 | radius 2, mag 14 arc + Flux Burn 60% + object mag 8 |
 | Licensed Draw | support | 450 | charge +8 |
@@ -339,8 +339,10 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 >   this pass was trying to revive would have killed it), `rig-machinery` and
 >   `throw-the-breaker` (`targetPowered` on either makes a *strictly worse*
 >   ability, since `setPower off` on an unpowered object is already a no-op and
->   the integrity damage is still worth having), and `overload-cell`, which
->   wants `targetPowered` and could not be edited at all — see §9.
+>   the integrity damage is still worth having). **`overload-cell` now takes
+>   `targetPowered`** — the G8 mirror that blocked it was re-synced, see §9. A
+>   dead cell has no charge to force past its rated draw, so the gate reads as
+>   the ability's own fiction rather than a tax on it.
 >
 > Gap **4** (consumables) is deferred with a design sketch in
 > `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10 are open.
@@ -429,20 +431,40 @@ into the data rather than only into dialogue.
 
 ## 9. Downstream work this creates
 
-- **`src/ui/mock.ts` freezes seven content files, and that blocked real balance
-  work.** `realContent` mirrors `jobs/enforcer`, `jobs/conduit`,
-  `abilities/pin`, `abilities/overload-cell`, `items/shock-maul`,
-  `statuses/stunned`, and `units/rowen`, and `tests/ui/mock.test.ts` asserts
-  byte-equality with the authored JSON. The rebalance pass could therefore not
-  touch any of them. Two changes it wanted and measured are parked on that:
+- ~~**`src/ui/mock.ts` freezes seven content files, and that blocked real
+  balance work.**~~ **Both diffs applied, 2026-08-15.** `realContent` still
+  mirrors `jobs/enforcer`, `jobs/conduit`, `abilities/pin`,
+  `abilities/overload-cell`, `items/shock-maul`, `statuses/stunned`, and
+  `units/rowen`, and `tests/ui/mock.test.ts` still asserts equality with the
+  authored JSON — the mirror is a **re-sync cost on every edit**, not a freeze.
+  The two parked changes and the measurements that argued for them, kept as
+  history:
 
-  | file | wanted change | measured effect |
+  | file | change (applied) | measured effect (as argued) |
   |---|---|---|
   | `data/abilities/pin.json` | Stunned `chance` 60 → 35 | Enforcer duel win rate **68% → 53%** in a 392-duel A/B; the single largest lever in the game and the reason the Enforcer still sits at the top of the band |
-  | `data/abilities/overload-cell.json` | `chargeCost` 8 → 5, `damageObject` power 16 → 20, `requires: ["targetPowered"]` | the Conduit's anti-machine strike is 8 flux of a 22 pool for one object; it is chosen once in 1,764 unit-battles |
+  | `data/abilities/overload-cell.json` | `chargeCost` 8 → 5, `damageObject` power 16 → 20, `requires: ["targetPowered"]` | the Conduit's anti-machine strike was 8 flux of a 22 pool for one object; it is chosen once in 1,764 unit-battles |
 
-  Re-syncing `mock.ts` is the UI workstream's call; the numbers above are what
-  it buys. Everything else in the suite is green (449 tests).
-- `src/app/content.ts` still hand-lists content files and carries the
-  `VALE_PLACEHOLDER`. `data/units/vale.json` now exists; the placeholder can
-  be deleted and the directory loaded.
+  **What re-measured, and what did not.** A bounded 112-duel re-check
+  (enforcer mirror plus enforcer-versus-each-job, both orientations, arena and
+  Marshaling Yard, levels 1 and 3, two seeds) moves the Enforcer **49.1% →
+  46.4%** — the right direction, a much smaller step than the parked 68 → 53.
+  Broken out, essentially all of it is at level 1 (37.5% → 29.2% against other
+  jobs); level 3 is flat (60.4% → 62.5%) and level 5 barely moves
+  (87.5% → 85.4%). That agrees with `docs/BALANCE_REPORT.md` §6.6's other
+  finding: above level 1 the Enforcer's lead is its frozen `hp` curve, not
+  `pin`. The 392-duel figure has not been re-run at full scale. Five seeds on
+  `e2-foundry-floor-nine` still read **80% party win**, unchanged and inside
+  the 40–80% band.
+
+  Downstream numbers that moved with these two edits: the Overload Cell worked
+  example in `COMBAT_RULES` §4 (56 → **70** integrity), the `mock.ts` forecast
+  mock's rendered "Stunned 60%" (→ **35%**), and Vale's flux after a cast
+  (22 − 8 = 14 → 22 − 5 = **17**).
+- ~~`src/app/content.ts` still hand-lists content files and carries the
+  `VALE_PLACEHOLDER`.~~ **Done by the progression pass.** `src/app/content.ts`
+  glob-imports every directory under `data/` (`import.meta.glob`, eager, one
+  `parseDir` per `ContentKind` including `units` and `campaigns`) and validates
+  each file against its zod schema at startup; there is no `VALE_PLACEHOLDER`
+  anywhere in the tree and `data/units/vale.json` is loaded like any other
+  roster unit.

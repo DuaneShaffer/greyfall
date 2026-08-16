@@ -1,6 +1,5 @@
 /**
- * Core-formula candidates for the TTK collapse (`docs/CONTENT_NOTES.md` §6),
- * simulated without touching `src/core`.
+ * Core-formula candidates, simulated without touching `src/core`.
  *
  * Every candidate changes a constant in `deriveStats` or `damage.ts`. Because a
  * sweep run fixes the level, each one has an exact equivalent expressed as a
@@ -9,22 +8,35 @@
  * - `STAT_BASE.hp = H`: `raw = H + growth*L` equals `40 + growth'*L` for
  *   `growth' = growth + (H - 40)/L`, exact whenever `L` divides `H - 40`.
  * - `STAT_BASE.phys = P`: same identity from a base of 0.
- * - Level-scaled `WEAPON_DAMAGE_DIVISOR`: every damage and heal amount with
- *   base `weapon`, `phys`, or `mag` is linear in the caster's phys/mag, so
- *   dividing by `D(L)` instead of 400 is the same as scaling those two stats by
- *   `400/D(L)` — carried on the job's `multiplierPercent`. `fixed` and
- *   `maxHpPercent` amounts are untouched, which is what the real change does.
+ * - A different per-level divisor slope: every damage and heal amount with base
+ *   `weapon`, `phys`, or `mag` is linear in the caster's phys/mag, so dividing
+ *   by `D'(L)` instead of the engine's own `D(L)` is the same as scaling those
+ *   two stats by `D(L)/D'(L)` — carried on the job's `multiplierPercent`.
+ *   `fixed` and `maxHpPercent` amounts are untouched, as a real change would be.
+ *
+ * **Every variant here is a delta against the shipped engine, not against a
+ * hypothetical unscaled one.** `damageDivisor` already scales with level
+ * (`D(L) = 400 + 250(L-1)`, applied by the engine pass), so `divisorVariant`
+ * emulates only the *difference* between a candidate slope and the live one;
+ * `divisorVariant(DAMAGE_DIVISOR_PER_LEVEL)` is the shipped game and returns an
+ * unchanged library at every level. `hpBaseVariant` and `statBaseVariant` are
+ * kept as the rejected alternatives to that fix — `STAT_BASE.hp` is still 40
+ * and `STAT_BASE.phys` still 0, so they remain honest deltas too.
  *
  * The identities are asserted against the engine in `tests/sim/variants.test.ts`.
  */
 
-import type { ContentLibrary } from "../core/index.js";
+import { DAMAGE_DIVISOR_PER_LEVEL, WEAPON_DAMAGE_DIVISOR, damageDivisor, type ContentLibrary } from "../core/index.js";
 import type { Job } from "../data/index.js";
 import { withContent } from "./content.js";
 
-export const BASE_DIVISOR = 400;
+/** `D(1)`, shared by the engine and every candidate slope. */
+export const BASE_DIVISOR = WEAPON_DAMAGE_DIVISOR;
 
-/** `D(level)` for the level-scaled divisor candidate. */
+/** The engine's own slope; `divisorVariant` at this value is the identity. */
+export const LIVE_PER_LEVEL = DAMAGE_DIVISOR_PER_LEVEL;
+
+/** `D(level)` for a candidate per-level slope. */
 export function scaledDivisor(level: number, perLevel: number): number {
   return BASE_DIVISOR + perLevel * (level - 1);
 }
@@ -74,14 +86,22 @@ function scaledCurve(job: Job, key: "phys" | "mag", level: number, factor: numbe
   return { ...c, multiplierPercent: percentFor(raw, target, c.multiplierPercent) };
 }
 
-/** `WEAPON_DAMAGE_DIVISOR` (and the stat-amount divisor with it) grows with the attacker's level. */
+/**
+ * The per-level growth in the damage divisor set to `perLevel` instead of the
+ * engine's `LIVE_PER_LEVEL`. Expressed relative to the live engine, so
+ * `divisorVariant(LIVE_PER_LEVEL)` is a no-op at every level.
+ */
 export function divisorVariant(perLevel: number): Variant {
   return {
-    id: `divisor+${perLevel}`,
-    label: `damage divisor 400 + ${perLevel}*(level-1)`,
+    id: perLevel === LIVE_PER_LEVEL ? `divisor+${perLevel}-live` : `divisor+${perLevel}`,
+    label:
+      perLevel === LIVE_PER_LEVEL
+        ? `damage divisor 400 + ${perLevel}*(level-1) — the shipped engine, control`
+        : `damage divisor 400 + ${perLevel}*(level-1), against the live ${LIVE_PER_LEVEL}`,
     exactAt: () => true,
     jobs(library, level) {
-      const factor = BASE_DIVISOR / scaledDivisor(level, perLevel);
+      const factor = damageDivisor(level) / scaledDivisor(level, perLevel);
+      if (factor === 1) return [];
       return jobList(library).map((job) => ({
         ...structuredClone(job),
         statCurve: {
@@ -94,11 +114,15 @@ export function divisorVariant(perLevel: number): Variant {
   };
 }
 
-/** `STAT_BASE.hp` raised from 40 to `base`. */
+/**
+ * `STAT_BASE.hp` raised from 40 to `base`. Historical: a rejected alternative
+ * to the divisor fix, kept as the evidence that decision was argued from
+ * (`docs/BALANCE_REPORT.md` §4(b)).
+ */
 export function hpBaseVariant(base: number): Variant {
   return {
     id: `hp-base-${base}`,
-    label: `STAT_BASE.hp ${base}`,
+    label: `STAT_BASE.hp ${base} (rejected alternative)`,
     exactAt: (level) => (base - 40) % level === 0,
     jobs(library, level) {
       const bump = Math.round((base - 40) / level);
@@ -113,11 +137,14 @@ export function hpBaseVariant(base: number): Variant {
   };
 }
 
-/** `STAT_BASE.phys` (and `.mag`, so caster kits move with weapon kits) raised from 0. */
+/**
+ * `STAT_BASE.phys` (and `.mag`, so caster kits move with weapon kits) raised
+ * from 0. Historical, for the same reason as `hpBaseVariant`.
+ */
 export function statBaseVariant(base: number): Variant {
   return {
     id: `phys-base-${base}`,
-    label: `STAT_BASE.phys/mag ${base}`,
+    label: `STAT_BASE.phys/mag ${base} (rejected alternative)`,
     exactAt: (level) => base % level === 0,
     jobs(library, level) {
       const bump = Math.round(base / level);

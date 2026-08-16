@@ -38,9 +38,9 @@ describe("the flux cell chain", () => {
 
     const fired = applyCommand(cast.state, { kind: "endTurn", unitId: "yard-hand" });
 
-    // 56 integrity damage against 20 hp destroys the cell outright.
+    // 70 integrity damage against 20 hp destroys the cell outright.
     const damaged = fired.events.find((e) => e.type === "ObjectDamaged");
-    expect(damaged).toMatchObject({ objectId: "yard-cell", amount: 56, hpRemaining: 0 });
+    expect(damaged).toMatchObject({ objectId: "yard-cell", amount: 70, hpRemaining: 0 });
     expect(getObject(fired.state, "yard-cell")?.destroyed).toBe(true);
 
     // onDestroyed pours 24 fixed thermal onto the four orthogonal tiles.

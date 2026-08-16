@@ -23,10 +23,16 @@ findings-queue item 6.
 > read differently once the AI could see the whole kit; §6 records what
 > actually shipped.
 >
-> **`src/sim/variants.ts` is stale.** `divisorVariant()` emulates a fix that is
-> now *in* the engine, so running it double-applies the divisor. §4(b)'s
-> variant table is historical evidence for a decision already taken; do not read
-> it as a live comparison. §6's numbers come from a variant-free sweep.
+> **`src/sim/variants.ts` was rebased onto the live engine (cleanup pass,
+> 2026-08-15).** `divisorVariant()` used to emulate a fix that is now *in* the
+> engine, so running it double-applied the divisor. It now expresses the
+> per-level divisor slope as a delta against `damageDivisor`, with the live 250
+> as the identity: `divisorVariant(LIVE_PER_LEVEL)` returns the library
+> untouched at every level, asserted in `tests/sim/variants.test.ts`, and it is
+> the control row in `CANDIDATE_VARIANTS`. `hpBaseVariant` and `statBaseVariant`
+> are unchanged and are labelled as the rejected alternatives they always were.
+> §4(b)'s variant table is still historical evidence for a decision already
+> taken; §6's numbers still come from a variant-free sweep.
 
 ---
 
@@ -46,10 +52,10 @@ GREYFALL_SIM=full GREYFALL_SIM_OUT=/tmp/greyfall-sweep.md \
 ```
 
 **For §6's numbers, drop the variant and weight sweeps.** `GREYFALL_SIM=full`
-still passes `CANDIDATE_VARIANTS`, and `divisorVariant` now double-applies a
-divisor the engine already scales, so half of that run measures an engine that
-does not exist. The post-rebalance sweep is the same `FULL_CONFIG` with the
-synthetic engines switched off — 1,268 battles, about four minutes:
+still passes `CANDIDATE_VARIANTS`, which now costs a control row that
+reproduces baseline exactly plus three alternatives already rejected — correct,
+but not what §6 measures. The post-rebalance sweep is the same `FULL_CONFIG`
+with the synthetic engines switched off — 1,268 battles, about four minutes:
 
 ```ts
 // tests/sim/<anything>.test.ts
@@ -439,7 +445,10 @@ dip in the middle levels. 250 was picked from a constant sweep over
 of the 25 fighter-versus-fighter pairings, where it was the flattest across
 L1–L3 (3.45 / 3.19 / 3.36, ±8%) and stayed within 20% out to L5. Reproduce with
 `divisorVariant(k)` from `src/sim/variants.ts` and `ttkMatrix` from
-`src/sim/ttk.ts`.
+`src/sim/ttk.ts` — noting that `divisorVariant` now reads *relative to the
+shipped 250*, so `k = 250` is the shipped engine and the table above is
+recovered by comparing each `k` against that control rather than against a
+divisor that no longer exists.
 
 **Also worth revisiting while the file is open:** the second-order collapse is
 that `STAT_BASE.phys` and `STAT_BASE.mag` are both 0, so a level-1 Conduit's Mag
@@ -669,14 +678,20 @@ first-round downs.
 
 ### 6.6 What was left, and why
 
-- **Enforcer 68% / Machinist 34%.** Both are one band-edge away and both are
+- **Enforcer 68% / Machinist 34%.** Both are one band-edge away and both were
   blocked, not unattended. The Enforcer's residual is `pin`: a measured A/B
   over 392 duels puts Stunned `chance` 60 → 35 at **68% → 53%**, the largest
   single lever in the game. `data/abilities/pin.json` is mirrored verbatim in
   `src/ui/mock.ts` and asserted by `tests/ui/mock.test.ts`, so it could not be
   edited without breaking a test outside this pass's remit. Same for
   `overload-cell` (wanted: 8 → 5 flux, power 16 → 20, `requires: targetPowered`).
-  `CONTENT_NOTES` §9 carries both diffs for the UI workstream.
+  **Both applied by the cleanup pass, 2026-08-15** — `CONTENT_NOTES` §9 records
+  what re-measured and what did not. The headline caveat: a bounded 112-duel
+  re-check reproduces the *direction* but not the magnitude (49.1% → 46.4%
+  across L1 and L3, with the whole movement at L1: 37.5% → 29.2% against other
+  jobs). At L3 and L5 the Enforcer barely moves, which is consistent with the
+  next bullet — above level 1 its lead is the frozen `hp` curve, not `pin`.
+  The full 392-duel figure has not been re-run.
 - **Level 5 is out of band for three jobs** (Enforcer 89%, Machinist 17%,
   Saboteur 29%) while levels 1 and 3 are 46/68 and 56/29 and 68/36. The
   Enforcer's `hp` growth of 11 ×120 against everyone else's 8–10 compounds with
@@ -707,7 +722,7 @@ Content could not reach these; each is reported with the number it costs.
 | G5 | `src/core/ai/score.ts`, `powerSwingValue` | **A power swing is worth 0 unless the object carries a `surfaceHeight` deck with a unit on it.** Cutting power to a press line or a pour ladle — the entire point of `floor-nine-mains` — prices at zero. | `throw-the-breaker` is never chosen on any map, at any price. It is repriced to 1 flux and range 5 on the assumption a human will use it. |
 | G6 | `src/core/ai/score.ts`, `spawnValue` | **`autoAttackPercent` (250) credits a deployable with 2.5 shots and no discount** for the deployable being destroyed, the target walking out of range, or the turns of setup. A Sentry Frame scores ~700 against a basic attack's ~200, so the Machinist builds until its flux is gone and dies doing it. The content answer was to price the frame at 12 flux of an 18-point pool so it can only afford two. | Sentry Frame is 59% of Machinist actions; the job's level-5 rate is 17%. |
 | G7 | `src/core/rules/effects.ts`, `checkContact` | **An `onContact` payload resolves with `actorId: null`**, so `phys`/`mag`/`weapon` amounts land as 0 damage while `damageBite` prices them the same way. A mine authored with `phys 8` is silently inert. `autoAttack` does not have this problem — it resolves against the deployer. Worth either documenting on the schema or resolving contact against `ownerUnitId` the way `autoAttack` does. | Cost one debugging pass; `tripwire-charge` ships as `fixed 20`. |
-| G8 | `src/ui/mock.ts` + `tests/ui/mock.test.ts` | **Seven content files are frozen by a UI fidelity mirror** — `jobs/enforcer`, `jobs/conduit`, `abilities/pin`, `abilities/overload-cell`, `items/shock-maul`, `statuses/stunned`, `units/rowen`. | The two biggest un-taken levers in the game, quantified in §6.6. |
+| G8 | `src/ui/mock.ts` + `tests/ui/mock.test.ts` | ~~**Seven content files are frozen by a UI fidelity mirror**~~ — `jobs/enforcer`, `jobs/conduit`, `abilities/pin`, `abilities/overload-cell`, `items/shock-maul`, `statuses/stunned`, `units/rowen`. **Discharged (cleanup pass, 2026-08-15):** the mirror is not a freeze, it is a re-sync cost. Both §6.6 diffs were applied to `data/` and mirrored back into `mock.ts` in the same change. | Was the two biggest un-taken levers in the game; both are now taken. The mirror still costs a re-sync on every edit to those seven files. |
 | G9 | `src/core/ai/index.ts` | **Search cost is superlinear in Move.** `actionOptions` is evaluated from every reachable tile, so one point of Move on one unit multiplies that unit's per-turn search by the growth of its reachable set. Measured: slotting `earth-strap` (move +1) on Vale took `tests/app/campaignLoop.test.ts`'s two-battle run from **1.42 s to 2.36 s** — a 65% increase in the whole test from one stat point on one unit. | Vale ships without a movement passive. Any future Move-boosting content wants a pruning pass in the search first. |
 
 None of G1–G6 is tunable from `weights.ts`; they are all valuation gaps in

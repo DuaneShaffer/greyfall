@@ -16,6 +16,6 @@
   "castSpeed": null,
   "effects": [
     { "kind": "damage", "damageType": "kinetic", "amount": { "base": "weapon", "power": 80 } },
-    { "kind": "applyStatus", "statusId": "stunned", "chance": 60 }
+    { "kind": "applyStatus", "statusId": "stunned", "chance": 35 }
   ]
 }

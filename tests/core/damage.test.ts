@@ -68,16 +68,16 @@ describe("damage formulas", () => {
 
   it("object damage ignores target Attunement but keeps the caster's", () => {
     const state = conduitBattle();
-    // mag 10 * power 16 / 2 = 80, * 70% caster = 56; the cell has 20 integrity.
+    // mag 10 * power 20 / 2 = 100, * 70% caster = 70; the cell has 20 integrity.
     const cast = forecast(state, "vale", "overload-cell", { kind: "object", objectId: "yard-cell" });
     expect(cast).toEqual([
       {
         unitId: null,
         objectId: "yard-cell",
         hitChance: 100,
-        damage: 56,
+        damage: 70,
         heal: 0,
-        expectedDamage: 56,
+        expectedDamage: 70,
         statusChances: [],
       },
     ]);
@@ -185,6 +185,6 @@ describe("hit chance and facing", () => {
     const pin = forecast(state, "rowen", "pin", { kind: "unit", unitId: "mark" })[0];
     expect(pin?.hitChance).toBe(92);
     expect(pin?.expectedDamage).toBe(Math.floor((16 * 92) / 100));
-    expect(pin?.statusChances).toEqual([{ statusId: "stunned", chance: Math.floor((60 * 92) / 100) }]);
+    expect(pin?.statusChances).toEqual([{ statusId: "stunned", chance: Math.floor((35 * 92) / 100) }]);
   });
 });

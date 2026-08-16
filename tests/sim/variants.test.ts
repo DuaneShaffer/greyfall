@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { STAT_BASE, deriveStats } from "../../src/core/index.js";
+import { STAT_BASE, damageDivisor, deriveStats } from "../../src/core/index.js";
 import { simContent } from "../../src/sim/content.js";
 import { jobUnit } from "../../src/sim/matchup.js";
 import { scriptedDuel } from "../../src/sim/ttk.js";
 import {
   BASE_DIVISOR,
+  LIVE_PER_LEVEL,
   applyVariant,
   divisorVariant,
   hpBaseVariant,
@@ -63,23 +64,35 @@ describe("formula variants", () => {
     }
   });
 
-  it("the divisor variant scales weapon damage by 400/D(level)", () => {
+  it("the divisor variant scales weapon damage by D(level)/D'(level), against the live engine", () => {
     const perLevel = 175;
     const variant = divisorVariant(perLevel);
     for (const level of [1, 3, 5]) {
-      const divisor = scaledDivisor(level, perLevel);
       const lib = applyVariant(library, variant, level);
       for (const jobId of JOBS) {
         const baseline = scriptedDuel(library, jobId, "enforcer", level, 1).damagePerHit;
         const scaled = scriptedDuel(lib, jobId, "enforcer", level, 1).damagePerHit;
-        const target = (baseline * BASE_DIVISOR) / divisor;
+        // The engine already divides by damageDivisor(level); the variant only
+        // carries the difference between its slope and that one.
+        const target = (baseline * damageDivisor(level)) / scaledDivisor(level, perLevel);
         // Percent multipliers are integers, so the emulation lands within a point of the target.
         expect(Math.abs(scaled - target), `${jobId} L${level}: ${scaled} vs ${target.toFixed(2)}`).toBeLessThanOrEqual(1.5);
       }
     }
   });
 
-  it("at level 1 the divisor variant is the shipped game", () => {
+  it("the live slope is a provable no-op: the variant hands back the library untouched", () => {
+    expect(BASE_DIVISOR).toBe(damageDivisor(1));
+    expect(scaledDivisor(4, LIVE_PER_LEVEL)).toBe(damageDivisor(4));
+    const variant = divisorVariant(LIVE_PER_LEVEL);
+    for (const level of [1, 2, 3, 4, 5]) {
+      expect(variant.jobs(library, level), `L${level} job overrides`).toEqual([]);
+      // Same object, not merely equal content: nothing was injected at all.
+      expect(applyVariant(library, variant, level)).toBe(library);
+    }
+  });
+
+  it("at level 1 every divisor slope is the shipped game", () => {
     const lib = applyVariant(library, divisorVariant(175), 1);
     for (const jobId of JOBS) {
       expect(scriptedDuel(lib, jobId, "enforcer", 1, 1).damagePerHit).toBe(

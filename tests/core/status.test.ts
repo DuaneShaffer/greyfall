@@ -4,7 +4,7 @@ import type { Unit } from "../../src/data/index.js";
 import { advanceTo, enemyAt, enforcer, testContent, yardEncounter } from "./fixtures.js";
 
 /** Seed chosen so Pin both lands and stuns; see COMBAT_RULES.md for the rolls. */
-const STUN_SEED = 1001;
+const STUN_SEED = 1009;
 
 function duel(id: string, defender: Unit, seed = STUN_SEED): GameState {
   const encounter = yardEncounter(testContent(), {

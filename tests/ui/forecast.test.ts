@@ -19,7 +19,7 @@ describe("ForecastPanel", () => {
     expect(textOf(panel.el, ".gf-forecast-hit")).toContain("82%");
     expect(textOf(panel.el, ".gf-forecast-damage")).toContain("24–31");
     expect(textOf(panel.el, ".gf-forecast-damage")).toContain("kinetic");
-    expect(textOf(panel.el, ".gf-forecast-status")).toBe("Stunned 60%");
+    expect(textOf(panel.el, ".gf-forecast-status")).toBe("Stunned 35%");
     expect(textOf(panel.el, ".gf-forecast-modifiers")).toBe("Side · Height +1");
   });
 

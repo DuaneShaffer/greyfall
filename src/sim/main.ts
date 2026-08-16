@@ -37,14 +37,24 @@ import {
 } from "./sweeps.js";
 import { WEIGHTS } from "../core/ai/index.js";
 import { ttkMatrix, type TtkCell } from "./ttk.js";
-import { BASELINE, applyVariant, divisorVariant, hpBaseVariant, statBaseVariant, type Variant } from "./variants.js";
+import {
+  BASELINE,
+  LIVE_PER_LEVEL,
+  applyVariant,
+  divisorVariant,
+  hpBaseVariant,
+  statBaseVariant,
+  type Variant,
+} from "./variants.js";
 
 /**
- * The three candidates `docs/CONTENT_NOTES.md` §6 names, plus a second divisor
- * constant so the recommendation's sensitivity to that number is visible.
+ * Deltas against the shipped engine, not against a hypothetical unscaled one:
+ * `divisorVariant(LIVE_PER_LEVEL)` is the live slope and is included as a
+ * control row that must reproduce baseline exactly. The other three are the
+ * alternatives §4(b) rejected, kept so the decision stays reproducible.
  */
 export const CANDIDATE_VARIANTS: Variant[] = [
-  divisorVariant(250),
+  divisorVariant(LIVE_PER_LEVEL),
   divisorVariant(150),
   hpBaseVariant(160),
   statBaseVariant(15),

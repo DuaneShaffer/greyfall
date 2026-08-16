@@ -64,7 +64,7 @@ describe("skillsetViews", () => {
     const valeOverload = skillsetViews(state, "vale")
       .flatMap((set) => set.abilities)
       .find((ability) => ability.id === "overload-cell");
-    expect(valeOverload?.chargeCost).toBe(8);
+    expect(valeOverload?.chargeCost).toBe(5);
     expect(valeOverload?.castSpeed).toBe(25);
     expect(valeOverload?.unavailableReason).toBeUndefined();
   });

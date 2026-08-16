@@ -111,8 +111,8 @@ describe("charged abilities", () => {
     expect(cast.events.some((e) => e.type === "AbilityCharging")).toBe(true);
     const charging = cast.events.find((e) => e.type === "AbilityCharging");
     expect(charging).toMatchObject({ abilityId: "overload-cell", castSpeed: 25 });
-    // Flux is spent up front: 22 charge minus the ability's 8.
-    expect(getUnit(cast.state, "vale")?.charge).toBe(14);
+    // Flux is spent up front: 22 charge minus the ability's 5.
+    expect(getUnit(cast.state, "vale")?.charge).toBe(17);
     expect(cast.state.activeTurn?.unitId).not.toBe("vale");
 
     // castSpeed 25 reaches 100 CT four ticks after the cast (clock 17 -> 21),

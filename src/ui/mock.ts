@@ -107,7 +107,7 @@ export const pinAbility: Ability = {
   castSpeed: null,
   effects: [
     { kind: "damage", damageType: "kinetic", amount: { base: "weapon", power: 80 } },
-    { kind: "applyStatus", statusId: "stunned", chance: 60 },
+    { kind: "applyStatus", statusId: "stunned", chance: 35 },
   ],
 };
 
@@ -126,9 +126,10 @@ export const overloadCellAbility: Ability = {
     requiresLos: true,
     validTargets: ["object"],
   },
-  chargeCost: 8,
+  requires: ["targetPowered"],
+  chargeCost: 5,
   castSpeed: 25,
-  effects: [{ kind: "damageObject", amount: { base: "mag", power: 16 } }],
+  effects: [{ kind: "damageObject", amount: { base: "mag", power: 20 } }],
 };
 
 export const shockMaul: Item = {
@@ -342,7 +343,7 @@ export function mockForecastView(overrides: Partial<ForecastView> = {}): Forecas
         name: "Provocateur",
         hitChancePercent: 82,
         damage: { kind: "damage", min: 24, max: 31, damageType: "kinetic" },
-        statuses: [{ name: "Stunned", chancePercent: 60 }],
+        statuses: [{ name: "Stunned", chancePercent: 35 }],
         relativeFacing: "side",
         heightAdvantage: 1,
       },
