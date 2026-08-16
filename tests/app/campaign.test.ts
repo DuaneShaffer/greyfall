@@ -18,10 +18,10 @@ import { Campaign, type Unit } from "../../src/data/index.js";
 import { CampaignSession } from "../../src/app/campaign.js";
 import {
   CampaignRunner,
-  summarize,
   type BattlePort,
   type CampaignScreenPort,
 } from "../../src/app/campaignRunner.js";
+import type { BattleResultsView, ChapterCloseView } from "../../src/ui/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";
 import { openBattle } from "./fixtures.js";
 
@@ -47,6 +47,12 @@ interface FakeScreens extends CampaignScreenPort {
   shown: string[];
   notices: string[];
   refreshes: number;
+  results: BattleResultsView[];
+  closes: ChapterCloseView[];
+  /** The record the screens are holding; null once it has been filed. */
+  pendingAdvance: (() => void) | null;
+  /** Set false to leave a record on screen, as the real screens do. */
+  autoAdvance: boolean;
 }
 
 interface FakeBattle extends BattlePort {
@@ -58,12 +64,32 @@ interface FakeBattle extends BattlePort {
 function fakeScreens(): FakeScreens {
   const shown: string[] = [];
   const notices: string[] = [];
+  const hold = (onAdvance: () => void): void => {
+    fake.pendingAdvance = onAdvance;
+    if (!fake.autoAdvance) return;
+    fake.pendingAdvance = null;
+    onAdvance();
+  };
   const fake: FakeScreens = {
     shown,
     notices,
     refreshes: 0,
+    results: [],
+    closes: [],
+    pendingAdvance: null,
+    autoAdvance: true,
     showRoster: () => void shown.push("roster"),
     showFormation: () => void shown.push("formation"),
+    showResults: (view, onAdvance) => {
+      shown.push("results");
+      fake.results.push(view);
+      hold(onAdvance);
+    },
+    showChapterClose: (view, onAdvance) => {
+      shown.push("chapter-close");
+      fake.closes.push(view);
+      hold(onAdvance);
+    },
     hide: () => void shown.push("hidden"),
     refresh: () => {
       fake.refreshes += 1;
@@ -349,7 +375,43 @@ describe("CampaignRunner", () => {
 
     expect(rosterUnit(h.session.state, "rowen")).toBeNull();
     expect(h.session.state.fallen.map((entry) => entry.unitId)).toEqual(["rowen"]);
-    expect(h.screens.notices.at(-1)).toContain("Lost: Rowen Corvane");
+    const record = h.screens.results.at(-1)!;
+    expect(record.fallen.map((entry) => entry.name)).toEqual(["Rowen Corvane"]);
+    expect(record.fallen[0]?.encounterName).toBe(CONTENT.encounters[ENCOUNTER_ID]?.name);
+  });
+
+  it("hands the battle's record to the player before the roster comes back", () => {
+    h.screens.autoAdvance = false;
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    h.battle.finish(finished({ result: "win", earned: { rowen: 70 } }));
+
+    expect(h.runner.phase).toBe("results");
+    expect(h.screens.shown.at(-1)).toBe("results");
+    const record = h.screens.results.at(-1)!;
+    expect(record.result).toBe("win");
+    expect(record.standingTotal).toBe(70);
+    expect(record.standing[0]).toMatchObject({ unitId: "rowen", name: "Rowen Corvane", amount: 70 });
+
+    h.screens.pendingAdvance!();
+    expect(h.runner.phase).toBe("roster");
+    expect(h.screens.shown.at(-1)).toBe("roster");
+  });
+
+  it("files a loss as a record of its own, banking nothing", () => {
+    h.screens.autoAdvance = false;
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    h.battle.finish(finished({ result: "loss", earned: { rowen: 70 }, downed: ["rowen"] }));
+
+    const record = h.screens.results.at(-1)!;
+    expect(record.result).toBe("loss");
+    expect(record.headline).toBe("Line Broken");
+    expect(record.standing).toEqual([]);
+    expect(record.standingTotal).toBe(0);
+    expect(record.fallen).toEqual([]);
   });
 
   it("stops rather than replaying the last battle while later encounters are unauthored", () => {
@@ -383,10 +445,13 @@ describe("CampaignRunner", () => {
     expect(h.runner.phase).toBe("complete");
     expect(h.session.playableEncounterId()).toBeNull();
 
-    const closing = h.screens.notices.at(-1) ?? "";
-    expect(closing).toContain("no further engagements");
-    expect(closing).toContain("Rowen Corvane");
-    expect(closing).toContain("Standing banked");
+    // The chapter closes on a record, not a toast: engagements won, Standing
+    // banked, who is still standing.
+    const closing = h.screens.closes.at(-1)!;
+    expect(closing.chapterName).toBe(chapter().name);
+    expect(closing.engagements.map((entry) => entry.encounterId)).toEqual(chapter().encounterIds);
+    expect(closing.standingTotal).toBeGreaterThan(0);
+    expect(closing.survivors.map((unit) => unit.name)).toContain("Rowen Corvane");
 
     expect(h.runner.beginDeployment()).toBe(false);
     expect(h.screens.notices.at(-1)).toContain("Return to a completed engagement");
@@ -440,36 +505,20 @@ describe("CampaignRunner", () => {
   });
 });
 
-describe("summarize", () => {
-  it("reads out banked Standing and casualties", () => {
-    expect(
-      summarize({
-        result: "win",
-        encounterId: ENCOUNTER_ID,
-        standing: [
-          { unitId: "rowen", jobId: "enforcer", amount: 40 },
-          { unitId: "vale", jobId: "conduit", amount: 20 },
-        ],
-        fallen: [
-          { unitId: "vale", name: "Vale Tarn", jobId: "conduit", level: 1, encounterId: ENCOUNTER_ID },
-        ],
-        consumed: [],
-        advanced: true,
-      }),
-    ).toBe("Field held. 60 Standing banked. Lost: Vale Tarn.");
-  });
+describe("the chapter's closing record", () => {
+  it("is presented once; the roster says it in one line afterwards", () => {
+    const campaign = chapter();
+    const state = createCampaign(campaign, UNITS);
+    state.encounterIndex = campaign.encounterIds.length;
+    const h = harness(state);
 
-  it("says nothing was banked on a loss", () => {
-    expect(
-      summarize({
-        result: "loss",
-        encounterId: ENCOUNTER_ID,
-        standing: [],
-        fallen: [],
-        consumed: [],
-        advanced: false,
-      }),
-    ).toContain("nothing banked");
+    h.runner.start();
+    expect(h.screens.closes).toHaveLength(1);
+    expect(h.screens.notices).toHaveLength(0);
+
+    h.runner.openRoster();
+    expect(h.screens.closes).toHaveLength(1);
+    expect(h.screens.notices.at(-1)).toContain("no further engagements");
   });
 });
 
@@ -504,7 +553,9 @@ describe("the chapter satchel", () => {
     h.battle.finish(finished({ result: "win", satchel: home }));
     expect(inventoryCount(h.session.state, "coagulant-vial")).toBe(before - 2);
     expect(h.runner.lastOutcome?.consumed).toEqual([{ itemId: "coagulant-vial", count: 2 }]);
-    expect(h.screens.notices.at(-1)).toContain("Field kit down 2");
+    expect(h.screens.results.at(-1)?.consumed).toEqual([
+      { itemId: "coagulant-vial", name: CONTENT.items["coagulant-vial"]?.name, count: 2 },
+    ]);
   });
 
   it("gives it all back after a wipe", () => {

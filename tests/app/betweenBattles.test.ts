@@ -6,6 +6,7 @@ import { createCampaign, type ContentLibrary } from "../../src/core/index.js";
 import { Campaign, type Unit } from "../../src/data/index.js";
 import { CampaignSession } from "../../src/app/campaign.js";
 import { BetweenBattleScreens } from "../../src/app/betweenBattles.js";
+import type { BattleResultsView } from "../../src/ui/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";
 
 const CAMPAIGN_PATH = join(import.meta.dirname, "..", "..", "data", "campaigns", "foundry-chapter.json");
@@ -107,6 +108,28 @@ describe("BetweenBattleScreens", () => {
       affordable!.abilityId,
     );
     expect(h.session.learningView("rowen")!.standing).toBe(view.standing - affordable!.standingCost);
+  });
+
+  it("acknowledges the Standing it just spent", () => {
+    h.screens.roster.menus.handleKey(key("Enter"));
+    h.screens.roster.menus.handleKey(key("ArrowDown"));
+    h.screens.roster.menus.handleKey(key("Enter"));
+    const view = h.session.learningView("rowen")!;
+    const affordable = view.entries.find(
+      (entry) => !entry.learned && entry.standingCost <= view.standing,
+    )!;
+
+    h.screens.learning.el
+      .querySelector<HTMLElement>(`.gf-menu-entry[data-entry="${affordable.abilityId}"]`)!
+      .click();
+    h.screens.learning.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="confirm"]')!.click();
+
+    const toast = h.screens.el.querySelector(".gf-toast")!;
+    expect(toast.classList.contains("is-hidden")).toBe(false);
+    expect(toast.textContent).toContain(affordable.name);
+    expect(toast.textContent).toContain("Rowen Corvane");
+    expect(toast.textContent).toContain(`${affordable.standingCost} Standing spent`);
+    expect(toast.textContent).toContain(`${h.session.learningView("rowen")!.standing} left`);
   });
 
   it("shows a toast when an op is refused, and retires it on tick", () => {
@@ -219,5 +242,122 @@ describe("BetweenBattleScreens", () => {
     expect(h.screens.el.classList.contains("is-hidden")).toBe(true);
     h.screens.showRoster();
     expect(h.screens.el.classList.contains("is-hidden")).toBe(false);
+  });
+
+  it("lists the chapter's fallen on the roster, apart from the party", () => {
+    h.session.state.fallen.push({
+      unitId: "ivo",
+      name: "Ivo Brace",
+      jobId: "machinist",
+      level: 3,
+      encounterId: "e1-marshaling-yard",
+    });
+    h.screens.showRoster();
+
+    const roll = h.screens.roster.el.querySelector(".gf-roster-fallen");
+    expect(roll?.textContent).toContain("Ivo Brace");
+    expect(roll?.textContent).toContain("Fell at The Marshaling Yard");
+    expect(h.screens.roster.el.querySelector('.gf-menu-entry[data-entry="ivo"]')).toBeNull();
+  });
+
+  describe("the battle's record", () => {
+    const record = (): BattleResultsView => ({
+      result: "win",
+      encounterId: "e1-marshaling-yard",
+      encounterName: "The Marshaling Yard",
+      headline: "Field Held",
+      note: "Engagement closed and entered on the chapter.",
+      standing: [
+        {
+          unitId: "rowen",
+          name: "Rowen Corvane",
+          jobName: "Enforcer",
+          amount: 110,
+          jobLevel: 3,
+          jobLevelsGained: 1,
+          struck: false,
+        },
+      ],
+      standingTotal: 110,
+      fallen: [
+        {
+          unitId: "ivo",
+          name: "Ivo Brace",
+          jobName: "Machinist",
+          level: 3,
+          encounterName: "The Marshaling Yard",
+        },
+      ],
+      consumed: [],
+      advanced: true,
+    });
+
+    it("stands between the battle and the roster, and does not retire itself", () => {
+      let filed = 0;
+      h.screens.showResults(record(), () => (filed += 1));
+
+      expect(h.screens.current).toBe("results");
+      const text = h.screens.el.textContent ?? "";
+      expect(text).toContain("Field Held");
+      expect(text).toContain("110");
+      expect(text).toContain("Ivo Brace");
+
+      // The toast's clock must not reach it: this page is closed by hand.
+      for (let i = 0; i < 20; i += 1) h.screens.tick(1000);
+      expect(h.screens.current).toBe("results");
+      expect(filed).toBe(0);
+
+      h.screens.el
+        .querySelector<HTMLElement>('.gf-menu-entry[data-entry="advance"]')!
+        .click();
+      expect(filed).toBe(1);
+    });
+
+    it("stands the chapter's chrome down while it is up", () => {
+      h.screens.showResults(record(), () => undefined);
+      expect(h.screens.el.classList.contains("is-record")).toBe(true);
+      h.screens.showRoster();
+      expect(h.screens.el.classList.contains("is-record")).toBe(false);
+    });
+
+    it("takes the keyboard, and hands it back to the roster", () => {
+      let filed = 0;
+      h.screens.showResults(record(), () => {
+        filed += 1;
+        h.screens.showRoster();
+      });
+      document.dispatchEvent(key("Enter"));
+      expect(filed).toBe(1);
+      expect(h.screens.current).toBe("roster");
+    });
+  });
+
+  describe("Move out, once the chapter is closed", () => {
+    const moveOut = (): HTMLButtonElement =>
+      [...h.screens.el.querySelectorAll<HTMLButtonElement>(".gf-between-bar .gf-button")].find(
+        (node) => node.textContent === "Move out",
+      )!;
+
+    it("is live while an engagement is waiting", () => {
+      expect(moveOut().disabled).toBe(false);
+      expect(h.screens.el.querySelector(".gf-bar-reason")?.classList.contains("is-hidden")).toBe(
+        true,
+      );
+    });
+
+    it("is disabled with its reason on the bar once the chapter runs out", () => {
+      h.session.state.encounterIndex = h.session.campaign.encounterIds.length;
+      h.screens.showRoster();
+
+      expect(moveOut().disabled).toBe(true);
+      expect(moveOut().title).toContain("chapter is closed");
+      const reason = h.screens.el.querySelector(".gf-bar-reason")!;
+      expect(reason.classList.contains("is-hidden")).toBe(false);
+      expect(reason.textContent).toContain("return to an engagement already won");
+
+      moveOut().click();
+      expect(h.deployRequests).toBe(0);
+    });
+
   });
 });

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { changeJob, equipItem, learnAbility, setSecondaryJob } from "../../src/core/index.js";
 import {
+  applyBattleResults,
+  changeJob,
+  equipItem,
+  learnAbility,
+  rosterUnit,
+  setSecondaryJob,
+  type GameState,
+} from "../../src/core/index.js";
+import {
+  campaignBattleResultsView,
+  campaignChapterCloseView,
   campaignDeploymentView,
   campaignEquipmentView,
   campaignJobsView,
@@ -12,6 +22,7 @@ import {
   standingToNextLevel,
 } from "../../src/app/campaignViews.js";
 import { BENCH, ENFORCER, benchState } from "../progression/fixtures.js";
+import { openBattle } from "./fixtures.js";
 
 const TILES = [
   { x: 0, y: 4 },
@@ -169,5 +180,98 @@ describe("campaignDeploymentView", () => {
     expect(view.canConfirm).toBe(false);
     expect(view.blockedReason).toBe("Deploy at least one unit");
     expect(view.candidates.every((c) => c.unavailableReason === undefined)).toBe(true);
+  });
+});
+
+describe("the record views", () => {
+  /** A real battle, doctored: the record view reads the outcome, not the field. */
+  const fought = (options: { earned?: Record<string, number>; downed?: string[] }): GameState => {
+    const state = structuredClone(openBattle().state);
+    state.result = "win";
+    for (const unit of state.units) {
+      if (unit.team !== "player") continue;
+      unit.standingEarned = options.earned?.[unit.id] ?? 0;
+      unit.downed = options.downed?.includes(unit.id) ?? false;
+    }
+    return state;
+  };
+
+  it("reads banked Standing and the job levels it bought", () => {
+    const before = benchState();
+    const { state: after, outcome } = applyBattleResults(before, fought({ earned: { rowen: 400 } }));
+    const view = campaignBattleResultsView(before, after, BENCH, outcome);
+
+    expect(view.result).toBe("win");
+    expect(view.headline).toBe("Field Held");
+    expect(view.standingTotal).toBe(400);
+    const rowen = view.standing[0]!;
+    expect(rowen).toMatchObject({ name: "Rowen Corvane", jobName: "Enforcer", amount: 400 });
+    // 300 banked at level 3, 700 at level 5.
+    expect(rowen.jobLevel).toBe(5);
+    expect(rowen.jobLevelsGained).toBe(2);
+    expect(rowen.struck).toBe(false);
+    expect(view.fallen).toEqual([]);
+  });
+
+  it("names the fallen from the state they were struck out of", () => {
+    const before = benchState();
+    const { state: after, outcome } = applyBattleResults(
+      before,
+      fought({ earned: { rowen: 40 }, downed: ["rowen"] }),
+    );
+    const view = campaignBattleResultsView(before, after, BENCH, outcome);
+
+    expect(rosterUnit(after, "rowen")).toBeNull();
+    expect(view.fallen).toEqual([
+      {
+        unitId: "rowen",
+        name: "Rowen Corvane",
+        jobName: "Enforcer",
+        level: 1,
+        // A bench library carries no encounters; the record falls back to the id.
+        encounterName: "e1-marshaling-yard",
+      },
+    ]);
+    const award = view.standing.find((entry) => entry.unitId === "rowen")!;
+    expect(award).toMatchObject({ name: "Rowen Corvane", amount: 40, struck: true });
+    expect(award.jobLevelsGained).toBe(0);
+  });
+
+  it("banks nothing on a loss and says so", () => {
+    const before = benchState();
+    const lost = fought({ earned: { rowen: 400 }, downed: ["rowen"] });
+    lost.result = "loss";
+    const { state: after, outcome } = applyBattleResults(before, lost);
+    const view = campaignBattleResultsView(before, after, BENCH, outcome);
+
+    expect(view.result).toBe("loss");
+    expect(view.headline).toBe("Line Broken");
+    expect(view.standing).toEqual([]);
+    expect(view.standingTotal).toBe(0);
+    expect(view.fallen).toEqual([]);
+  });
+
+  it("puts the chapter's dead on the roster view", () => {
+    const before = benchState();
+    const { state: after } = applyBattleResults(before, fought({ downed: ["rowen"] }));
+    const party = campaignPartyView(after, BENCH, 4);
+
+    expect(party.members.map((member) => member.unitId)).toEqual(["vale"]);
+    expect(party.fallen?.map((entry) => entry.name)).toEqual(["Rowen Corvane"]);
+  });
+
+  it("closes the chapter on what it won, kept, and lost", () => {
+    const before = benchState();
+    const { state: after } = applyBattleResults(
+      before,
+      fought({ earned: { rowen: 40 }, downed: ["rowen"] }),
+    );
+    const view = campaignChapterCloseView(after, { name: "Bench Chapter" }, BENCH);
+
+    expect(view.chapterName).toBe("Bench Chapter");
+    expect(view.engagements.map((entry) => entry.encounterId)).toEqual(["e1-marshaling-yard"]);
+    expect(view.survivors.map((unit) => unit.name)).toEqual(["Vale Tarn"]);
+    expect(view.fallen.map((entry) => entry.name)).toEqual(["Rowen Corvane"]);
+    expect(view.standingTotal).toBeGreaterThan(0);
   });
 });

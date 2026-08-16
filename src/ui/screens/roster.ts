@@ -2,6 +2,7 @@ import { Component, el, meter, plate, portrait, replaceChildren } from "../dom.j
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
 import { PartyView, RosterEntryView } from "../state.js";
+import { fallenPanel } from "./results.js";
 
 const ROSTER_ID = "roster";
 
@@ -11,12 +12,14 @@ export class RosterScreen implements Component<PartyView> {
   readonly menus: MenuStack;
   private readonly intents: UiIntents;
   private readonly detail: HTMLElement;
+  private readonly fallen: HTMLElement;
   private view: PartyView | null = null;
 
   constructor(options: { intents?: Partial<UiIntents> } = {}) {
     this.intents = withIntents(options.intents);
     this.menus = new MenuStack();
     this.detail = el("aside", { class: "gf-panel gf-roster-detail" });
+    this.fallen = el("div", { class: "gf-roster-fallen" });
     this.el = el("section", {
       class: "gf-screen gf-roster",
       children: [
@@ -32,7 +35,13 @@ export class RosterScreen implements Component<PartyView> {
             }),
           ],
         }),
-        el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
+        el("div", {
+          class: "gf-screen-cols",
+          children: [
+            el("div", { class: "gf-screen-col", children: [this.menus.el, this.fallen] }),
+            this.detail,
+          ],
+        }),
       ],
     });
   }
@@ -43,6 +52,10 @@ export class RosterScreen implements Component<PartyView> {
     if (this.menus.depth === 0) this.menus.push(menu);
     else this.menus.refresh(menu);
     this.renderDetail(view.members[Math.max(0, this.menus.cursor)] ?? null);
+    // The roster is the party's record, and the dead are on it: kept beside the
+    // living, never mixed into the list the player deploys from.
+    const fallen = view.fallen ?? [];
+    replaceChildren(this.fallen, fallen.length === 0 ? [] : [fallenPanel(fallen, { compact: true })]);
     const note = this.el.querySelector(".gf-screen-note");
     if (note) note.textContent = `Deployment limit: ${view.deployedLimit}`;
   }

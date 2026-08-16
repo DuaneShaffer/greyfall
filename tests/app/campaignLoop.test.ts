@@ -18,6 +18,7 @@ import {
   type CampaignScreenPort,
 } from "../../src/app/campaignRunner.js";
 import { decodeSave, encodeSave } from "../../src/app/save.js";
+import type { BattleResultsView } from "../../src/ui/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";
 
 // End-to-end: the shipped chapter definition, the shipped content, a real
@@ -57,12 +58,20 @@ function autoBattlePort(content: ContentLibrary): BattlePort & { finals: GameSta
   return port;
 }
 
-function silentScreens(): CampaignScreenPort & { notices: string[] } {
+/** Files every record the moment it is handed over — a player who never reads. */
+function silentScreens(): CampaignScreenPort & { notices: string[]; results: BattleResultsView[] } {
   const notices: string[] = [];
+  const results: BattleResultsView[] = [];
   return {
     notices,
+    results,
     showRoster: () => undefined,
     showFormation: () => undefined,
+    showResults: (view, onAdvance) => {
+      results.push(view);
+      onAdvance();
+    },
+    showChapterClose: (_view, onAdvance) => onAdvance(),
     hide: () => undefined,
     refresh: () => undefined,
     notify: (message) => void notices.push(message),

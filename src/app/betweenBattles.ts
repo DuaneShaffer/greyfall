@@ -6,6 +6,8 @@
 // `src/app` that both a `CampaignSession` and DOM components meet.
 
 import {
+  BattleResultsScreen,
+  ChapterCloseScreen,
   DeploymentScreen,
   EquipmentScreen,
   JobScreen,
@@ -14,13 +16,29 @@ import {
   UnitSheetScreen,
   el,
   replaceChildren,
+  type BattleResultsView,
+  type ChapterCloseView,
   type ProgressionIntents,
   type UiIntents,
 } from "../ui/index.js";
 import { progressionIntents, type CampaignSession } from "./campaign.js";
 import type { CampaignScreenPort } from "./campaignRunner.js";
 
-export type BetweenScreenId = "roster" | "sheet" | "learning" | "equipment" | "jobs" | "formation";
+export type BetweenScreenId =
+  | "roster"
+  | "sheet"
+  | "learning"
+  | "equipment"
+  | "jobs"
+  | "formation"
+  | "results"
+  | "chapterClose";
+
+/** Filed records: the chapter's chrome stands down while one is being read. */
+const RECORD_SCREENS: ReadonlySet<BetweenScreenId> = new Set<BetweenScreenId>([
+  "results",
+  "chapterClose",
+]);
 
 export interface BetweenBattleHandlers {
   /** Player asked to move out; the runner decides whether that is allowed. */
@@ -50,6 +68,8 @@ const SCREEN_HINT: Record<BetweenScreenId, string> = {
   equipment: "Confirm a slot to see what the job can carry in it.",
   jobs: "Confirm a job to take it as primary or borrow its skillset.",
   formation: "Confirm a unit, then click a deployment tile on the field. Move out when the formation is set.",
+  results: "The engagement's record. File it when you have read it; nothing else closes this page.",
+  chapterClose: "The chapter's record. Close it when you have read it.",
 };
 
 const TOAST_MS = 3200;
@@ -62,16 +82,23 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   readonly equipment: EquipmentScreen;
   readonly jobs: JobScreen;
   readonly formation: DeploymentScreen;
+  readonly results: BattleResultsScreen;
+  readonly chapterClose: ChapterCloseScreen;
 
   private readonly session: CampaignSession;
   private readonly stage: HTMLElement;
   private readonly toast: HTMLElement;
   private readonly hint: HTMLElement;
   private readonly bar: HTMLElement;
+  private readonly moveOut: HTMLButtonElement;
+  private readonly moveOutReason: HTMLElement;
   private screen: BetweenScreenId = "roster";
   private selectedUnitId: string | null = null;
   private keyTarget: EventTarget | null = null;
   private toastMs = 0;
+  private resultsView: BattleResultsView | null = null;
+  private chapterCloseView: ChapterCloseView | null = null;
+  private advanceRecord: (() => void) | null = null;
   private readonly handlers: BetweenBattleHandlers;
 
   constructor(session: CampaignSession, handlers: BetweenBattleHandlers) {
@@ -111,6 +138,9 @@ export class BetweenBattleScreens implements CampaignScreenPort {
         this.render();
       };
     }
+    // Spending Standing is the one op with nothing on screen to show for it:
+    // the list re-reads as "learned" only if the player is still looking at it.
+    intents.learnAbility = (unitId, abilityId) => this.learn(unitId, abilityId);
 
     this.roster = new RosterScreen({ intents });
     this.sheet = new UnitSheetScreen();
@@ -121,11 +151,20 @@ export class BetweenBattleScreens implements CampaignScreenPort {
       intents,
       onPlacing: (unitId) => handlers.onFormationChanged?.(unitId),
     });
+    const advance = { onAdvance: (): void => this.fileRecord() };
+    this.results = new BattleResultsScreen(advance);
+    this.chapterClose = new ChapterCloseScreen(advance);
 
     this.toast = el("p", { class: "gf-toast is-hidden", attrs: { role: "status" } });
     this.hint = el("p", { class: "gf-hint gf-between-hint" });
     this.stage = el("div", { class: "gf-between-stage" });
     this.bar = el("div", { class: "gf-between-bar" });
+    this.moveOut = el("button", {
+      class: "gf-button",
+      text: "Move out",
+      attrs: { type: "button" },
+    });
+    this.moveOutReason = el("span", { class: "gf-bar-reason is-hidden" });
     this.el = el("section", {
       class: "gf-between gf-root",
       children: [
@@ -148,6 +187,18 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.show("formation");
   }
 
+  showResults(view: BattleResultsView, onAdvance: () => void): void {
+    this.resultsView = view;
+    this.advanceRecord = onAdvance;
+    this.show("results");
+  }
+
+  showChapterClose(view: ChapterCloseView, onAdvance: () => void): void {
+    this.chapterCloseView = view;
+    this.advanceRecord = onAdvance;
+    this.show("chapterClose");
+  }
+
   hide(): void {
     this.detachAll();
     this.el.classList.add("is-hidden");
@@ -164,7 +215,10 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.toastMs = TOAST_MS;
   }
 
-  /** Frame pump; retires the toast without a wall clock in the shell. */
+  /**
+   * Frame pump; retires the toast without a wall clock in the shell. Records
+   * are deliberately outside its reach: only `fileRecord` closes one.
+   */
   tick(deltaMs = 1000): void {
     if (this.toastMs <= 0) return;
     this.toastMs -= deltaMs;
@@ -207,6 +261,26 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     });
   }
 
+  /** Spend Standing, then say so: the op is otherwise silent. */
+  private learn(unitId: string, abilityId: string): void {
+    const before = this.session.learningView(unitId);
+    const entry = before?.entries.find((candidate) => candidate.abilityId === abilityId) ?? null;
+    const learned = this.session.learnAbility(unitId, abilityId);
+    this.render();
+    if (!learned || entry === null || before === null) return;
+    const remaining = this.session.learningView(unitId)?.standing ?? 0;
+    this.notify(
+      `${entry.name} entered on ${before.unitName}'s record — ${entry.standingCost} Standing spent, ${remaining} left.`,
+    );
+  }
+
+  /** The player closing a record. The only way off the results page. */
+  private fileRecord(): void {
+    const advance = this.advanceRecord;
+    this.advanceRecord = null;
+    advance?.();
+  }
+
   private openUnit(screen: BetweenScreenId, unitId: string): void {
     this.selectedUnitId = unitId;
     this.show(screen);
@@ -219,6 +293,9 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     // Formation runs as a rail over the live battlefield; every other screen is
     // a full page of chrome.
     this.el.classList.toggle("is-field", screen === "formation");
+    // A record is read, not navigated around: the chapter's own chrome would
+    // offer moves the page cannot honour.
+    this.el.classList.toggle("is-record", RECORD_SCREENS.has(screen));
     this.render();
     this.attachCurrent();
     if (leavingFormation) this.handlers.onFormationClosed?.();
@@ -228,6 +305,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     const unitId = this.selectedUnitId ?? this.session.state.roster[0]?.id ?? null;
     this.selectedUnitId = unitId;
     this.hint.textContent = SCREEN_HINT[this.screen];
+    this.syncMoveOut();
 
     switch (this.screen) {
       case "roster":
@@ -270,7 +348,35 @@ export class BetweenBattleScreens implements CampaignScreenPort {
         this.handlers.onFormationChanged?.(this.formation.placingUnitId);
         break;
       }
+      case "results": {
+        const view = this.resultsView;
+        if (view === null) return this.show("roster");
+        this.results.update(view);
+        replaceChildren(this.stage, [this.results.el]);
+        break;
+      }
+      case "chapterClose": {
+        const view = this.chapterCloseView;
+        if (view === null) return this.show("roster");
+        this.chapterClose.update(view);
+        replaceChildren(this.stage, [this.chapterClose.el]);
+        break;
+      }
     }
+  }
+
+  /** UI_DESIGN §8: a panel never offers what it cannot do. */
+  private syncMoveOut(): void {
+    const reason =
+      this.session.playableEncounterId() !== null
+        ? null
+        : this.session.awaitingContent()
+          ? "The next engagement is not authored yet."
+          : "The chapter is closed — return to an engagement already won.";
+    this.moveOut.disabled = reason !== null;
+    this.moveOut.title = reason ?? "";
+    this.moveOutReason.textContent = reason ?? "";
+    this.moveOutReason.classList.toggle("is-hidden", reason === null);
   }
 
   private attachCurrent(): void {
@@ -287,7 +393,11 @@ export class BetweenBattleScreens implements CampaignScreenPort {
               ? this.jobs.menus
               : this.screen === "formation"
                 ? this.formation.menus
-                : null;
+                : this.screen === "results"
+                  ? this.results.menus
+                  : this.screen === "chapterClose"
+                    ? this.chapterClose.menus
+                    : null;
     menus?.attach(this.keyTarget);
   }
 
@@ -297,14 +407,16 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.equipment.menus.detach();
     this.jobs.menus.detach();
     this.formation.menus.detach();
+    this.results.menus.detach();
+    this.chapterClose.menus.detach();
   }
 
   private buildBar(handlers: BetweenBattleHandlers): void {
     // Exactly one loud button on the bar: the thing the chapter is waiting for.
     // The rest are utilities and are styled as such.
-    const button = (label: string, onClick: () => void, primary = false): HTMLElement => {
+    const button = (label: string, onClick: () => void): HTMLElement => {
       const node = el("button", {
-        class: `gf-button${primary ? "" : " is-quiet"}`,
+        class: "gf-button is-quiet",
         text: label,
         attrs: { type: "button" },
       });
@@ -319,7 +431,9 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     if (replay) children.push(button("Return to…", () => this.openReplayMenu(replay)));
     if (handlers.save) children.push(button("Save", handlers.save));
     if (handlers.load) children.push(button("Load", handlers.load));
-    children.push(button("Move out", () => handlers.beginDeployment(), true));
+    this.moveOut.addEventListener("click", () => handlers.beginDeployment());
+    children.push(this.moveOutReason, this.moveOut);
     replaceChildren(this.bar, children);
+    this.syncMoveOut();
   }
 }

@@ -15,21 +15,26 @@ import {
   rosterUnit,
   standingToNextJobLevel,
   unmetPrerequisite,
+  type BattleOutcome,
   type CampaignState,
   type ContentLibrary,
   type DerivedStats,
+  type FallenRecord,
 } from "../core/index.js";
-import type { Ability, Item, Job, Unit } from "../data/index.js";
+import type { Ability, Campaign, Item, Job, Unit } from "../data/index.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
   type AbilityView,
+  type BattleResultsView,
+  type ChapterCloseView,
   type DeploymentCandidateView,
   type DeploymentSlotView,
   type DeploymentView,
   type EquipSlot,
   type EquipSlotView,
   type EquipmentView,
+  type FallenEntryView,
   type ItemEntryView,
   type ItemOptionView,
   type JobOptionView,
@@ -38,18 +43,35 @@ import {
   type LearningView,
   type PartyView,
   type RosterEntryView,
+  type StandingAwardView,
   type StatLineView,
   type UnitSheetView,
   type UnitView,
 } from "../ui/index.js";
 
-/** Content the between-battle screens read. A full `ContentLibrary` satisfies it. */
-export type CampaignContent = Pick<ContentLibrary, "jobs" | "abilities" | "items">;
+/**
+ * Content the between-battle screens read. A full `ContentLibrary` satisfies
+ * it. `encounters` is optional because only the record screens need it, and
+ * they degrade to the encounter id when a bench library has none.
+ */
+export type CampaignContent = Pick<ContentLibrary, "jobs" | "abilities" | "items"> &
+  Partial<Pick<ContentLibrary, "encounters">>;
 
 const jobOf = (content: CampaignContent, unit: Unit): Job | undefined => content.jobs[unit.jobId];
 
 const jobName = (content: CampaignContent, jobId: string): string =>
   content.jobs[jobId]?.name ?? jobId;
+
+const encounterName = (content: CampaignContent, encounterId: string): string =>
+  content.encounters?.[encounterId]?.name ?? encounterId;
+
+const fallenView = (content: CampaignContent, entry: FallenRecord): FallenEntryView => ({
+  unitId: entry.unitId,
+  name: entry.name,
+  jobName: jobName(content, entry.jobId),
+  level: entry.level,
+  encounterName: encounterName(content, entry.encounterId),
+});
 
 /** Support/movement abilities the unit has slotted, in the stat-mod order. */
 function slottedPassives(content: CampaignContent, unit: Unit): Ability[] {
@@ -139,7 +161,11 @@ export function campaignPartyView(
       jobLevel: level,
     });
   }
-  return { members, deployedLimit };
+  return {
+    members,
+    deployedLimit,
+    fallen: state.fallen.map((entry) => fallenView(content, entry)),
+  };
 }
 
 function equipSlotViews(content: CampaignContent, unit: Unit): EquipSlotView[] {
@@ -431,5 +457,91 @@ export function campaignDeploymentView(
     satchel: campaignSatchelView(state, content),
     canConfirm: deployed > 0,
     ...(deployed > 0 ? {} : { blockedReason: "Deploy at least one unit" }),
+  };
+}
+
+// --- the record screens -----------------------------------------------------
+
+/** Every job level the chapter has banked, across every unit still on it. */
+function bankedStanding(state: CampaignState): number {
+  return state.progress.reduce(
+    (total, unit) => total + unit.jobs.reduce((sum, job) => sum + job.earned, 0),
+    0,
+  );
+}
+
+/**
+ * The battle's filed record, read from the campaign either side of
+ * `applyBattleResults`: `before` still holds the units the win struck off, so
+ * the dead can be named and their job levels compared.
+ */
+export function campaignBattleResultsView(
+  before: CampaignState,
+  after: CampaignState,
+  content: CampaignContent,
+  outcome: BattleOutcome,
+): BattleResultsView {
+  const struck = new Set(outcome.fallen.map((entry) => entry.unitId));
+  const standing: StandingAwardView[] = outcome.standing.map((award) => {
+    const unit = rosterUnit(before, award.unitId);
+    const levelBefore = jobLevel(before, award.unitId, award.jobId);
+    const levelAfter = struck.has(award.unitId)
+      ? levelBefore
+      : jobLevel(after, award.unitId, award.jobId);
+    return {
+      unitId: award.unitId,
+      name: unit?.name ?? award.unitId,
+      jobName: jobName(content, award.jobId),
+      amount: award.amount,
+      jobLevel: levelAfter,
+      jobLevelsGained: levelAfter - levelBefore,
+      struck: struck.has(award.unitId),
+    };
+  });
+
+  const won = outcome.result === "win";
+  return {
+    result: won ? "win" : "loss",
+    encounterId: outcome.encounterId,
+    encounterName: encounterName(content, outcome.encounterId),
+    headline: won ? "Field Held" : "Line Broken",
+    note: !won
+      ? "The line did not hold. Nothing was banked and nothing was lost."
+      : outcome.advanced
+        ? "Engagement closed and entered on the chapter."
+        : "Returned to a closed engagement; the chapter stands where it stood.",
+    standing,
+    standingTotal: standing.reduce((total, award) => total + award.amount, 0),
+    fallen: outcome.fallen.map((entry) => fallenView(content, entry)),
+    consumed: outcome.consumed.map((stack) => ({
+      itemId: stack.itemId,
+      name: content.items[stack.itemId]?.name ?? stack.itemId,
+      count: stack.count,
+    })),
+    advanced: outcome.advanced,
+  };
+}
+
+/** What the chapter has to show for itself once its last engagement is won. */
+export function campaignChapterCloseView(
+  state: CampaignState,
+  campaign: Pick<Campaign, "name">,
+  content: CampaignContent,
+): ChapterCloseView {
+  return {
+    chapterName: campaign.name,
+    note: "No further engagements are on the docket.",
+    engagements: state.completedEncounterIds.map((id) => ({
+      encounterId: id,
+      name: encounterName(content, id),
+    })),
+    standingTotal: bankedStanding(state),
+    survivors: state.roster.map((unit) => ({
+      unitId: unit.id,
+      name: unit.name,
+      jobName: jobName(content, unit.jobId),
+      level: unit.level,
+    })),
+    fallen: state.fallen.map((entry) => fallenView(content, entry)),
   };
 }

@@ -1,5 +1,8 @@
 // The chapter loop: roster -> formation -> battle -> results -> roster.
 //
+// The results step is a screen, not a toast: a win banks and buries
+// (PROGRESSION §3), and the burying is the part the player has to be shown.
+//
 // It talks to the battle layer and the between-battle screens through the two
 // ports below, never to Three.js or the DOM, so the whole loop is constructible
 // in a test with fakes on both sides — the same shape `BattleController` uses.
@@ -9,7 +12,7 @@
 //   roster --beginDeployment--> formation --confirmDeployment--> battle
 //     ^                             |                              |
 //     +------ closeScreen ----------+                              |
-//     +------------------- finishBattle ----------------------------+
+//     +--- results <---------------------- finishBattle ------------+
 //
 // `complete` is where the chapter ends: its encounter list ran out. It is not a
 // dead end — `replayEncounter` re-enters an engagement already won from either
@@ -18,9 +21,10 @@
 import type { Deployment, GameState, InventoryStack } from "../core/index.js";
 import type { Unit } from "../data/index.js";
 import type { BattleOutcome } from "../core/index.js";
+import type { BattleResultsView, ChapterCloseView } from "../ui/index.js";
 import { CampaignSession } from "./campaign.js";
 
-export type CampaignPhase = "roster" | "formation" | "battle" | "complete";
+export type CampaignPhase = "roster" | "formation" | "battle" | "results" | "complete";
 
 /** What the runner needs from the battle layer. */
 export interface BattlePort {
@@ -43,6 +47,13 @@ export interface BattlePort {
 export interface CampaignScreenPort {
   showRoster(): void;
   showFormation(): void;
+  /**
+   * The battle's filed record. Nothing retires this screen but `onAdvance`:
+   * the player reads the casualties and files it themselves.
+   */
+  showResults(view: BattleResultsView, onAdvance: () => void): void;
+  /** The chapter's closing record, on the same terms. */
+  showChapterClose(view: ChapterCloseView, onAdvance: () => void): void;
   hide(): void;
   /** Re-read the session's view models; called after every state change. */
   refresh(): void;
@@ -64,6 +75,8 @@ export class CampaignRunner {
   private readonly onOutcome: (outcome: BattleOutcome) => void;
   private currentPhase: CampaignPhase = "roster";
   private lastOutcomeSummary: BattleOutcome | null = null;
+  /** The closing record is a moment, not a state: it is presented once. */
+  private chapterClosePresented = false;
 
   constructor(options: CampaignRunnerOptions) {
     this.session = options.session;
@@ -88,12 +101,20 @@ export class CampaignRunner {
     this.session.cancelDeployment();
     if (this.session.playableEncounterId() === null) {
       this.currentPhase = "complete";
+      if (this.session.awaitingContent()) {
+        this.screens.showRoster();
+        this.screens.notify("The next engagement is not authored yet.");
+        return;
+      }
+      if (!this.chapterClosePresented) {
+        this.chapterClosePresented = true;
+        this.screens.showChapterClose(this.session.chapterCloseView(), () =>
+          this.screens.showRoster(),
+        );
+        return;
+      }
       this.screens.showRoster();
-      this.screens.notify(
-        this.session.awaitingContent()
-          ? "The next engagement is not authored yet."
-          : closingNotice(this.session),
-      );
+      this.screens.notify(closingNotice(this.session));
       return;
     }
     this.currentPhase = "roster";
@@ -160,21 +181,28 @@ export class CampaignRunner {
     return true;
   }
 
-  /** Battle -> roster. Banks Standing, buries the fallen, advances the chapter. */
+  /**
+   * Battle -> results. Banks Standing, buries the fallen, advances the chapter,
+   * and hands the record to the player; the roster comes back when they file it.
+   */
   finishBattle(final: GameState): BattleOutcome {
+    const before = this.session.state;
     const outcome = this.session.finishBattle(final);
     this.lastOutcomeSummary = outcome;
     this.battle.end();
     this.onOutcome(outcome);
-    this.screens.notify(summarize(outcome));
-    this.openRoster();
+    this.currentPhase = "results";
+    this.screens.showResults(this.session.battleResultsView(before, outcome), () =>
+      this.openRoster(),
+    );
     return outcome;
   }
 }
 
 /**
- * What the chapter has to show for itself once the last engagement is won: who
- * walked away, what they banked, and who did not.
+ * The chapter's close, as one line. The closing *record* is a screen
+ * (`showChapterClose`); this is what the roster says afterwards, once the
+ * player has already read it.
  */
 export function closingNotice(session: CampaignSession): string {
   const state = session.state;
@@ -189,16 +217,4 @@ export function closingNotice(session: CampaignSession): string {
       ? "Nobody was left behind."
       : `Left behind: ${state.fallen.map((entry) => entry.name).join(", ")}.`;
   return `The chapter has no further engagements. ${standing} ${banked} Standing banked. ${lost}`;
-}
-
-export function summarize(outcome: BattleOutcome): string {
-  if (outcome.result === "loss") return "Line broken — nothing banked. Try the engagement again.";
-  const banked = outcome.standing.reduce((total, award) => total + award.amount, 0);
-  const lost =
-    outcome.fallen.length === 0
-      ? ""
-      : ` Lost: ${outcome.fallen.map((entry) => entry.name).join(", ")}.`;
-  const spent = outcome.consumed.reduce((total, stack) => total + stack.count, 0);
-  const kit = spent === 0 ? "" : ` Field kit down ${spent}.`;
-  return `Field held. ${banked} Standing banked.${kit}${lost}`;
 }

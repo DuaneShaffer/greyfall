@@ -4,6 +4,8 @@ import { TurnOrderStrip } from "../../src/ui/battle/turnOrder.js";
 import { UnitStatusPanel } from "../../src/ui/battle/unitStatus.js";
 import { recordingIntents } from "../../src/ui/intents.js";
 import {
+  mockBattleResultsView,
+  mockChapterCloseView,
   mockDeploymentView,
   mockEnemyView,
   mockEquipmentView,
@@ -14,6 +16,7 @@ import {
 } from "../../src/ui/mock.js";
 import { DeploymentScreen } from "../../src/ui/screens/deployment.js";
 import { EquipmentScreen } from "../../src/ui/screens/equipment.js";
+import { BattleResultsScreen, ChapterCloseScreen } from "../../src/ui/screens/results.js";
 import { RosterScreen } from "../../src/ui/screens/roster.js";
 import { UnitSheetScreen } from "../../src/ui/screens/unitSheet.js";
 
@@ -118,6 +121,22 @@ describe("RosterScreen", () => {
     expect(detail).toContain("320");
   });
 
+  it("carries the chapter's dead beside the living, and never in the list", () => {
+    const screen = new RosterScreen();
+    screen.update(mockPartyView());
+    const roll = screen.el.querySelector(".gf-roster-fallen");
+    expect(roll?.textContent).toContain("Ivo Brace");
+    expect(roll?.textContent).toContain("Fell at Foundry Floor Nine");
+    expect(roll?.querySelector(".gf-fallen-roll")?.classList.contains("is-compact")).toBe(true);
+    expect(screen.el.querySelector('.gf-menu-entry[data-entry="ivo-brace"]')).toBeNull();
+  });
+
+  it("shows no roll at all while nobody has been lost", () => {
+    const screen = new RosterScreen();
+    screen.update(mockPartyView({ fallen: [] }));
+    expect(screen.el.querySelector(".gf-roster-fallen")?.textContent).toBe("");
+  });
+
   it("opens the per-unit actions and emits the screen intent", () => {
     const { intents, calls } = recordingIntents();
     const screen = new RosterScreen({ intents });
@@ -212,5 +231,85 @@ describe("DeploymentScreen", () => {
     expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe(
       "Field kit: Coagulant Vial x3 · Cinder Flask x1",
     );
+  });
+});
+
+describe("BattleResultsScreen", () => {
+  it("prints the banked Standing, the job levels it bought, and the fallen", () => {
+    const screen = new BattleResultsScreen();
+    screen.update(mockBattleResultsView());
+    const text = screen.el.textContent ?? "";
+
+    expect(screen.el.querySelector(".gf-screen-title")?.textContent).toBe("Field Held");
+    expect(text).toContain("Standing banked");
+    expect(screen.el.querySelector(".gf-record .gf-plate-stamp")?.textContent).toBe("150");
+    expect(text).toContain("+110");
+    expect(text).toContain("Enforcer level 3");
+    expect(screen.el.querySelector(".gf-record-gain")?.textContent).toBe(" +1");
+
+    const fallen = screen.el.querySelector(".gf-fallen");
+    expect(fallen?.querySelector(".gf-plate-stamp")?.textContent).toBe("1 STRUCK");
+    expect(fallen?.textContent).toContain("Ivo Brace");
+    expect(fallen?.textContent).toContain("Machinist · Level 3");
+    expect(fallen?.textContent).toContain("Fell at Foundry Floor Nine");
+  });
+
+  it("marks Standing banked by somebody who did not come back", () => {
+    const screen = new BattleResultsScreen();
+    screen.update(mockBattleResultsView());
+    const struck = screen.el.querySelector<HTMLElement>('.gf-record-row[data-unit="ivo-brace"]');
+    expect(struck?.classList.contains("is-struck")).toBe(true);
+    expect(struck?.textContent).toContain("struck from the roster");
+  });
+
+  it("waits for the player: nothing but the advance closes it", () => {
+    let filed = 0;
+    const screen = new BattleResultsScreen({ onAdvance: () => (filed += 1) });
+    screen.update(mockBattleResultsView());
+
+    // No timer, no auto-dismiss: the component has no clock to run down.
+    expect("tick" in screen).toBe(false);
+    expect(filed).toBe(0);
+
+    const advance = screen.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="advance"]');
+    expect(advance?.textContent).toContain("File the record");
+    advance!.click();
+    expect(filed).toBe(1);
+  });
+
+  it("banks nothing on a loss and keeps the roster whole", () => {
+    const screen = new BattleResultsScreen();
+    screen.update(
+      mockBattleResultsView({
+        result: "loss",
+        headline: "Line Broken",
+        standing: [],
+        standingTotal: 0,
+        fallen: [],
+        consumed: [],
+        advanced: false,
+      }),
+    );
+    expect(screen.el.classList.contains("is-loss")).toBe(true);
+    const text = screen.el.textContent ?? "";
+    expect(text).toContain("Nothing banked");
+    expect(text).toContain("A loss changes nothing");
+    expect(screen.el.querySelector(".gf-fallen")).toBeNull();
+  });
+});
+
+describe("ChapterCloseScreen", () => {
+  it("closes on the chapter's account and its dead", () => {
+    const screen = new ChapterCloseScreen();
+    screen.update(mockChapterCloseView());
+    const text = screen.el.textContent ?? "";
+    expect(text).toContain("The Foundry Chapter");
+    expect(text).toContain("The Marshaling Yard");
+    expect(text).toContain("Still standing");
+    expect(text).toContain("Rowen Corvane");
+    expect(screen.el.querySelector(".gf-fallen")?.textContent).toContain("Ivo Brace");
+    expect(
+      screen.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="advance"]')?.textContent,
+    ).toContain("Close the record");
   });
 });

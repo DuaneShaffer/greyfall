@@ -30,6 +30,8 @@ import {
 } from "../core/index.js";
 import type { Campaign, Encounter, GameMap, Unit } from "../data/index.js";
 import type {
+  BattleResultsView,
+  ChapterCloseView,
   DeploymentView,
   EquipmentView,
   JobsView,
@@ -39,6 +41,8 @@ import type {
   UnitSheetView,
 } from "../ui/index.js";
 import {
+  campaignBattleResultsView,
+  campaignChapterCloseView,
   campaignDeploymentView,
   campaignEquipmentView,
   campaignJobsView,
@@ -155,6 +159,19 @@ export class CampaignSession {
 
   jobsView(unitId: string): JobsView | null {
     return campaignJobsView(this.campaignState, this.content, unitId);
+  }
+
+  /**
+   * The battle's record. `before` is the state the battle was fought from —
+   * the fallen are still on it, which is the only place their names and job
+   * levels survive.
+   */
+  battleResultsView(before: CampaignState, outcome: BattleOutcome): BattleResultsView {
+    return campaignBattleResultsView(before, this.campaignState, this.content, outcome);
+  }
+
+  chapterCloseView(): ChapterCloseView {
+    return campaignChapterCloseView(this.campaignState, this.campaign, this.content);
   }
 
   deploymentView(): DeploymentView | null {
