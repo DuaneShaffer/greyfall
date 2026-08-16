@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GameMap, TileCoord, Unit } from "../../src/data/index.js";
+import type { Ability, GameMap, TileCoord, Unit } from "../../src/data/index.js";
 import {
   applyCommand,
   createBattle,
@@ -52,6 +52,11 @@ function hand(id: string): Unit {
   return { ...unit, learnedAbilityIds: [...GRID_ABILITY_IDS, ...KIT] };
 }
 
+/** The same hand, Assay-rated: every load she hangs comes off 2 lighter. */
+function licensed(id: string): Unit {
+  return { ...hand(id), supportAbilityId: "rated-draw" };
+}
+
 /**
  * A second bench, derived rather than authored: the mains are destructible so
  * `overload-cell` has something permanent to do to one, and the draws are set
@@ -91,11 +96,13 @@ interface BenchOptions {
   mate?: TileCoord;
   content?: ContentLibrary;
   encounterId?: string;
+  make?: (id: string) => Unit;
 }
 
 function bench(options: BenchOptions = {}): GameState {
   const at = options.at ?? YARD;
-  const party = options.mate === undefined ? [hand(HAND)] : [hand(HAND), hand(MATE)];
+  const make = options.make ?? hand;
+  const party = options.mate === undefined ? [make(HAND)] : [make(HAND), make(MATE)];
   const deployment = [
     { unitId: HAND, position: at, facing: "north" as const },
     ...(options.mate === undefined ? [] : [{ unitId: MATE, position: options.mate, facing: "north" as const }]),
@@ -384,6 +391,49 @@ describe("Backfeed", () => {
     const cut = act(bench(), "cut-the-feed", "north-bus");
     expect(cut.error).toBeNull();
     expect(actSelf(nextTurn(cut.state), "backfeed").error?.code).toBe("requirement-unmet");
+  });
+});
+
+/**
+ * FLUX_GRID §6.4's third formula case: the same Overdraw against the same bus,
+ * with and without the licence. The west bench carries 6 of 12, so +8 blows it
+ * and +6 sits exactly on the rating.
+ */
+describe("Rated Draw", () => {
+  it("takes 2 off every load she hangs, and the bus that was blown survives", () => {
+    const blown = act(bench(), "overdraw", "north-bus");
+    expect(of(blown.events, "LoadAttached")).toMatchObject([{ amount: 8 }]);
+    expect(of(blown.events, "GridTripped")).toMatchObject([{ capacity: 12, load: 14 }]);
+    expect(live(blown.state)).toEqual(EAST_BRANCH);
+
+    const rated = act(bench({ make: licensed }), "overdraw", "north-bus");
+    expect(of(rated.events, "LoadAttached")).toMatchObject([{ amount: 6 }]);
+    expect(of(rated.events, "GridTripped")).toEqual([]);
+    expect(grid(rated.state).load).toBe(16);
+    expect(live(rated.state)).toEqual(WHOLE_BENCH);
+  });
+
+  it("lightens her Backfeed too, so the gift stops costing the floor she stands on", () => {
+    const greedy = actSelf(drain(bench(), HAND), "backfeed");
+    expect(of(greedy.events, "LoadAttached")).toMatchObject([{ amount: 6 }]);
+
+    const rated = actSelf(drain(bench({ make: licensed }), HAND), "backfeed");
+    expect(of(rated.events, "LoadAttached")).toMatchObject([{ amount: 4 }]);
+    // The charge she takes is untouched; only what it hangs on the bus is.
+    expect(unit(rated.state, HAND).charge).toBe(20);
+    expect(grid(rated.state).load).toBe(14);
+  });
+
+  it("floors at zero rather than crediting the bus", () => {
+    const base = benchContent();
+    const support = base.abilities["rated-draw"] as Extract<Ability, { slot: "support" }>;
+    const content: ContentLibrary = {
+      ...base,
+      abilities: { ...base.abilities, "rated-draw": { ...support, passive: { gridLoadReduction: 40 } } },
+    };
+    const rated = act(bench({ make: licensed, content }), "overdraw", "north-bus");
+    expect(of(rated.events, "LoadAttached")).toMatchObject([{ amount: 0 }]);
+    expect(grid(rated.state).load).toBe(10);
   });
 });
 

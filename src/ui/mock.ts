@@ -92,6 +92,7 @@ export const conduitJob: Job = {
     "overdraw",
     "flare",
     "licensed-draw",
+    "rated-draw",
     "earth-strap",
   ],
   equipTags: ["conduit-gear", "light-armor", "accessory", "field-issue"],

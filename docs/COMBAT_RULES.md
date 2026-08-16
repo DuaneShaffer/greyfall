@@ -553,6 +553,16 @@ has no observable consequence. **Nothing about the grid is cached.**
 | `addLoad { amount, durationTurns }` | hangs a flat timed draw on the aimed node's component; expires on **the caster's own turns** (§8) and is dropped immediately if the caster is downed, the same rule that cancels a charge in flight (§7) |
 | `severLine { mode }` | `sever` cuts a `line` node, `splice` puts it back; a no-op on any other role |
 
+**A licensed draw hangs less.** A support passive may carry
+`gridLoadReduction`, which is subtracted from the amount of every `addLoad` the
+unit hangs, floored at zero and never credited back to the bus. It is resolved
+once, on the way into the load, so the rules, the aim-time component highlight
+and the AI's hypothetical all read the same number. It follows whoever hangs the
+load, including through an `operable` payload they pulled the lever on; a load
+with no caster at all (an `onContact` payload) takes none. It is a flat integer like
+the rest of the grid and does not touch the `Amount` pipeline (§4). Rated Draw
+is the only ability that carries it.
+
 **New requirements** (§13a): `targetLine`, `targetSource`, `targetBreaker` read
 the aimed-at node's role; `targetEnergized` is the grid-native spelling of
 `targetPowered` and both mean the same derived value.

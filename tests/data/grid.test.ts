@@ -159,4 +159,23 @@ describe("the new effect primitives and requirements", () => {
     }
     expect(() => Ability.parse({ ...ability, requires: ["targetGridRole"] })).toThrow();
   });
+
+  // The one field the frozen contract gained for Rated Draw (CONTENT_NOTES §7).
+  it("takes a grid load reduction on a support passive, optional and never negative", () => {
+    const passive = (over: Record<string, unknown>) => ({
+      schemaVersion: 1,
+      id: "a",
+      name: "A",
+      description: "",
+      jobId: "conduit",
+      standingCost: 0,
+      slot: "support",
+      passive: over,
+    });
+    expect(() => Ability.parse(passive({ gridLoadReduction: 2 }))).not.toThrow();
+    expect(() => Ability.parse(passive({ gridLoadReduction: 0 }))).not.toThrow();
+    expect(() => Ability.parse(passive({ statMods: { charge: 8 } }))).not.toThrow();
+    expect(() => Ability.parse(passive({ gridLoadReduction: -1 }))).toThrow();
+    expect(() => Ability.parse(passive({ gridLoadReduction: 1.5 }))).toThrow();
+  });
 });

@@ -387,7 +387,7 @@ balance pass owns them; the shapes and the requirement gating are the design.
 | 4 | **Backfeed** | action | 0 / instant | self `modifyCharge +20`, plus `addLoad +6` for 2 turns on the node she is drawing from; requires `adjacentPoweredObject` | The greedy Tap Line. Answers "where does the power come from" (§5.1) with a number the player can see moving on the load bar, and can black out the floor she is standing on. §5.3: power costs something. |
 | 5 | **Live Line** | action | 5 / instant | grants a temporary `onContact` arc payload to the aimed `line` node for 3 turns; requires `targetLine` + `targetEnergized` | Her area denial is shaped by the map's cable runs instead of by a radius — "the map is the spellbook" made literal. Counterplay is to cut the line she electrified, which is a satisfying inversion. **v2** (§8). |
 | 6 | **Dead Short** | action | 8 / cast 30 | forces the aimed component's load past capacity immediately and deals arc damage to every unit standing on a node of it | The sacrificial overload: it blacks out *your* lifts too. The charged one, because this is the ability that should be interruptible. **v2** (§8). |
-| 7 | **Rated Draw** | support | — | her `addLoad` amounts are 2 lower and her `modifyCharge` gifts add no load at all | The licensed Conduit draws cleanly (bible §4, the Assay licenses every Conduit). Turns overdraw pricing into a build decision instead of a constant. |
+| 7 | **Rated Draw** | support | — | her `addLoad` amounts are 2 lower and her `modifyCharge` gifts add no load at all | The licensed Conduit draws cleanly (bible §4, the Assay licenses every Conduit). Turns overdraw pricing into a build decision instead of a constant. **Shipped as `gridLoadReduction: 2`** — the lighter draw only; the gift clause is expressed by Backfeed's +4 falling under the Meter House's rating rather than by a second field. |
 | 8 | **Live Rig** | reaction (`damaged`) | — | arc damage to the attacker, only while she stands adjacent to an energized node | A reaction that is conditional on the map rather than on a roll is the reaction this job should have, and it gives the enemy a reason to cut her power before closing. **v2** (§8). |
 
 A rejected ability, recorded so it is not re-proposed: a support passive that
@@ -603,7 +603,11 @@ loop"), because §2 adds no command kinds.
    object has `powered !== null`.
 4. **Formula tests** in the COMBAT_RULES register: "Overdraw on a bus at 11 of
    12 trips it; on a bus at 4 of 12 it does not; with Rated Draw it does not trip
-   the first one either."
+   the first one either." **Corrected in the build:** the third clause is
+   unachievable at +8 with a −2 licence — 11 + 6 is still past 12 — and only
+   holds for a reduction that leaves Overdraw not worth casting. It is tested at
+   the §1.7 band the rest of this design uses instead: the bench bus carries 6 of
+   12, +8 trips it, +6 sits exactly on the rating.
 5. **Sim counters**, in the shape §7.8.6 established for `BattleCounters` — so a
    sweep and a one-off recheck read the same numbers:
    `gridTrips` and `gridResets` split by side; `linesCut` / `linesSpliced` split
@@ -713,6 +717,18 @@ members express. Additive wins.
 
 `adjacentPoweredObject` and `targetPowered` are **not renamed** (§1.3).
 
+`SupportAbility.passive` gains one optional key for Rated Draw, added in the
+content pass rather than here because it is the only thing in v1 that reaches
+into an effect's magnitude:
+
+```ts
+gridLoadReduction: z.int().nonnegative(),   // subtracted from every addLoad, floored at 0
+```
+
+Optional like the rest of `passive`, so no shipped ability changed. It is a flat
+integer for §1.5's reason — load must stay readable off the register without
+computing anybody's Mag first.
+
 ### 7.5 `src/data/schemas/encounter.ts` — v2 only
 
 | addition | kind |
@@ -749,7 +765,12 @@ line depends on a grid-aware trigger.
   annunciator cause clause; the aim-time component highlight (§2.5). **Inside
   v1, not after it** — the mechanic is not shippable without them.
 - Conduit abilities **1 Overdraw, 2 Cross-Tie, 3 Reclose, 4 Backfeed, 7 Rated
-  Draw**; Saboteur cut; Machinist splice and reroute.
+  Draw**; Saboteur cut; Machinist splice and reroute. **All five shipped.**
+  Rated Draw landed last, on the one-field schema amendment
+  `SupportAbility.passive.gridLoadReduction` that `docs/CONTENT_NOTES.md` §7.11
+  had recorded and deferred; at 2 it makes Overdraw +6 and Backfeed +4 in her
+  hands. §6.4's third formula case is corrected there — at +8/−2 it cannot hold
+  on a bus at 11 of 12, and is tested at the §1.7 band instead.
 - AI terms 1–5 and the grid affinity; the six sim counters and three findings
   flags.
 - **One new grid-native map** to carry it. The five slice maps are **not

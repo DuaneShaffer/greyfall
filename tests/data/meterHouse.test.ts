@@ -212,6 +212,18 @@ describe("the Meter House grid, as authored", () => {
     expect(settle(bus).tripped).toEqual([]);
   });
 
+  // Rated Draw takes 2 off every load she hangs, which is exactly the step
+  // between a Backfeed this house absorbs and one that blacks out her own half.
+  it("a licensed Backfeed of 4 sits on the rating where an unlicensed 6 blows it", () => {
+    const greedy = battle();
+    load(greedy, "west-board", 6);
+    expect(settle(greedy).tripped).toEqual(["west-main"]);
+
+    const rated = battle();
+    load(rated, "west-board", 4);
+    expect(settle(rated).tripped).toEqual([]);
+  });
+
   it("shedding one 4-draw machine saves the half instead", () => {
     const state = battle();
     isolate(state, "charge-hoist-west", false);

@@ -72,6 +72,10 @@ const SupportAbility = AbilityBase.extend({
       // consumable's damage and heal power, reach extends how far it is thrown.
       consumableEffectBonusPercent: z.int(),
       consumableRangeBonus: z.int().nonnegative(),
+      // Taken off every `addLoad` this unit hangs, floored at zero. Load sits
+      // outside the `Amount` pipeline on purpose (`docs/design/FLUX_GRID.md`
+      // §1.5), so a licensed draw cannot be expressed as a `statMods` entry.
+      gridLoadReduction: z.int().nonnegative(),
     })
     .partial(),
 });

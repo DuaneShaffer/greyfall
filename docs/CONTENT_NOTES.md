@@ -473,7 +473,9 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 >   the ability's own fiction rather than a tax on it.
 >
 > Gap **4** (consumables) is deferred with a design sketch in
-> `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10, 11 are open.
+> `docs/PROJECT_BREAKDOWN.md`. Gap **11** was closed by the one-field schema
+> amendment it recorded, and Rated Draw ships on it — see the entry. Gaps 3, 5,
+> 6, 8, 9, 10 are open.
 
 1. ~~**Deployables are inert.**~~ **Closed and used.** `spawnObject` takes only `object` and `hp`, and
    `spawnObject()` in `src/core/rules/effects.ts` builds them with
@@ -527,19 +529,47 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 10. **`hpCost` on a charged ability is spent at cast start** (COMBAT_RULES §7)
     and is lost if the caster is downed before the charge lands. Press Frame
     is authored knowing this; it is a real risk on the ability, not a bug.
-11. **A support passive cannot modify another ability's numbers.** FLUX_GRID §3's
-    seventh Conduit ability, **Rated Draw** ("the licensed Conduit draws cleanly"
-    — her `addLoad` amounts are 2 lower and her `modifyCharge` gifts add no load
-    at all), is **not shipped** for this reason. `SupportAbility.passive` can
-    only carry `statMods` and flat flags; nothing in it reaches into an effect's
+11. ~~**A support passive cannot modify another ability's numbers.**~~ **Closed
+    by the recorded amendment, and shipped.** `SupportAbility.passive` could only
+    carry `statMods` and flat flags; nothing in it reached into an effect's
     magnitude, and load is deliberately outside the `Amount` pipeline that
-    `statMods` would otherwise ride (FLUX_GRID §1.5). Expressing it needs one new
-    optional key — something like `gridLoadReduction: z.int().nonnegative()` on
-    `passive`, read where `addLoad` resolves its amount — and the schema is
-    frozen for this pass, so it is deferred with that one-field proposal recorded
-    here and **the field is not added**. The consequence for balance: Overdraw is
-    flat +8 for everyone, and FLUX_GRID §6.4's third formula case ("with Rated
-    Draw it does not trip the first one either") has nothing to test yet.
+    `statMods` would otherwise ride (FLUX_GRID §1.5). The proposal recorded here
+    was one optional key, and that is exactly what landed:
+
+    ```ts
+    gridLoadReduction: z.int().nonnegative(),   // on SupportAbility.passive
+    ```
+
+    Optional like every other key on `passive`, so **no shipped JSON changed** to
+    accommodate it. It is read in `resolveLoadAmount` in
+    `src/core/rules/power.ts` — one choke point on the way into `attachLoad`, so
+    the rules, the aim-time flip preview and the AI's `loadSwingValue` cannot
+    disagree about what a load weighs — and it is subtracted with a floor of
+    zero, never credited back to the bus.
+
+    **Rated Draw** ships on it: `data/abilities/rated-draw.json`, support slot,
+    500 Standing (the modal price of the other six passives), `gridLoadReduction:
+    2`, learnable by the Conduit. Overdraw becomes +6 in her hands and Backfeed
+    +4, which is the build decision FLUX_GRID §3 wanted: on the Meter House's
+    10-of-14 halves the licence does **not** save a bus she means to blow (16 > 14
+    either way), and it does stop her own Backfeed blacking out the floor she is
+    standing on (14 fits, 16 does not).
+
+    **One clause of §3 is expressed rather than implemented literally.** The
+    ability text says her `modifyCharge` gifts "add no load at all"; one field
+    cannot both scale a draw and zero a specific one, and a reduction large
+    enough to zero Backfeed's +6 would leave Overdraw at +2. The lighter draw is
+    the whole passive, and Backfeed's load falling under the Meter House's rating
+    is the same outcome the clause was after. Recorded so it is not read as a
+    miss.
+
+    **§6.4's third formula case is corrected, not met.** As written — "Overdraw
+    on a bus at 11 of 12 … with Rated Draw it does not trip the first one either"
+    — it is unachievable with +8 and −2, and with any reduction that leaves
+    Overdraw worth casting: 11 + 6 is still past 12. The case is real at the
+    §1.7 band the rest of the design uses, and is tested there instead: the grid
+    bench carries 6 of 12, `+8` trips it and `+6` sits exactly on the rating
+    (`tests/core/gridAbilities.test.ts`).
 
 ## 8. Roster
 

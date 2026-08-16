@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "rated-draw",
+  "name": "Rated Draw",
+  "description": "Assay-certified technique: open the shunt to the rating and not a point past it. Everything she hangs on somebody else's bus hangs lighter, which is worth more on the bus she still needs standing than on the one she means to blow.",
+  "jobId": "conduit",
+  "standingCost": 500,
+  "slot": "support",
+  "passive": {
+    "gridLoadReduction": 2
+  }
+}

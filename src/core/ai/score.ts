@@ -18,7 +18,7 @@ import {
   unitById,
 } from "../rules/grid.js";
 import { consumableItem, itemAbility } from "../rules/items.js";
-import { gridNodeOf, gridNodeRuntimeOf, isEnergized, solveGrid } from "../rules/power.js";
+import { gridNodeOf, gridNodeRuntimeOf, isEnergized, resolveLoadAmount, solveGrid } from "../rules/power.js";
 import { getStatus } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
 import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
@@ -882,7 +882,7 @@ export function abilityValue(
       case "addLoad": {
         shaped ??= shapedArea(ctx, view, actor, ability, target);
         for (const objectId of shaped.objectIds) {
-          gross += loadSwingValue(ctx, view, objectId, effect.amount);
+          gross += loadSwingValue(ctx, view, objectId, resolveLoadAmount(view, actor.id, effect.amount));
         }
         break;
       }
@@ -939,7 +939,9 @@ export function activateValue(ctx: AiContext, view: GameState, obj: ObjectRuntim
     for (const effect of operable.effects) {
       if (effect.kind === "setPower") value += powerSwingValue(ctx, view, other, effect.mode);
       if (effect.kind === "severLine") value += severSwingValue(ctx, view, objectId, effect.mode);
-      if (effect.kind === "addLoad") value += loadSwingValue(ctx, view, objectId, effect.amount);
+      if (effect.kind === "addLoad") {
+        value += loadSwingValue(ctx, view, objectId, resolveLoadAmount(view, ctx.actor.id, effect.amount));
+      }
       if (effect.kind !== "damageObject") continue;
       damage += resolveAmount(view, effect.amount, null, inertAmountTarget(objectMaxHp(other)));
     }

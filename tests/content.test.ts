@@ -123,6 +123,21 @@ describe("content cross-references", () => {
     }
   });
 
+  // FLUX_GRID §8's v1 line: five Conduit abilities, the fifth of them the
+  // passive that prices the other four's draws (CONTENT_NOTES §7).
+  it("the Conduit's v1 grid kit is learnable, Rated Draw included", () => {
+    const conduit = jobs.get("conduit")!;
+    for (const id of ["overdraw", "cross-tie", "reclose", "backfeed", "rated-draw"]) {
+      expect(conduit.learnableAbilityIds, `conduit: ${id} not learnable`).toContain(id);
+    }
+    const rated = abilities.get("rated-draw")!;
+    expect(rated.slot).toBe("support");
+    expect(rated.slot === "support" ? rated.passive.gridLoadReduction : null).toBe(2);
+    // In the support band the other six passives already price in.
+    expect(rated.standingCost).toBeGreaterThanOrEqual(400);
+    expect(rated.standingCost).toBeLessThanOrEqual(600);
+  });
+
   it("units reference existing jobs, abilities, and items", () => {
     for (const unit of units.values()) expectUnitRefs(unit, unit.id);
   });

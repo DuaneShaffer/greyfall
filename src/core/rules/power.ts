@@ -385,6 +385,22 @@ export function severLine(ctx: Ctx, objectId: string, mode: "sever" | "splice", 
 }
 
 /**
+ * What a licensed draw actually puts on the bus: Rated Draw's whole effect
+ * (`docs/design/FLUX_GRID.md` §3). Resolved here rather than at each effect
+ * site so the rules, the aim-time preview and the AI's hypothetical all read
+ * one number.
+ */
+export function resolveLoadAmount(state: GameState, actorId: string | null, amount: number): number {
+  if (actorId === null) return amount;
+  const unit = state.units.find((u) => u.id === actorId);
+  const supportId = unit?.unit.supportAbilityId;
+  if (supportId === undefined) return amount;
+  const support = state.content.abilities[supportId];
+  if (support === undefined || support.slot !== "support") return amount;
+  return Math.max(0, amount - (support.passive.gridLoadReduction ?? 0));
+}
+
+/**
  * Hang a timed draw on a node's component. The load rides the caster's own
  * turns, the clock statuses and `modifyStats` already use; a load nothing with a
  * turn clock cast never expires on its own.
@@ -402,12 +418,13 @@ export function attachLoad(
   const runtime = runtimeOf(state, found.grid.id);
   if (runtime === undefined) return;
 
+  const drawn = resolveLoadAmount(state, actorId, amount);
   const before = powerSnapshot(state);
   const load: GridLoad = {
     id: `load-${nextOrdinal(state)}`,
     nodeObjectId: objectId,
     casterUnitId: actorId,
-    amount,
+    amount: drawn,
     turnsRemaining: actorId === null ? null : durationTurns,
   };
   runtime.loads.push(load);
@@ -416,7 +433,7 @@ export function attachLoad(
     type: "LoadAttached",
     gridId: found.grid.id,
     nodeId: objectId,
-    amount,
+    amount: drawn,
     turns: load.turnsRemaining,
     unitId: actorId,
   });
