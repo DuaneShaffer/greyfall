@@ -2,9 +2,16 @@
 // the ordering that puts the attacker's swing ahead of the target's recoil.
 
 import { describe, expect, it } from "vitest";
-import { BASIC_ATTACK_ID, unitMaxHp, type BattleEvent, type GameState } from "../../src/core/index.js";
-import { toRenderEventList, toRenderEvents } from "../../src/render/adapter.js";
-import { rowen } from "../core/fixtures.js";
+import {
+  BASIC_ATTACK_ID,
+  createBattle,
+  unitMaxHp,
+  type BattleEvent,
+  type GameState,
+} from "../../src/core/index.js";
+import { toRenderEventList, toRenderEvents, viewModelFromGameState } from "../../src/render/adapter.js";
+import { ObjectVisual } from "../../src/render/objects.js";
+import { loadContent, rowen } from "../core/fixtures.js";
 import { openBattle, VALE } from "../app/fixtures.js";
 
 const battle = (): GameState => openBattle([rowen(), VALE]).state;
@@ -296,6 +303,41 @@ describe("the grid's own events", () => {
     expect(strain(11, 12)).toBeGreaterThan(0);
     expect(strain(12, 12)).toBeGreaterThan(0);
     expect(strain(13, 12)).toBe(1);
+  });
+
+  /**
+   * The cut used to live only in the animation that made it, so every rebuild
+   * (`src/app/controller.ts` rebuilds the scene from state on a spawn, and
+   * load-game and resize do the same) put the span back together. It lives on
+   * the grid runtime, so the snapshot has to carry it.
+   */
+  it("carries a cut span through the snapshot the scene rebuilds from", () => {
+    const content = loadContent();
+    const hand = rowen();
+    const tile = content.maps["meter-house"]!.deploymentTiles[0]!;
+    const grid = createBattle(content, "s1-meter-house", [hand], [
+      { unitId: hand.id, position: { ...tile }, facing: "north" },
+    ]).state;
+
+    expect(viewModelFromGameState(grid).objects.filter((o) => o.severed)).toEqual([]);
+    grid.grids[0]!.nodes.find((node) => node.objectId === "gallery-run")!.severed = true;
+
+    const view = viewModelFromGameState(grid);
+    expect(view.objects.filter((o) => o.severed).map((o) => o.id)).toEqual(["gallery-run"]);
+    // And what the cut took dark is dark in the snapshot too: the renderer's lit
+    // state is energization, not the isolator each of those objects still holds.
+    const dark = view.objects.filter((o) => o.powered === false).map((o) => o.id);
+    // The gallery tie is normally open, so it starts dark and stays dark.
+    expect(dark).toEqual(["gallery-run", "gallery-tie", "meter-lift", "west-lamps"]);
+
+    // And the rebuilt visual reads cut rather than whole, without any event.
+    const run = view.objects.find((o) => o.id === "gallery-run")!;
+    const cut = new ObjectVisual(view.map, run);
+    const whole = new ObjectVisual(view.map, { ...run, severed: false });
+    expect(cut.group.scale.z).toBeLessThan(whole.group.scale.z);
+    expect(cut.group.rotation.y).not.toBe(whole.group.rotation.y);
+    cut.dispose();
+    whole.dispose();
   });
 
   it("still animates the power flip a cause is attached to", () => {

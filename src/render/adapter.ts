@@ -19,6 +19,8 @@ import {
   battleMap,
   getUnit,
   itemIdFromAbilityId,
+  objectEnergized,
+  objectSevered,
   standHeight,
   unitMaxHp,
   type BattleEvent,
@@ -49,14 +51,18 @@ const unitViewOf = (state: GameState, unit: BattleUnit): UnitView => ({
   downed: unit.downed,
 });
 
-const objectViewOf = (object: ObjectRuntime): MapObjectView => ({
+const objectViewOf = (state: GameState, object: ObjectRuntime): MapObjectView => ({
   id: object.def.id,
   kind: object.def.kind,
   spriteId: object.def.spriteId,
   tiles: object.def.tiles.map((tile) => ({ ...tile })),
   surfaceHeight: object.def.surfaceHeight ?? null,
-  powered: object.powered,
+  // The renderer's lit state is energization, not the isolator flag
+  // (`docs/design/FLUX_GRID.md` §1.3) — otherwise a rebuild relights a bus the
+  // `PowerChanged` batch had just taken dark.
+  powered: object.powered === null ? null : objectEnergized(state, object.def.id),
   destroyed: object.destroyed,
+  severed: objectSevered(state, object.def.id),
   volatile: object.def.onDestroyed !== undefined,
 });
 
@@ -65,7 +71,7 @@ export function viewModelFromGameState(state: GameState): BattleViewModel {
   return {
     map: battleMap(state),
     units: allUnits(state).map((unit) => unitViewOf(state, unit)),
-    objects: allObjects(state).map(objectViewOf),
+    objects: allObjects(state).map((object) => objectViewOf(state, object)),
   };
 }
 

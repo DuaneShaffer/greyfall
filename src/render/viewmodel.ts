@@ -33,6 +33,8 @@ export interface MapObjectView {
   /** null = the object is not electrical. */
   powered: boolean | null;
   destroyed: boolean;
+  /** A cut span. Reversible, unlike `destroyed`, and it must survive a rebuild. */
+  severed: boolean;
   /** Carries an `onDestroyed` payload: it overloads before it collapses. */
   volatile: boolean;
 }
@@ -73,6 +75,7 @@ export const objectViewFromMapObject = (object: MapObject): MapObjectView => ({
   surfaceHeight: object.surfaceHeight ?? null,
   powered: object.powered,
   destroyed: false,
+  severed: false,
   volatile: object.onDestroyed !== undefined,
 });
 

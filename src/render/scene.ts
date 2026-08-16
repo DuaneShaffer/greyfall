@@ -750,6 +750,7 @@ export class BattleRenderer {
         const severed = event.kind === "lineSevered";
         const contact = this.objectPoint(event.objectId, IMPACT_HEIGHT);
         const base = this.objectPoint(event.objectId, 0);
+        view.severed = severed;
         return spanAnimation(visual, severed, () => {
           if (!contact || !base) return;
           if (severed) this.vfx.arcJag(contact, base, view.tiles[0] ?? null);

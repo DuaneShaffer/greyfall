@@ -62,6 +62,7 @@ const cellView = (): MapObjectView => ({
   surfaceHeight: null,
   powered: true,
   destroyed: false,
+  severed: false,
   volatile: false,
 });
 

@@ -5,8 +5,12 @@ import { markBloomEligible } from "./layers.js";
 import { objectColor, palette } from "./palette.js";
 import type { MapObjectView } from "./viewmodel.js";
 
-/** How far a cut span drops: enough to read as broken, well short of rubble. */
-const SEVERED_SAG = 0.3;
+/** Share of a cut run's length that opens as a gap, split across both ends. */
+const SEVERED_GAP = 0.38;
+/** Yaw between the parted ends, in radians: the run no longer lines up. */
+const SEVERED_KINK = 0.13;
+/** How far a cut run's body is pulled toward the dead-seam grey. */
+const SEVERED_FADE = 0.5;
 
 interface Footprint {
   center: THREE.Vector3;
@@ -53,6 +57,8 @@ export class ObjectVisual {
   private readonly seamMaterials = new Set<THREE.MeshLambertMaterial>();
   private readonly baseColors = new Map<THREE.MeshLambertMaterial, number>();
   private readonly baseY: number;
+  /** The footprint's longer side — the direction a run runs, and parts along. */
+  private readonly runAxis: "x" | "z";
   private view: MapObjectView;
   private glowPhase: number;
   private collapse = 0;
@@ -64,11 +70,13 @@ export class ObjectVisual {
     this.view = view;
     const footprint = footprintOf(map, view);
     this.baseY = footprint.groundY;
+    this.runAxis = footprint.spanX >= footprint.spanZ ? "x" : "z";
     this.group.position.copy(footprint.center);
     this.glowPhase = (view.id.length % 7) * 0.5;
     this.build(view, footprint);
     this.setPowered(view.powered);
     this.setDestroyed(view.destroyed);
+    this.setSevered(view.severed);
   }
 
   get currentView(): MapObjectView {
@@ -102,17 +110,40 @@ export class ObjectVisual {
    */
   setCollapse(progress: number): void {
     this.collapse = Math.min(1, Math.max(0, progress));
-    const squash = 1 - 0.78 * this.collapse;
-    this.group.scale.set(1 + 0.12 * this.collapse, squash, 1 + 0.12 * this.collapse);
+    this.applyPose();
+    this.applyPaint();
+  }
+
+  /** A cut only reads while the object is still standing; a wreck is a wreck. */
+  private get cut(): boolean {
+    return this.severed && !this.view.destroyed;
+  }
+
+  private applyPose(): void {
+    const grow = 1 + 0.12 * this.collapse;
+    const parted = this.cut ? 1 - SEVERED_GAP : 1;
+    this.group.scale.set(
+      grow * (this.runAxis === "x" ? parted : 1),
+      1 - 0.78 * this.collapse,
+      grow * (this.runAxis === "z" ? parted : 1),
+    );
     this.group.rotation.z = this.collapse * 0.06;
+    this.group.rotation.y = this.cut ? SEVERED_KINK : 0;
     this.group.position.y = this.baseY - 0.02 * this.collapse;
+  }
+
+  private applyPaint(): void {
     const seamRubble = new THREE.Color(objectColor.destroyed);
     const bodyRubble = new THREE.Color(objectColor.rubble);
+    // A cut span carries no light at all, so its seams go the whole way to the
+    // dead grey the unpowered state already taught the player to read.
+    const deadSeam = new THREE.Color(objectColor.unpowered);
     for (const material of this.materials) {
       const base = this.baseColors.get(material) ?? 0xffffff;
-      const target = this.seamMaterials.has(material) ? seamRubble : bodyRubble;
-      material.color.setHex(base).lerp(target, this.collapse);
-      if (this.collapse > 0) {
+      const seam = this.seamMaterials.has(material);
+      material.color.setHex(base).lerp(seam ? seamRubble : bodyRubble, this.collapse);
+      if (this.cut) material.color.lerp(deadSeam, seam ? 1 : SEVERED_FADE);
+      if (this.collapse > 0 || this.cut) {
         material.emissive.setHex(0x000000);
         material.emissiveIntensity = 0;
       }
@@ -125,7 +156,8 @@ export class ObjectVisual {
    * warning has to arrive through the seams and not through a new color.
    */
   setOverload(amount: number): void {
-    this.overload = Math.min(1, Math.max(0, amount));
+    // A cut span is out of the circuit: it does not strain with the bus it left.
+    this.overload = this.cut ? 0 : Math.min(1, Math.max(0, amount));
     if (this.overload <= 0) {
       this.setPowered(this.view.powered);
       return;
@@ -140,15 +172,18 @@ export class ObjectVisual {
   }
 
   /**
-   * A cut span sags off its run and a splice stands it back up. The cut is the
-   * reversible verb, so it borrows the collapse ramp rather than the destroyed
-   * state — a wreck and a cut must not read the same.
+   * A cut span parts: the run opens a gap at both ends, kinks out of line with
+   * itself, and goes dark. Deliberately not the collapse ramp — a wreck squashes
+   * and tilts into rubble, and the reversible verb must not read as the
+   * permanent one. It is driven from `MapObjectView.severed` at build time too,
+   * so a rebuilt scene shows a cut the player made ten turns ago.
    */
   setSevered(severed: boolean): void {
     if (this.severed === severed) return;
     this.severed = severed;
-    if (this.view.destroyed) return;
-    this.setCollapse(severed ? SEVERED_SAG : 0);
+    this.view = { ...this.view, severed };
+    this.applyPose();
+    this.applyPaint();
   }
 
   /** Used when a deployable goes off: the object is simply not there any more. */
@@ -157,7 +192,7 @@ export class ObjectVisual {
   }
 
   update(timeSeconds: number): void {
-    if (this.view.destroyed || this.overload > 0 || this.view.powered !== true) return;
+    if (this.view.destroyed || this.cut || this.overload > 0 || this.view.powered !== true) return;
     const pulse = 0.75 + 0.25 * Math.sin(timeSeconds * 2.2 + this.glowPhase);
     for (const material of this.poweredMaterials) material.emissiveIntensity = pulse;
   }

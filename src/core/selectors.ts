@@ -218,6 +218,16 @@ export function objectEnergized(state: GameState, objectId: string): boolean {
   return isEnergized(state, objectId);
 }
 
+/**
+ * Whether this object is a cut span. It lives on the node rather than on the
+ * object, and the renderer has to be able to rebuild it from state like every
+ * other visual — a cut that only exists in the animation that made it is a cut
+ * that disappears the next time the scene is built.
+ */
+export function objectSevered(state: GameState, objectId: string): boolean {
+  return gridNodeRuntimeOf(state, objectId)?.severed === true;
+}
+
 // --- the power register ---------------------------------------------------
 
 /** The one word the register's right column prints for a node. */

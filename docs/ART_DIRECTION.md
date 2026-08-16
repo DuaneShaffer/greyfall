@@ -412,7 +412,15 @@ The battlefield is a workplace and its objects have to announce what they do.
 | **powered** | continuous **amber seams** tracing the object's working parts — `amber-500` body, `amber-300` core, 1px `amber-glow` halo; 2-frame pulse at 30 ticks |
 | **unpowered** | the same seam geometry in `soot-700`, no halo, no pulse. Identical shapes, dead — so the player learns the seam *is* the power indicator |
 | **overloading** | seams shift to `overload-500` with `overload-100` cores, pulse rate drops to 8 ticks, halo grows 1px per pulse |
+| **severed** | a cut `line` node (COMBAT_RULES §14a). The run **parts**: a gap opens along its long axis and the two ends kink out of line with each other. Seams go the `soot-700` dead grey, the body is pulled halfway toward it, no halo, no pulse, and **no amber anywhere** — a cut span carries nothing. It does **not** squash and does **not** drop |
 | **destroyed** | silhouette collapses to a `soot-900`/`soot-700` rubble form of roughly half the original height; seams go `umber-900` dead; persistent 3-frame soot plume at 20 ticks |
+
+**Severed and destroyed must never be confused.** The cut is the cheap
+reversible verb and destruction is permanent, so the two states are separated by
+*geometry*, not by colour: a wreck squashes and tilts, a cut span stays standing
+and comes apart. Destruction outranks it — a span that is cut and then blown up
+reads as rubble. Both states carry the object's state from `GameState`, so a
+scene rebuilt from a snapshot shows them.
 
 **The operable affordance (binding).** Every operable object carries a visible
 `copper-500` handle, lever, wheel, or grip. **No non-operable object may show

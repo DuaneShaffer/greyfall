@@ -78,6 +78,7 @@ export {
   legalTargetTiles,
   lineOfSight,
   objectEnergized,
+  objectSevered,
   powerRegister,
   poweredObjects,
   reachableTiles,

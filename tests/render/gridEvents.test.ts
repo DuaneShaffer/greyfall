@@ -36,6 +36,7 @@ const objectView = (): MapObjectView => ({
   surfaceHeight: null,
   powered: true,
   destroyed: false,
+  severed: false,
   volatile: false,
 });
 
@@ -120,21 +121,55 @@ describe("a span cut and made good again", () => {
 });
 
 describe("the object visual the events write to", () => {
-  it("sags a cut span without wrecking it, and stands it back up", () => {
+  it("parts a cut span along its run and stands it back up", () => {
     const visual = new ObjectVisual(map, objectView());
-    const upright = visual.group.scale.y;
+    const whole = visual.group.scale.x;
 
     visual.setSevered(true);
-    const sagged = visual.group.scale.y;
+    const parted = visual.group.scale.x;
     visual.setSevered(true);
-    expect(visual.group.scale.y).toBe(sagged);
-    expect(sagged).toBeLessThan(upright);
-    // A cut is the reversible verb: it must not read as a wreck.
-    expect(sagged).toBeGreaterThan(0);
+    expect(visual.group.scale.x).toBe(parted);
+    expect(parted).toBeLessThan(whole);
+    expect(parted).toBeGreaterThan(0);
+    // A gap and a kink, not a sag: a wreck squashes, a cut stays standing.
+    expect(visual.group.scale.y).toBe(1);
+    expect(visual.group.rotation.y).not.toBe(0);
 
     visual.setSevered(false);
-    expect(visual.group.scale.y).toBe(upright);
+    expect(visual.group.scale.x).toBe(whole);
+    expect(visual.group.rotation.y).toBe(0);
     visual.dispose();
+  });
+
+  it("reads nothing like a wreck, and a wreck outranks it", () => {
+    const cut = new ObjectVisual(map, objectView());
+    cut.setSevered(true);
+    const wrecked = new ObjectVisual(map, objectView());
+    wrecked.setDestroyed(true);
+
+    expect(cut.group.scale.y).not.toBe(wrecked.group.scale.y);
+    expect(cut.group.rotation.z).not.toBe(wrecked.group.rotation.z);
+
+    // Destruction is permanent and takes over: a cut span that is then blown up
+    // stops reading as a cut.
+    cut.setDestroyed(true);
+    expect(cut.group.scale.x).toBe(wrecked.group.scale.x);
+    expect(cut.group.rotation.y).toBe(0);
+    cut.dispose();
+    wrecked.dispose();
+  });
+
+  // The bug this closes: the cut lived only in the animation that made it, so
+  // any rebuild (load game, a spawn, a resize) put the span back together.
+  it("builds severed straight from the view model, so a rebuild keeps the cut", () => {
+    const rebuilt = new ObjectVisual(map, { ...objectView(), severed: true });
+    const reference = new ObjectVisual(map, objectView());
+    reference.setSevered(true);
+
+    expect(rebuilt.group.scale.x).toBe(reference.group.scale.x);
+    expect(rebuilt.group.rotation.y).toBe(reference.group.rotation.y);
+    rebuilt.dispose();
+    reference.dispose();
   });
 });
 
