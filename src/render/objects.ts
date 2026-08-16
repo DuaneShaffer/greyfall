@@ -46,11 +46,13 @@ export class ObjectVisual {
   private readonly geometries: THREE.BufferGeometry[] = [];
   private readonly materials: THREE.MeshLambertMaterial[] = [];
   private readonly poweredMaterials: THREE.MeshLambertMaterial[] = [];
+  private readonly seamMaterials = new Set<THREE.MeshLambertMaterial>();
   private readonly baseColors = new Map<THREE.MeshLambertMaterial, number>();
   private readonly baseY: number;
   private view: MapObjectView;
   private glowPhase: number;
   private collapse = 0;
+  private overload = 0;
 
   constructor(map: GameMap, view: MapObjectView) {
     this.objectId = view.id;
@@ -77,24 +79,34 @@ export class ObjectVisual {
       this.baseColors.set(material, on ? objectColor.powered : objectColor.unpowered);
     }
     this.setCollapse(this.collapse);
+    if (this.overload > 0) this.setOverload(this.overload);
   }
 
   setDestroyed(destroyed: boolean): void {
     this.view = { ...this.view, destroyed };
+    if (destroyed) this.overload = 0;
     this.setCollapse(destroyed ? 1 : 0);
     this.setPowered(this.view.powered);
   }
 
-  /** 0 = intact, 1 = fully collapsed and darkened. */
+  /**
+   * 0 = intact, 1 = fully collapsed. Bodies go to soot rubble and seams go
+   * umber-900 dead, which is the destroyed language of ART_DIRECTION §6 — a
+   * single flat darkening would lose the seam/body distinction the powered
+   * states spent the whole battle teaching.
+   */
   setCollapse(progress: number): void {
     this.collapse = Math.min(1, Math.max(0, progress));
     const squash = 1 - 0.78 * this.collapse;
     this.group.scale.set(1 + 0.12 * this.collapse, squash, 1 + 0.12 * this.collapse);
     this.group.rotation.z = this.collapse * 0.06;
     this.group.position.y = this.baseY - 0.02 * this.collapse;
+    const seamRubble = new THREE.Color(objectColor.destroyed);
+    const bodyRubble = new THREE.Color(objectColor.rubble);
     for (const material of this.materials) {
       const base = this.baseColors.get(material) ?? 0xffffff;
-      material.color.setHex(base).lerp(new THREE.Color(objectColor.destroyed), this.collapse);
+      const target = this.seamMaterials.has(material) ? seamRubble : bodyRubble;
+      material.color.setHex(base).lerp(target, this.collapse);
       if (this.collapse > 0) {
         material.emissive.setHex(0x000000);
         material.emissiveIntensity = 0;
@@ -102,8 +114,33 @@ export class ObjectVisual {
     }
   }
 
+  /**
+   * 0 = normal, 1 = seams at overload-100. The staged flash a volatile object
+   * throws before it collapses; the seam ramp is the state readout, so the
+   * warning has to arrive through the seams and not through a new color.
+   */
+  setOverload(amount: number): void {
+    this.overload = Math.min(1, Math.max(0, amount));
+    if (this.overload <= 0) {
+      this.setPowered(this.view.powered);
+      return;
+    }
+    const seam = new THREE.Color(objectColor.overloadingSeam);
+    const core = new THREE.Color(objectColor.overloading);
+    for (const material of this.seamMaterials) {
+      material.color.copy(seam).lerp(core, this.overload);
+      material.emissive.setHex(objectColor.overloading);
+      material.emissiveIntensity = 0.6 + 1.4 * this.overload;
+    }
+  }
+
+  /** Used when a deployable goes off: the object is simply not there any more. */
+  setHidden(hidden: boolean): void {
+    this.group.visible = !hidden;
+  }
+
   update(timeSeconds: number): void {
-    if (this.view.destroyed || this.view.powered !== true) return;
+    if (this.view.destroyed || this.overload > 0 || this.view.powered !== true) return;
     const pulse = 0.75 + 0.25 * Math.sin(timeSeconds * 2.2 + this.glowPhase);
     for (const material of this.poweredMaterials) material.emissiveIntensity = pulse;
   }
@@ -121,7 +158,10 @@ export class ObjectVisual {
     }
     this.materials.push(material);
     this.baseColors.set(material, color);
-    if (options?.powered) this.poweredMaterials.push(material);
+    if (options?.powered) {
+      this.poweredMaterials.push(material);
+      this.seamMaterials.add(material);
+    }
     return material;
   }
 

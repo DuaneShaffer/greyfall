@@ -33,6 +33,8 @@ export interface MapObjectView {
   /** null = the object is not electrical. */
   powered: boolean | null;
   destroyed: boolean;
+  /** Carries an `onDestroyed` payload: it overloads before it collapses. */
+  volatile: boolean;
 }
 
 export interface BattleViewModel {
@@ -71,6 +73,7 @@ export const objectViewFromMapObject = (object: MapObject): MapObjectView => ({
   surfaceHeight: object.surfaceHeight ?? null,
   powered: object.powered,
   destroyed: false,
+  volatile: object.onDestroyed !== undefined,
 });
 
 export const buildViewModel = (map: GameMap, placements: UnitPlacement[]): BattleViewModel => ({

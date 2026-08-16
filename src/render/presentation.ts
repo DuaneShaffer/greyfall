@@ -16,16 +16,41 @@
 //   3. Applying an event twice must be idempotent — the queue may finish an
 //      animation that was already visually complete.
 
-import type { Facing, TileCoord } from "../data/schemas/common.js";
+import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
+
+/**
+ * What the acting unit's body is doing. `castHold` parks a charged action in
+ * the `cast` hold loop until the charge resolves; `rest` releases it if the
+ * charge is cancelled instead.
+ */
+export type ActorPose = "attack" | "cast" | "castHold" | "rest";
 
 export type RenderEvent =
   /** Walk a unit along `path` (path[0] is the current tile). */
   | { kind: "unitMoved"; unitId: string; path: TileCoord[]; facing: Facing }
   | { kind: "unitFaced"; unitId: string; facing: Facing }
-  | { kind: "unitHit"; unitId: string; amount: number; hpFractionAfter: number }
+  /** The actor's own swing/cast, emitted ahead of the hits it causes. */
+  | { kind: "unitActed"; unitId: string; pose: ActorPose }
+  | {
+      kind: "unitHit";
+      unitId: string;
+      /** Negative is a heal. */
+      amount: number;
+      hpFractionAfter: number;
+      damageType: DamageType | null;
+      sourceUnitId: string | null;
+    }
+  | { kind: "unitMissed"; unitId: string; sourceUnitId: string | null }
   | { kind: "unitDowned"; unitId: string }
+  /** Taken off the field without being downed: walks out and is gone. */
+  | { kind: "unitRemoved"; unitId: string }
   | { kind: "objectPowerChanged"; objectId: string; powered: boolean }
+  | { kind: "objectHit"; objectId: string; amount: number; damageType: DamageType }
   | { kind: "objectDestroyed"; objectId: string }
+  /** A deployable set off by contact: bursts and is gone. */
+  | { kind: "objectTriggered"; objectId: string; unitId: string }
+  /** Machinery firing on a unit. */
+  | { kind: "objectAttacked"; objectId: string; targetUnitId: string; hit: boolean }
   | { kind: "cameraFocused"; tile: TileCoord };
 
 export type RenderEventKind = RenderEvent["kind"];

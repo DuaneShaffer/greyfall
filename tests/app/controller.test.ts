@@ -303,3 +303,45 @@ describe("the hud sees real view models", () => {
     hud.destroy();
   });
 });
+
+describe("scene rebuilds", () => {
+  /** Pass turns (dismissing dialogue) until `done`, or give up. */
+  function idleUntil(h: Harness, done: () => boolean, maxTicks = 600): boolean {
+    for (let tick = 0; tick < maxTicks; tick += 1) {
+      if (done()) return true;
+      if (h.controller.phase === "ended") return done();
+      if (h.controller.phase === "dialogue") {
+        h.controller.intents.endDialogue();
+        continue;
+      }
+      if (h.controller.phase === "player") {
+        const acting = activeUnit(h.controller.state);
+        if (acting === null) return done();
+        h.controller.intents.wait(acting.id, acting.facing);
+        h.ui.facingPrompt?.onPick(acting.facing);
+        continue;
+      }
+      h.controller.tick(1);
+    }
+    return done();
+  }
+
+  it("rebuilds for a spawn but animates a scripted removal in place", () => {
+    const h = harness();
+    h.controller.start();
+
+    const spawned = idleUntil(h, () =>
+      h.controller.state.units.some((unit) => unit.id === "provocateur-b"),
+    );
+    expect(spawned).toBe(true);
+    const scenesAfterSpawn = h.renderer.scenes.length;
+    expect(scenesAfterSpawn).toBeGreaterThan(1);
+
+    const removed = idleUntil(h, () =>
+      h.renderer.events.some((event) => event.kind === "unitRemoved"),
+    );
+    expect(removed).toBe(true);
+    expect(h.renderer.events).toContainEqual({ kind: "unitRemoved", unitId: "provocateur-b" });
+    expect(h.renderer.scenes).toHaveLength(scenesAfterSpawn);
+  });
+});

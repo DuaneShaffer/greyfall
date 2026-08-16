@@ -6,11 +6,43 @@ export {
   PresentationQueue,
   easeInOut,
   instantAnimation,
+  type ActorPose,
   type Animation,
   type AnimationFactory,
   type RenderEvent,
   type RenderEventKind,
 } from "./presentation.js";
+export {
+  CHEMICAL_LINGER_SECONDS,
+  IMPACT_TIMING,
+  conductiveTerrain,
+  debrisDirections,
+  impactFrame,
+  jagPoints,
+  persistsOnTile,
+  type ImpactTiming,
+  type Vec3,
+} from "./effects.js";
+export {
+  GLYPH_HEIGHT,
+  GLYPH_WIDTH,
+  popupGrid,
+  textGrid,
+  textWidth,
+} from "./glyphs.js";
+export {
+  POPUP_SECONDS,
+  PopupField,
+  damagePopup,
+  missPopup,
+  popupHeight,
+  popupOpacity,
+  popupStyleFor,
+  type Popup,
+  type PopupSpec,
+  type PopupStyle,
+} from "./popups.js";
+export { VfxLayer, disposeVfxTextures } from "./vfxLayer.js";
 export {
   buildTerrainMeshData,
   buildTerrainQuads,

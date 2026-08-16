@@ -112,7 +112,14 @@ describe("toRenderEvents", () => {
       state,
     );
     expect(events).toEqual([
-      { kind: "unitHit", unitId: "rowen", amount: 20, hpFractionAfter: (max - 20) / max },
+      {
+        kind: "unitHit",
+        unitId: "rowen",
+        amount: 20,
+        hpFractionAfter: (max - 20) / max,
+        damageType: "kinetic",
+        sourceUnitId: "provocateur-a",
+      },
     ]);
   });
 

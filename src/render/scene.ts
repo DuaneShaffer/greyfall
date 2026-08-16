@@ -1,10 +1,14 @@
 import * as THREE from "three";
-import type { TileCoord } from "../data/schemas/common.js";
+import { frameEndTick } from "../art/player.js";
+import { TICKS_PER_SECOND } from "../art/sprites.js";
+import type { DamageType, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import { TacticsCamera } from "./camera.js";
-import { HEIGHT_STEP, facingBetween, standingHeight, tileCenter } from "./grid.js";
+import type { Vec3 } from "./effects.js";
+import { HEIGHT_STEP, facingBetween, inBounds, standingHeight, tileCenter } from "./grid.js";
 import { TileHighlights, type HighlightOptions } from "./highlights.js";
 import { ObjectVisual } from "./objects.js";
+import { damagePopup, missPopup } from "./popups.js";
 import {
   PresentationQueue,
   easeInOut,
@@ -15,6 +19,7 @@ import {
 import { palette } from "./palette.js";
 import { buildTerrainMeshData, tileFromTriangle, type TerrainMeshData } from "./terrain.js";
 import { UnitVisual } from "./units.js";
+import { VfxLayer } from "./vfxLayer.js";
 import { cloneViewModel, findObjectView, findUnitView, type BattleViewModel } from "./viewmodel.js";
 
 const STEP_SECONDS = 0.22;
@@ -23,6 +28,22 @@ const DOWN_SECONDS = 0.45;
 const POWER_SECONDS = 0.28;
 const COLLAPSE_SECONDS = 0.6;
 const FOCUS_SECONDS = 0.28;
+/**
+ * How long the actor gets before the hit lands: the anticipate frames plus the
+ * strike (ART_DIRECTION §4). The swing's follow-through plays out underneath
+ * the target's recoil rather than delaying it.
+ */
+const STRIKE_LEAD_SECONDS = frameEndTick("attack", 2) / TICKS_PER_SECOND;
+const CAST_RELEASE_SECONDS = frameEndTick("cast", 4) / TICKS_PER_SECOND - frameEndTick("cast", 3) / TICKS_PER_SECOND;
+/** Volatile machinery flashes overload-100 before the silhouette goes. */
+const OVERLOAD_FLASH_SECONDS = 0.3;
+const TRIGGER_SECONDS = 0.42;
+const MACHINE_SHOT_SECONDS = 0.24;
+const EXIT_TILES = 3;
+const EXIT_VANISH_SECONDS = 0.3;
+/** Where a damage number floats and where an impact effect plays, over a unit. */
+const POPUP_HEAD_HEIGHT = 1.6;
+const IMPACT_HEIGHT = 0.8;
 
 export interface BattleRendererOptions {
   canvas: HTMLCanvasElement;
@@ -53,6 +74,7 @@ export class BattleRenderer {
   private readonly raycaster = new THREE.Raycaster();
   private readonly units = new Map<string, UnitVisual>();
   private readonly objects = new Map<string, ObjectVisual>();
+  private readonly vfx = new VfxLayer();
   private readonly onTileHover: ((tile: TileCoord | null) => void) | undefined;
   private readonly onTileSelect: ((tile: TileCoord | null) => void) | undefined;
 
@@ -79,7 +101,7 @@ export class BattleRenderer {
     // Ortho depth is measured from the rig's fixed distance, so the near plane
     // of the fog sits just in front of the board: only its far half hazes.
     this.scene.fog = new THREE.Fog(palette.skyGrey, 39, 66);
-    this.scene.add(this.boardGroup, this.objectGroup, this.unitGroup);
+    this.scene.add(this.boardGroup, this.objectGroup, this.unitGroup, this.vfx.group);
     this.addLighting();
     this.queue = new PresentationQueue((event) => this.createAnimation(event));
     this.resize();
@@ -103,6 +125,8 @@ export class BattleRenderer {
     this.disposeSceneContents();
     this.viewModel = cloneViewModel(viewModel);
     const map = this.viewModel.map;
+    this.vfx.clear();
+    this.vfx.setMap(map);
 
     this.terrainData = buildTerrainMeshData(map);
     const geometry = new THREE.BufferGeometry();
@@ -147,9 +171,13 @@ export class BattleRenderer {
     this.queue.pushAll(events);
   }
 
-  /** Jump every pending animation to its end state. */
+  /**
+   * Jump every pending animation to its end state. Transients (popups, impact
+   * effects) have no terminal state to reach: skipping means they are gone.
+   */
   skipPresentation(): void {
     this.queue.skip();
+    this.vfx.clear();
   }
 
   setHighlight(
@@ -233,6 +261,7 @@ export class BattleRenderer {
     this.queue.update(deltaSeconds);
     for (const object of this.objects.values()) object.update(this.clock);
     for (const unit of this.units.values()) unit.update(deltaSeconds);
+    this.vfx.update(deltaSeconds);
     this.updateBillboards();
     this.renderer.render(this.scene, this.rig.camera);
   }
@@ -257,6 +286,7 @@ export class BattleRenderer {
   dispose(): void {
     this.stop();
     this.disposeSceneContents();
+    this.vfx.dispose();
     this.renderer.dispose();
   }
 
@@ -297,6 +327,44 @@ export class BattleRenderer {
       this.terrainMesh = null;
     }
     this.terrainData = null;
+  }
+
+  /** World point above a unit's feet: popups ride the head, impacts the chest. */
+  private unitPoint(unitId: string, height: number): Vec3 | null {
+    const visual = this.units.get(unitId);
+    if (!visual) return null;
+    const position = visual.group.position;
+    return { x: position.x, y: position.y + height, z: position.z };
+  }
+
+  private objectPoint(objectId: string, height: number): Vec3 | null {
+    const visual = this.objects.get(objectId);
+    if (!visual) return null;
+    const position = visual.group.position;
+    return { x: position.x, y: position.y + height, z: position.z };
+  }
+
+  /** The number and the impact effect a hit throws, per ART_DIRECTION §7. */
+  private playHitVfx(
+    unitId: string,
+    amount: number,
+    damageType: DamageType | null,
+    sourceUnitId: string | null,
+    tile: TileCoord,
+  ): void {
+    const head = this.unitPoint(unitId, POPUP_HEAD_HEIGHT);
+    if (head) this.vfx.popup(damagePopup(amount, damageType), head);
+    const contact = this.unitPoint(unitId, IMPACT_HEIGHT);
+    if (!contact) return;
+    if (amount < 0) {
+      this.vfx.healMotes(contact);
+      return;
+    }
+    const from =
+      sourceUnitId === null || sourceUnitId === unitId
+        ? null
+        : this.unitPoint(sourceUnitId, IMPACT_HEIGHT);
+    this.vfx.impact(damageType ?? "kinetic", contact, { from, tile });
   }
 
   private createAnimation(event: RenderEvent): Animation | null {
@@ -353,16 +421,49 @@ export class BattleRenderer {
           view.facing = event.facing;
         });
       }
+      case "unitActed": {
+        const visual = this.units.get(event.unitId);
+        if (!visual) return null;
+        if (event.pose === "castHold") return instantAnimation(() => visual.playCast(true));
+        if (event.pose === "rest") {
+          return instantAnimation(() => {
+            visual.releaseCast();
+            visual.rest();
+          });
+        }
+        // The clip runs on its own clock and returns itself to idle, so the
+        // terminal state here is "the swing has started" — skipping cannot
+        // strand the actor mid-pose.
+        let swung = false;
+        const swing = (): void => {
+          if (swung) return;
+          swung = true;
+          if (event.pose !== "cast") {
+            visual.playAttack();
+            return;
+          }
+          if (visual.animationState === "cast") visual.releaseCast();
+          else visual.playCast();
+        };
+        return {
+          duration: event.pose === "cast" ? CAST_RELEASE_SECONDS : STRIKE_LEAD_SECONDS,
+          update: swing,
+          finish: swing,
+        };
+      }
+      case "unitMissed": {
+        const head = this.unitPoint(event.unitId, POPUP_HEAD_HEIGHT);
+        if (!head) return null;
+        return instantAnimation(() => this.vfx.popup(missPopup(), head));
+      }
       case "unitHit": {
         const visual = this.units.get(event.unitId);
         const view = findUnitView(viewModel, event.unitId);
         if (!visual || !view) return null;
         const start = visual.currentView.hpFraction;
         // A negative amount is a heal reusing this event, and does not recoil.
-        // The acting unit is not named by `unitHit`, so the attacker's swing is
-        // not triggered here; call `UnitVisual.playAttack()` from wherever the
-        // actor is known (see the hook on UnitVisual).
         if (event.amount > 0) visual.playHurt();
+        this.playHitVfx(event.unitId, event.amount, event.damageType, event.sourceUnitId, view.position);
         return {
           duration: HIT_SECONDS,
           update: (elapsed) => {
@@ -393,6 +494,52 @@ export class BattleRenderer {
           },
         };
       }
+      case "unitRemoved": {
+        const visual = this.units.get(event.unitId);
+        const view = findUnitView(viewModel, event.unitId);
+        if (!visual || !view) return null;
+        const origin = { ...view.position };
+        const exit = exitDirection(map, origin);
+        // Always walks the full distance: past the edge is off the board, which
+        // is where a unit leaving the battle is going.
+        const destination: TileCoord = {
+          x: origin.x + exit.dx * EXIT_TILES,
+          y: origin.y + exit.dy * EXIT_TILES,
+        };
+        const start = worldPositionOf(map, origin);
+        const end = worldPositionOf(map, destination);
+        if (!inBounds(map, destination.x, destination.y)) end.y = start.y;
+        const walkSeconds = EXIT_TILES * STEP_SECONDS;
+        const retire = (): void => {
+          this.unitGroup.remove(visual.group);
+          visual.dispose();
+          this.units.delete(event.unitId);
+          viewModel.units = viewModel.units.filter((unit) => unit.id !== event.unitId);
+        };
+        return {
+          duration: walkSeconds + EXIT_VANISH_SECONDS,
+          update: (elapsed) => {
+            if (elapsed < walkSeconds) {
+              visual.playWalk();
+              visual.setFacing(facingBetween(origin, destination));
+              const t = elapsed / walkSeconds;
+              visual.setWorldPosition(
+                start.x + (end.x - start.x) * t,
+                start.y + (end.y - start.y) * t,
+                start.z + (end.z - start.z) * t,
+              );
+              return;
+            }
+            // No alpha fade: §3 forbids partial alpha on sprites, so the exit
+            // is a shrink toward the feet anchor instead.
+            const t = Math.min(1, (elapsed - walkSeconds) / EXIT_VANISH_SECONDS);
+            visual.rest();
+            visual.setWorldPosition(end.x, end.y, end.z);
+            visual.group.scale.setScalar(Math.max(0.001, 1 - t));
+          },
+          finish: retire,
+        };
+      }
       case "objectPowerChanged": {
         const visual = this.objects.get(event.objectId);
         const view = findObjectView(viewModel, event.objectId);
@@ -406,18 +553,80 @@ export class BattleRenderer {
           },
         };
       }
+      case "objectHit": {
+        const view = findObjectView(viewModel, event.objectId);
+        const contact = this.objectPoint(event.objectId, IMPACT_HEIGHT);
+        if (!view || !contact) return null;
+        const head = this.objectPoint(event.objectId, POPUP_HEAD_HEIGHT);
+        const tile = view.tiles[0] ?? null;
+        let struck = false;
+        const strike = (): void => {
+          if (struck) return;
+          struck = true;
+          if (head) this.vfx.popup(damagePopup(event.amount, event.damageType), head);
+          this.vfx.impact(event.damageType, contact, { tile });
+        };
+        return { duration: MACHINE_SHOT_SECONDS, update: strike, finish: strike };
+      }
       case "objectDestroyed": {
         const visual = this.objects.get(event.objectId);
         const view = findObjectView(viewModel, event.objectId);
         if (!visual || !view) return null;
+        // Anything with an `onDestroyed` payload announces it: the seams run up
+        // to overload-100 first, then the silhouette goes.
+        const flash = view.volatile ? OVERLOAD_FLASH_SECONDS : 0;
         return {
-          duration: COLLAPSE_SECONDS,
-          update: (elapsed) => visual.setCollapse(easeInOut(elapsed / COLLAPSE_SECONDS)),
+          duration: flash + COLLAPSE_SECONDS,
+          update: (elapsed) => {
+            if (elapsed < flash) {
+              visual.setOverload(elapsed / flash);
+              return;
+            }
+            visual.setOverload(0);
+            visual.setCollapse(easeInOut((elapsed - flash) / COLLAPSE_SECONDS));
+          },
           finish: () => {
             visual.setDestroyed(true);
             view.destroyed = true;
           },
         };
+      }
+      case "objectTriggered": {
+        const visual = this.objects.get(event.objectId);
+        const view = findObjectView(viewModel, event.objectId);
+        if (!visual || !view) return null;
+        const anchor = this.objectPoint(event.objectId, 0);
+        let burst = false;
+        return {
+          duration: TRIGGER_SECONDS,
+          update: () => {
+            if (burst || anchor === null) return;
+            burst = true;
+            this.vfx.thermalFlare(anchor, 1.3);
+          },
+          finish: () => {
+            visual.setDestroyed(true);
+            visual.setHidden(true);
+            view.destroyed = true;
+          },
+        };
+      }
+      case "objectAttacked": {
+        const muzzle = this.objectPoint(event.objectId, 0.5);
+        const contact = this.unitPoint(event.targetUnitId, IMPACT_HEIGHT);
+        const targetView = findUnitView(viewModel, event.targetUnitId);
+        if (!muzzle || !contact) return null;
+        let fired = false;
+        const fire = (): void => {
+          if (fired) return;
+          fired = true;
+          this.vfx.muzzleGlow(muzzle);
+          this.vfx.arcJag(muzzle, contact, targetView?.position ?? null);
+          if (event.hit) return;
+          const head = this.unitPoint(event.targetUnitId, POPUP_HEAD_HEIGHT);
+          if (head) this.vfx.popup(missPopup(), head);
+        };
+        return { duration: MACHINE_SHOT_SECONDS, update: fire, finish: fire };
       }
       case "cameraFocused": {
         const tile = event.tile;
@@ -432,6 +641,20 @@ export class BattleRenderer {
     }
   }
 }
+
+/** Shortest way off the board, for a unit walking out of the battle. */
+const exitDirection = (
+  map: GameMap,
+  tile: TileCoord,
+): { dx: number; dy: number; distance: number } => {
+  const options = [
+    { dx: -1, dy: 0, distance: tile.x },
+    { dx: 1, dy: 0, distance: map.width - 1 - tile.x },
+    { dx: 0, dy: -1, distance: tile.y },
+    { dx: 0, dy: 1, distance: map.depth - 1 - tile.y },
+  ];
+  return options.reduce((best, option) => (option.distance < best.distance ? option : best));
+};
 
 const sameTileOrNull = (a: TileCoord | null, b: TileCoord | null): boolean => {
   if (a === null || b === null) return a === b;

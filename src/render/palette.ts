@@ -118,7 +118,11 @@ export const objectColor = {
   poweredHalo: hexToNumber(OBJECT_STATE_PAINT.powered.halo),
   unpowered: hexToNumber(OBJECT_STATE_PAINT.unpowered.seam),
   overloading: hexToNumber(OBJECT_STATE_PAINT.overloading.core),
+  overloadingSeam: hexToNumber(OBJECT_STATE_PAINT.overloading.seam),
+  /** Dead seams on a destroyed object. */
   destroyed: hexToNumber(OBJECT_STATE_PAINT.destroyed.seam),
+  /** The rubble form the silhouette collapses into (ART_DIRECTION §6). */
+  rubble: hexToNumber(OBJECT_STATE_PAINT.destroyed.core),
   cellGlass: hexToNumber(AMBER_300),
   catwalkGrate: hexToNumber(SOOT_700),
   /** Reserved for operable controls only (ART_DIRECTION §6). */

@@ -13,6 +13,7 @@
 // mid-batch snapshot.
 
 import {
+  abilityInfo,
   allObjects,
   allUnits,
   battleMap,
@@ -24,9 +25,9 @@ import {
   type GameState,
   type ObjectRuntime,
 } from "../core/index.js";
-import type { Facing, TileCoord } from "../data/schemas/common.js";
+import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
 import { facingBetween } from "./grid.js";
-import type { RenderEvent } from "./presentation.js";
+import type { ActorPose, RenderEvent } from "./presentation.js";
 import type { BattleViewModel, MapObjectView, UnitView } from "./viewmodel.js";
 
 const hpFractionOf = (state: GameState, unit: BattleUnit): number => {
@@ -55,6 +56,7 @@ const objectViewOf = (object: ObjectRuntime): MapObjectView => ({
   surfaceHeight: object.def.surfaceHeight ?? null,
   powered: object.powered,
   destroyed: object.destroyed,
+  volatile: object.def.onDestroyed !== undefined,
 });
 
 /** A renderer snapshot of the whole battle. Derived; never authoritative. */
@@ -73,11 +75,28 @@ const facingAfterPath = (path: readonly TileCoord[], fallback: Facing): Facing =
   return facingBetween(from, to);
 };
 
-const hitEvent = (state: GameState, unitId: string, amount: number, hpRemaining: number): RenderEvent[] => {
+const hitEvent = (
+  state: GameState,
+  unitId: string,
+  amount: number,
+  hpRemaining: number,
+  damageType: DamageType | null,
+  sourceUnitId: string | null,
+): RenderEvent[] => {
   const unit = getUnit(state, unitId);
   const max = unit === null ? 0 : (unitMaxHp(state, unitId) ?? 0);
   const fraction = max <= 0 ? 0 : Math.min(1, Math.max(0, hpRemaining / max));
-  return [{ kind: "unitHit", unitId, amount, hpFractionAfter: fraction }];
+  return [{ kind: "unitHit", unitId, amount, hpFractionAfter: fraction, damageType, sourceUnitId }];
+};
+
+/**
+ * Charged abilities announce themselves with `AbilityCharging`, so an
+ * `AbilityUsed` naming one is the release, not the wind-up.
+ */
+const poseFor = (state: GameState, unitId: string, abilityId: string): ActorPose => {
+  const ability = abilityInfo(state, unitId, abilityId);
+  if (ability !== null && ability.slot === "action" && ability.castSpeed !== null) return "cast";
+  return "attack";
 };
 
 /**
@@ -117,18 +136,67 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
     }
     case "UnitFacingChanged":
       return [{ kind: "unitFaced", unitId: event.unitId, facing: event.facing }];
+    case "AbilityUsed":
+      return [
+        {
+          kind: "unitActed",
+          unitId: event.unitId,
+          pose: poseFor(stateAfter, event.unitId, event.abilityId),
+        },
+      ];
+    // A reaction is an action with a different reason: the reactor swings too.
+    case "ReactionTriggered":
+      return [
+        {
+          kind: "unitActed",
+          unitId: event.unitId,
+          pose: poseFor(stateAfter, event.unitId, event.abilityId),
+        },
+      ];
+    case "AbilityCharging":
+      return [{ kind: "unitActed", unitId: event.unitId, pose: "castHold" }];
+    case "AbilityChargeCancelled":
+      return [{ kind: "unitActed", unitId: event.unitId, pose: "rest" }];
+    case "AbilityMissed":
+      return [
+        { kind: "unitMissed", unitId: event.targetUnitId, sourceUnitId: event.unitId },
+      ];
     case "DamageDealt":
-      return hitEvent(stateAfter, event.unitId, event.amount, event.hpRemaining);
-    // No heal presentation exists yet; a negative hit drains the bar upward and
-    // reuses the same terminal-state contract.
+      return hitEvent(
+        stateAfter,
+        event.unitId,
+        event.amount,
+        event.hpRemaining,
+        event.damageType,
+        event.sourceUnitId,
+      );
+    // A heal is a negative hit: it drains the bar upward, carries no damage
+    // type, and reuses the same terminal-state contract.
     case "Healed":
-      return hitEvent(stateAfter, event.unitId, -event.amount, event.hpRemaining);
+      return hitEvent(stateAfter, event.unitId, -event.amount, event.hpRemaining, null, event.sourceUnitId);
     case "UnitDowned":
       return [{ kind: "unitDowned", unitId: event.unitId }];
+    case "UnitRemoved":
+      return [{ kind: "unitRemoved", unitId: event.unitId }];
     case "PowerChanged":
       return [{ kind: "objectPowerChanged", objectId: event.objectId, powered: event.powered }];
+    // `ObjectDamaged` carries no damage type; machinery takes the world's own
+    // impact language until core names one.
+    case "ObjectDamaged":
+      return [{ kind: "objectHit", objectId: event.objectId, amount: event.amount, damageType: "kinetic" }];
     case "ObjectDestroyed":
       return [{ kind: "objectDestroyed", objectId: event.objectId }];
+    case "ObjectTriggered":
+      return [{ kind: "objectTriggered", objectId: event.objectId, unitId: event.unitId }];
+    case "ObjectAttacked":
+      return [
+        {
+          kind: "objectAttacked",
+          objectId: event.objectId,
+          targetUnitId: event.targetUnitId,
+          hit: event.hit,
+        },
+      ];
     default:
       return [];
   }

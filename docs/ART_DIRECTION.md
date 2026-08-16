@@ -571,7 +571,110 @@ character. Revisit when facing gains a mechanical cost.
 sheets, and live playback with the real tick tables. Dev-only; the game does not
 import it.
 
-### A.9 Still outstanding
+### A.9 Still outstanding (sprites)
 
 Portraits remain the open character-art workstream: §4 commits them to painted,
 which this pipeline cannot express. The placeholder blocks stand.
+
+---
+
+## Appendix B — battle VFX addenda
+
+Added by the battle-VFX pass (workstream 16). Nothing above is amended; these
+record the decisions §7 left to implementation. Binding on `src/render/{glyphs,
+popups,effects,vfxLayer}.ts`; suggestive elsewhere.
+
+### B.1 Damage numbers are pixels, not type
+
+Numbers are drawn from a **3 × 5 glyph atlas** (`src/render/glyphs.ts`) — the ten
+digits, `-`, `+`, and the letters M, I, S — one blank column between glyphs, one
+pixel of padding, then the closed 1px outline ring §3 already defines, reused
+verbatim from `outlineGrid`. The grid is painted to a canvas at integer scale
+and sampled `NearestFilter`, so a number never resamples.
+
+The **number palette is closed**: §7 names soot-100, amber-300 (crit),
+verdigris-300 (heal), overload-100 (arc), soot-300 (miss, unoutlined), and that
+is the whole set. Kinetic, thermal and chemical damage therefore print in
+soot-100 — a type's identity is carried by its *impact effect*, which is where
+§7 puts it, and adding hazard-orange numerals would spend the type language
+twice. `crit` is implemented but unreachable: core does not report crits yet.
+
+### B.2 Popup life, and how several at once behave
+
+40 ticks (0.67 s). The number climbs 0.55 world units on an ease-out and holds
+full opacity for the first 55% of its life, then fades — in **four quantized
+steps**, not a smooth ramp, so a popup dissolves the way a sprite would.
+
+Popups landing within 0.75 world units of each other take successive **lanes**
+0.3 world units apart, lowest free lane first, so an area attack prints a
+readable column instead of one illegible overprint. A lane frees the moment its
+popup expires.
+
+### B.3 Transients have no terminal state
+
+The presentation contract says every event carries its end state. Popups and
+impact effects carry none — their end state is *gone*. `skipPresentation()`
+therefore finishes the queue **and clears the VFX layer**. Skipping a battle log
+is silent by design.
+
+### B.4 The four impacts, as built
+
+| Type | Form | Timing (from §7) |
+|---|---|---|
+| `kinetic` | soot-100 wedge at the contact point + 9 debris points colored from the *tile underneath* (its top and accent), thrown along the blow when the source is known; the 1px sprite displacement is the `hurt` recoil of A.4 | 3 × 4 = 12 ticks |
+| `arc` | straight-segment polyline from source to target, overload-100 core over an overload-700 spread, strobing on the frame table; wet or metal tiles add a verdigris-500 ground disc | 4 × 3 = 12 ticks, the fastest per-frame |
+| `thermal` | three bottom-anchored columns rising and narrowing, stepping amber-500 → hazard → blood-500, under a brief amber-glow bloom-eligible core | 5 × 5 = 25 ticks |
+| `chemical` | a 50% checker-dither quad on the tile — `alphaTest`, never alpha blending — phase-swapping every 10 ticks | 6 × 10 = 60 ticks, then lingering to 2.4 s |
+
+Chemical is the only one that stays in tile space. Healing is its own form:
+five amber-glow motes rising over a verdigris-300 flash.
+
+**No post chain.** The three bloom-eligible colors (amber-glow, overload-100,
+veinglass-100) are drawn bright and untonemapped; when bloom lands it keys on
+them and nothing else. Nothing in this pass paints with them on a non-emissive
+surface.
+
+### B.5 The actor swings before the target flinches
+
+`AbilityUsed` maps to a `unitActed` render event carrying the actor, emitted
+ahead of the `DamageDealt` it caused, so the queue plays swing → hit in order.
+The swing's step is the **anticipate frames plus the strike** (13 ticks of the
+27-tick `attack` clip); the follow-through plays out under the target's recoil
+rather than delaying it. The clip returns itself to `idle`, so skipping cannot
+strand an actor mid-pose.
+
+Charged actions use the `cast` hold loop of A.5 directly: `AbilityCharging`
+parks the caster in it, the `AbilityUsed` that fires when the charge resolves
+releases it, and `AbilityChargeCancelled` releases it without a payoff.
+Distinguishing wind-up from release needs no extra state — an `AbilityUsed`
+naming an ability with a `castSpeed` is always the release.
+
+### B.6 Leaving the field
+
+A unit removed by script (not downed) **walks up to 3 tiles toward the nearest
+map edge and shrinks to nothing at its feet**. It is not a fade: §3 fixes sprite
+alpha at 0 or 255, so a half-transparent unit would be off-model. The walk
+ignores pathing and terrain cost — it is an exit, not a move, and the unit is
+gone before anything could block it.
+
+### B.7 Volatile machinery stages its own death
+
+An object carrying an `onDestroyed` payload runs its **seams up to overload-100
+for 0.3 s before the silhouette collapses** — the warning arrives through the
+seam ramp §6 already taught the player, not through a new color. The collapse
+then lands on the destroyed language properly: bodies go to soot rubble
+(`soot-700`), seams go `umber-900` dead. A single flat darkening would throw
+away the seam/body distinction the powered states spent the whole battle
+teaching.
+
+A deployable set off by contact (`ObjectTriggered`) bursts thermal and is simply
+not there afterward.
+
+### B.8 Still outstanding (VFX)
+
+- The **bloom chain** itself. The colors are correct and untonemapped; nothing
+  keys on them yet.
+- **`ObjectDamaged` carries no damage type** in the core event stream, so
+  machinery takes the kinetic impact whatever hit it.
+- The **soot plume** §6 gives destroyed objects (persistent, 3 frames at 20
+  ticks) is not drawn; the rubble tint is.

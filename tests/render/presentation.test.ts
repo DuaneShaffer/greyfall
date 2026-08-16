@@ -31,7 +31,14 @@ const moved: RenderEvent = {
   path: [{ x: 0, y: 0 }],
   facing: "north",
 };
-const hit: RenderEvent = { kind: "unitHit", unitId: "enemy", amount: 3, hpFractionAfter: 0.5 };
+const hit: RenderEvent = {
+  kind: "unitHit",
+  unitId: "enemy",
+  amount: 3,
+  hpFractionAfter: 0.5,
+  damageType: "kinetic",
+  sourceUnitId: "rowen",
+};
 const destroyed: RenderEvent = { kind: "objectDestroyed", objectId: "crate-stack" };
 const powered: RenderEvent = {
   kind: "objectPowerChanged",

@@ -424,7 +424,9 @@ export class BattleController {
   }
 
   private consume(events: readonly BattleEvent[], stateAfter: GameState): void {
-    const rebuilds = new Set(["UnitSpawned", "ObjectSpawned", "UnitRemoved", "ObjectTriggered", "ObjectAttacked"]);
+    // Spawns are the only beats with no animation of their own; removal,
+    // contact triggers and machine fire all present themselves now.
+    const rebuilds = new Set(["UnitSpawned", "ObjectSpawned"]);
     if (events.some((event) => rebuilds.has(event.type))) {
       this.renderer.buildScene(viewModelFromGameState(stateAfter));
     }
