@@ -310,3 +310,66 @@ describe("the degeneracy rule", () => {
     expect(state.grids).toEqual([]);
   });
 });
+
+/**
+ * The recompute is a pure function of (graph, node states, object states), and
+ * §5.1 leans on that: it is what makes calling it after every graph-mutating
+ * primitive safe. Swept over every isolator combination the bench affords.
+ */
+describe("invariants over every isolator combination", () => {
+  const NODES = [
+    "east-bus",
+    "east-main",
+    "gallery-tie",
+    "lift-deck",
+    "north-bus",
+    "press-east",
+    "press-west",
+    "west-bus",
+    "west-main",
+  ];
+  const SOURCES = 2;
+
+  function withIsolators(base: GameState, mask: number): GameState {
+    const state = structuredClone(base) as GameState;
+    state.content = base.content;
+    NODES.forEach((id, bit) => {
+      const obj = state.map.objects.find((o) => o.def.id === id)!;
+      obj.powered = (mask & (1 << bit)) !== 0;
+    });
+    return state;
+  }
+
+  function edges(state: GameState) {
+    return state.content.map.grids.find((g) => g.id === BENCH_GRID_ID)!.edges;
+  }
+
+  it("settles, stays deterministic, and never feeds a node with no path to a live source", () => {
+    const base = bench();
+    for (let mask = 0; mask < 1 << NODES.length; mask += 1) {
+      const state = withIsolators(base, mask);
+      const solved = grid(state);
+      expect(solved.passes).toBeLessThanOrEqual(SOURCES + 1);
+      expect(grid(state)).toEqual(solved);
+
+      const fed = new Set(solved.live);
+      // Nothing with an open isolator is ever fed.
+      for (const id of fed) expect(state.map.objects.find((o) => o.def.id === id)!.powered).toBe(true);
+
+      // Every fed node reaches a fed source through fed nodes only.
+      const sources = new Set(["east-main", "west-main"].filter((id) => fed.has(id)));
+      const reached = new Set(sources);
+      const queue = [...sources];
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        for (const edge of edges(state)) {
+          const other = edge.a === current ? edge.b : edge.b === current ? edge.a : null;
+          if (other === null || !fed.has(other) || reached.has(other)) continue;
+          reached.add(other);
+          queue.push(other);
+        }
+      }
+      expect([...fed].sort()).toEqual([...reached].sort());
+    }
+  });
+});

@@ -29,6 +29,7 @@ import {
   battleMap,
   battleResult,
   getObject,
+  objectEnergized,
   getUnit,
   itemAbilityId,
   itemIdFromAbilityId,
@@ -156,7 +157,7 @@ const sameTarget = (a: TargetRef, b: TargetRef): boolean => {
 const powerSnapshot = (state: GameState): Map<string, boolean> => {
   const out = new Map<string, boolean>();
   for (const object of allObjects(state)) {
-    if (object.powered !== null) out.set(object.def.id, object.powered);
+    if (object.powered !== null) out.set(object.def.id, objectEnergized(state, object.def.id));
   }
   return out;
 };
@@ -176,9 +177,10 @@ function operateNotice(state: GameState, name: string, before: Map<string, boole
   const gained: string[] = [];
   for (const object of allObjects(state)) {
     if (object.powered === null) continue;
+    const now = objectEnergized(state, object.def.id);
     const was = before.get(object.def.id);
-    if (was === undefined || was === object.powered) continue;
-    (object.powered ? gained : lost).push(object.def.name);
+    if (was === undefined || was === now) continue;
+    (now ? gained : lost).push(object.def.name);
   }
   const clauses: string[] = [];
   if (lost.length > 0) clauses.push(`${machineList(lost)} lost power`);

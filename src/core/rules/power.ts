@@ -420,7 +420,8 @@ export function attachLoad(
     turns: load.turnsRemaining,
     unitId: actorId,
   });
-  settlePower(ctx, before, { nodeObjectId: objectId, reason: "isolated" });
+  // The only way a load darkens anything is by blowing the component it lands on.
+  settlePower(ctx, before, { nodeObjectId: objectId, reason: "tripped" });
 }
 
 function dropLoads(ctx: Ctx, doomed: readonly GridLoad[]): void {
