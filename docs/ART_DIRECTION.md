@@ -678,3 +678,384 @@ not there afterward.
   machinery takes the kinetic impact whatever hit it.
 - The **soot plume** §6 gives destroyed objects (persistent, 3 frames at 20
   ticks) is not drawn; the rubble tint is.
+
+---
+
+## Appendix C — pixel craft (unit sprites)
+
+Added by the sprite-craft pass. §3 fixed the *container* — canvas, anchor,
+outline, index discipline — and Appendix A fixed the *armature*. Neither said
+anything about what happens inside the silhouette, and the first pipeline
+therefore filled it with flat rectangles: spec-conformant and lifeless. This
+appendix is the missing law. It is **binding on `src/art/**`** and suggestive
+elsewhere.
+
+### C.0 The acceptance bar
+
+**The FFT floor.** *Final Fantasy Tactics* (1997) is the explicit minimum, not
+the aspiration. A Greyfall unit is not finished until, held next to an FFT
+generic at 1× on a dark ground, it loses nothing on:
+
+1. **Form.** Every mass — head, torso, each limb, each piece of gear — carries
+   a visible light side and a shadow side. Nothing is one flat color.
+2. **Face.** The head reads as a face at 13px: you can find the eyes without
+   zooming.
+3. **Material.** Cloth, plate, leather and metal are told apart by ramp and
+   edge treatment alone, with no outline help.
+4. **Silhouette.** The job is identifiable from the black shape.
+5. **Cluster.** No stray single pixels, no ladder banding, no 45° stairs
+   longer than three steps.
+
+A frame that fails any one of these is sent back. "It passes the tests" is not
+an answer: the tests below are a floor under the floor.
+
+### C.1 Shading model
+
+**One key light: upper-left, slightly front, hard, colorless.** It never moves
+— not per job, not per view, not per frame. In the `ne` (away) view the *unit*
+turned around; the light did not. This matches the terrain: `FACE_SHADE` lights
+the tile top at 100% and drops each side face, and a sprite lit from above-left
+sits on that top face without arguing with it.
+
+**Three steps per form, from an existing ramp. No new colors, ever.**
+
+| Step | Where it goes |
+|---|---|
+| **light** | the top row and the left column of a mass; the upper-left facet of a curved one |
+| **base** | the body of the mass — always the largest of the three |
+| **shadow** | the bottom row and the right column; the underside of every overhang |
+
+A fourth step exists but is not "shading": the **line step**, the darkest
+member of the local ramp, used only for interior separation (§3's rule) — where
+two pieces of the *same* material meet and the shadow step is not enough to
+part them. It is never used as an area fill.
+
+**Ramp assignment by form:**
+
+| Form | Ramp | light / base / shadow / line |
+|---|---|---|
+| skin | umber (+copper-300) | `copper-300` / `umber-300` / `umber-500` / `umber-900` |
+| hair | soot or umber, per job | job's `hair` ramp; the light step is a 2–3px streak, never a full column |
+| cloth coat | job's coat ramp (soot or umber) | `coatLight` / `coat` / `coatDark` / darkest local step |
+| plate armor | soot | `soot-300` (`soot-100` for a spark only) / `soot-500` / `soot-700` / `soot-800` |
+| leather | umber | `umber-300` / `umber-500` / `umber-700` / `umber-900` |
+| graft / worked metal | copper | `copper-300` / `copper-700` / `umber-900` / `umber-900` |
+| glass, patina, chemistry | verdigris | `verdigris-300` / `verdigris-500` / `verdigris-700` / `verdigris-700` |
+| emissive (seam, node, cell) | amber | `amber-300` core inside `amber-500` body; **no shadow step, no outline** — the halo of §3 replaces both |
+
+**`copper-500` stays reserved.** §6 gives it to operable affordances. On a unit
+it appears only on an actual grip, lever, or coupling the unit *works* — the
+Railrunner's hook jaw, a tool handle. Graft plate and machine bodies take
+`copper-700`/`copper-300` and skip the middle step entirely; that gap is what
+makes the affordance color findable.
+
+**Emissive is exempt from the three steps.** A powered element is body + core
+and nothing else. Adding a shadow step to a light source is a contradiction.
+
+### C.2 Cluster discipline
+
+- **Minimum cluster: 2 px**, in any direction, for every color *except* the
+  line step, an eye dot, and an emissive core. A single orphan pixel of a
+  shading step is a compression artifact, not a highlight.
+- **No banding.** A mass may not be built from full-width horizontal stripes of
+  successive ramp steps. Shading runs with the form's axis: a vertical limb is
+  shaded by *column*, a horizontal belt by *row*. A form shaded across its own
+  axis reads as a stack of bricks.
+- **No stairs longer than 3.** A 45° edge stepping 1px-at-a-time for more than
+  three steps must break rhythm (2,1,2,1 or 1,2,1,2), or it reads as an
+  anti-aliased diagonal and the outline turns to lace.
+- **Highlight is scarce.** The light step may not exceed ~25% of a form's
+  pixels, and `soot-100` (the brightest step in the world) is a *spark*: at
+  most a 2px cluster per frame, and only on plate or glass.
+
+**Dither is allowed in exactly three places**, and nowhere else:
+
+1. **Material transitions** — where cloth meets leather, plate meets cloth, or
+   a coat hem meets its own shadow, across a band **2 rows deep at most**.
+2. **Large forms** — a mass of **≥ 24 px** may carry one interior dither band
+   to break a flat field (a shield face, a coat back, a backpack panel).
+3. **Emissive falloff** — one dithered ring outside an `amber-500` body where
+   the halo would otherwise be a hard rectangle.
+
+Approved patterns only:
+
+| Pattern | Rule | Use |
+|---|---|---|
+| `checker` | `(x + y) % 2` | material transition, emissive falloff |
+| `quarter` | `(x % 2) && (y % 2)` | the light end of a large-form gradient |
+| `three-quarter` | complement of `quarter` | the dark end of the same gradient |
+
+Any other pattern — noise, dot-scatter, 1px speckle — is off-model. Dither is
+a *ramp step between two ramp steps*, never texture.
+
+### C.3 The face standard at 13px
+
+The head box is 13 rows (Appendix A.1). It is spent like this, and this is the
+single most load-bearing paragraph in the appendix — a Greyfall unit without a
+readable head is not shipping:
+
+| Head rows | Contents |
+|---|---|
+| 0–1 | crown taper (6px, then 8px wide) — hair or helmet mass only |
+| 2–5 | hair mass / helmet dome. Carries the hair light streak on the **left** |
+| 6 | brow shelf: a 1px line of the skin shadow step across the forehead |
+| 7 | **the eye row** |
+| 8–10 | cheeks, nose shade, mouth line |
+| 11 | chin (8px wide) |
+| 12 | jaw shadow / neck (6px wide), meeting the shoulders |
+
+**Eyes.** Two 1px dots in the skin's **line** step (`umber-900`), on head row 7,
+separated by **2–3 px of base skin**, never adjacent to the silhouette outline
+and never stacked 2 rows tall. That is the whole treatment: FFT's eyes are dots
+and they work because the *hair mass* and the *skin triangle* around them carry
+the read. A second row of eye pixels turns a face into a skull.
+
+**The skin/hair split.** Hair is a solid mass occupying head rows 0–5 plus the
+two outer columns down to row 10 (sideburns / hair fall). Skin is the triangle
+left over: widest at rows 7–8, tapering into the chin. In a three-quarter view
+the split is **asymmetric** — the far side (right, the shadow side) carries one
+extra column of hair, which is what makes the head read as turned rather than
+frontal. Total skin should be roughly 40–55% of the head box; a face that is
+mostly skin reads as a bald bust, and one that is mostly hair reads as a hood.
+
+**Helmeted jobs substitute a visor read.** The Enforcer has no face; a closed
+riot helm that showed one would be wrong. In its place:
+
+- a **visor slit**: a horizontal band 1–2 rows tall on head rows 6–7, in the
+  plate line step (`soot-800`), spanning at least 5px — this is the *anchor of
+  the read*, and it sits where the eyes would have been so the head still
+  reads as a head;
+- a **gleam**: a 2px `soot-100` cluster at the slit's left (lit) end — this is
+  the frame's one permitted spark under C.2, spent here because it obeys C.1's
+  light direction and is the only thing that keeps the slit from reading as a
+  hole;
+- a **cheek/jaw plate** below the slit, one shadow step darker than the dome,
+  so the helmet has a front and a side.
+
+Partial masks (Chemist's respirator, Saboteur's hood, Railrunner's goggles)
+keep the eye row and cover something else: the Chemist covers rows 9–12, the
+Railrunner replaces row 7 with lensed goggles (a `copper-300` lens with a
+`soot-800` core and a 1px `soot-100` gleam on the left lens only), and the
+Saboteur's hood puts the whole face in `umber-900` with **one** 2px skin-light
+glint where the cheekbone catches the key light. All three still resolve to
+"there is a person under that."
+
+### C.4 Material vocabulary
+
+Ramp choice alone is not enough; each material also has an **edge rule** — what
+happens at the boundary between the form and the outline.
+
+| Material | Ramp | Edge treatment |
+|---|---|---|
+| **cloth** (coats, hems, wraps) | coat ramp, 3 steps | Soft: on any mass **5px or wider** the light step stops **1px short** of the silhouette on the lit side, so cloth never has a specular rim. (Limbs narrower than that have no room and take the rim; the rule is about coats, not sleeves.) Folds are line-step verticals, 3–6px long, never full height. Hems get a shadow-step row and may carry one checker transition row. |
+| **plate** (armor, shield, helm) | soot, 3 steps | Hard: a continuous 1px light-step **rim** along the lit edge, right up to the outline, plus a 2px `soot-100` spark at the single brightest corner. Bevels are horizontal shadow-step lines that stop 1px short of both sides. |
+| **leather** (harness, belt, satchel, boot) | umber, 3 steps | Broken: the light step appears only as 2–3px **scuffs** at wear points (shoulder crest, belt top, satchel lid), never as a continuous line. Stitching is line-step dots at 2px spacing along one edge only. |
+| **graft-metal** (Augmented plate, machine bodies) | copper, with the middle step skipped | Segmented: `copper-300` bevel on the top-left of each *segment*, `umber-900` gap line between segments, and an amber seam running the segment joins. Graft metal is never one continuous form — it is plates with gaps, which is what distinguishes it from plate armor at 1×. |
+| **glass / chemistry** | verdigris, 3 steps | Wet: `verdigris-300` confined to a 2px cluster at the upper-left of the vessel, `verdigris-700` filling the lower two thirds, and no line step at all — glass has no interior separation. |
+
+### C.5 Per-job 1× read checklist
+
+Two or three things per job that MUST be identifiable at **actual size, on a
+dark ground, without motion**. If a reviewer cannot name them, the job fails
+regardless of what the tests say.
+
+| Job | Must read at 1× |
+|---|---|
+| **Enforcer** | (1) the shield mass squared across the body — the largest single flat plate in the roster; (2) the visor slit with its left gleam; (3) shoulder span wider than any other job's |
+| **Machinist** | (1) the backpack hump breaking the shoulder line, with (2) one amber cell window on it — the only amber on a non-caster; (3) goggles pushed **up** onto the brow, leaving the eye row bare |
+| **Conduit** | (1) the staff node glow above the head, above every other silhouette in the roster; (2) the unbroken coat line from collar to hem — the only full-length coat; (3) a bare, uncovered face |
+| **Saboteur** | (1) the hood peak and its black face void with a single glint; (2) the hip satchel breaking the waistline on one side only; (3) the charge row on the belt |
+| **Chemist** | (1) the A-flared hem, widest silhouette below the waist; (2) the respirator covering the lower face while the eyes stay visible; (3) the flask bandolier — verdigris, the only green on a person |
+| **Augmented** | (1) asymmetry: one arm twice the other's width; (2) the amber seam down the graft's segment joins; (3) brightblood scarring at the neck — the only pink in the world |
+| **Railrunner** | (1) goggles **down** over the eyes, lensed; (2) the coat tail streaming back off the silhouette; (3) the coupling hook, the only `copper-500` on a person |
+
+### C.6 How the craft survives animation
+
+The 14 masters (7 jobs × 2 views, `idle` frame 0) are where the pixels are
+hand-placed. Everything else is derived:
+
+- **Heads and gear are stamps** — literal index grids, positioned by the rig's
+  joints. A stamp translates and never deforms, so a pose change moves the face
+  rather than smearing it.
+- **Torso and limbs are ramp-shaded forms** — the same tapered mass the old rig
+  drew, now carrying C.1's three steps along its own axis. These deform,
+  because they must.
+- **Held props are shaded forms along the prop axis**, since they rotate.
+- If a specific frame breaks a stamp — gear detached, cluster smeared — the fix
+  is a **per-frame patch**, never a simplification of the master. The masters
+  set the bar; the animation table pays for keeping it.
+
+### C.7 What the tests can and cannot check
+
+`tests/art` enforces the mechanical half: palette validity, amber budget,
+anchor, frame counts, closed outline, cluster minimums, ramp usage per form,
+face pixels present, and that the masters differ per job by more than a palette
+swap. It cannot check whether a sprite is *good*. The 1× read checklist of C.5
+is a human gate and stays one.
+
+### C.8 External master intake
+
+Greyfall accepts sprite masters produced outside this pipeline. This section is
+the contract those masters answer to, and the pipeline that enforces it lives in
+`src/art/{png,ingest,intake,segments}.ts`. It is written so an artist can be
+handed the section and nothing else.
+
+**Deliver, per job:** two PNGs — `<job>-se.png` and `<job>-ne.png` — each a
+**32 × 48** master of the **idle, frame 0** pose. That is all. The other 27
+frames per view are derived (C.8.4).
+
+#### C.8.1 What a master must satisfy
+
+| # | Requirement | Where it comes from |
+|---|---|---|
+| 1 | **32 × 48 canvas**, alpha strictly 0 or 255 — no partial alpha, no anti-aliasing | §3 |
+| 2 | **Feet on the anchor**: the lowest occupied row of the figure box is **row 43**, and the figure is drawn symmetric about the x = 16 seam | §3, A.1 |
+| 3 | **Rows 44–47 empty** except a `soot-900` contact shadow; nothing else in the sub-floor band | A.3 |
+| 4 | **Column 0, column 31 and row 0 empty** — the outer ring is the outline's | A.2 |
+| 5 | **3-heads proportions**: 13px head, shoulders at row 17, hips at row 29, feet at rows 41–43 | A.1 |
+| 6 | **Palette**: every color a §2 value, or close enough that quantization is unambiguous (C.8.2) | §2, §3 |
+| 7 | **≤ 12 colors + 2 tint indices** after quantization | §3 |
+| 8 | **Closed 1px `soot-900` silhouette outline**; interior separation uses the local ramp's darkest step, never `soot-900` | §3 |
+| 9 | **Emissive elements unoutlined** — amber/overload/vein-glass bleed into a halo instead | §3 |
+| 10 | **Amber ≤ 5%** of the canvas (≤ 76 px), every amber pixel sourced in-frame | §2 |
+| 11 | **Team tint** occupies exactly the two `steel` (player) indices, 5–12% of body pixels, as chest band + pauldron trim | §2, A.6 |
+| 12 | **Face standard** of C.3, or the documented substitute for a helmeted job | C.3 |
+| 13 | **Job read** of C.5 identifiable at 1× | C.5 |
+| 14 | **Centerline gear**: job-identifying mass adjacent to the body centerline, so the mirrored view reads as a turn | §4 |
+
+1–11 are machine-checked by `auditGrid`. 12–14 are the human gate.
+
+#### C.8.2 Quantization, and the one thing it will get wrong
+
+`quantizeToPalette` snaps each pixel to the nearest §2 color by RGB distance and
+returns a `ConformanceReport` naming every pixel that moved and how far.
+**It never repairs.** An open outline, an over-budget amber, a thirteenth color:
+reported, not fixed. Silently correcting incoming art is how a pipeline starts
+lying about what the artist drew.
+
+The palette has one dangerous near-collision: **`soot-900` (#0b0d10) and
+`umber-900` (#150e09) are ~12 units apart**, where the rest of the palette steps
+~40. A master whose blacks drift more than ±6 per channel will have some of its
+**outline** reassigned to `umber-900`, and every downstream check then fails for
+the wrong reason. The report calls this out as `ambiguous` — pixels quantized by
+a margin narrower than the move itself. A non-empty `ambiguous` list means clean
+the source blacks or pass `allowed` to restrict the target palette. Do not
+proceed past it.
+
+#### C.8.3 The region map
+
+A master is animated by cutting it into named regions and moving each with a rig
+joint. The **default map** is derived from the rig itself and partitions rows
+0–43 with no overlap and no gaps:
+
+| Region | Extent | Rides | Distal |
+|---|---|---|---|
+| `head` | everything above the shoulder row | `head` | — |
+| `armFar` | shoulder→hip band, left of the torso columns | `shoulderFar` | `handFar` |
+| `torso` | shoulder→hip band, the hip-width columns | `shoulder` | `hip` |
+| `armNear` | shoulder→hip band, right of the torso columns | `shoulderNear` | `handNear` |
+| `legFar` | below the hips, left of the centerline | `hipFar` | `footFar` |
+| `legNear` | below the hips, right of the centerline | `hipNear` | `footNear` |
+
+Any gear that **crosses** those boundaries — a shield over the hips, a satchel
+at the waist, a maul head above the shoulder line — must be declared as a
+`prop` region, which is cut **first** and therefore never torn in half. A prop
+region is a rectangle in master coordinates plus the joint it rides; measure it
+off the master, not off the rig.
+
+#### C.8.4 What derivation does to a master
+
+Each region is translated by the delta between its joint's rest position and its
+position in the target pose. Regions with a distal joint additionally **shear**:
+a pixel's shift is interpolated between the two joint deltas by how far along the
+proximal→distal axis it sits, so a leg swings from the hip instead of sliding.
+The master's own outline is **discarded** on the way in — it rides along only as
+a mask that keeps seam-closing out of concavities the artist drew — and the
+silhouette outline, halos and contact shadow are re-derived per frame.
+
+**Artifacts to expect, in order of how often they bite:**
+
+1. **Props do not rotate.** A weapon translates with the hand and keeps its drawn
+   angle. An `attack` strike that needs the blade to swing through 90° will read
+   as a lunge with a static weapon.
+2. **`downed` frames 2–3 smear.** They are the most extreme pose in the table
+   (crouch 10–11, torso shortened to 3–7 rows) and a translated master cannot
+   fold. Expect a legible collapse, not a good one.
+3. **Seams at region boundaries** on large shears, mostly shoulder and hip. The
+   seam-closer fills holes with ≥ 6 opaque neighbors, which fixes almost all of
+   them without welding the gap between the legs shut.
+4. **Gear declared in the wrong region drags.** A prop rectangle that clips the
+   helmet makes the helmet ride the hand. Symptom: a diagonal streak that grows
+   with the pose.
+
+All four are fixed the same way: a **per-frame patch**, never a simplification
+of the master. A patch names a state/view/frame, optionally clears rectangles,
+and draws primitives over the derived result. That is the escape hatch C.6
+promised, and it is where a rotated weapon or a hand-fixed downed pose belongs.
+
+#### C.8.5 Acceptance
+
+A master is accepted when `report.ok` is true for both views, `ambiguous` is
+empty, the 28 derived frames per view pass the same §2/§3/§4 assertions the
+generated art does, and a human confirms the C.5 read at 1×. Two of those four
+are automated; the other two are not, and the FFT floor of C.0 remains the bar
+for external art exactly as it is for ours.
+
+### C.9 Named failure modes
+
+Failures the roster actually shipped, each paired with the rule that prevents
+it. Both were caught in review, not by a test — which is why they are written
+down rather than only fixed.
+
+#### C.9.1 The flat face
+
+**Symptom.** A head that is a solid block of skin under a solid block of hair,
+with the eyes either absent or so low-contrast they vanish at 1×. From two feet
+away the unit has no head — it has a lump the color of a head. Every other
+quality of the sprite is irrelevant once this happens, because the face is where
+a viewer looks first.
+
+**Cause.** Drawing the head parametrically: a rectangle per row, a color per
+region. Parametric heads always land here, because the thing that makes a face
+read at 13px is not proportion, it is a handful of *hand-placed* pixels whose
+positions no formula produces.
+
+**The rule that prevents it.** C.3 is not advisory. The head is a **stamp** — a
+literal, hand-authored index grid — and it must contain, at minimum: two
+line-step eye dots on head row 7 with 2–3px of base skin between them, a hair
+mass with a light streak on the key-light side, a brow shelf, and an asymmetric
+hair/skin split. A head that cannot name those five features is not finished. If
+the job is helmeted, the visor substitute of C.3 applies and carries the same
+burden — including the gleam, which is the difference between a visor and a
+hole. **Test:** the eye row of every `se` master must contain at least two
+line-step pixels inside the skin region.
+
+#### C.9.2 The cyan band
+
+**Symptom.** The team tint reads as a bright horizontal stripe painted across
+the chest — the loudest element on the sprite, louder than the face, louder than
+the job's own silhouette. Every unit looks like it is wearing the same sash. On
+a `steel-400` player unit against a soot-grey coat it is the first thing the eye
+lands on and the last thing it leaves.
+
+**Cause.** Two separate rules colliding. A.6 puts a tint chest band at the ribs
+*and* pauldron trim at each shoulder; when those two land within a pixel or two
+of the same row, they merge into one band spanning the entire shoulder width.
+The mask is inside its 5–12% budget the whole time — the budget constrains
+*area*, and this is a failure of *placement*.
+
+**The rules that prevent it.**
+
+1. **Vertical separation is mandatory.** The chest band and the pauldron trim
+   must be at least **2 clear rows apart**. In practice the band sits low, on
+   the ribs (shoulder line minus 6), not at the collarbone.
+2. **No gaps inside the mask.** A band drawn as "2 rows of base, 1 row of
+   shadow" must have those rows adjacent. A one-row hole between base and shadow
+   turns one strap into two stripes and doubles the noise for free.
+3. **The tint sits on a form, not on a slab.** A band across a flat unshaded
+   torso reads as paint; the same band across a torso carrying C.1's three steps
+   reads as a strap. Shade the torso first, then the tint mask is legible as
+   equipment.
+4. **The tint may never be the brightest read.** If a reviewer's eye goes to the
+   team color before the face and before the job silhouette, the placement is
+   wrong regardless of what the percentage says.

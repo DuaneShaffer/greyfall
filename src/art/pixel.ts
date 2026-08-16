@@ -88,8 +88,96 @@ export function gridSet(grid: PixelGrid, x: number, y: number, index: number): v
   grid.data[y * grid.width + x] = index;
 }
 
+/**
+ * ART_DIRECTION Appendix C.1: one key light, upper-left. `light` goes on the
+ * top row and left column of a mass, `shadow` on the bottom row and right
+ * column, `line` is the darkest local step and is for interior separation only
+ * — never an area fill.
+ */
+export interface Shade3 {
+  readonly light: number;
+  readonly base: number;
+  readonly shadow: number;
+  readonly line: number;
+}
+
+export const KEY_LIGHT = { dx: -1, dy: -1 } as const;
+
+export const shade3 = (light: number, base: number, shadow: number, line = shadow): Shade3 => ({
+  light,
+  base,
+  shadow,
+  line,
+});
+
+/** Push a shade one step darker: how far-side limbs and recessed gear read. */
+export const recessed = (s: Shade3): Shade3 => shade3(s.base, s.shadow, s.line, s.line);
+
+/** Appendix C.2: the only dither patterns this register permits. */
+export type DitherPattern = "checker" | "quarter" | "three-quarter";
+
+export function ditherAt(pattern: DitherPattern, x: number, y: number, phase = 0): boolean {
+  switch (pattern) {
+    case "checker":
+      return ((x + y + phase) & 1) === 0;
+    case "quarter":
+      return ((x + phase) & 1) === 0 && ((y + phase) & 1) === 0;
+    case "three-quarter":
+      return !(((x + phase) & 1) === 1 && ((y + phase) & 1) === 1);
+  }
+}
+
+/**
+ * A hand-authored pixel region: literal rows of palette indices, 0 meaning
+ * "leave whatever is underneath". This is where craft lives — everything a
+ * pose cannot be allowed to deform is authored as one of these.
+ */
+export interface Glyph {
+  readonly w: number;
+  readonly h: number;
+  readonly data: readonly number[];
+}
+
+/**
+ * Build a glyph from character rows. `.` and space are skips; every other
+ * character must appear in `map`, so an unresolvable character is a build-time
+ * error rather than an off-palette pixel.
+ */
+export function glyph(rows: readonly string[], map: Readonly<Record<string, number>>): Glyph {
+  const w = Math.max(0, ...rows.map((r) => r.length));
+  const data: number[] = [];
+  for (let y = 0; y < rows.length; y += 1) {
+    const row = rows[y] ?? "";
+    for (let x = 0; x < w; x += 1) {
+      const ch = row[x] ?? ".";
+      if (ch === "." || ch === " ") {
+        data.push(TRANSPARENT);
+        continue;
+      }
+      const index = map[ch];
+      if (index === undefined) throw new Error(`glyph char '${ch}' has no color`);
+      data.push(index);
+    }
+  }
+  return { w, h: rows.length, data };
+}
+
+export function mirrorGlyph(g: Glyph): Glyph {
+  const data: number[] = [];
+  for (let y = 0; y < g.h; y += 1) {
+    for (let x = 0; x < g.w; x += 1) data.push(g.data[y * g.w + (g.w - 1 - x)] ?? TRANSPARENT);
+  }
+  return { w: g.w, h: g.h, data };
+}
+
+/** Recolor a glyph in place, e.g. to flash it or to swap a tint index. */
+export function remapGlyph(g: Glyph, remap: ReadonlyMap<number, number>): Glyph {
+  return { w: g.w, h: g.h, data: g.data.map((v) => remap.get(v) ?? v) };
+}
+
 export type Prim =
   | { readonly kind: "pixel"; readonly x: number; readonly y: number; readonly color: number }
+  | { readonly kind: "stamp"; readonly x: number; readonly y: number; readonly glyph: Glyph }
   | {
       readonly kind: "rect";
       readonly x: number;
@@ -122,9 +210,32 @@ export type Prim =
       readonly h: number;
       readonly color: number;
       readonly phase?: number;
+    }
+  | {
+      readonly kind: "patch";
+      readonly x: number;
+      readonly y: number;
+      readonly w: number;
+      readonly h: number;
+      readonly color: number;
+      readonly pattern: DitherPattern;
+      readonly phase?: number;
     };
 
 export const px = (x: number, y: number, color: number): Prim => ({ kind: "pixel", x, y, color });
+
+export const stamp = (x: number, y: number, g: Glyph): Prim => ({ kind: "stamp", x, y, glyph: g });
+
+/** Appendix C.2: a dither band in one of the three approved patterns. */
+export const patch = (
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: number,
+  pattern: DitherPattern,
+  phase = 0,
+): Prim => ({ kind: "patch", x, y, w, h, color, pattern, phase });
 
 export const rect = (x: number, y: number, w: number, h: number, color: number): Prim => ({
   kind: "rect",
@@ -161,6 +272,53 @@ export const dither = (
   color: number,
   phase = 0,
 ): Prim => ({ kind: "dither", x, y, w, h, color, phase });
+
+export interface ShadedRectOptions {
+  /** Suppress the light rim (cloth stops 1px short of the silhouette). */
+  readonly softLeft?: boolean;
+  readonly softTop?: boolean;
+  /** Skip the shadow column/row where another form already occludes it. */
+  readonly noRight?: boolean;
+  readonly noBottom?: boolean;
+}
+
+/**
+ * A rectangular mass carrying Appendix C.1's three steps: light on the top row
+ * and left column, shadow on the bottom row and right column, base between.
+ * Degrades gracefully — a 1px-wide form is just its base.
+ */
+export function shadedRect(
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  s: Shade3,
+  options: ShadedRectOptions = {},
+): Prim[] {
+  if (w <= 0 || h <= 0) return [];
+  const prims: Prim[] = [rect(x, y, w, h, s.base)];
+  if (w >= 3 && !options.noRight) prims.push(rect(x + w - 1, y, 1, h, s.shadow));
+  if (h >= 3 && !options.noBottom) prims.push(rect(x, y + h - 1, w, 1, s.shadow));
+  if (w >= 3 && !options.softLeft) {
+    const top = options.softTop || h < 3 ? y : y + 1;
+    const bottom = options.noBottom || h < 3 ? y + h : y + h - 1;
+    if (bottom > top) prims.push(rect(x, top, 1, bottom - top, s.light));
+  }
+  if (h >= 3 && !options.softTop) {
+    const left = options.softLeft || w < 3 ? x : x + 1;
+    const right = options.noRight || w < 3 ? x + w : x + w - 1;
+    if (right > left) prims.push(rect(left, y, right - left, 1, s.light));
+  }
+  return prims;
+}
+
+/** A horizontal band (belt, hem, bevel): lit on top, shadowed underneath. */
+export function shadedBand(x: number, y: number, w: number, h: number, s: Shade3): Prim[] {
+  if (w <= 0 || h <= 0) return [];
+  const prims: Prim[] = [rect(x, y, w, h, s.base)];
+  if (h >= 2) prims.push(rect(x, y, w, 1, s.light), rect(x, y + h - 1, w, 1, s.shadow));
+  return prims;
+}
 
 export interface Layer {
   readonly name: string;
@@ -271,6 +429,30 @@ function drawPrim(grid: PixelGrid, prim: Prim, dx: number, dy: number, mirror: b
       }
       return;
     }
+    case "patch": {
+      const x0 = mapX(prim.x + dx, round(prim.w));
+      const y0 = round(prim.y + dy);
+      const phase = prim.phase ?? 0;
+      for (let y = y0; y < y0 + round(prim.h); y += 1) {
+        for (let x = x0; x < x0 + round(prim.w); x += 1) {
+          if (ditherAt(prim.pattern, x, y, phase)) gridSet(grid, x, y, prim.color);
+        }
+      }
+      return;
+    }
+    case "stamp": {
+      const g = prim.glyph;
+      const x0 = mapX(prim.x + dx, g.w);
+      const y0 = round(prim.y + dy);
+      for (let y = 0; y < g.h; y += 1) {
+        for (let x = 0; x < g.w; x += 1) {
+          const v = g.data[y * g.w + x] ?? TRANSPARENT;
+          if (v === TRANSPARENT) continue;
+          gridSet(grid, x0 + (mirror ? g.w - 1 - x : x), y0 + y, v);
+        }
+      }
+      return;
+    }
   }
 }
 
@@ -368,6 +550,45 @@ export function distinctColors(grid: PixelGrid): Set<number> {
   const set = new Set<number>();
   for (const v of grid.data) if (v !== TRANSPARENT) set.add(v);
   return set;
+}
+
+/**
+ * Same-color 8-connected regions, smallest first. Appendix C.2 forbids orphan
+ * clusters of shading steps, so this is how a test can see them. Connectivity
+ * is 8-way because a 1px diagonal highlight along a tapered limb is a cluster
+ * to the eye; only a pixel with no same-colored neighbor at all is an orphan.
+ */
+export function colorClusters(grid: PixelGrid): { color: number; size: number }[] {
+  const seen = new Uint8Array(grid.data.length);
+  const out: { color: number; size: number }[] = [];
+  const stack: number[] = [];
+  for (let start = 0; start < grid.data.length; start += 1) {
+    const color = grid.data[start] ?? TRANSPARENT;
+    if (color === TRANSPARENT || seen[start]) continue;
+    let size = 0;
+    stack.push(start);
+    seen[start] = 1;
+    while (stack.length > 0) {
+      const at = stack.pop() as number;
+      size += 1;
+      const x = at % grid.width;
+      const y = (at - x) / grid.width;
+      const push = (nx: number, ny: number): void => {
+        if (nx < 0 || ny < 0 || nx >= grid.width || ny >= grid.height) return;
+        const ni = ny * grid.width + nx;
+        if (seen[ni] || grid.data[ni] !== color) return;
+        seen[ni] = 1;
+        stack.push(ni);
+      };
+      for (let ny = -1; ny <= 1; ny += 1) {
+        for (let nx = -1; nx <= 1; nx += 1) {
+          if (nx !== 0 || ny !== 0) push(x + nx, y + ny);
+        }
+      }
+    }
+    out.push({ color, size });
+  }
+  return out.sort((a, b) => a.size - b.size);
 }
 
 /** Tight bounds of the non-transparent pixels, or null for an empty grid. */

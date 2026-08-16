@@ -16,14 +16,22 @@ import {
   outlineGrid,
   overlayGrid,
   paletteIndex,
+  patch,
+  px,
   rasterize,
   rect,
+  recessed,
+  stamp,
+  type DitherPattern,
+  type Glyph,
   type Layer,
   type PixelGrid,
   type Point,
   type Prim,
+  type Shade3,
 } from "./pixel.js";
-import { SOOT_100, SOOT_900, type Hex } from "./palette.js";
+import { STEP } from "./materials.js";
+import { SOOT_100, SOOT_900 } from "./palette.js";
 import {
   ANIMATIONS,
   FIGURE_BOX_BOTTOM,
@@ -178,7 +186,35 @@ export function jointsFor(build: Build, pose: Pose): Joints {
   };
 }
 
-/** Thick tapered segment between two rig points. The only limb drawer. */
+interface Span {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  /** True when the span runs across the canvas (a vertical form's row). */
+  readonly horizontal: boolean;
+}
+
+/** The per-step spans of a tapered segment. Shared by `limb` and `shadedLimb`. */
+function limbSpans(a: RigPoint, b: RigPoint, widthA: number, widthB: number): Span[] {
+  const p0 = at(a.dx, a.up);
+  const p1 = at(b.dx, b.up);
+  const dx = p1.x - p0.x;
+  const dy = p1.y - p0.y;
+  const steps = Math.max(Math.abs(Math.round(dx)), Math.abs(Math.round(dy)));
+  const vertical = Math.abs(dy) >= Math.abs(dx);
+  const spans: Span[] = [];
+  for (let i = 0; i <= steps; i += 1) {
+    const t = steps === 0 ? 0 : i / steps;
+    const x = p0.x + dx * t;
+    const y = p0.y + dy * t;
+    const w = Math.max(1, Math.round(widthA + (widthB - widthA) * t));
+    if (vertical) spans.push({ x: Math.round(x - w / 2), y: Math.round(y), w, horizontal: true });
+    else spans.push({ x: Math.round(x), y: Math.round(y - w / 2), w, horizontal: false });
+  }
+  return spans;
+}
+
+/** Thick tapered segment between two rig points, in one flat color. */
 export function limb(
   a: RigPoint,
   b: RigPoint,
@@ -186,21 +222,43 @@ export function limb(
   widthB: number,
   color: number,
 ): Prim[] {
-  const p0 = at(a.dx, a.up);
-  const p1 = at(b.dx, b.up);
-  const dx = p1.x - p0.x;
-  const dy = p1.y - p0.y;
-  const steps = Math.max(Math.abs(Math.round(dx)), Math.abs(Math.round(dy)));
+  return limbSpans(a, b, widthA, widthB).map((s) =>
+    s.horizontal ? rect(s.x, s.y, s.w, 1, color) : rect(s.x, s.y, 1, s.w, color),
+  );
+}
+
+export interface ShadedLimbOptions {
+  /** Cloth ≥5px wide keeps the light step off the silhouette (Appendix C.4). */
+  readonly soft?: boolean;
+  /** Suppress the shadow column where a neighbouring form already occludes it. */
+  readonly noShadow?: boolean;
+}
+
+/**
+ * A tapered segment carrying Appendix C.1's three steps *along its own axis*:
+ * a vertical limb is shaded by column, a horizontal one by row. Shading a form
+ * across its axis is the banding C.2 forbids, so the axis choice is not
+ * cosmetic.
+ */
+export function shadedLimb(
+  a: RigPoint,
+  b: RigPoint,
+  widthA: number,
+  widthB: number,
+  s: Shade3,
+  options: ShadedLimbOptions = {},
+): Prim[] {
   const prims: Prim[] = [];
-  for (let i = 0; i <= steps; i += 1) {
-    const t = steps === 0 ? 0 : i / steps;
-    const x = p0.x + dx * t;
-    const y = p0.y + dy * t;
-    const w = Math.max(1, Math.round(widthA + (widthB - widthA) * t));
-    if (Math.abs(dy) >= Math.abs(dx)) {
-      prims.push(rect(Math.round(x - w / 2), Math.round(y), w, 1, color));
+  for (const span of limbSpans(a, b, widthA, widthB)) {
+    const soft = options.soft === true && span.w >= 5;
+    if (span.horizontal) {
+      prims.push(rect(span.x, span.y, span.w, 1, s.base));
+      if (span.w >= 2 && !options.noShadow) prims.push(px(span.x + span.w - 1, span.y, s.shadow));
+      if (span.w >= 3) prims.push(px(span.x + (soft ? 1 : 0), span.y, s.light));
     } else {
-      prims.push(rect(Math.round(x), Math.round(y - w / 2), 1, w, color));
+      prims.push(rect(span.x, span.y, 1, span.w, s.base));
+      if (span.w >= 2 && !options.noShadow) prims.push(px(span.x, span.y + span.w - 1, s.shadow));
+      if (span.w >= 3) prims.push(px(span.x, span.y + (soft ? 1 : 0), s.light));
     }
   }
   return prims;
@@ -212,39 +270,108 @@ export function box(center: RigPoint, w: number, h: number, color: number): Prim
   return rect(Math.round(p.x - w / 2), Math.round(p.y - h / 2), w, h, color);
 }
 
-export interface JobPaint {
-  readonly coat: Hex;
-  readonly coatDark: Hex;
-  readonly coatLight: Hex;
-  readonly boot: Hex;
-  readonly skin: Hex;
-  readonly skinDark: Hex;
-  readonly hair: Hex;
+/** Box centered on a rig point, carrying the three shading steps. */
+export function shadedBox(center: RigPoint, w: number, h: number, s: Shade3): Prim[] {
+  const p = at(center.dx, center.up);
+  const x = Math.round(p.x - w / 2);
+  const y = Math.round(p.y - h / 2);
+  if (w <= 0 || h <= 0) return [];
+  const prims: Prim[] = [rect(x, y, w, h, s.base)];
+  if (w >= 3) prims.push(rect(x + w - 1, y, 1, h, s.shadow));
+  if (h >= 3) prims.push(rect(x, y + h - 1, w, 1, s.shadow));
+  if (w >= 3 && h >= 2) prims.push(rect(x, y, 1, h - 1, s.light));
+  if (h >= 3 && w >= 2) prims.push(rect(x, y, w - 1, 1, s.light));
+  return prims;
 }
 
-export interface PaintIndices {
-  readonly coat: number;
-  readonly coatDark: number;
-  readonly coatLight: number;
-  readonly boot: number;
-  readonly skin: number;
-  readonly skinDark: number;
-  readonly hair: number;
+/** A dither band centered on a rig point (Appendix C.2's approved patterns). */
+export function shadedPatch(
+  center: RigPoint,
+  w: number,
+  h: number,
+  color: number,
+  pattern: DitherPattern = "checker",
+): Prim {
+  const p = at(center.dx, center.up);
+  return patch(Math.round(p.x - w / 2), Math.round(p.y - h / 2), w, h, color, pattern);
 }
 
-export const paintIndices = (paint: JobPaint): PaintIndices => ({
-  coat: paletteIndex(paint.coat),
-  coatDark: paletteIndex(paint.coatDark),
-  coatLight: paletteIndex(paint.coatLight),
-  boot: paletteIndex(paint.boot),
-  skin: paletteIndex(paint.skin),
-  skinDark: paletteIndex(paint.skinDark),
-  hair: paletteIndex(paint.hair),
-});
+/**
+ * Place a hand-authored glyph so that `originX, originY` inside it lands on a
+ * rig point. Stamps translate with the joints and never deform, which is how
+ * the hand-placed pixels survive the pose tables (Appendix C.6).
+ */
+export function stampAt(center: RigPoint, g: Glyph, originX: number, originY: number): Prim {
+  const p = at(center.dx, center.up);
+  return stamp(Math.round(p.x) - originX, Math.round(p.y) - originY, g);
+}
+
+/**
+ * A job's materials, as Appendix C.4 shade triples. Every step a job paints
+ * with comes from here or from `materials.ts` — never from a raw hex.
+ */
+export interface JobShades {
+  /** The coat / torso material. */
+  readonly cloth: Shade3;
+  /** Harness, belts, straps. */
+  readonly leather: Shade3;
+  readonly boot: Shade3;
+  readonly skin: Shade3;
+  readonly hair: Shade3;
+  /** The job's gear metal: plate for the Enforcer, graft for the Augmented. */
+  readonly metal: Shade3;
+}
 
 export interface TintIndices {
   readonly base: number;
   readonly shadow: number;
+}
+
+/**
+ * The character vocabulary hand-authored glyphs are written in. Fixed across
+ * the roster so a head glyph reads the same way in every job file.
+ */
+export function glyphChars(sh: JobShades, tint: TintIndices): Record<string, number> {
+  return {
+    s: sh.skin.base,
+    S: sh.skin.shadow,
+    L: sh.skin.light,
+    d: sh.skin.line,
+    h: sh.hair.base,
+    H: sh.hair.shadow,
+    j: sh.hair.light,
+    c: sh.cloth.base,
+    C: sh.cloth.shadow,
+    w: sh.cloth.light,
+    f: sh.cloth.line,
+    l: sh.leather.base,
+    K: sh.leather.shadow,
+    k: sh.leather.light,
+    m: sh.metal.base,
+    M: sh.metal.shadow,
+    n: sh.metal.light,
+    b: sh.boot.base,
+    B: sh.boot.shadow,
+    t: tint.base,
+    T: tint.shadow,
+    a: STEP.amber500,
+    A: STEP.amber300,
+    v: STEP.verdigris500,
+    V: STEP.verdigris700,
+    u: STEP.verdigris300,
+    g: STEP.grip,
+    p: STEP.brightblood,
+    z: STEP.hazard,
+    "1": STEP.spark,
+    "2": STEP.soot300,
+    "3": STEP.soot500,
+    "4": STEP.soot700,
+    "5": STEP.soot800,
+    "6": STEP.umber900,
+    "7": STEP.umber700,
+    "8": STEP.copper700,
+    "9": STEP.copper300,
+  };
 }
 
 export interface GearContext {
@@ -254,20 +381,28 @@ export interface GearContext {
   readonly joints: Joints;
   readonly pose: Pose;
   readonly build: Build;
-  readonly paint: PaintIndices;
+  readonly sh: JobShades;
   readonly tint: TintIndices;
+  /** Glyph character map, already bound to this job's shades and team tint. */
+  readonly chars: Record<string, number>;
 }
 
 export interface JobArt {
   readonly id: string;
   readonly read: string;
   readonly build: Build;
-  readonly paint: JobPaint;
+  readonly shades: JobShades;
+  /**
+   * The hand-authored head: a 12x15 glyph whose row 2 is head row 0 and whose
+   * column 1 is the left edge of a 10px head. This is the master (Appendix C.3)
+   * and it is stamped, never redrawn, so every pose carries the same face.
+   */
+  readonly head: (ctx: GearContext) => Glyph;
   /** Drawn behind the figure: packs, coat tails, far-side gear. */
   readonly back?: (ctx: GearContext) => Prim[];
   /** Drawn over torso and legs: harnesses, skirts, satchels, graft plates. */
   readonly front?: (ctx: GearContext) => Prim[];
-  /** Drawn over the head box: helmets, hoods, goggles, masks. */
+  /** Drawn over the head stamp: crests, antennae, anything overhanging. */
   readonly headGear?: (ctx: GearContext) => Prim[];
   /** Drawn last: whatever the near hand carries. */
   readonly held?: (ctx: GearContext) => Prim[];
@@ -280,52 +415,89 @@ const SHADOW_INDEX = paletteIndex(SOOT_900);
 
 function legPrims(ctx: GearContext, near: boolean): Prim[] {
   const j = ctx.joints;
-  const p = ctx.paint;
+  const sh = ctx.sh;
   const hip = near ? j.hipNear : j.hipFar;
   const knee = near ? j.kneeNear : j.kneeFar;
   const foot = near ? j.footNear : j.footFar;
-  const color = near ? p.coat : p.coatDark;
-  const bootColor = near ? p.boot : p.coatDark;
+  const cloth = near ? sh.cloth : recessed(sh.cloth);
+  const boot = near ? sh.boot : recessed(sh.boot);
   const w = ctx.build.legW;
   const footBase = at(foot.dx, foot.up);
+  const bx = Math.round(footBase.x - w / 2);
   return [
-    ...limb(hip, knee, w + 1, w, color),
-    ...limb(knee, foot, w, w, color),
-    rect(Math.round(footBase.x - w / 2), footBase.y - 1, w + 1, 2, bootColor),
+    ...shadedLimb(hip, knee, w + 1, w, cloth),
+    ...shadedLimb(knee, foot, w, w, cloth),
+    // The boot: a lit instep row over a shadow sole, so the foot has a top.
+    rect(bx, footBase.y - 2, w + 1, 3, boot.base),
+    rect(bx, footBase.y - 2, w, 1, boot.light),
+    rect(bx, footBase.y, w + 1, 1, boot.shadow),
+    px(bx + w, footBase.y - 1, boot.shadow),
   ];
 }
 
 function armPrims(ctx: GearContext, near: boolean): Prim[] {
   const j = ctx.joints;
-  const p = ctx.paint;
+  const sh = ctx.sh;
   const shoulder = near ? j.shoulderNear : j.shoulderFar;
   const elbow = near ? j.elbowNear : j.elbowFar;
   const hand = near ? j.handNear : j.handFar;
-  const color = near ? p.coat : p.coatDark;
+  const cloth = near ? sh.cloth : recessed(sh.cloth);
+  const skin = near ? sh.skin : recessed(sh.skin);
   const w = ctx.build.armW;
+  const p = at(hand.dx, hand.up);
   return [
-    ...limb(shoulder, elbow, w, w, color),
-    ...limb(elbow, hand, w, w - 1, color),
-    box(hand, 3, 3, near ? p.skin : p.skinDark),
+    ...shadedLimb(shoulder, elbow, w + 1, w, cloth),
+    ...shadedLimb(elbow, hand, w, w, cloth),
+    // A cuff parts the sleeve from the hand without spending the outline.
+    ...shadedLimb(
+      { dx: (elbow.dx + hand.dx * 3) / 4, up: (elbow.up + hand.up * 3) / 4 },
+      hand,
+      w,
+      w,
+      { ...cloth, base: cloth.line, light: cloth.shadow, shadow: cloth.line },
+    ),
+    rect(Math.round(p.x - 1), Math.round(p.y - 1), 3, 3, skin.base),
+    px(Math.round(p.x - 1), Math.round(p.y - 1), skin.light),
+    px(Math.round(p.x + 1), Math.round(p.y + 1), skin.shadow),
   ];
 }
 
 function torsoPrims(ctx: GearContext): Prim[] {
   const j = ctx.joints;
-  const p = ctx.paint;
+  const sh = ctx.sh;
   const b = ctx.build;
-  const prims: Prim[] = [...limb(j.hip, j.shoulder, b.hipW, b.shoulderW, p.coat)];
+  // Cloth ≥5px keeps its light step off the silhouette (Appendix C.4).
+  const prims: Prim[] = [
+    ...shadedLimb(j.hip, j.shoulder, b.hipW, b.shoulderW, sh.cloth, { soft: true }),
+  ];
   // Interior separation: a coat seam on the shaded side from the front, the
-  // spine from behind. Uses the local ramp's dark step, never the outline.
-  const seamOffset = ctx.view === "se" ? -b.shoulderW / 2 + 1 : 0;
-  const spine = mid(j.hip, j.shoulder, seamOffset, 0);
-  prims.push(...limb({ dx: spine.dx, up: j.hip.up }, { dx: spine.dx, up: j.shoulder.up }, 2, 2, p.coatDark));
-  // Team tint, part one: a chest band under whatever gear the job wears.
-  const bandUp = j.shoulder.up - 4;
+  // spine from behind. Uses the local ramp's line step, never the outline.
+  const seamDx = ctx.view === "se" ? -b.shoulderW / 2 + 3 : 0;
+  const seam = mid(j.hip, j.shoulder, seamDx, 0);
+  prims.push(
+    ...limb(
+      { dx: seam.dx, up: j.hip.up + 2 },
+      { dx: seam.dx, up: j.shoulder.up - 2 },
+      1,
+      1,
+      sh.cloth.line,
+    ),
+  );
+  // Collar: the top of the torso catches the key light hardest.
+  prims.push(
+    box({ dx: j.shoulder.dx, up: j.shoulder.up }, b.shoulderW - 2, 1, sh.cloth.light),
+    box({ dx: j.shoulder.dx, up: j.shoulder.up - 1 }, b.shoulderW - 2, 1, sh.cloth.base),
+  );
+  // Team tint, part one: a chest band under whatever gear the job wears
+  // (Appendix A.6). It sits low on the ribs rather than at the collarbone so it
+  // clears the pauldron trim — abutting the two turns the mask into one stripe
+  // across the whole shoulder line, which is exactly what A.6 is trying to
+  // avoid.
+  const bandUp = j.shoulder.up - TINT_BAND_DROP;
   const bandW = Math.max(4, b.shoulderW - 4);
   prims.push(
     box({ dx: j.shoulder.dx, up: bandUp }, bandW, 2, ctx.tint.base),
-    box({ dx: j.shoulder.dx, up: bandUp - 2 }, bandW, 1, ctx.tint.shadow),
+    box({ dx: j.shoulder.dx, up: bandUp - 1 }, bandW, 1, ctx.tint.shadow),
   );
   return prims;
 }
@@ -337,13 +509,23 @@ function torsoPrims(ctx: GearContext): Prim[] {
  */
 function tintTrimPrims(ctx: GearContext): Prim[] {
   const j = ctx.joints;
-  return [
-    box(j.shoulderNear, 3, 2, ctx.tint.base),
-    box({ dx: j.shoulderNear.dx, up: j.shoulderNear.up - 2 }, 3, 1, ctx.tint.shadow),
-    box(j.shoulderFar, 3, 2, ctx.tint.base),
-    box({ dx: j.shoulderFar.dx, up: j.shoulderFar.up - 2 }, 3, 1, ctx.tint.shadow),
+  const trim = (p: RigPoint): Prim[] => [
+    box(p, 3, 2, ctx.tint.base),
+    box({ dx: p.dx, up: p.up - 1 }, 3, 1, ctx.tint.shadow),
   ];
+  return [...trim(j.shoulderNear), ...trim(j.shoulderFar)];
 }
+
+/**
+ * Appendix A.6 geometry, and C.9.2's separation rule as a number: the chest
+ * band drops this far below the shoulder line, the pauldron trim sits on it,
+ * and the clear rows between them are what keep the mask from reading as one
+ * stripe across the whole shoulder span.
+ */
+export const TINT_BAND_DROP = 6;
+export const TINT_TRIM_DROP = 0;
+/** Clear rows between the two parts of the mask. C.9.2 requires at least 2. */
+export const TINT_MASK_SEPARATION = TINT_BAND_DROP - TINT_TRIM_DROP - 4;
 
 /** Per-row width inset: a tapered crown and jaw keep the head off "box". */
 const HEAD_PROFILE = [-4, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -4] as const;
@@ -378,35 +560,20 @@ export function headBand(
   return prims;
 }
 
-function headPrims(ctx: GearContext): Prim[] {
-  const p = ctx.paint;
-  const prims: Prim[] = [];
-  for (let row = 0; row < HEAD_HEIGHT; row += 1) {
-    const r = headRow(ctx, row);
-    prims.push(rect(r.x, r.y, r.w, 1, ctx.view === "se" ? p.skin : p.hair));
-  }
-  if (ctx.view === "se") {
-    prims.push(...headBand(ctx, 0, 4, p.hair));
-    const brow = headRow(ctx, 6);
-    prims.push(rect(brow.x + 1, brow.y, brow.w - 2, 1, p.skinDark));
-    const eyes = headRow(ctx, 8);
-    prims.push(
-      rect(eyes.x + 1, eyes.y, 2, 1, p.hair),
-      rect(eyes.x + eyes.w - 3, eyes.y, 2, 1, p.hair),
-    );
-    const chin = headRow(ctx, 11);
-    prims.push(rect(chin.x, chin.y, chin.w, 1, p.skinDark));
-  } else {
-    const nape = headRow(ctx, 11);
-    prims.push(rect(nape.x, nape.y, nape.w, 1, p.skinDark));
-    const crown = headRow(ctx, 3);
-    prims.push(rect(crown.x + 2, crown.y, crown.w - 4, 4, p.coatDark));
-  }
-  return prims;
+/**
+ * Head glyph geometry. Glyphs are 12 wide by 15 tall; column 1 is the left edge
+ * of a 10px head and row 2 is head row 0, so `HEAD_GLYPH_ORIGIN` is the offset
+ * from the head-joint pixel to the glyph's top-left.
+ */
+export const HEAD_GLYPH = { w: 12, h: 15, originX: 6, originY: 8 } as const;
+
+/** Stamp the job's hand-authored head onto the head joint. */
+function headPrims(ctx: GearContext, art: JobArt): Prim[] {
+  return [stampAt(ctx.joints.head, art.head(ctx), HEAD_GLYPH.originX, HEAD_GLYPH.originY)];
 }
 
 /** Ground contact inside the sub-floor band; never outlined. */
-function contactPrims(ctx: GearContext): Prim[] {
+export function contactPrims(ctx: GearContext): Prim[] {
   const pad = ctx.build.legW + 1;
   const left = Math.max(2, Math.round(SPRITE_ANCHOR.x + Math.min(ctx.joints.footNear.dx, ctx.joints.footFar.dx) - pad));
   const right = Math.min(
@@ -418,7 +585,12 @@ function contactPrims(ctx: GearContext): Prim[] {
   return [rect(left, y, w, 1, SHADOW_INDEX), rect(left + 3, y + 1, Math.max(2, w - 6), 1, SHADOW_INDEX)];
 }
 
-function flashed(grid: PixelGrid): PixelGrid {
+/**
+ * Appendix A.4: hurt frame 0 drops every interior color, keeping the outline
+ * and anything emissive. Exported because derived external frames need the
+ * identical treatment.
+ */
+export function flashInterior(grid: PixelGrid): PixelGrid {
   const out = cloneGrid(grid);
   for (let i = 0; i < out.data.length; i += 1) {
     const v = out.data[i] ?? 0;
@@ -447,8 +619,9 @@ export function renderFigure(art: JobArt, pose: Pose, options: FigureOptions): P
     joints: jointsFor(art.build, pose),
     pose,
     build: art.build,
-    paint: paintIndices(art.paint),
+    sh: art.shades,
     tint: options.tint,
+    chars: glyphChars(art.shades, options.tint),
   };
 
   const layers: Layer[] = [
@@ -458,7 +631,7 @@ export function renderFigure(art: JobArt, pose: Pose, options: FigureOptions): P
     layer("torso", torsoPrims(ctx)),
     layer("legNear", legPrims(ctx, true)),
     layer("front", art.front?.(ctx) ?? []),
-    layer("head", headPrims(ctx)),
+    layer("head", headPrims(ctx, art)),
     layer("headGear", art.headGear?.(ctx) ?? []),
     layer("armNear", armPrims(ctx, true)),
     layer("held", art.held?.(ctx) ?? []),
@@ -476,7 +649,7 @@ export function renderFigure(art: JobArt, pose: Pose, options: FigureOptions): P
     body.data[y * SPRITE_WIDTH] = TRANSPARENT;
     body.data[y * SPRITE_WIDTH + SPRITE_WIDTH - 1] = TRANSPARENT;
   }
-  if (pose.flash) body = flashed(body);
+  if (pose.flash) body = flashInterior(body);
 
   const outline = outlineGrid(body, { maxY: FIGURE_BOX_BOTTOM });
   const contact = rasterize({
