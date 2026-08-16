@@ -261,6 +261,7 @@
   "winConditions": [
     {
       "kind": "reachTiles",
+      "unitId": "marek-sump",
       "tiles": [
         {
           "x": 7,

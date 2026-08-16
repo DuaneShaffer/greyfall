@@ -312,13 +312,35 @@ counts global unit-turns rather than rounds (gap 3). So the trigger is the
 reach the gallery without crossing, roughly five tiles out from deployment,
 which lands it at the pacing MAP_NOTES wanted.
 
-**Win: `reachTiles` on the switchboard, or `defeatUnit: nessa-kiln`.** This
-is "stop what can be stopped": get a unit onto the control gallery and cut
-the grid, or take the engineer. Neither prevents the midpoint — it has
-already fired by the time either is achievable — so the scripted catastrophe
-is scenery for the win, not a failure state. Loss is `partyRout` only; a
-`turnLimit` loss would have contradicted the bible by making the failure the
-player's.
+**Win: `reachTiles` on the switchboard *by Marek Sump*, or `defeatUnit:
+nessa-kiln`.** This is "stop what can be stopped": get the man who can do it
+onto the control gallery and cut the grid, or take the engineer. Neither
+prevents the midpoint — it has already fired by the time either is achievable
+— so the scripted catastrophe is scenery for the win, not a failure state.
+Loss is `partyRout` only; a `turnLimit` loss would have contradicted the bible
+by making the failure the player's.
+
+**Why the reach win is one character's errand** *(balance pass, 2026-08-16;
+`BALANCE_REPORT` §7.8.7)*. Ungated, "any body on the tile" was worth nine extra
+wins in 48 and put e4 at 85.4% pooled, over the ceiling — the kill route was a
+flat 66.7% on both seed sets, so the objective was the only thing out of band.
+`reachTiles` takes a `unitId` and it now carries `marek-sump`. Marek is the
+Saboteur with the party's lowest Resolve and `CONTENT_NOTES`' reason for it —
+*nerve for wiring, not for standing* — and a switchboard is wiring; his
+`catwalk-sense` is *"you have crawled over enough condemned grating to know
+which of it holds"*, and after the midpoint takes `tower-walk-south` and both
+hoists, condemned grating at height 4 is the only road to the gallery left.
+Rowen's `on-the-ring` line, *"It is not for seeing. It is the way to the
+board,"* is the order and not the errand: she names the route, he crosses it.
+**The consequence is deliberate and is a deployment choice** — the roster is
+seven and `maxDeployedUnits` is six, so a party that leaves Marek at home
+fights Refinery Three on the kill route alone. The kill route is always open,
+so this narrows the fight rather than gating it.
+
+`at-the-switchboard` is still written for the party's arrival rather than for
+Marek's specifically, and its tiles still share only `(7,2)` with the win tiles
+— it fires 0–2 times in 24 runs. That misalignment is logged in
+`BALANCE_REPORT` §7.8.4 and is an encounter-workstream fix, not a balance one.
 
 **Other triggers.** `under-measurement` (`battleStart`) establishes Quill's
 neutrality and Nessa's licence; `on-the-ring` fires when a player unit takes
@@ -332,7 +354,9 @@ Quill — **70%** win at 4.4 losses. The escort dropped to level 1 and Nessa
 stayed at 3; she is the fight. The real
 opponent is the circuit. Expect the second half to be fought without the
 hoists. A party with no Conduit and no Jump-2 answer will be locked off the
-ring entirely, which is the correct punishment on this map.
+ring entirely, which is the correct punishment on this map. **Shipped landing:
+83.3% primary / 79.2% alt, 81.3% pooled over 48 seeds** (`BALANCE_REPORT`
+§7.8.7).
 
 ---
 

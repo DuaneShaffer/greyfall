@@ -35,6 +35,12 @@ findings-queue item 6.
 > (§7.8.6, which supersedes one number in §7.8.1). Instrument and measurement
 > only: no content, no core rules, no AI weights, and nothing retuned.
 >
+> **§7.8.7 applies §7.8.4's proposal (2026-08-16)** and is the one content
+> change in the §7.8.x run: e4's `reachTiles` win is gated on `marek-sump`,
+> which lands the encounter at **81.3% pooled**. One line of
+> `data/encounters/e4-refinery-three.json`; no schema, no core rules, no AI
+> weights, nothing else on any encounter.
+>
 > **`src/sim/variants.ts` was rebased onto the live engine (cleanup pass,
 > 2026-08-15).** `divisorVariant()` used to emulate a fix that is now *in* the
 > engine, so running it double-applied the divisor. It now expresses the
@@ -1805,6 +1811,101 @@ correction bites where the pillar is — a job that works the board is reported
 as spending less of its turn on abilities than it looked like, which is exactly
 the direction that matters when the question is "is this ability dominating
 this kit."
+
+### 7.8.7 Addendum — e4's reach win gated on Marek Sump
+
+§7.8.4 measured e4 at **85.4% pooled**, 2.4 over the ceiling, and proposed the
+fix without applying it: the kill route is a fixed 16 of 24 on both seed sets,
+every win above it is the `reachTiles` route the objective-aware AI now scores,
+and `reachTiles` already carries an optional `unitId`. This is that change,
+applied. **No schema amendment was needed** — `SimpleWinCondition`'s
+`reachTiles` has taken `unitId` since the contract was frozen, and both
+`src/core/rules/outcome.ts` and the AI's `objectiveOf` in
+`src/core/ai/context.ts` already honour it. Nothing but the one JSON line moved.
+
+**Who the AI was actually sending.** Before choosing, the six primary and three
+alt reach wins were resolved to a unit by replaying with `keepEvents` and taking
+the last `UnitMoved` onto a win tile:
+
+| reacher | primary | alt |
+|---|---|---|
+| `della-tine` | 3 | 1 |
+| `marek-sump` | 3 | 2 |
+| everyone else | 0 | 0 |
+
+Rowen never made the run in 48 baseline runs — she is the party's only L1 with
+no movement ability, and the gallery is at height 4 behind a catwalk.
+
+**The ladder, tuned on the primary set only.** Three gates, one call each
+(`encounterRuns(content, ["e4-refinery-three"], PRIMARY_ENCOUNTER_SEEDS,
+{ commandCap: 4000 })`), scored against the control §7.8.4 named — the kill
+route holding at 16:
+
+| primary, 24 seeds | win | kill | reach | control |
+|---|---|---|---|---|
+| baseline (no gate) | 91.7% | 16 | 6 | — |
+| `unitId: rowen` | 83.3% | **20** | **0** | fails both ways |
+| `unitId: della-tine` | 91.7% | **19** | 3 | fails; rate does not move |
+| `unitId: marek-sump` | **83.3%** | 17 | 3 | **holds — see below** |
+
+Rowen is the reading the fiction reaches for first and it is the wrong one
+twice over: the reach route dies outright at 0 of 24, which §7.8.4's own test
+says means the route is no longer real, and the kill route jumps four because
+the five units that lost their objective pull simply fight instead. Della moves
+the kill route three and the win rate not at all.
+
+**Validation on the disjoint alt set**, never tuned on:
+
+| e4 Refinery Three | §7.8.4 primary | **primary** | §7.8.4 alt | **alt** | **pooled 48** |
+|---|---|---|---|---|---|
+| win | 91.7% | **83.3%** | 79.2% | **79.2%** | **85.4% → 81.3%** |
+| kill route | 16 / 24 | 17 / 24 | 16 / 24 | 17 / 24 | |
+| reach route | 6 / 24 | 3 / 24 | 3 / 24 | 2 / 24 | 9 → **5 of 48** |
+| mean turns | 91.6 | 95.1 | 93.3 | 94.1 | |
+| party lost, of 6 | 2.79 | 3.04 | 2.92 | 2.92 | |
+| surviving party hp% | 39.1 | 35.3 | 38.9 | 38.8 | |
+| stalemates | 0 | 0 | 0 | 0 | |
+
+**The control, read at the seed rather than the total.** The kill route reads
+17 of 24 on both sets, not 16, and the seed lists say why: **all sixteen
+baseline kill-win seeds are kill wins after the change, on both sets**, and the
+seventeenth is in each case a former reach win — `767` on the primary set, `718`
+on the alt — that now runs on past the tile it used to end on and finishes Nessa
+instead. The surviving reach seeds are a strict subset of the baseline's
+(`{397, 471, 545}` of `{101, 397, 434, 471, 545, 767}`; `{308, 513}` of
+`{308, 513, 718}`). That is the control passing in the only form it can: an
+aggregate of exactly 16 was never reachable, because ending a battle later is
+what removing a win route *does*. The gate that scores worst on the seed lists
+is also the one that moves the aggregate most (Rowen, +4 and +3), so the two
+readings agree on the ranking.
+
+**Where it lands.** Pooled **81.3%**, inside the 40–83% band with 1.7 to spare,
+and the two sets close from a 12.5-point straddle (91.7 / 79.2) to 4.1
+(83.3 / 79.2) — the first time e4 has read the same fight on both seed sets.
+The reach route survives at 5 of 48 rather than 9; it is narrower, which is the
+point, and it is not dead. Party losses rise 0.25 on the primary set and not at
+all on the alt, and turns rise three and one: the fight itself is where §7.8.4
+left it.
+
+**Why Marek.** `CONTENT_NOTES` gives him the party's lowest Resolve and the
+reason for it — *"nerve for wiring, not for standing."* A switchboard is
+wiring. His movement ability is `catwalk-sense`, *"you have crawled over enough
+condemned grating to know which of it holds"*, and after `midpoint-overload`
+takes `tower-walk-south` and both hoists, condemned grating at height 4 is the
+only way left to the gallery. Rowen's `on-the-ring` line — *"It is not for
+seeing. It is the way to the board."* — is the order, not the errand; she names
+the route and the man who crosses grating for a living takes it. `ENCOUNTER_NOTES`
+§4 is updated with the consequence: the reach route is now conditional on
+deploying Marek, and a party that leaves him behind fights e4 on the kill route
+alone.
+
+**Not done here.** §7.8.4's second finding — `at-the-switchboard` covers
+`(6,2)…(9,2)` and the win tiles are `(6,1) (7,0) (7,1) (7,2)`, sharing one tile
+— is untouched, and the trigger still fires 0–2 times in 24. It is a beat that
+does not play, not a rate that is out of band, and it belongs to the encounter
+workstream. The counters are otherwise unmoved: Quill still works
+`switchboard-main` 25 and 34 times against zero party and zero hostile
+activations of it.
 
 ### 7.9 Regenerated test expectations
 
