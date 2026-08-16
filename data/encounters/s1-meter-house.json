@@ -1,0 +1,520 @@
+{
+  "schemaVersion": 1,
+  "id": "s1-meter-house",
+  "name": "The Meter House",
+  "mapId": "meter-house",
+  "rngSeed": 1006,
+  "maxDeployedUnits": 6,
+  "enemies": [
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "crew-sparker-nella",
+        "name": "Nella Fen",
+        "spriteId": "conduit",
+        "level": 2,
+        "jobId": "conduit",
+        "disposition": {
+          "resolve": 52,
+          "attunement": 66
+        },
+        "learnedAbilityIds": [
+          "arc",
+          "reclose",
+          "cross-tie"
+        ],
+        "equipment": {
+          "weapon": "tap-rod",
+          "body": "canvas-coat"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 8,
+        "y": 7
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "crew-machinist-bram",
+        "name": "Bram Coil",
+        "spriteId": "machinist",
+        "level": 2,
+        "jobId": "machinist",
+        "disposition": {
+          "resolve": 50,
+          "attunement": 46
+        },
+        "learnedAbilityIds": [
+          "field-splice",
+          "reroute",
+          "field-repair"
+        ],
+        "supportAbilityId": "bench-eye",
+        "equipment": {
+          "weapon": "spanner",
+          "body": "canvas-coat",
+          "accessory": "spare-cell"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 11,
+        "y": 7
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "torch-hand-trough",
+        "name": "Torch-Hand",
+        "spriteId": "saboteur",
+        "level": 1,
+        "jobId": "saboteur",
+        "disposition": {
+          "resolve": 45,
+          "attunement": 28
+        },
+        "learnedAbilityIds": [
+          "cut-the-feed",
+          "smoke-canister",
+          "rig-machinery"
+        ],
+        "movementAbilityId": "catwalk-sense",
+        "equipment": {
+          "weapon": "cutting-torch",
+          "body": "canvas-coat",
+          "head": "dust-hood"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 5,
+        "y": 7
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "hand-runner-sill",
+        "name": "Yard Runner",
+        "spriteId": "railrunner",
+        "level": 1,
+        "jobId": "railrunner",
+        "disposition": {
+          "resolve": 52,
+          "attunement": 32
+        },
+        "learnedAbilityIds": [
+          "switch-kick"
+        ],
+        "movementAbilityId": "rail-dash",
+        "equipment": {
+          "weapon": "hook-bar",
+          "body": "canvas-coat"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 12,
+        "y": 5
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "hand-dosser-orla",
+        "name": "Orla Pike",
+        "spriteId": "chemist",
+        "level": 1,
+        "jobId": "chemist",
+        "disposition": {
+          "resolve": 55,
+          "attunement": 45
+        },
+        "learnedAbilityIds": [
+          "coagulant-jet"
+        ],
+        "equipment": {
+          "weapon": "dosing-gun",
+          "body": "canvas-coat"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 8,
+        "y": 4
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "crew-picket-vaughn",
+        "name": "Picket",
+        "spriteId": "enforcer",
+        "level": 1,
+        "jobId": "enforcer",
+        "disposition": {
+          "resolve": 44,
+          "attunement": 38
+        },
+        "learnedAbilityIds": [
+          "pin"
+        ],
+        "equipment": {
+          "weapon": "shock-maul"
+        }
+      },
+      "team": "enemy",
+      "position": {
+        "x": 7,
+        "y": 10
+      },
+      "facing": "south"
+    }
+  ],
+  "winConditions": [
+    {
+      "kind": "all",
+      "conditions": [
+        {
+          "kind": "defeatUnit",
+          "unitId": "crew-sparker-nella"
+        },
+        {
+          "kind": "defeatUnit",
+          "unitId": "crew-machinist-bram"
+        },
+        {
+          "kind": "defeatUnit",
+          "unitId": "crew-picket-vaughn"
+        }
+      ]
+    },
+    {
+      "kind": "rout"
+    }
+  ],
+  "lossConditions": [
+    {
+      "kind": "partyRout"
+    }
+  ],
+  "endText": {
+    "win": "The boards are the Watch's and the struck galleries go out one after another. The tally for the night is written by somebody who was not here.",
+    "loss": "The house keeps its own bus. The Watch walks back out of the doors it came in by, and the galleries stay lit."
+  },
+  "triggers": [
+    {
+      "id": "the-meter-house",
+      "when": {
+        "kind": "battleStart"
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Corvane Meter House. You are drawing off a metered bus without licence. Stand away from the boards and present your tickets."
+            },
+            {
+              "speaker": "Nella Fen",
+              "text": "Tickets. There are four galleries lit off this house tonight and there are hands down every one of them."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Put them in the dark and walk out through the south doors. Nobody has to be carried."
+            },
+            {
+              "speaker": "Bram Coil",
+              "text": "You put a gallery in the dark with hands still down it and somebody gets carried anyway. That is the whole argument, that is all it has ever been."
+            },
+            {
+              "speaker": "Nella Fen",
+              "text": "Bram, hold the east board. I have the tie."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Sergeant. The maul on the man at the stair is Watch issue."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Mauls get sold, ma'am. Form your line."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "on-the-landing",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 8
+          },
+          {
+            "x": 8,
+            "y": 8
+          }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Nella Fen",
+              "text": "Off the landing. That is the tie, and it is open, and it stays open."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Sergeant. What does the tie do."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Interconnection breaker, ma'am. Closed, both mains carry one bus and there is room on it. Open, each main carries its own half and neither has anything spare."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Then it is a lever and it works from this side too. Throw it."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-west-feeder-goes",
+      "when": {
+        "kind": "objectDestroyed",
+        "objectId": "west-feeder"
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Bram Coil",
+              "text": "West trough is gone. Not cut - gone. A cut I splice. A hole stays a hole."
+            },
+            {
+              "speaker": "Nella Fen",
+              "text": "Then the west board answers to the tie now, or it answers to nothing at all."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-east-feeder-goes",
+      "when": {
+        "kind": "objectDestroyed",
+        "objectId": "east-feeder"
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Bram Coil",
+              "text": "East trough with it. That is the pump and the apron lamp off the east main for good."
+            },
+            {
+              "speaker": "Nella Fen",
+              "text": "Sump run hangs on the east board and the east board hangs on the tie. Watch the load, Bram."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-house-comes-back",
+      "when": {
+        "kind": "turnStart",
+        "turn": 24
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        },
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Nella Fen",
+              "text": "Both mains are back in. The Meter keeps a spare key to either cutout and a boy who only has to walk four steps."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Then we will be here a while, ma'am."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Pulling a main is a delay. Standing on the boards is the job. Take the boards."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-house-holds-36",
+      "when": {
+        "kind": "turnStart",
+        "turn": 36
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "the-house-holds-48",
+      "when": {
+        "kind": "turnStart",
+        "turn": 48
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "the-house-holds-60",
+      "when": {
+        "kind": "turnStart",
+        "turn": 60
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "the-house-holds-72",
+      "when": {
+        "kind": "turnStart",
+        "turn": 72
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "the-house-holds-84",
+      "when": {
+        "kind": "turnStart",
+        "turn": 84
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "west-main",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "east-main",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "nella-goes-down",
+      "when": {
+        "kind": "unitDowned",
+        "unitId": "crew-sparker-nella"
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Bram Coil",
+              "text": "Nella. Nella, look at me."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Log her. Nella Fen, Combine of Trades, meter house, this hour."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "The Assay will have her filed as a sparker whatever we write, ma'am. Licence is the only word they keep."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Then write both and let them disagree in the Archive."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

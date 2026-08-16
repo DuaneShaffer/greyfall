@@ -563,3 +563,225 @@ reversal: the Rise's decorations are still flux, and flux still goes up.
   Watch shutting the tradesmen's entrance is exactly what the Watch would
   do. Consider a `battleStart` action setting `service-lift` power off, so
   the player has to take terrace two to open it.
+
+---
+
+# 6. The Meter House — 16 × 16
+
+*The first grid-native map (`docs/design/FLUX_GRID.md` §4.1, "two mains, one
+bus"). Systems: a declared flux grid as the terrain — two sources, four
+severable runs, three breakers and a normally-open tie; a lift deck that
+drops when its component goes dark. Not a slice battle; see
+`docs/ENCOUNTER_NOTES.md` §6.*
+
+```
+HEIGHTS                    PLAN
+   0123456789012345           0123456789012345
+ 0 ################         0 ################
+ 1 #11111111111111#         1 #..............#
+ 2 #11111111111111#         2 #......pp......#
+ 3 #00000000000000#         3 #.,d,......,m,.#
+ 4 #00000000000000#         4 #.,d,......,m,.#
+ 5 #00000011000000#         5 #=====....=====#
+ 6 #00000222200000#         6 #.....f........#
+ 7 #00001222200000#         7 #a...e.g......o#
+ 8 #00001222200000#         8 #abbce.....inno#
+ 9 #00001222210000#         9 #...ce....hi...#
+10 #00000000010000#        10 #.........hj.l.#
+11 #00000000000000#        11 #..q...=~~~j.r.#
+12 #00000000000000#        12 #......=~~~k...#
+13 ##00###00###00##        13 ##..###=.###..##
+14 0000000000000000        14 ==**===**===**==
+15 0000000000000000        15 ..**.*.**.*.**..
+
+a west-main         b west-feeder       c west-board
+d charge-hoist-west e gallery-run       f west-lamps
+g gallery-tie       h meter-lift        i east-board
+j sump-run          k feed-pump         l east-lamps
+m charge-hoist-east n east-feeder       o east-main
+p ledger-rack       q drum-stack-west   r scrap-hopper-east
+```
+
+Height range 0–3 (perimeter mass 3, gallery landing 2, meter walk and the
+two access steps 1, hall floor 0). 18 objects, of which 15 are nodes of
+`meter-house-grid`. 29 rail tiles, 8 rough, 6 water, no void.
+
+## The place
+
+A Corvane metering hall in the Works, where two flux mains cross and the
+Assay's Meter keeps the tallies on them. The hall is one room. Two feeds
+enter through the side walls at mid-depth — the **west main** at (1,7)–(1,8)
+and the **east main** at (14,7)–(14,8) — and each runs inboard along a
+covered floor trough to its own **switchboard**. The **gallery landing**
+stands dead centre at height 2, and the **gallery tie** — the interconnection
+breaker between the two boards — sits on it, normally open, which is how a
+metering hall runs when nobody is being clever. The **meter walk** along the
+north at height 1 is the office: tally ledgers, the rack, the two cutout
+keys. South of the landing the floor falls away to the **sump**, six tiles of
+standing water that the feed pump vents. The hall's south wall has three
+doors and nothing else; the receiving bay and its siding are outside them.
+
+Both charge hoists stand in bays off the north walk, on grit. The gallery run
+climbs the landing's west face in a trough you can walk in.
+
+## Tactical thesis
+
+**The circuit is the map, and it has two of everything except a tie.**
+Foundry Floor Nine gives you one switch and asks whether to throw it; the
+Meter House gives you a graph and asks *which two things to do, in which
+order*. With the tie open the house runs as two halves, each at 10 of 14, and
+either half can be blacked out on its own. With the tie closed it runs as one
+bus at 20 of 28, which is proof against an Overdraw and fatal the moment
+either main stops feeding it.
+
+So the two objectives only matter together. Killing a main is worth an action
+only if the tie's state makes it worth one, and the tie is a tile rather than
+a body. That conjunction — *this is only worth doing if you also do that* — is
+the thing a single-switch map cannot say, and it is the whole reason to build
+a graph.
+
+## The grid
+
+Grid id `meter-house-grid`, name "Meter House Grid", kind `flux`. Fifteen
+nodes, fourteen edges, each edge stored with `a < b`.
+
+| node | role | data | is |
+|---|---|---|---|
+| `west-main` | source | capacity 14 | The west feed, and its own reclose handle. Operable (no power needed) with `setPower: on` on itself. hp 60. |
+| `east-main` | source | capacity 14 | The east feed. Same shape, same handle, same hp. |
+| `west-feeder` | line | hp 40 | Floor trough, main to board. Walk-through: no movement or sight blocked. |
+| `east-feeder` | line | hp 40 | The mirror. |
+| `gallery-run` | line | hp 40 | The run that climbs the landing's west face and carries the lift and the gallery lamp. |
+| `sump-run` | line | hp 40 | Down from the east board to the pump and the apron lamp. |
+| `west-board` | breaker | — | Switchboard. Operable, toggles its own isolator. Indestructible; it blocks movement and sight, so it is also the west lane's cover. |
+| `east-board` | breaker | — | The mirror. |
+| `gallery-tie` | breaker | — | The interconnection breaker, authored `powered: false` — a normally-open tie is the existing flag already saying so. Operable, toggles itself. **Indestructible on purpose**: the tie is the counterplay to everything else on this map, and an enemy who could delete it would delete the thesis. |
+| `charge-hoist-west` | sink | draw 4 | Operable (needs power): 24 kinetic + 40% stun onto its own two bed tiles, which are the west bay's fast line. hp 45. |
+| `charge-hoist-east` | sink | draw 4 | The mirror, on the east bay. |
+| `meter-lift` | sink | draw 4 | Goods lift onto the landing's south-east corner, `surfaceHeight` 1. Indestructible — this one is the *reversible* half of the state table, and dropping it is a power decision, never a demolition. |
+| `feed-pump` | sink | draw 4 | Operable (needs power): 14 thermal over the six sump tiles. hp 40. |
+| `west-lamps` | sink | draw 2 | Lamp standard on the landing. Pure load. hp 24. |
+| `east-lamps` | sink | draw 2 | Lamp standard on the sump apron. Pure load. hp 24. |
+
+```
+west-main --- west-feeder --- west-board --- charge-hoist-west
+                                  |   \
+                                  |    gallery-run --- meter-lift
+                                  |         \-------- west-lamps
+                             gallery-tie   (normally open)
+                                  |
+east-main --- east-feeder --- east-board --- charge-hoist-east
+                                  \-------- sump-run --- feed-pump
+                                                   \---- east-lamps
+```
+
+**The arithmetic, and every claim it makes.** Sinks draw 4 for a hoist, a
+lift or a pump and 2 for a lamp standard, which is §1.7's convention
+literally. Each half therefore carries **10 against a rating of 14 — 71%**,
+inside the 70–85% contested band. Closing the tie makes one component of
+**20 against 28**, headroom of exactly **8**.
+
+Overdraw is +8, and those two numbers are quoted together for a reason:
+
+- **18 > 14**, so an Overdraw trips either half on its own.
+- **28 is not > 28**, so the same Overdraw does not trip the bus once the tie
+  is closed. The defender's answer to a Conduit is one action on a breaker.
+- **14 is not > 14**, so shedding a single 4-draw machine with an isolator
+  saves the half without needing the tie at all. Two answers, priced
+  differently, both an action.
+
+And the conjunction:
+
+- Tie **open**, kill `west-main`: the west half goes dark and the east half
+  never notices. Half a map for one permanent, expensive verb.
+- Tie **closed**, kill either main: 20 against 14, and the **whole house**
+  trips. The defender's own headroom insurance is the attacker's opening.
+- The answer is two actions in order — **open the tie, then reclose the
+  survivor** — which restores half the floor. Reclosing first is an action
+  spent on nothing: 20 against 14 is still 20 against 14, and it trips again
+  the instant it comes in.
+
+All of the above is asserted against the engine's own `solveGrid` in
+`tests/data/meterHouse.test.ts`, including the brackets that pin the load
+exactly (a hung load of 4 fits a half and 5 does not; 8 fits the bus and 9
+does not).
+
+**Siting, per §1.7's mandatory pair.** There is one tie and there are two
+reclose points, and all three are reachable from both approaches: the mains
+sit at mid-depth on opposite side walls rather than behind either force's
+line, and the landing has a permanent Jump-1 way up from the north and
+another from the west. This is MAP_NOTES' operable rule — *a hazard only the
+defender can fire is a trap, not a system* — restated for topology, and it is
+verified by reachability search rather than asserted.
+
+## Intended flow
+
+**Opening.** Deployment is the receiving bay at y 14–15, and the south wall
+has exactly three doors: the **west door** at x 2–3, the **centre door** at
+x 7–8 (on the hand-truck rail), and the **east door** at x 12–13. The
+deployment decision is which door, and it is close to irreversible, because
+the wall between them is mass. First contact is 4–6 tiles in. West buys the
+west main, the west board and the hoist bay; centre buys the rail lane and
+arrives under the landing's south face, which is a height-2 wall; east buys
+the sump apron, the east board and the lift.
+
+**Midfield.** The floor is open and the fighting is about boards. Each board
+blocks movement and sight, so the two lanes that pass them are corners, and
+both boards are one action from taking their own half of the house down. The
+hoist bays at y 3–4 are the north half's press-line analogue: the fast line
+up either flank runs across a bed, and the operator niches are the grit tiles
+beside them, reachable from either side. The sump is the centre's tax — six
+water tiles at double cost, right where the centre door's rail lane wants to
+open out — and the feed pump makes standing in it a decision rather than a
+delay.
+
+**Pivot.** The landing, and the tie on it. Three ways up: the **north step**
+at (7,5)–(8,5), the **west ramp** at (5,7)–(5,9) — the trough the gallery run
+lies in — and the **meter lift's deck** at (10,9)–(10,10), which is the only
+one that answers to the grid. The lift is the shortest road from the south
+and east doors to the tie; with its deck dark that road is four tiles longer
+and runs through the middle of the hall. Everything else on the landing's
+face is height 2 from height 0, so Jump 2 goes up almost anywhere and a
+Conduit walks. That is a pointed thing to do to the job whose mechanic this
+is, and it is the same joke Refinery Three makes with its four ramps.
+
+**No destructible object is the sole route to anywhere**, and neither is a
+powered one: with `meter-lift` de-energized, every tile of the hall and every
+operable's control position is still reachable at Jump 1 from every
+deployment tile. Verified by search, the way the rule was verified for the
+other four maps.
+
+## Objects
+
+| id | purpose |
+|---|---|
+| `west-main` / `east-main` | The two feeds, capacity 14 each, at (1,7)–(1,8) and (14,7)–(14,8). Each is its own reclose handle — operable, no power needed, `setPower: on` on itself — so a non-Conduit party has an answer to a trip and both sides have the same answer. **hp 60**, matching Floor Nine's press line: they have to be destructible or §4.1's conjunction cannot happen at all (`overload-cell`'s `damageObject` against an indestructible source succeeds and does nothing), and they have to be expensive or the permanent verb stops being the expensive one. Blowing one lands 22 arc on four tiles. |
+| `west-feeder` / `east-feeder` | Covered floor troughs, main to board, hp 40. They block neither movement nor sight — they are floor trays with grating over them, and the map is a room, not a maze. Destroying one is 12 arc over its own tiles: modest on purpose, because **the cut is the routine verb and the demolition is the one that cannot be answered**. |
+| `gallery-run` | The run up the landing's west face, hp 40. It carries the lift deck and the gallery lamp, so cutting it is the cheapest way to take the vertical shortcut away — and a splice is the cheapest way to give it back. The tiles it lies in are the west ramp, at height 1: the trough is the ramp. |
+| `sump-run` | The run south from the east board to the pump and the apron lamp, hp 40. Cutting it disarms the sump. |
+| `west-board` / `east-board` | The switchboards, at (4,8)–(4,9) and (11,8)–(11,9). Indestructible, blocking movement and sight, operable by either side with no power needed. Each is the isolator for its own half and the cover for its own lane. |
+| `gallery-tie` | (7,7), on the landing, `powered: false`. The map's one strategic tile. Indestructible: everything else here can be taken off the board permanently, and the piece that makes those decisions reversible must not be. |
+| `charge-hoist-west` / `charge-hoist-east` | The bays' hazard, hp 45. Operable and power-gated: 24 kinetic + 40% stun onto the two bed tiles beside them — Floor Nine's press one notch quieter, because this is a metering hall and not a foundry floor. Wrecking one lands 16 kinetic over the bay. |
+| `meter-lift` | (10,9)–(10,10), `surfaceHeight` 1. The vertical shortcut, and the only piece of terrain on the map that answers to the load bar. Indestructible, so the only way to take it away is to take its power away, and the only way to keep it is to keep the west half fed. |
+| `feed-pump` | (11,12), hp 40. Operable and power-gated: 14 thermal over the whole sump. Ungated hazards belong to whoever holds the ground; this one belongs to whoever holds the grid. |
+| `west-lamps` / `east-lamps` | Lamp standards, hp 24, 20 arc to their neighbours. Pure load — 2 each — which is the point: they are what a defender sheds and what an attacker never bothers with. |
+| `ledger-rack` | (7,2)–(8,2) on the meter walk. Cover for whoever holds the office, and the reason the north wall is a firing step rather than a shooting gallery. |
+| `drum-stack-west`, `scrap-hopper-east` | Cover inside the west and east doors, so the opening is not a bare walk into an open room. |
+
+## Encounter hooks
+
+- **Deployment intent.** Attacker from the receiving bay, south, through one
+  of three doors. Defenders belong *on the circuit*: somebody at the tie on
+  the landing, somebody at a board, somebody in a trough with cutters, and a
+  body in the middle of the floor so the landing is not free.
+- **Trigger tiles.** `unitEntersTiles` on the tie landing
+  `(7,7),(8,7),(7,8),(8,8)` is the map's one mandatory beat — the tie is the
+  piece of state a first-time player is least likely to guess, and §2.5's
+  legibility contract says every state the player must reason about needs a
+  cue at the moment it changes. `objectDestroyed` on either feeder is the
+  other one: it is where the cut/destroy split becomes visible, because that
+  is the damage a splice cannot answer.
+- **Do not script the tie.** The mains are fair game for a restore ladder —
+  the house has a spare key to either cutout and a boy who runs them — but
+  the tie's state is the player's entire decision space on this map, and a
+  trigger that closes or opens it takes the map's only real choice away.

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "works-skirmishes",
+  "name": "The Works - Skirmishes",
+  "description": "Standing engagements in the Corvane works during the strike. Off the chapter's ledger and outside its order.",
+  "encounterIds": [
+    "s1-meter-house"
+  ],
+  "startingRosterUnitIds": [
+    "rowen",
+    "vale",
+    "jory-slate",
+    "ivo-brace",
+    "della-tine",
+    "marek-sump",
+    "orin-vane"
+  ],
+  "startingStandingBonus": 150,
+  "startingInventory": [
+    {
+      "itemId": "riot-shield",
+      "count": 1
+    },
+    {
+      "itemId": "riot-helm",
+      "count": 1
+    },
+    {
+      "itemId": "watch-cuirass",
+      "count": 1
+    },
+    {
+      "itemId": "canvas-coat",
+      "count": 2
+    },
+    {
+      "itemId": "dust-hood",
+      "count": 2
+    },
+    {
+      "itemId": "spare-cell",
+      "count": 1
+    },
+    {
+      "itemId": "grounding-strap",
+      "count": 1
+    },
+    {
+      "itemId": "coagulant-vial",
+      "count": 3
+    },
+    {
+      "itemId": "numbing-salts",
+      "count": 1
+    },
+    {
+      "itemId": "cell-tab",
+      "count": 1
+    }
+  ]
+}

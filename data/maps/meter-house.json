@@ -1,0 +1,2109 @@
+{
+  "schemaVersion": 1,
+  "id": "meter-house",
+  "name": "The Meter House",
+  "width": 16,
+  "depth": 16,
+  "tiles": [
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rough"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 1,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 2,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "water"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 3,
+      "terrain": "impassable"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "rail"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    },
+    {
+      "height": 0,
+      "terrain": "plain"
+    }
+  ],
+  "objects": [
+    {
+      "id": "west-main",
+      "kind": "machine",
+      "name": "West Main",
+      "spriteId": "switch-board",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 7
+        },
+        {
+          "x": 1,
+          "y": 8
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 60
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "west-main"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "on"
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 1,
+            "y": 6
+          },
+          {
+            "x": 1,
+            "y": 9
+          },
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 8
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 22
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "west-feeder",
+      "kind": "machine",
+      "name": "West Feeder Trough",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 2,
+          "y": 8
+        },
+        {
+          "x": 3,
+          "y": 8
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 2,
+            "y": 8
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 12
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "west-board",
+      "kind": "switch",
+      "name": "West Switchboard",
+      "spriteId": "switch-board",
+      "tiles": [
+        {
+          "x": 4,
+          "y": 8
+        },
+        {
+          "x": 4,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "west-board"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "charge-hoist-west",
+      "kind": "machine",
+      "name": "Charge Hoist, West Bay",
+      "spriteId": "hydraulic-press",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 3
+        },
+        {
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 45
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 40
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 16
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-run",
+      "kind": "machine",
+      "name": "Gallery Run",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 5,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 8
+        },
+        {
+          "x": 5,
+          "y": 9
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 5,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 8
+          },
+          {
+            "x": 5,
+            "y": 9
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 12
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "west-lamps",
+      "kind": "cell",
+      "name": "Lamp Standard, Gallery",
+      "spriteId": "lamp-standard",
+      "tiles": [
+        {
+          "x": 6,
+          "y": 6
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 24
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 5,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 5
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 6
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "gallery-tie",
+      "kind": "switch",
+      "name": "Gallery Tie",
+      "spriteId": "switch-lever",
+      "tiles": [
+        {
+          "x": 7,
+          "y": 7
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": false,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "gallery-tie"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "meter-lift",
+      "kind": "lift",
+      "name": "Meter Lift",
+      "spriteId": "freight-lift",
+      "tiles": [
+        {
+          "x": 10,
+          "y": 9
+        },
+        {
+          "x": 10,
+          "y": 10
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "surfaceHeight": 1,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null
+    },
+    {
+      "id": "east-board",
+      "kind": "switch",
+      "name": "East Switchboard",
+      "spriteId": "switch-board",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 8
+        },
+        {
+          "x": 11,
+          "y": 9
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": false
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "east-board"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "toggle"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sump-run",
+      "kind": "machine",
+      "name": "Sump Run",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 10
+        },
+        {
+          "x": 11,
+          "y": 11
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 11,
+            "y": 10
+          },
+          {
+            "x": 11,
+            "y": 11
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 12
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "feed-pump",
+      "kind": "machine",
+      "name": "Sump Feed Pump",
+      "spriteId": "pump-line",
+      "tiles": [
+        {
+          "x": 11,
+          "y": 12
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 8,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 8,
+            "y": 12
+          },
+          {
+            "x": 9,
+            "y": 12
+          },
+          {
+            "x": 10,
+            "y": 12
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 14
+            }
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 10,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 12
+          },
+          {
+            "x": 12,
+            "y": 11
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "thermal",
+            "amount": {
+              "base": "fixed",
+              "power": 18
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "east-lamps",
+      "kind": "cell",
+      "name": "Lamp Standard, Sump Apron",
+      "spriteId": "lamp-standard",
+      "tiles": [
+        {
+          "x": 13,
+          "y": 10
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 24
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 12,
+            "y": 10
+          },
+          {
+            "x": 13,
+            "y": 9
+          },
+          {
+            "x": 13,
+            "y": 11
+          },
+          {
+            "x": 14,
+            "y": 10
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 20
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "charge-hoist-east",
+      "kind": "machine",
+      "name": "Charge Hoist, East Bay",
+      "spriteId": "hydraulic-press",
+      "tiles": [
+        {
+          "x": 12,
+          "y": 3
+        },
+        {
+          "x": 12,
+          "y": 4
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 45
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": true,
+        "targetObjectIds": [],
+        "targetTiles": [
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 11,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 24
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 40
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 11,
+            "y": 3
+          },
+          {
+            "x": 11,
+            "y": 4
+          },
+          {
+            "x": 12,
+            "y": 3
+          },
+          {
+            "x": 12,
+            "y": 4
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 16
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "east-feeder",
+      "kind": "machine",
+      "name": "East Feeder Trough",
+      "spriteId": "gantry-grate",
+      "tiles": [
+        {
+          "x": 12,
+          "y": 8
+        },
+        {
+          "x": 13,
+          "y": 8
+        }
+      ],
+      "blocksMovement": false,
+      "blocksLos": false,
+      "integrity": {
+        "destructible": true,
+        "hp": 40
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": null,
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 12,
+            "y": 8
+          },
+          {
+            "x": 13,
+            "y": 8
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 12
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "east-main",
+      "kind": "machine",
+      "name": "East Main",
+      "spriteId": "switch-board",
+      "tiles": [
+        {
+          "x": 14,
+          "y": 7
+        },
+        {
+          "x": 14,
+          "y": 8
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 60
+      },
+      "powered": true,
+      "network": "meter-house-grid",
+      "operable": {
+        "requiresPower": false,
+        "targetObjectIds": [
+          "east-main"
+        ],
+        "targetTiles": [],
+        "effects": [
+          {
+            "kind": "setPower",
+            "mode": "on"
+          }
+        ]
+      },
+      "onDestroyed": {
+        "targetTiles": [
+          {
+            "x": 13,
+            "y": 7
+          },
+          {
+            "x": 13,
+            "y": 8
+          },
+          {
+            "x": 14,
+            "y": 6
+          },
+          {
+            "x": 14,
+            "y": 9
+          }
+        ],
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "arc",
+            "amount": {
+              "base": "fixed",
+              "power": 22
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ledger-rack",
+      "kind": "wall",
+      "name": "Tally Ledger Rack",
+      "spriteId": "crate-stack",
+      "tiles": [
+        {
+          "x": 7,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 2
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 30
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "drum-stack-west",
+      "kind": "wall",
+      "name": "Drum Stack",
+      "spriteId": "drum-stack",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 11
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    },
+    {
+      "id": "scrap-hopper-east",
+      "kind": "wall",
+      "name": "Scrap Hopper",
+      "spriteId": "scrap-hopper",
+      "tiles": [
+        {
+          "x": 13,
+          "y": 11
+        }
+      ],
+      "blocksMovement": true,
+      "blocksLos": true,
+      "integrity": {
+        "destructible": true,
+        "hp": 25
+      },
+      "powered": null,
+      "operable": null
+    }
+  ],
+  "deploymentTiles": [
+    {
+      "x": 2,
+      "y": 14
+    },
+    {
+      "x": 3,
+      "y": 14
+    },
+    {
+      "x": 7,
+      "y": 14
+    },
+    {
+      "x": 8,
+      "y": 14
+    },
+    {
+      "x": 12,
+      "y": 14
+    },
+    {
+      "x": 13,
+      "y": 14
+    },
+    {
+      "x": 2,
+      "y": 15
+    },
+    {
+      "x": 3,
+      "y": 15
+    },
+    {
+      "x": 5,
+      "y": 15
+    },
+    {
+      "x": 7,
+      "y": 15
+    },
+    {
+      "x": 8,
+      "y": 15
+    },
+    {
+      "x": 10,
+      "y": 15
+    },
+    {
+      "x": 12,
+      "y": 15
+    },
+    {
+      "x": 13,
+      "y": 15
+    }
+  ],
+  "grids": [
+    {
+      "id": "meter-house-grid",
+      "name": "Meter House Grid",
+      "kind": "flux",
+      "nodes": [
+        {
+          "role": "source",
+          "objectId": "west-main",
+          "capacity": 14
+        },
+        {
+          "role": "source",
+          "objectId": "east-main",
+          "capacity": 14
+        },
+        {
+          "role": "line",
+          "objectId": "west-feeder"
+        },
+        {
+          "role": "line",
+          "objectId": "east-feeder"
+        },
+        {
+          "role": "line",
+          "objectId": "gallery-run"
+        },
+        {
+          "role": "line",
+          "objectId": "sump-run"
+        },
+        {
+          "role": "breaker",
+          "objectId": "west-board"
+        },
+        {
+          "role": "breaker",
+          "objectId": "east-board"
+        },
+        {
+          "role": "breaker",
+          "objectId": "gallery-tie"
+        },
+        {
+          "role": "sink",
+          "objectId": "charge-hoist-west",
+          "draw": 4
+        },
+        {
+          "role": "sink",
+          "objectId": "meter-lift",
+          "draw": 4
+        },
+        {
+          "role": "sink",
+          "objectId": "west-lamps",
+          "draw": 2
+        },
+        {
+          "role": "sink",
+          "objectId": "charge-hoist-east",
+          "draw": 4
+        },
+        {
+          "role": "sink",
+          "objectId": "feed-pump",
+          "draw": 4
+        },
+        {
+          "role": "sink",
+          "objectId": "east-lamps",
+          "draw": 2
+        }
+      ],
+      "edges": [
+        {
+          "a": "west-feeder",
+          "b": "west-main"
+        },
+        {
+          "a": "west-board",
+          "b": "west-feeder"
+        },
+        {
+          "a": "charge-hoist-west",
+          "b": "west-board"
+        },
+        {
+          "a": "gallery-run",
+          "b": "west-board"
+        },
+        {
+          "a": "gallery-run",
+          "b": "meter-lift"
+        },
+        {
+          "a": "gallery-run",
+          "b": "west-lamps"
+        },
+        {
+          "a": "gallery-tie",
+          "b": "west-board"
+        },
+        {
+          "a": "east-board",
+          "b": "gallery-tie"
+        },
+        {
+          "a": "east-feeder",
+          "b": "east-main"
+        },
+        {
+          "a": "east-board",
+          "b": "east-feeder"
+        },
+        {
+          "a": "charge-hoist-east",
+          "b": "east-board"
+        },
+        {
+          "a": "east-board",
+          "b": "sump-run"
+        },
+        {
+          "a": "feed-pump",
+          "b": "sump-run"
+        },
+        {
+          "a": "east-lamps",
+          "b": "sump-run"
+        }
+      ]
+    }
+  ]
+}

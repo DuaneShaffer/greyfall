@@ -606,3 +606,141 @@ turns, so "he gets six turns" was never true of any unit on this map.
 **Difficulty.** Still a walkover by design: **100% on both 24-seed sets, no
 losses**, mean 11.7 unit turns. It is the tutorial; it now takes two kills, a
 withdrawal, and one real blow from the man who leaves.
+
+---
+
+## 6. The Meter House — `s1-meter-house`
+
+Design record for `data/encounters/s1-meter-house.json`,
+`data/maps/meter-house.json` (MAP_NOTES §6) and
+`data/campaigns/works-skirmishes.json`. Seed `1006`, continuing `1001`–`1005`.
+The first encounter authored on a declared flux grid
+(`docs/design/FLUX_GRID.md` §4.1); everything in it is v1 vocabulary.
+
+**Dramatic function.** A Works engagement during the strike, and deliberately
+not a beat of the arc. Bible §8 says five battles and means five: this is a
+skirmish, and its job is to carry the chapter's ambivalence without moving any
+of it. A Combine crew has taken the Corvane meter house and is running four
+struck galleries off the house's own bus. Rowen's squad is sent to put the
+galleries back in the dark, which is a lawful order, an unarguable
+inconvenience, and a thing that happens to people down a hole. Nobody in the
+dialogue is lying and nobody wins the argument. The one detail that points at
+the chapter — a Watch-issue shock maul in a picket line — is noticed by Rowen,
+dismissed by the sergeant, and never mentioned again.
+
+**Composition (6 enemies, L1–2; 6 deployed).** The thesis is expressed through
+what the crew has *learned*: four of the six carry a grid verb, and none of
+them carries stat inflation.
+
+| id | template | Lv | tile | learned | why there |
+|---|---|---|---|---|---|
+| `crew-sparker-nella` | watch-conduit | 2 | (8,7) | `arc`, `reclose`, `cross-tie` | Nella Fen, an unlicensed Conduit, standing on the gallery landing one tile from the tie. She is the restore and she is the tie. The Assay's visor came off the template with the licence. |
+| `crew-machinist-bram` | shop-machinist | 2 | (11,7) | `field-splice`, `reroute`, `field-repair` | Bram Coil, at the east board. The other half of the restore: he answers cuts, and `reroute` means he can close the tie from three tiles out when Nella cannot reach it. |
+| `torch-hand-trough` | provocateur-torch | 1 | (5,7) | `cut-the-feed`, `smoke-canister`, `rig-machinery` | Standing *in* the gallery run he is about to cut, which teaches what a trough is in one glance. The cut half of the tug-of-war. |
+| `hand-runner-sill` | combine-runner | 1 | (12,5) | `switch-kick` | On the trolley rail, four steps from the east main and the east board. He has no grid ability and does not need one: `activateObject` on a board is free to anybody, and this is the body that will use it. |
+| `hand-dosser-orla` | combine-hand | 1 | (8,4) | `coagulant-jet` | Orla Pike, mid-floor behind the line. The crew keeping each other standing. |
+| `crew-picket-vaughn` | provocateur | 1 | (7,10) | `pin` | The picket under the landing's south face, holding the centre door's exit. Shock maul, no armour — e2's tell, unremarked. |
+
+The map's own asymmetry does the rest: the two grid characters are the only
+L2s, and the three lanes that matter are held by one body each.
+
+### The machinery tug-of-war, on a graph
+
+Everything §2 learned about Floor Nine applies here with a bigger surface to
+get it wrong on, and `BALANCE_REPORT` §7.8.3 is the binding precedent: **an
+enemy that could delete the presses deleted the thesis.** Three rules were
+applied at authoring time rather than found in a sweep.
+
+| lever | what shipped | why |
+|---|---|---|
+| the grid-killer | **No enemy carries `bring-it-down`, `shaped-charge` or `overload-cell`.** The torch-hand keeps `cut-the-feed`, `smoke-canister` and `rig-machinery` — the last of which is a `setPower: off` with 12 points of object damage riding it, a quarter of a trough, which cannot take anything off this map inside a battle. | The routine verb has to be the reversible one (§1.8). A cut buys turns and a splice answers it; a demolition changes the map and nothing answers it. Give a level-1 saboteur a way to demolish a trough in two casts and the second half of the fight has no grid in it. |
+| the one-shot restore | **`the-house-comes-back` at `turnStart: 24`, then `the-house-holds-36/48/60/72/84`** — six triggers, each putting *both* mains back in, five of them silent. | `once: false` is still unusable: conditions read state rather than the event batch, so a repeating `turnStart` refires once per command and the switch stops working. A twelve-unit-turn ladder is the repeatable restore expressed in the vocabulary that exists. The mains are a tug-of-war, not a switch, and the house has a spare key to either cutout. |
+| the tie | **Nothing scripted ever touches `gallery-tie`.** | The ladder is allowed to fight the player over the mains because the mains are a resource. The tie is the player's entire decision space on this map (MAP_NOTES §6), and a trigger that opens or closes it would be the encounter answering the question the map exists to ask. |
+
+**A `setPower` trigger action does clear a trip latch, and the ladder depends
+on it.** A tripped source keeps `powered: true` — the trip is a latch on the
+node, not a thrown isolator — so a naive `setPower: on` could have been a
+no-op against exactly the state the ladder exists to undo. It is not:
+`setObjectPower` (`src/core/rules/effects.ts`) treats "on" against a latched
+source as a **reclose**, clears `tripped`, and emits `GridReset`. Asserted
+end-to-end in `tests/data/meterHouse.test.ts` by driving `evaluateTriggers`
+at turn 24 against a house the player has just overdrawn.
+
+**Trigger map.**
+
+| trigger | condition | beat |
+|---|---|---|
+| `the-meter-house` | `battleStart` | The sergeant's demand for tickets, Nella's count of the galleries, Rowen's offer of the south doors, and Bram's answer — *"you put a gallery in the dark with hands still down it and somebody gets carried anyway."* Closes on Rowen naming the maul and the sergeant filing it as nothing. |
+| `on-the-landing` | player on `(7,7),(8,7),(7,8),(8,8)` | **The legibility beat.** The sergeant explains the tie in one line — closed, both mains carry one bus and there is room on it; open, each carries its half and neither has anything spare — and Rowen names the verb that answers it. §2.5(b) says the player must be told the state *and* the counterplay; e2 proved that inferring it is the same as not having it. |
+| `the-west-feeder-goes` | `objectDestroyed: west-feeder` | The cut/destroy split, said out loud: *"Not cut — gone. A cut I splice. A hole stays a hole."* Phrased so it reads correctly whether or not the tie is closed, because with it closed the west board is still fed from the far main. |
+| `the-east-feeder-goes` | `objectDestroyed: east-feeder` | The mirror, naming the pump and the apron lamp. |
+| `the-house-comes-back` | `turnStart: 24` | Both mains back in, with the only dialogue on the ladder: the Meter keeps a spare key and a boy who has to walk four steps. Rowen's answer is the design note — *"pulling a main is a delay. Standing on the boards is the job."* |
+| `the-house-holds-36` … `-84` | `turnStart: 36/48/60/72/84` | The same two `setPower` actions, silent. The house does not give up after one cut, and Nella does not get to say the same two lines six times. |
+| `nella-goes-down` | `unitDowned: crew-sparker-nella` | The one that should cost something. Rowen logs a name; the sergeant points out that the Assay will file her as a sparker whatever the Watch writes; Rowen tells him to write both and let the Archive hold two documents that disagree. Authored last, per §5's overkill ruling. |
+
+No trigger tile overlaps a deployment tile — the landing is at y 7–8 and the
+receiving bay is at y 14–15 — and nothing here needs a grid-aware condition,
+which is the point: §7.5's `gridTripped` and `objectPowered` are v2 and this
+encounter is the proof that v1 does not need them.
+
+**Win: `all` of Nella Fen, Bram Coil and the picket, or `rout`. Loss:
+`partyRout`.** The same shape e2's win takes and for the same reason: the two
+people who are actually holding the house are the two working the circuit, and
+the third is the man in the way. Put those three down and the hands go home;
+you do not have to put down a chemist and a yard runner who took the shift
+because the gallery is theirs. It is not a cheap out — they stand at (8,7),
+(11,7) and (7,10), which is the landing, the east board and the centre door,
+so taking them means crossing the whole hall.
+
+### Campaign integration: a second campaign, and its one cost
+
+`Campaign` has a flat ordered `encounterIds` and nothing else — no optional
+flag, no side list — and the schema is frozen. Appending `s1-meter-house` to
+`foundry-chapter` would make it a mandatory sixth battle and break bible §8's
+five-battle arc outright, so it ships as its own campaign:
+**`data/campaigns/works-skirmishes.json`**, id `works-skirmishes`, name "The
+Works - Skirmishes", one encounter, and the chapter's seven roster ids,
+Standing bonus and starting inventory copied verbatim.
+
+Nothing in the codebase enumerates campaigns in a way this disturbs, and that
+was checked rather than assumed:
+
+- `src/app/content.ts` globs every campaign file into `CAMPAIGNS`, but
+  `openingCampaign()` names `foundry-chapter` by constant. The shell still
+  opens on the chapter.
+- `src/sim/sweeps.ts` picks a campaign in two places (`rosterIds`,
+  `encounterSweep`) as **the first by sorted id**. `foundry-chapter` sorts
+  before `works-skirmishes`, so the sim's party selection and its chapter
+  ordering are unchanged.
+- `encounterSweep` glob-discovers `data/encounters/` regardless of any
+  campaign, so `s1-meter-house` now appears in the sweep at
+  `chapterIndex: -1` — which floors to level 1 in the "chapter" arm. That is
+  the intended behaviour for a skirmish and is the reason it is measurable at
+  all.
+- `tests/app/*` load `foundry-chapter.json` by path; `tests/progression/
+  campaign-refs.test.ts` iterates every campaign and is satisfied by the new
+  one (opening encounter exists, roster ids resolve, no duplicate stacks).
+
+**The one limitation, stated so nobody rediscovers it as a bug.** A separate
+campaign is a separate `CampaignState`: its own roster, its own Standing, its
+own fallen list. A player cannot take a squad out of the chapter, fight the
+Meter House, and come back with the Standing. The skirmish therefore starts
+from the chapter's seed rather than from wherever the player is. Fixing that
+means either an optional-encounter concept on `Campaign` or a shared roster
+between campaigns, and both are schema changes this package is not allowed to
+make; recorded here as the price of shipping the grid a map to live on.
+
+**Difficulty.** Six enemies against six deployed, two of them L2, on a map
+where the real opponent is a circuit that repairs itself every twelve unit
+turns. Nothing has been measured. The party's grid verbs — `overdraw`,
+`cross-tie`, `reclose`, `backfeed`, `cut-the-feed`, `field-splice`, `reroute` —
+all landed in the same pass as this encounter and none of them has been
+priced in play, so the levers most likely to move the number are the crew's
+two L2s, the ladder's twelve-turn period, and whether an AI with a grid
+affinity finds the tie at all. The expected shape is a fight that runs long
+and is decided at the boards rather than in the middle of the floor.
+
+TODO(balance): win rate, mean turns and losses at 24 seeds on two disjoint
+sets; `grid-never-contested` / `grid-dark-by-turn-N` / `grid-never-restored`
+findings flags; and whether the merciful `all` win is worth the same as the
+rout. The balance pass owns every number in this paragraph.
