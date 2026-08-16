@@ -3,6 +3,7 @@ import { AnimationPlayer } from "../art/player.js";
 import { resolveFacing, type AnimState, type CameraYaw, type DrawnView } from "../art/sprites.js";
 import type { Facing, Team } from "../data/schemas/common.js";
 import { facingYaw } from "./grid.js";
+import { DRAW_ORDER } from "./layers.js";
 import { palette, teamColor } from "./palette.js";
 import {
   SPRITE_ANCHOR_Y,
@@ -140,7 +141,7 @@ export class UnitVisual {
     });
     this.billboard = new THREE.Mesh(this.geometry, this.material);
     this.billboard.name = "unit-billboard";
-    this.billboard.renderOrder = 2;
+    this.billboard.renderOrder = DRAW_ORDER.unitSprite;
 
     // Same sheet, same UV window, one rim thickness larger and pushed away from
     // the camera: the billboard covers its own interior, leaving a team-tinted
@@ -173,7 +174,7 @@ export class UnitVisual {
     this.rim = new THREE.Mesh(this.rimGeo, this.rimMaterial);
     this.rim.name = "team-rim";
     this.rim.position.z = -RIM_DEPTH_OFFSET;
-    this.rim.renderOrder = 1;
+    this.rim.renderOrder = DRAW_ORDER.unitRim;
     this.billboard.add(this.rim);
 
     this.markerTeam = view.team;
@@ -189,7 +190,7 @@ export class UnitVisual {
     this.marker = new THREE.Mesh(this.markerGeo, this.markerMaterial);
     this.marker.name = "team-marker";
     this.marker.position.y = 0.028;
-    this.marker.renderOrder = 1;
+    this.marker.renderOrder = DRAW_ORDER.unitMarker;
 
     this.wedgeGeo = wedgeGeometry();
     this.wedgeMaterial = new THREE.MeshBasicMaterial({
@@ -202,7 +203,7 @@ export class UnitVisual {
     this.wedge = new THREE.Mesh(this.wedgeGeo, this.wedgeMaterial);
     this.wedge.name = "facing-wedge";
     this.wedge.position.y = 0.034;
-    this.wedge.renderOrder = 1;
+    this.wedge.renderOrder = DRAW_ORDER.unitMarker;
 
     this.shadowGeo = new THREE.CircleGeometry(0.3, 12);
     this.shadowGeo.rotateX(-Math.PI / 2);
@@ -213,7 +214,9 @@ export class UnitVisual {
       depthWrite: false,
     });
     this.shadow = new THREE.Mesh(this.shadowGeo, this.shadowMaterial);
+    this.shadow.name = "unit-shadow";
     this.shadow.position.y = 0.02;
+    this.shadow.renderOrder = DRAW_ORDER.unitShadow;
 
     this.group.add(this.shadow, this.marker, this.wedge, this.billboard);
     this.setFacing(view.facing);

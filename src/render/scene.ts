@@ -7,6 +7,7 @@ import { TacticsCamera } from "./camera.js";
 import type { Vec3 } from "./effects.js";
 import { HEIGHT_STEP, facingBetween, inBounds, standingHeight, tileCenter } from "./grid.js";
 import { TileHighlights, type HighlightOptions } from "./highlights.js";
+import { DRAW_ORDER } from "./layers.js";
 import { ObjectVisual } from "./objects.js";
 import { damagePopup, missPopup } from "./popups.js";
 import {
@@ -225,6 +226,7 @@ export class BattleRenderer {
     geometry.computeBoundingSphere();
     const material = new THREE.MeshLambertMaterial({ vertexColors: true });
     this.terrainMesh = new THREE.Mesh(geometry, material);
+    this.terrainMesh.renderOrder = DRAW_ORDER.terrain;
     this.boardGroup.add(this.terrainMesh);
 
     this.highlights = new TileHighlights(map);

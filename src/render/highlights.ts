@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import { TILE_SIZE, tileCenter } from "./grid.js";
+import { DRAW_ORDER } from "./layers.js";
 
 const HALF = TILE_SIZE / 2;
 
@@ -88,7 +89,7 @@ export class TileHighlights {
 
   constructor(map: GameMap) {
     this.map = map;
-    this.group.renderOrder = 3;
+    this.group.renderOrder = DRAW_ORDER.highlightFill;
   }
 
   setMap(map: GameMap): void {
@@ -125,8 +126,8 @@ export class TileHighlights {
       buildTileOutlineGeometry(this.map, tiles, yOffset + 0.004, inset),
       outlineMaterial,
     );
-    fill.renderOrder = 3;
-    outline.renderOrder = 4;
+    fill.renderOrder = DRAW_ORDER.highlightFill;
+    outline.renderOrder = DRAW_ORDER.highlightOutline;
     this.group.add(fill, outline);
     this.layers.set(layerId, { fill, outline, fillMaterial, outlineMaterial });
   }

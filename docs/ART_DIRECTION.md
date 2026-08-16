@@ -1140,3 +1140,55 @@ The mask is inside its 5–12% budget the whole time — the budget constrains
 4. **The tint may never be the brightest read.** If a reviewer's eye goes to the
    team color before the face and before the job silhouette, the placement is
    wrong regardless of what the percentage says.
+
+---
+
+## Appendix D — environment finish
+
+Added by the environment-finish pass (workstream 17). Nothing above is amended;
+these record the decisions §1, §2 and §5 left to the renderer. Binding on
+`src/render/{layers,post,highlights,units,objects,vfxLayer}.ts`.
+
+### D.1 The ground-overlay stack (binding)
+
+Everything drawn between the terrain top and the camera declares a band in
+`DRAW_ORDER` (`src/render/layers.ts`). Nothing picks a render order locally.
+Lower draws first:
+
+| Band | What | Why here |
+|---|---|---|
+| 0 `terrain` | tile tops, sides, rail strips | the world |
+| 1 `unitShadow` | contact shadow disc | a *darkening of the ground*, so a wash covers it |
+| 2 `highlightFill` | move / target / cursor / selection / path / deployment / hazard wash | a property of the tile |
+| 3 `highlightOutline` | the wash's border | its own edge, over its own fill |
+| 4 `unitMarker` | team ring, facing wedge | unit furniture, not ground |
+| 5 `unitRim` | team-tinted silhouette rim | the unit's own edge |
+| 6 `unitSprite` | the billboard | |
+| 7 `vfx` | impacts, arcs, clouds | over everything on the field |
+| 8 `popup` | damage numbers | last word |
+
+**The ruling.** A tile wash reports something about *the tile*; a team ring and
+a facing wedge report something about *the unit standing on it*. The unit claim
+outranks the tile claim, so unit furniture is never tinted by a wash — which is
+the bug this fixed: `TileHighlights` sat above the rings, and a move or target
+wash repainted every ring and wedge inside its area, turning three team colors
+into one.
+
+There is deliberately **no separate "aim" band above the unit markers**. The
+cursor and selection washes were the candidates, and they do not need one: the
+ring is a donut from 0.34 to 0.46 tile radius inside a wash that covers the
+whole tile, so the wash still reads all the way round a ringed unit. A second
+band would buy nothing and would put the stack back in the business of arguing
+about precedence case by case.
+
+Three.js sorts opaque and transparent draw lists separately, so these numbers
+order objects *within* a list. The terrain and the unit billboards are opaque
+(the billboard is `alphaTest`, not `transparent` — §3 fixes sprite alpha at 0 or
+255) and therefore already draw under every transparent overlay whatever their
+band says. The bands are still declared for all of them so the intended stack is
+readable in one place.
+
+The small `y` offsets each overlay carries (shadow 0.020, ring 0.028, wedge
+0.034, wash 0.025–0.050) are **z-fight avoidance against the terrain**, not
+ordering: none of these write depth, so they cannot occlude each other. Do not
+reach for a y offset to change what covers what.

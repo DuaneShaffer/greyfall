@@ -41,6 +41,7 @@ import {
 } from "./effects.js";
 import { NUMBER_OUTLINE_INDEX, popupGrid } from "./glyphs.js";
 import { HEIGHT_STEP, standingHeight, tileAt, tileCenter } from "./grid.js";
+import { DRAW_ORDER } from "./layers.js";
 import { terrainAccentColor, terrainTopColor } from "./palette.js";
 import {
   PopupField,
@@ -164,7 +165,7 @@ export class VfxLayer {
   private readonly effects: Effect[] = [];
 
   constructor() {
-    this.group.renderOrder = 4;
+    this.group.renderOrder = DRAW_ORDER.vfx;
   }
 
   setMap(map: GameMap | null): void {
@@ -194,7 +195,7 @@ export class VfxLayer {
     const width = texture.image instanceof HTMLCanvasElement ? texture.image.width : 1;
     const height = texture.image instanceof HTMLCanvasElement ? texture.image.height : 1;
     sprite.scale.set(width * POPUP_PIXEL_UNIT, height * POPUP_PIXEL_UNIT, 1);
-    sprite.renderOrder = 5;
+    sprite.renderOrder = DRAW_ORDER.popup;
     this.placePopup(sprite, popup);
     this.sprites.set(popup.id, sprite);
     this.group.add(sprite);

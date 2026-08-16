@@ -2,6 +2,7 @@ export { BattleRenderer, type BattleRendererOptions } from "./scene.js";
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
 export { TileHighlights, type HighlightOptions } from "./highlights.js";
+export { DRAW_ORDER } from "./layers.js";
 export {
   PresentationQueue,
   easeInOut,
