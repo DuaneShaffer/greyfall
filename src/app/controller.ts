@@ -22,7 +22,7 @@ import {
   abilityInfo,
   activeUnit,
   affectedTiles,
-  allObjects,
+  aimTarget,
   allUnits,
   applyCommand,
   battleMap,
@@ -31,6 +31,7 @@ import {
   getUnit,
   itemAbilityId,
   itemIdFromAbilityId,
+  legalTargetTiles,
   reachableTiles,
   targetableTiles,
   type BattleEvent,
@@ -131,6 +132,7 @@ export interface ControllerOptions {
 const LAYER_MOVE = "move-range";
 const LAYER_MOVE_PICK = "move-pick";
 const LAYER_TARGET = "target-range";
+const LAYER_TARGET_REACH = "target-reach";
 const LAYER_AFFECTED = "affected";
 
 /**
@@ -175,6 +177,7 @@ export class BattleController {
   private aiTimer = 0;
   private moveTargets: TileCoord[] = [];
   private aimTargets: TileCoord[] = [];
+  private aimReach: TileCoord[] = [];
   private lastCommandError: CommandError | null = null;
   private started = false;
 
@@ -281,14 +284,12 @@ export class BattleController {
         return;
       }
       case "target": {
-        if (!this.aimTargets.some((candidate) => sameTile(candidate, tile))) {
-          this.refuse("Out of reach");
-          return;
-        }
         const abilityId = this.selection.abilityId;
-        const target = this.targetRefAt(acting, abilityId, tile);
+        const target = this.aimTargets.some((candidate) => sameTile(candidate, tile))
+          ? aimTarget(this.gameState, acting.id, abilityId, tile)
+          : null;
         if (target === null) {
-          this.refuse("Nothing to target there");
+          this.refuse(this.aimRefusal(acting, abilityId, tile));
           return;
         }
         if (this.selection.pending !== null && sameTarget(this.selection.pending, target)) {
@@ -380,10 +381,16 @@ export class BattleController {
     this.clearSelection();
     const ability = abilityInfo(this.gameState, unitId, abilityId);
     if (ability === null || ability.slot !== "action") return;
-    this.aimTargets = targetableTiles(this.gameState, unitId, abilityId);
+    // Faint layer: how far the ability carries. Bright layer: what it may
+    // actually be sent at. Nothing outside the bright one ever arms a forecast.
+    this.aimReach = targetableTiles(this.gameState, unitId, abilityId);
+    this.aimTargets = legalTargetTiles(this.gameState, unitId, abilityId);
     this.selection = { mode: "target", abilityId, pending: null };
+    this.renderer.setHighlight(LAYER_TARGET_REACH, this.aimReach, palette.highlightTarget, {
+      opacity: 0.1,
+    });
     this.renderer.setHighlight(LAYER_TARGET, this.aimTargets, palette.highlightTarget, {
-      opacity: 0.24,
+      opacity: 0.32,
     });
 
     // Self-only abilities have nothing to aim: stage the caster straight away.
@@ -589,6 +596,13 @@ export class BattleController {
     this.ui.notify?.(message, "refusal");
   }
 
+  /** Why a click on `tile` was not a target: out of reach, or the wrong thing. */
+  private aimRefusal(actor: BattleUnit, abilityId: string, tile: TileCoord): string {
+    if (!this.aimReach.some((candidate) => sameTile(candidate, tile))) return "Out of reach";
+    const name = abilityInfo(this.gameState, actor.id, abilityId)?.name ?? "That";
+    return `${name} cannot target that`;
+  }
+
   /** The battle's closing frame: fresh numbers, nothing still offering input. */
   private finalView(): BattleHudView | null {
     const survivor =
@@ -645,9 +659,11 @@ export class BattleController {
     this.selection = { mode: "none" };
     this.moveTargets = [];
     this.aimTargets = [];
+    this.aimReach = [];
     this.renderer.clearHighlight(LAYER_MOVE);
     this.renderer.clearHighlight(LAYER_MOVE_PICK);
     this.renderer.clearHighlight(LAYER_TARGET);
+    this.renderer.clearHighlight(LAYER_TARGET_REACH);
     this.renderer.clearHighlight(LAYER_AFFECTED);
   }
 
@@ -655,24 +671,6 @@ export class BattleController {
     return (
       allUnits(this.gameState).find((unit) => !unit.downed && sameTile(unit.position, tile)) ?? null
     );
-  }
-
-  /** Machinery wins the tile when the ability is aimed at objects at all. */
-  private targetRefAt(actor: BattleUnit, abilityId: string, tile: TileCoord): TargetRef | null {
-    const ability = abilityInfo(this.gameState, actor.id, abilityId);
-    if (ability === null || ability.slot !== "action") return null;
-    const kinds = ability.targeting.validTargets;
-
-    if (kinds.includes("object")) {
-      const object = allObjects(this.gameState).find(
-        (candidate) =>
-          !candidate.destroyed && candidate.def.tiles.some((covered) => sameTile(covered, tile)),
-      );
-      if (object !== undefined) return { kind: "object", objectId: object.def.id };
-    }
-    const unit = this.unitAt(tile);
-    if (unit !== null) return { kind: "unit", unitId: unit.id };
-    return { kind: "tile", tile: { ...tile } };
   }
 
   /** Deployment tiles, for the opening frame before the first turn. */

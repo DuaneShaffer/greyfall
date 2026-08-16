@@ -11,7 +11,7 @@ import {
   satchelCount,
   teamSatchel as satchelOf,
 } from "./rules/items.js";
-import { areEnemies, attackAngle, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
+import { areEnemies, attackAngle, coordEq, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
 import {
   CT_COST_MOVE_AND_ACT,
@@ -20,7 +20,12 @@ import {
   readyUnits,
 } from "./rules/turn.js";
 import { canAct, canMove, ctPerTick, effectiveStats, maxCharge, maxHp } from "./rules/status.js";
-import { hasLos, targetableTiles as computeTargetable, unmetRequirement } from "./rules/targeting.js";
+import {
+  hasLos,
+  isValidTargetKind,
+  targetableTiles as computeTargetable,
+  unmetRequirement,
+} from "./rules/targeting.js";
 import { getAbility, getItem, getJob, getStatus, knownActionAbilityIds } from "./state/content.js";
 import { cloneState } from "./state/ctx.js";
 import type {
@@ -248,6 +253,57 @@ export function targetableTiles(state: GameState, unitId: string, abilityId: str
   if (unmetRequirement(state, unit, ability, null) !== null) return [];
   return computeTargetable(state, unit.position, ability.targeting).filter(
     (tile) => unmetRequirement(state, unit, ability, { kind: "tile", tile }) === null,
+  );
+}
+
+/**
+ * What an ability aimed at `tile` would actually take, or null when it may not
+ * be aimed there at all. Machinery wins the tile whenever the ability targets
+ * objects; otherwise whoever is standing on it; otherwise the bare tile.
+ *
+ * Every ref this returns is one `applyCommand` accepts, so a cursor gets the
+ * same answer the command layer would give.
+ */
+export function aimTarget(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+  tile: TileCoord,
+): TargetRef | null {
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return null;
+  const ability = getAbility(state, unit, abilityId);
+  if (ability === undefined || ability.slot !== "action") return null;
+
+  const candidates: TargetRef[] = [];
+  if (ability.targeting.validTargets.includes("object")) {
+    for (const object of state.map.objects) {
+      if (object.destroyed) continue;
+      if (object.def.tiles.some((covered) => coordEq(covered, tile))) {
+        candidates.push({ kind: "object", objectId: object.def.id });
+      }
+    }
+  }
+  const occupant = state.units.find((u) => !u.downed && coordEq(u.position, tile));
+  if (occupant !== undefined) candidates.push({ kind: "unit", unitId: occupant.id });
+  candidates.push({ kind: "tile", tile: { ...tile } });
+
+  for (const candidate of candidates) {
+    if (!isValidTargetKind(state, unit, ability, candidate)) continue;
+    if (unmetRequirement(state, unit, ability, candidate) !== null) continue;
+    return candidate;
+  }
+  return null;
+}
+
+/**
+ * The tiles an ability may actually be sent at: in reach, and holding something
+ * its `validTargets` accepts. `targetableTiles` answers reach alone, which is
+ * what a range overlay wants; this is what a cursor may commit on.
+ */
+export function legalTargetTiles(state: GameState, unitId: string, abilityId: string): TileCoord[] {
+  return targetableTiles(state, unitId, abilityId).filter(
+    (tile) => aimTarget(state, unitId, abilityId, tile) !== null,
   );
 }
 

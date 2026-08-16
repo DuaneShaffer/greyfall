@@ -1,10 +1,11 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it } from "vitest";
-import { activeUnit, getObject, type GameState } from "../../src/core/index.js";
+import { activeUnit, createBattle, getObject, type GameState } from "../../src/core/index.js";
+import type { Unit } from "../../src/data/index.js";
 import { BattleController } from "../../src/app/controller.js";
 import { stubAiCommand } from "../../src/app/stubAi.js";
 import { BattleHud } from "../../src/ui/index.js";
-import { rowen } from "../core/fixtures.js";
+import { enemyAt, enforcer, rowen, testContent, yardEncounter } from "../core/fixtures.js";
 import { fakeRenderer, fakeUi, openBattle, VALE, type FakeRenderer, type FakeUi } from "./fixtures.js";
 
 interface Harness {
@@ -225,6 +226,94 @@ describe("machinery", () => {
       powered: false,
     });
     expect(h.ui.dialogues.at(-1)?.[0]?.speaker).toBe("Watch Sergeant");
+  });
+});
+
+describe("aiming at something the ability cannot take", () => {
+  /** A Machinist in the yard with Field Repair, an enemy, and a switch. */
+  function repairHarness(): Harness {
+    const machinist: Unit = {
+      schemaVersion: 1,
+      id: "ivo",
+      name: "Ivo Brace",
+      spriteId: "machinist",
+      level: 1,
+      jobId: "machinist",
+      disposition: { resolve: 48, attunement: 50 },
+      learnedAbilityIds: ["field-repair"],
+      equipment: { weapon: "spanner" },
+    };
+    const encounter = yardEncounter(testContent(), {
+      id: "e-field-repair",
+      enemies: [enemyAt(enforcer("mark", "Mark"), { x: 1, y: 2 }, "south")],
+      triggers: [],
+    });
+    const battle = createBattle(testContent([encounter]), encounter.id, [machinist], [
+      { unitId: "ivo", position: { x: 1, y: 4 }, facing: "north" },
+    ]);
+    const renderer = fakeRenderer();
+    const ui = fakeUi();
+    const controller = new BattleController({
+      state: battle.state,
+      events: battle.events,
+      renderer: renderer.port,
+      ui: ui.port,
+      ai: stubAiCommand,
+    });
+    return { controller, renderer, ui };
+  }
+
+  it("lights only the tiles the ability may legally be sent at", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+
+    const legal = h.renderer.highlights.get("target-range") ?? [];
+    const reach = h.renderer.highlights.get("target-reach") ?? [];
+    expect(reach).toContainEqual({ x: 1, y: 2 });
+    expect(legal).not.toContainEqual({ x: 1, y: 2 });
+    expect(legal).toContainEqual({ x: 3, y: 4 });
+  });
+
+  it("refuses an enemy, arms no forecast, and never offers a commit", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+
+    h.controller.onTileClick({ x: 1, y: 2 });
+    expect(h.ui.notices.at(-1)).toBe("Field Repair cannot target that");
+    expect(h.ui.noticeTones.at(-1)).toBe("refusal");
+    expect(h.ui.latest()?.forecast).toBeNull();
+    expect(h.renderer.highlights.has("affected")).toBe(false);
+
+    // Clicking again cannot confirm what was never staged: the action is still
+    // unspent and the panel is still offering nothing.
+    h.controller.onTileClick({ x: 1, y: 2 });
+    expect(h.ui.latest()?.forecast).toBeNull();
+    expect(h.ui.latest()?.action.canAct).toBe(true);
+    expect(h.controller.lastError).toBeNull();
+  });
+
+  it("still stages the machine it was written for", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+
+    h.controller.onTileClick({ x: 3, y: 4 });
+    expect(h.ui.latest()?.forecast?.targets[0]?.name).toBe("Signal Switch");
+  });
+
+  it("says out of reach for a tile the ability cannot carry to", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+
+    h.controller.onTileClick({ x: 5, y: 0 });
+    expect(h.ui.notices.at(-1)).toBe("Out of reach");
   });
 });
 
