@@ -12,7 +12,7 @@
     "preventsReaction": true,
     "statMods": {
       "mag": -8,
-      "charge": -12
+      "charge": -8
     }
   }
 }

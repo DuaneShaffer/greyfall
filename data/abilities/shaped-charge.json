@@ -32,7 +32,7 @@
       "damageType": "kinetic",
       "amount": {
         "base": "phys",
-        "power": 5
+        "power": 7
       }
     },
     {

@@ -9,7 +9,7 @@
   "price": 300,
   "slot": "head",
   "statMods": {
-    "hp": 6,
-    "evade": -1
+    "hp": 2,
+    "evade": -2
   }
 }

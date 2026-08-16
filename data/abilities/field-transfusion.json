@@ -21,14 +21,14 @@
       "self"
     ]
   },
-  "chargeCost": 8,
-  "castSpeed": 25,
+  "chargeCost": 6,
+  "castSpeed": 35,
   "effects": [
     {
       "kind": "heal",
       "amount": {
         "base": "mag",
-        "power": 12,
+        "power": 14,
         "attunementScaled": false
       }
     },

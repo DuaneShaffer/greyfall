@@ -538,14 +538,22 @@ reversal: the Rise's decorations are still flux, and flux still goes up.
   defends downward: a screening line on terrace one, the body of the force
   on terrace two behind the planters, marksmen on terrace three behind the
   balustrades.
-- **Boss placement.** Put Aldric on terrace three at **(8,7)**, beside the
-  Founder's Plinth at height 6 — the tile that commands both flank stair
-  heads and the grand stair's exit, with the statue at his back. Have him
-  withdraw to the upper court on a `unitHpBelowPercent` trigger (50–60%);
-  his second position is **(8,4)**, height 8, behind the fountain and
-  between the two lamp standards. That gives the fight two acts on two
-  heights and puts the finale's last exchange next to the only two things on
-  the estate that can explode.
+- **Boss placement.** The sketch put Aldric on terrace three at **(8,7)**,
+  beside the Founder's Plinth at height 6 — the tile that commands both flank
+  stair heads and the grand stair's exit, with the statue at his back — and had
+  him withdraw to **(8,4)**, height 8, between the two lamp standards, on a
+  `unitHpBelowPercent` trigger at 50–60%.
+
+  **Shipped: the withdrawal as designed, from a terrace lower.** `moveUnit`
+  exists now, so (8,4) is a real second position rather than an implied one.
+  (8,7) did not survive measurement: with the roster at the levels the campaign
+  actually produces, the party died on terraces one and two while Aldric took
+  18 damage in 106 unit turns — the boss was scenery. He stands at **(8,10)**,
+  in the pocket the hedge planters make of the grand stair's exit, which is
+  also where `terrace-two-the-proof` fires, so the bible's beat lands with the
+  man standing in it. `watch-sergeant-steps` holds (7,7) behind the plinth
+  instead, so terrace three is still defended ground. See
+  `docs/ENCOUNTER_NOTES.md` §5.
 - **Trigger tiles.** Each terrace lip is a natural phase line:
   `(0,13)…(15,13)` (terrace one taken), `(0,10)…(15,10)` (terrace two),
   `(0,7)…(15,7)` (terrace three), `(0,4)…(15,4)` (upper court, where the

@@ -12,9 +12,10 @@
   },
   "learnedAbilityIds": [
     "arc",
+    "ground",
+    "overload-cell",
     "tap-line",
-    "throw-the-breaker",
-    "overload-cell"
+    "throw-the-breaker"
   ],
   "supportAbilityId": "licensed-draw",
   "equipment": {

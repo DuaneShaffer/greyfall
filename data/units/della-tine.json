@@ -11,14 +11,17 @@
     "attunement": 35
   },
   "learnedAbilityIds": [
-    "switch-kick",
     "coupling-hook",
-    "signal-jump"
+    "signal-jump",
+    "switch-kick",
+    "undercut"
   ],
   "movementAbilityId": "rail-dash",
   "equipment": {
     "weapon": "hook-bar",
     "body": "canvas-coat",
-    "accessory": "runners-cleats"
-  }
+    "accessory": "runners-cleats",
+    "head": "dust-hood"
+  },
+  "supportAbilityId": "yard-legs"
 }

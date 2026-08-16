@@ -26,7 +26,25 @@
     {
       "kind": "spawnObject",
       "object": "mine",
-      "hp": 8
+      "hp": 8,
+      "onContact": {
+        "destroysSelf": true,
+        "effects": [
+          {
+            "kind": "damage",
+            "damageType": "kinetic",
+            "amount": {
+              "base": "fixed",
+              "power": 20
+            }
+          },
+          {
+            "kind": "applyStatus",
+            "statusId": "stunned",
+            "chance": 45
+          }
+        ]
+      }
     }
   ]
 }

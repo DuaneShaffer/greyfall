@@ -26,7 +26,22 @@
     {
       "kind": "spawnObject",
       "object": "drone",
-      "hp": 12
+      "hp": 12,
+      "attack": {
+        "amount": {
+          "base": "mag",
+          "power": 5,
+          "attunementScaled": false
+        },
+        "damageType": "kinetic",
+        "range": {
+          "min": 1,
+          "max": 2,
+          "vertical": 1
+        },
+        "requiresLos": false,
+        "speed": 5
+      }
     }
   ]
 }

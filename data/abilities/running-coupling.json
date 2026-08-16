@@ -43,5 +43,8 @@
       "statusId": "stunned",
       "chance": 35
     }
+  ],
+  "requires": [
+    "railUnderfoot"
   ]
 }

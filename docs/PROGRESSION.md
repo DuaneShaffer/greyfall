@@ -81,19 +81,30 @@ one-line change with a test to update.
 - **The steps are an arithmetic run** (100, +50 each). FFT's own curve has the
   same shape; a flat run is trivial to reason about in a balance pass and has
   no cliff a player can fall off.
-- **They are the shallowest curve the measured earn rate supports.** Standing
-  is only awarded for *resolved actions* — moving and waiting earn nothing — so
-  the real numbers are small. An AI-vs-AI run of battle 1 with a four-unit
-  party (`tests/app/campaignLoop.test.ts` plays exactly this) banks **10–30
-  Standing per unit**, because the tutorial encounter is over in 16 turns.
-  Later battles are longer, but a whole chapter plausibly lands each unit at
-  200–400 total. On this curve that is job level 3–4 by the end; on a steeper
-  one (level 2 at 200) most units would never leave level 1 and the job system
-  would ship dead.
-  **This is the flag, not a settled number:** if playtesting wants job levels
-  to move faster, raise `STANDING_PER_ACTION` in `core/rules/abilities.ts`
-  rather than flattening this curve further — the curve is already about as
-  shallow as it can be without job levels becoming meaningless.
+- **They are the shallowest curve the measured earn rate supports, and the
+  earn rate is now measured rather than guessed.** Standing is only awarded for
+  *resolved actions* — moving and waiting earn nothing. Playing all five
+  encounters end to end with the shipped roster, ten seeds each
+  (`docs/BALANCE_REPORT.md` §6), banks a mean of:
+
+  | battle | mean Standing per deployed unit |
+  |---|---|
+  | e1 Marshaling Yard | 18 |
+  | e2 Foundry Floor Nine | 56 |
+  | e3 Tallow Row | 46 |
+  | e4 Refinery Three | 47 |
+  | e5 Charterhouse Steps | 32 |
+  | **chapter total** | **~199** |
+
+  The old estimate of "200–400 total" was right at the bottom of its range, and
+  the tutorial's 10–30 was right: it is the four longer battles that pay. On
+  this curve ~200 earned is job level 2 from a standing start, or job level 3
+  on top of the chapter's opening bonus. That is one job-tree gate cleared per
+  chapter, which is the pace the prerequisites were written for.
+  **Still the flag, not a settled number:** if playtesting wants job levels to
+  move faster, raise `STANDING_PER_ACTION` in `core/rules/abilities.ts` rather
+  than flattening this curve further — the curve is already about as shallow as
+  it can be without job levels becoming meaningless.
 - **They fit the authored prerequisites.** Every job in `data/jobs` gates on
   level 2 or 3 of another job (Saboteur is the deepest, at Chemist 3 +
   Machinist 2). Levels 2 and 3 cost 100 and 250 — one to two battles of work
@@ -209,10 +220,24 @@ allows the rest only if they are named in `PENDING_ENCOUNTER_IDS`. That list
 shrinks and never grows; delete it and the soft branch when
 `data/encounters/` is complete.
 
-`startingStandingBonus: 250` is a slice-demo knob, not a balance statement: it
-puts every starting unit at job level 3 on day one so the job-change and
-learning screens have something to do before battle 1. Lower it (or zero it)
-once the chapter is played end to end.
+`startingStandingBonus` **is 150, reduced from 250 by the rebalance pass once
+the chapter was played end to end.** The flag is discharged; the reasoning is:
+
+- **Zero does not work.** Nothing in this layer raises `Unit.level`, so a unit's
+  only growth through the chapter is Standing, and the roster's cheapest
+  unlearned ability is 150 (Rowen's Shield Advance). At zero the learning screen
+  is empty until after battle 2, and the knob's stated purpose — give the
+  job-change and learning screens something to do before battle 1 — is unmet.
+- **250 does not work either.** It banks job level 3 on day one, and the
+  chapter's own ~200 Standing then moves a unit exactly one level, to 4. The
+  bonus was worth more than the whole chapter.
+- **150 is the smallest number that clears both bars.** Every unit opens at job
+  level 2 — the gate every job in `data/jobs` except Saboteur asks for — with
+  one affordable purchase in the starting kit, and the chapter's own ~200 is
+  then the *majority* of what a unit ever spends, carrying them to job level 3
+  by the Charterhouse Steps. Growth belongs to the battles.
+
+The three knobs remain `STANDING_PER_ACTION`, the thresholds, and this.
 
 ## 6. Save format
 

@@ -20,8 +20,8 @@
       "self"
     ]
   },
-  "chargeCost": 6,
-  "hpCost": 8,
+  "chargeCost": 7,
+  "hpCost": 5,
   "castSpeed": null,
   "effects": [
     {

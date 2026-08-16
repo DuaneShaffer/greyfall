@@ -56,29 +56,36 @@ someone wants it running. Jory Slate is present and on the wrong side of the
 kettle line, and the battle's job is to make the player feel the cost of
 winning it cleanly.
 
-**Composition (6 enemies, L1–2; 4 deployed).**
+**Composition (6 enemies, L1–2; 5 deployed).**
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
-| `provocateur-foreman` | provocateur | 2 | (9,1) | Tap deck. The merciful-win target; shock maul, no armor — the tell. |
-| `torch-hand-gantry` | provocateur-torch | 2 | (6,4) | On `ladle-gantry` at height 4, per MAP_NOTES: teaches what the gantry is in one glance. Carries `bring-it-down` so the bay bridge is a live threat. |
+| `provocateur-foreman` | provocateur | 2 | (9,1) | Tap deck. Ringleader; shock maul, no armor — the tell. The only L2 on the floor. |
+| `torch-hand-gantry` | provocateur-torch | 1 | (6,4) | On `ladle-gantry` at height 4, per MAP_NOTES: teaches what the gantry is in one glance. Carries `bring-it-down` so the bay bridge is a live threat. |
 | `provocateur-press` | provocateur | 1 | (2,8) | West press lane, beside `press-line-mid`. |
 | `hand-perren` | combine-hand | 1 | (8,9) | Mid-aisle. Named — see the trigger map. |
 | `hand-runner-east` | combine-runner | 1 | (14,9) | Ingot rail; `rail-dash` on the one rail lane. |
-| `hand-machinist-gantry` | shop-machinist | 2 | (13,6) | Gantry walk east, covering `floor-nine-mains` at (13,10). |
+| `hand-machinist-gantry` | shop-machinist | 1 | (13,6) | Gantry walk east, covering `floor-nine-mains` at (13,10). |
+
+The whole floor except the foreman dropped to level 1 in the rebalance pass,
+and the party deploys five instead of four: at the authored roster levels the
+old composition was a **0% win across five seeds with all four units lost**
+(`docs/BALANCE_REPORT.md` F6). It is **70%** now, at 2.8 of 5 lost.
 
 Two provocateurs plus a torch-hand carry the fight; the three strikers are
 chemist / railrunner / machinist — the three lowest basic-attack jobs in the
 game (6, 13, 9 damage at L1). That asymmetry is deliberate: the people who
 hurt you are the plants, and the people you hurt cannot fight back well.
 
-**Win: `defeatUnit: provocateur-foreman`, then `rout`.** The merciful
-alternative asked for. It is expressible because `winConditions` is an OR
-list — break the man giving orders on the tap deck and the floor stands
-down; you do not have to put down six foundry hands. It is not a cheap out:
-the foreman is at (9,1), the far end of the map, behind the pour aisle and
-the tap-deck lip. The thing the schema *cannot* say is "defeat all the
-provocateurs" (see gap 4), so one ringleader stands in for the cell.
+**Win: `all` of the three provocateurs, or `rout`.** The merciful alternative
+asked for, and now the objective the fiction actually wants: put down the
+foreman on the tap deck, the provocateur in the press lane, and the torch-hand
+on the gantry, and the floor stands down — you do not have to put down three
+foundry hands who cannot fight back. The `all` group is the engine pass's
+win-condition combinator; before it existed one ringleader had to stand in for
+the cell. It is not a cheap out: the three are at (9,1), (2,8) and (6,4), one
+in each corner of the floor, so taking them means crossing the pour aisle, the
+west press lane, and the gantry.
 
 **Trigger map.**
 
@@ -104,27 +111,29 @@ until the player walks into a ground-floor room and finds House Corvane
 requisition seals, unbroken, on the charges. Everything after this battle is
 a different story than everything before it.
 
-**Composition (6 + 2 reinforcements, L2 with an L3 leader; 5 deployed).**
+**Composition (6 + 1 reinforcement, L1 with an L2 leader; 6 deployed).**
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
-| `wick` | **new** `wick` | 3 | (8,2) | Head of the Row, beside `gas-main-north` under the gallery stair — MAP_NOTES' pivot. |
-| `torch-hand-east-room` | provocateur-torch | 2 | (11,8) | *Inside* the east-mid tenement, per MAP_NOTES: "they're in the house" must read immediately. |
-| `torch-hand-south-room` | provocateur-torch | 2 | (3,13) | Inside the west-south tenement, above the player's deployment. |
-| `cell-machinist` | shop-machinist | 2 | (8,10) | Behind `refuse-barricade`, holding the mid chokepoint. |
-| `provocateur-barricade` | provocateur | 2 | (6,10) | The other side of the squeeze. |
-| `provocateur-tram` | provocateur | 2 | (14,8) | Tram lane, near `gas-main-alley` — the Railrunner's dilemma has a defender. |
-| `provocateur-gutter` / `torch-hand-gutter` | provocateur / provocateur-torch | 2 | spawn (1,11) / (1,8) | Reinforcements down the west gutter when the player commits to the barricade. |
+| `wick` | **new** `wick` | 2 | (8,2) | Head of the Row, beside `gas-main-north` under the gallery stair — MAP_NOTES' pivot. |
+| `torch-hand-east-room` | provocateur-torch | 1 | (11,8) | *Inside* the east-mid tenement, per MAP_NOTES: "they're in the house" must read immediately. |
+| `torch-hand-south-room` | provocateur-torch | 1 | (3,13) | Inside the west-south tenement, above the player's deployment. |
+| `cell-machinist` | shop-machinist | 1 | (8,10) | Behind `refuse-barricade`, holding the mid chokepoint. |
+| `provocateur-barricade` | provocateur | 1 | (6,10) | The other side of the squeeze. |
+| `provocateur-tram` | provocateur | 1 | (14,8) | Tram lane, near `gas-main-alley` — the Railrunner's dilemma has a defender. |
+| `provocateur-gutter` | provocateur | 1 | spawn (1,11) | One reinforcement down the west gutter when the player commits to the barricade. The second was cut in the rebalance pass; two put the fight out of reach at the roster's real levels. |
 
 Both torch-hands carry `gas-line-tap`, which turns the risers and mains into
 their weapon as much as the player's — the mutual-threat reading MAP_NOTES
 asks for. Wick carries the full demolition kit including `bring-it-down`, so
 he can open his own routes through frontages.
 
-**Win: `defeatUnit: wick`, then `rout`.** MAP_NOTES wanted "if a named
-saboteur stands on the gallery stair landing, they got away" — that is not
-expressible (gap 2), so the pursuit is expressed as taking the man rather
-than as failing to. His escape intent is carried by trigger, not by rules.
+**Win: `defeatUnit: wick`, then `rout`. Loss: `partyRout`, or Wick standing on
+the gallery landing `(5,0)…(10,0)`.** MAP_NOTES §3 wanted "if a named saboteur
+stands on the gallery stair landing, they got away", and `unitReachesTiles`
+now says exactly that. Paired with `wick-breaks-for-the-stair`, which puts him
+on (8,1) — one step below the landing — at 40% HP, the pursuit ends the way a
+pursuit should: with a man you can still lose.
 
 **Trigger map.**
 
@@ -134,10 +143,12 @@ than as failing to. His escape intent is carried by trigger, not by rules.
 | `barricade-stand` | player anywhere on the mid cross-alley (y 11, both alleys and both street columns) | The chokepoint stand + `spawnUnits` of two from the west gutter. Widened from MAP_NOTES' four street tiles because (7,11)–(8,11) *are* the barricade and because the west alley and the tram are legal bypasses. |
 | `requisition-seals` | player on (3,3),(4,3),(3,4),(4,4) | **The chapter's turn.** MAP_NOTES' "cleanest" room. Corvane Freight stencils, unbroken seals, Wick's "we've been carrying your name up this street for a month", and the sergeant's "that is a paperwork matter." |
 | `main-at-the-stair` | `objectDestroyed: gas-main-north` | The head of the Row alight. Gallows wit — "somebody's supper, that." |
-| `wick-breaks-for-the-stair` | `unitHpBelowPercent: wick 40` | He announces the stair. No move action exists, so the withdrawal is intent plus Rowen's counter-order. |
+| `wick-breaks-for-the-stair` | `unitHpBelowPercent: wick 40` | He announces the stair and `moveUnit` puts him on it, at (8,1). Rowen's counter-order is now a real order: the landing above him is a loss condition. |
 | `wick-down` | `unitDowned: wick` | No name to give — a docket, a yard, and a man who never comes down to the yard. Rowen takes the evidence out of procedure and into her coat. |
 
-**Difficulty.** Party L2, five deployed, eight enemies across the battle. The
+**Difficulty.** Party at its authored levels, six deployed, seven enemies
+across the battle: **40%** win, 5.0 of 6 lost — the wall of the chapter, and
+the right shape for the battle the story turns on. The
 count is high because the map is a maze of walls and half of it is a
 one-tile doorway at a time; the enemy is never all in contact. Expect the
 player to blow a frontage rather than walk 8 rough tiles — that trade *is*
@@ -152,18 +163,19 @@ the Assay will watch it happen and file it correctly. The bible is explicit
 that Rowen fails to fully stop it, so the design problem was making the
 scripted disaster *not* a loss.
 
-**Composition (7 enemies, L2–3; 5 deployed).** Conduit-heavy, per the map's
+**Composition (7 enemies + one neutral, L1–3; 6 deployed).** Conduit-heavy, per the map's
 showcase, plus the Watch units who are the frame-up's executors.
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
 | `nessa-kiln` | **new** `nessa-kiln` | 3 | (7,2) | Control gallery, one tile from `switchboard-main`. MAP_NOTES: put the overload character where the plot is. |
-| `watch-enforcer-gallery` | watch-enforcer | 2 | (6,2) | The gallery is a win condition; it needs a door. |
-| `watch-conduit-ring` | watch-conduit | 2 | (9,6) | On `tower-walk-north` at height 4, with `overload-cell`. |
-| `watch-conduit-terrace` | watch-conduit | 2 | (8,12) | South terrace, in the cascade band — see below. |
-| `watch-enforcer-west-ramp` | watch-enforcer | 2 | (5,8) | Terrace lip covering the west ramp. |
-| `watch-enforcer-east-ramp` | watch-enforcer | 2 | (13,8) | East ramp. |
-| `watch-sergeant-floor` | watch-sergeant | 3 | (10,12) | South terrace with `kettle` — punishes the obvious approach. |
+| `watch-enforcer-gallery` | watch-enforcer | 1 | (6,2) | The gallery is a win condition; it needs a door. |
+| `watch-conduit-ring` | watch-conduit | 1 | (9,6) | On `tower-walk-north` at height 4, with `overload-cell`. |
+| `watch-conduit-terrace` | watch-conduit | 1 | (8,12) | South terrace, in the cascade band — see below. |
+| `watch-enforcer-west-ramp` | watch-enforcer | 1 | (5,8) | Terrace lip covering the west ramp. |
+| `watch-enforcer-east-ramp` | watch-enforcer | 1 | (13,8) | East ramp. |
+| `watch-sergeant-floor` | watch-sergeant | 2 | (10,12) | South terrace with `kettle` — punishes the obvious approach. |
+| `quill` | **new** `quill` | 2 | (10,2) | **Neutral.** Prelate-Assayer Quill, on the control gallery with a clear line to the switchboard, because the whole scene is that he watches and files. Non-combatant to both sides (`COMBAT_RULES` §18): he is walked through, never rolled against, and invisible to both AIs. He is sited off the `at-the-switchboard` trigger tiles so he cannot block the beat.
 
 Two of them stand in the y 12–14 band the cascade lands on. That is
 intentional: the overload kills refinery crew and Watch alike, which is the
@@ -208,7 +220,9 @@ gallery floor (6,2)…(9,2); `the-licence-does-not-carry-her`
 (`unitHpBelowPercent: nessa-kiln 40`) is Quill dropping her — *"The Sodality
 licenses attunement. It has never licensed conduct."*
 
-**Difficulty.** Party L2–3, five deployed, seven enemies, but the real
+**Difficulty.** Party at its authored levels, six deployed, seven enemies plus
+Quill — **70%** win at 4.4 losses. The escort dropped to level 1 and Nessa
+stayed at 3; she is the fight. The real
 opponent is the circuit. Expect the second half to be fought without the
 hoists. A party with no Conduit and no Jump-2 answer will be locked off the
 ring entirely, which is the correct punishment on this map.
@@ -222,24 +236,37 @@ everything else. Aldric does not deny it — that is the beat, and it lands on
 terrace two rather than at the top, because a man who is not ashamed does not
 wait to be cornered.
 
-**Composition (6 + 2 reinforcements, all L3; 5 deployed).** Defender-favoring
-by placement, per MAP_NOTES: a screen on terrace one, the body on terrace
-two behind the planters, the command group on terrace three behind the
-balustrades.
+**Composition (5 + 1 reinforcement + one neutral, L1–2; 7 deployed).** The
+finale is the one battle that deploys the whole company. Defender-favoring by
+placement, but a terrace lower than MAP_NOTES drew it — see the note below the
+table.
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
-| `aldric` | **new** `aldric` | 3 | (8,7) | MAP_NOTES' boss tile: height 6, commands both flank stair heads and the grand stair's exit, `founders-plinth` at his back. |
-| `watch-sergeant-steps` | watch-sergeant | 3 | (6,7) | Terrace three, the other side of the plinth. `kettle` on a funnel map. |
-| `watch-conduit-upper` | watch-conduit | 3 | (9,7) | Carries `flare` — the only long reach on a map with almost no flux. |
-| `watch-enforcer-mid-west` | watch-enforcer | 3 | (5,10) | Terrace two behind the planters. |
-| `watch-enforcer-mid-east` | watch-enforcer | 3 | (10,10) | Terrace two, mirror. |
-| `watch-enforcer-screen` | watch-enforcer | 3 | (7,13) | The terrace-one screen. Expected to die; its job is one turn. |
-| `watch-enforcer-court-west` / `watch-conduit-court` | watch-enforcer / watch-conduit | 3 | spawn (6,2) / (9,2) | The reserve, on the upper court between the two lamp standards. |
+| `aldric` | **new** `aldric` | 2 | (8,10) | Terrace two, in the pocket the hedge planters make of the grand stair's exit. He is standing where the proof lands. |
+| `watch-sergeant-steps` | watch-sergeant | 2 | (7,7) | Terrace three behind the plinth. `kettle` on a funnel map; the one thing above Aldric. |
+| `watch-conduit-upper` | watch-conduit | 2 | (10,10) | Carries `flare` — the only long reach on a map with almost no flux. |
+| `watch-enforcer-mid-west` | watch-enforcer | 1 | (5,10) | Terrace two behind the planters. |
+| `watch-enforcer-screen` | watch-enforcer | 1 | (7,13) | The terrace-one screen. Expected to die; its job is one turn. |
+| `watch-enforcer-court-west` | watch-enforcer | 2 | spawn (6,2) | The reserve, on the upper court beside the west lamp standard. |
+| `quill` | **new** `quill` | 2 | (11,2) | **Neutral**, upper court. He is on the estate because the finding is already drafted; the closing beat lands on a body. |
 
-**Win: `defeatUnit: aldric`. Loss: `partyRout` *and* `unitDowned: rowen`.**
-The finale is the one battle where losing Rowen is losing, and the bible's
-permadeath rule makes that literal.
+**Aldric moved down a terrace, and that is a measured change.** MAP_NOTES §5
+put him at (8,7) on terrace three. Measured there, at the roster's real levels,
+the party never reached him at all: over five seeds the whole company died on
+terraces one and two while **Aldric took 18 damage in 106 unit turns**. The
+climb plus the defenders' height meant the boss was scenery. At (8,10) the
+proof and the man are in the same place, `terrace-two-the-proof` fires with him
+standing in it, and `aldric-to-the-court` gives the withdrawal the two-act
+structure MAP_NOTES wanted — one act on terrace two, one on the upper court at
+height 8. He is also L2 rather than L3: one level on the boss is worth 20–30
+points of win rate on this map, and at L3 with the same escort the finale
+measured **20–30%** over ten seeds against **80%** as it ships.
+
+**Win: `defeatUnit: aldric`. Loss: `partyRout` *or* `unitDowned: rowen`.**
+Losing Rowen is losing, and the bible's permadeath rule makes that literal.
+e1 now carries the same stake, so the rule is taught in battle one rather than
+sprung in battle five.
 
 **Trigger map.** MAP_NOTES' terrace lips as phase lines, one `once: true`
 dialogue each, which paces the climb without any extra map machinery.
@@ -249,29 +276,29 @@ dialogue each, which paces the climb without any extra map machinery.
 | `the-steps-are-closed` | `battleStart` | `setPower: service-lift → off` — the Watch shutting the tradesmen's entrance, exactly as MAP_NOTES suggested, so the west bypass has to be taken rather than given. Aldric lets her climb on purpose. |
 | `terrace-one` | player on y 13 | The screen falls back; Aldric orders her heard before she is stopped. |
 | `terrace-two-the-proof` | player on y 10 | **The bible beat.** Rowen names the seals and the docket. Aldric: *"Yes."* Then the reason — a seam claim, the Combine had to be made a danger — and *"Where a thing is signed is not where it happens. That is the whole use of signing."* |
-| `aldric-to-the-court` | `unitHpBelowPercent: aldric 55` | The withdrawal MAP_NOTES designed. **There is no unit-move action** (gap 1), so his move from (8,7) to (8,4) is dialogue — "up to the court, reserve to the lamp line" — plus `spawnUnits` putting two elites on the upper court between the two lamp standards. The second act happens on the upper terrace because the reinforcements are there, not because Aldric relocated. |
+| `aldric-to-the-court` | `unitHpBelowPercent: aldric 55` | The withdrawal MAP_NOTES designed, now real: `moveUnit` takes him (8,10) → (8,4), height 8, between the two lamp standards, and `spawnUnits` brings one elite onto the upper court behind him. The second act happens on the upper terrace because Aldric is there. |
 | `the-top-step` | player on y 4 | Nothing further up; Rowen refuses to make a speech and keeps the docket instead. |
 | `the-record-closes` | `unitDowned: aldric` | The erasure. Aldric: *"You will not be in the record, Rowen. You will be in the refinery."* Quill files the Inquiry's finding that she died at Refinery Three. Rowen: *"Then I go down by the tradesmen's lift."* — the desertion, and a callback to the lift the Watch cut in the opening line. |
 
 The closing dialogue depends on `settle()` running `evaluateTriggers` before
-`evaluateOutcome` (`src/core/commands/apply.ts:130–131`). That ordering is
-load-bearing for every "closing dialogue on win" in the slice and is not
-asserted by any test.
+`evaluateOutcome`. That ordering is load-bearing for every "closing dialogue on
+win" in the slice; it is documented in `COMBAT_RULES` §15 and asserted by
+`tests/core/conditions.test.ts` since the engine pass.
 
-**Difficulty.** Party L3, five deployed, eight enemies, every one of them a
-level above or equal and standing uphill. This is the hardest fight in the
-slice by intent — but see the warning below, because it is also where
-`CONTENT_NOTES` §6's flagged scaling problem bites hardest.
+**Difficulty.** Party at its authored levels, seven deployed, six enemies —
+**80%** win at 3.6 of 7 lost — the whole company on the field is what makes it
+winnable, and it is still the only fight in the slice where a single unit's
+death ends it.
 
-> Aldric at L3 with `riot-drill`, `watch-cuirass`, `visored-helm` and
-> `breach-shield` reads ~131 HP and ~26 evade, which is a proper boss. His
-> basic attack with `compliance-maul` and `counterweight-belt` reads ~93
-> damage, which one-shots a level-3 Conduit (~51 HP) and two-shots everything
-> else. The finale is not fairly tunable from the content side; it needs the
-> `src/core` fix CONTENT_NOTES §6 asks for (level-scaled
-> `WEAPON_DAMAGE_DIVISOR`, a higher `STAT_BASE.hp`, or a non-zero `phys`
-> base). Flagged rather than papered over with a lower boss level, because a
-> level-1 Aldric would be wrong in every other way.
+> **The warning this section used to carry is discharged.** It read: Aldric at
+> L3 with `riot-drill`, `watch-cuirass`, `visored-helm` and `breach-shield` is
+> ~131 HP and ~26 evade, hitting for ~93 — a one-shot on a level-3 Conduit —
+> and "the finale is not fairly tunable from the content side". The engine's
+> level-scaled divisor took that number from 93 to 40, and this pass took the
+> rest from the content side: `breach-shield` → `riot-shield`, `riot-drill` cut
+> to hp +2 / evade +1, `watch-cuirass` 20 → 14 hp, and Aldric down to L2. He
+> reads 97 HP, 17 evade, 38 damage — a boss the party can lose to rather than a
+> boss the party cannot reach.
 
 ---
 
@@ -279,19 +306,35 @@ slice by intent — but see the warning below, because it is also where
 
 Reported, not worked around. Nothing below was faked with a wrong mechanic.
 
-> **Closed by the engine-amendment pass (2026-08-15):** gaps **1**
-> (`moveUnit` / `removeUnit` trigger actions), **2**
-> (`unitReachesTiles` loss condition), **3** (`turnStart` is now
-> reaches-or-passes), **4** (`all` win-condition groups), **5** (`neutral` is
-> genuinely non-combatant), and **9** (the trigger-before-outcome contract is
-> documented in `COMBAT_RULES` §15 and asserted by a test).
+> **Closed, and now wired in (rebalance pass, 2026-08-15).** Gaps **1**
+> (`moveUnit` / `removeUnit`), **2** (`unitReachesTiles`), **3** (`turnStart`
+> is reaches-or-passes), **4** (`all` win groups), **5** (`neutral` is
+> non-combatant), and **9** (trigger-before-outcome) were closed by the engine
+> pass. What this pass did with them:
 >
-> **Nothing was wired into an encounter.** The vocabulary exists; e1–e5 are
-> untouched. The content pass owns: Aldric's withdrawal in e5, the saboteur's
-> bolt for the stair in e3, the gallery-stair escape loss in e3, e4's midpoint
-> (which can drop its widened-tile workaround for a real `turnStart`), e2's
-> merciful "put down the provocateurs" objective as an `all` group, and placing
-> Jory, Quill, and Maren as neutrals.
+> | vocabulary | where | what it does now |
+> |---|---|---|
+> | `moveUnit` | e5 `aldric-to-the-court` | Aldric withdraws (8,10) → (8,4), MAP_NOTES' second position, at 55% HP. The finale has two acts on two heights for real, not by implication. |
+> | `moveUnit` | e3 `wick-breaks-for-the-stair` | Wick bolts (8,2) → (8,1), one step off the gallery landing. |
+> | `unitReachesTiles` | e3 loss | Wick on `(5,0)…(10,0)` is a loss. MAP_NOTES §3's "if a named saboteur stands there, they got away", with the pursuit's own polarity. Paired with the bolt above, the last two turns of the battle are a chase. |
+> | `all` | e2 win | "Defeat the provocateurs" is now literally that: the foreman, the press-lane provocateur, *and* the torch-hand. The merciful objective no longer collapses to one ringleader. |
+> | `removeUnit` | e1 `over-the-wall` | The second provocateur leaves the field rather than dying. See the e1 section. |
+> | `neutral` | e1 Maren, e4/e5 Quill | Story bodies on the map. |
+> | `turnStart` | e1 `the-first-maul`, `over-the-wall` | The premise staged on the clock. |
+>
+> **Jory Slate is deliberately not placed as a neutral in e2.** She is a
+> *roster* unit (`data/campaigns/foundry-chapter.json` deploys her third), so a
+> neutral `jory-slate` on Floor Nine would be a duplicate unit id on the field
+> whenever the player brings her — and she is exactly the unit a player brings
+> to a foundry. Her presence in the scene is satisfied by her being deployable,
+> and her dialogue already reads as a party member's. The gap-5 note that asked
+> for her predates her joining the roster.
+>
+> **e4's midpoint keeps its tile trigger.** `turnStart` is reliable now, but a
+> phase line off the player's own advance paces better than a clock: the
+> overload fires when the party commits to the terrace, not on turn *n*
+> regardless of where anyone is standing. Recorded as a choice, not an
+> oversight.
 >
 > Gaps 6, 7, 8, and 10 are open.
 
@@ -358,29 +401,31 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
     fires at `battleStart`. None of these four do, but the name invites the
     mistake.
 
-## Desired e1 polish (not applied — `e1-marshaling-yard.json` is replayed by core tests)
+## 1. The Marshaling Yard — `e1-marshaling-yard` (polish pass)
 
-For the orchestrator to schedule alongside whatever test churn it implies.
+Battle 1 was the format exemplar and was left alone by the battles-2–5 pass
+because `tests/core/` replays it. The rebalance pass took the polish queue,
+and did it in a shape that keeps the opening state of the battle
+byte-identical — every addition arrives on the clock or on a tile, never in
+`enemies` — so the whole 449-test suite stayed green without one expectation
+being edited.
 
-1. **The provocateurs are singular and never fire first.** Bible §8.1 is
-   "break up a blockade that turns violent when provocateurs fire first",
-   but e1 has one enemy and no beat staging the first shot. Wanted: a second
-   provocateur so the noun is plural, and a `battleStart` or early
-   `unitEntersTiles` beat in which the shot is fired *from behind the
-   Combine line*. That is the whole premise of the chapter and it is
-   currently only asserted in Maren's opening line.
-2. **`rout` with one enemy is a one-kill win.** Fine as a tutorial, but it
-   means the tutorial never teaches that a win condition is a thing you read.
-3. **The Railrunner showcase has no script.** `yard-switch` and
-   `freight-lift` are the map's teaching objects and no trigger acknowledges
-   either being used. An `objectDestroyed` / `unitEntersTiles` line on the
-   lift deck would teach the systems pillar in the battle designed to teach
-   it.
-4. **Maren Voss speaks but is not present** — the same non-combatant gap as
-   gap 5 above. Worth revisiting for all three of Maren, Jory, and Quill in
-   one pass once the flag exists.
-5. **Consider `unitDowned: rowen` as a second loss condition**, establishing
-   the permadeath rule (bible §5.4) at battle 1 rather than battle 5. This is
-   a design call, not a defect.
-6. Seed `1001` and the deliberately armor-less provocateur are both correct;
-   leave them.
+| queue item | what shipped |
+|---|---|
+| 1. Provocateurs singular, and the premise only asserted | `the-first-maul` (`turnStart: 2`) spawns `provocateur-b` at (1,0) — *behind* the Combine line — the moment the first provocateur's own turn ends. Provocateur-a acts first by the CT tiebreak (`COMBAT_RULES` §17: equal CT, lower unit id), so the sequence a player watches is: a maul goes in, and then a second man in a foundry coat comes out from behind the picket. Maren names it; Rowen names the tell — Watch issue, foundry coat, neither on the roll. |
+| 2. `rout` with one enemy is a one-kill win | Two enemies now, and `over-the-wall` (`turnStart: 8`) takes the second one off the field with `removeUnit` rather than downing him. He was never there to win the fight. That is the premise stated as a rule: the provocateur leaves, and "an unidentified party leaving the scene" is the only wording the sergeant has for it. |
+| 3. No script on the rail or the lift | `down-the-rail` on the rail column (2,1)–(2,2) and `on-the-lift-deck` on the freight-lift deck (5,4). Maren teaches both, in yard slang; Rowen answers the lift one with the line the finale calls back to — height is a thing you can be given and a thing you can be taken off. |
+| 4. Maren speaks but is not present | She is placed, `neutral`, at (2,3) on the running rail between the deployment band and the provocateurs — physically between the Watch and the men who started it. Non-combatant to both sides (`COMBAT_RULES` §18), so she is walked through, never rolled against, and uncounted by `rout`. |
+| 5. `unitDowned: rowen` as a second loss | **Applied.** The permadeath rule is taught in battle one instead of sprung in battle five, and it matches e5. |
+| 6. Seed 1001 and the armour-less provocateur | Left alone, as instructed. |
+
+**Why `turnStart` and not placement.** `battleStart` triggers fire inside
+`createBattle`, so anything staged there is present in the opening state and
+five tests across `tests/core` and `tests/app` assert that state's unit list.
+Staging on turn 2 costs nothing dramatically — the beat *wants* to land after
+the first blow, not before it — and it means the tutorial's opening frame is
+still Rowen, one provocateur, and a line about who fired first.
+
+**Difficulty.** Still a walkover by design: 100% across five seeds with no
+losses and 94% surviving HP. It is the tutorial; it now takes two kills, a
+withdrawal, and about 12 unit turns rather than one kill and eight.

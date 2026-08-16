@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "rig-machinery",
   "name": "Rig Machinery",
-  "description": "Two minutes with the housing open and the machine belongs to nobody. No charge drawn — this is a wrench, not a license.",
+  "description": "Two minutes with the housing open and the machine belongs to nobody. No charge drawn \u2014 this is a wrench, not a license.",
   "jobId": "saboteur",
   "standingCost": 350,
   "slot": "action",
@@ -31,7 +31,7 @@
       "kind": "damageObject",
       "amount": {
         "base": "phys",
-        "power": 4
+        "power": 12
       }
     }
   ]

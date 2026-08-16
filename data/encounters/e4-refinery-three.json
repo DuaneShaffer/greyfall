@@ -4,7 +4,7 @@
   "name": "Corvane Refinery Three",
   "mapId": "refinery-three",
   "rngSeed": 1004,
-  "maxDeployedUnits": 5,
+  "maxDeployedUnits": 6,
   "enemies": [
     {
       "unit": {
@@ -15,8 +15,17 @@
         "portraitId": "nessa-kiln",
         "level": 3,
         "jobId": "conduit",
-        "disposition": { "resolve": 52, "attunement": 76 },
-        "learnedAbilityIds": ["arc", "tap-line", "throw-the-breaker", "overload-cell", "ground"],
+        "disposition": {
+          "resolve": 52,
+          "attunement": 76
+        },
+        "learnedAbilityIds": [
+          "arc",
+          "tap-line",
+          "throw-the-breaker",
+          "overload-cell",
+          "ground"
+        ],
         "supportAbilityId": "licensed-draw",
         "movementAbilityId": "earth-strap",
         "equipment": {
@@ -27,7 +36,10 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 7, "y": 2 },
+      "position": {
+        "x": 7,
+        "y": 2
+      },
       "facing": "south"
     },
     {
@@ -36,10 +48,16 @@
         "id": "watch-enforcer-gallery",
         "name": "Watch Enforcer",
         "spriteId": "enforcer",
-        "level": 2,
+        "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 60, "attunement": 35 },
-        "learnedAbilityIds": ["pin", "shield-advance"],
+        "disposition": {
+          "resolve": 60,
+          "attunement": 35
+        },
+        "learnedAbilityIds": [
+          "pin",
+          "shield-advance"
+        ],
         "reactionAbilityId": "baton-answer",
         "equipment": {
           "weapon": "shock-maul",
@@ -49,7 +67,10 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 6, "y": 2 },
+      "position": {
+        "x": 6,
+        "y": 2
+      },
       "facing": "south"
     },
     {
@@ -58,15 +79,30 @@
         "id": "watch-conduit-ring",
         "name": "Watch Conduit",
         "spriteId": "conduit",
-        "level": 2,
+        "level": 1,
         "jobId": "conduit",
-        "disposition": { "resolve": 50, "attunement": 68 },
-        "learnedAbilityIds": ["arc", "throw-the-breaker", "overload-cell", "tap-line"],
+        "disposition": {
+          "resolve": 50,
+          "attunement": 68
+        },
+        "learnedAbilityIds": [
+          "arc",
+          "throw-the-breaker",
+          "overload-cell",
+          "tap-line"
+        ],
         "supportAbilityId": "licensed-draw",
-        "equipment": { "weapon": "tap-rod", "body": "canvas-coat", "head": "assay-visor" }
+        "equipment": {
+          "weapon": "tap-rod",
+          "body": "canvas-coat",
+          "head": "assay-visor"
+        }
       },
       "team": "enemy",
-      "position": { "x": 9, "y": 6 },
+      "position": {
+        "x": 9,
+        "y": 6
+      },
       "facing": "south"
     },
     {
@@ -75,15 +111,29 @@
         "id": "watch-conduit-terrace",
         "name": "Watch Conduit",
         "spriteId": "conduit",
-        "level": 2,
+        "level": 1,
         "jobId": "conduit",
-        "disposition": { "resolve": 50, "attunement": 68 },
-        "learnedAbilityIds": ["arc", "throw-the-breaker", "tap-line"],
+        "disposition": {
+          "resolve": 50,
+          "attunement": 68
+        },
+        "learnedAbilityIds": [
+          "arc",
+          "throw-the-breaker",
+          "tap-line"
+        ],
         "supportAbilityId": "licensed-draw",
-        "equipment": { "weapon": "arc-rod", "body": "canvas-coat", "head": "assay-visor" }
+        "equipment": {
+          "weapon": "arc-rod",
+          "body": "canvas-coat",
+          "head": "assay-visor"
+        }
       },
       "team": "enemy",
-      "position": { "x": 8, "y": 12 },
+      "position": {
+        "x": 8,
+        "y": 12
+      },
       "facing": "south"
     },
     {
@@ -92,10 +142,16 @@
         "id": "watch-enforcer-west-ramp",
         "name": "Watch Enforcer",
         "spriteId": "enforcer",
-        "level": 2,
+        "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 60, "attunement": 35 },
-        "learnedAbilityIds": ["pin", "shield-advance"],
+        "disposition": {
+          "resolve": 60,
+          "attunement": 35
+        },
+        "learnedAbilityIds": [
+          "pin",
+          "shield-advance"
+        ],
         "reactionAbilityId": "baton-answer",
         "equipment": {
           "weapon": "shock-maul",
@@ -105,7 +161,10 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 5, "y": 8 },
+      "position": {
+        "x": 5,
+        "y": 8
+      },
       "facing": "west"
     },
     {
@@ -114,10 +173,16 @@
         "id": "watch-enforcer-east-ramp",
         "name": "Watch Enforcer",
         "spriteId": "enforcer",
-        "level": 2,
+        "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 60, "attunement": 35 },
-        "learnedAbilityIds": ["pin", "breach-posture"],
+        "disposition": {
+          "resolve": 60,
+          "attunement": 35
+        },
+        "learnedAbilityIds": [
+          "pin",
+          "breach-posture"
+        ],
         "reactionAbilityId": "baton-answer",
         "equipment": {
           "weapon": "shock-maul",
@@ -127,7 +192,10 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 13, "y": 8 },
+      "position": {
+        "x": 13,
+        "y": 8
+      },
       "facing": "east"
     },
     {
@@ -136,10 +204,18 @@
         "id": "watch-sergeant-floor",
         "name": "Watch Sergeant",
         "spriteId": "enforcer",
-        "level": 3,
+        "level": 2,
         "jobId": "enforcer",
-        "disposition": { "resolve": 74, "attunement": 38 },
-        "learnedAbilityIds": ["pin", "shield-advance", "kettle", "breach-posture"],
+        "disposition": {
+          "resolve": 74,
+          "attunement": 38
+        },
+        "learnedAbilityIds": [
+          "pin",
+          "shield-advance",
+          "kettle",
+          "breach-posture"
+        ],
         "reactionAbilityId": "hold-the-line",
         "supportAbilityId": "riot-drill",
         "equipment": {
@@ -150,7 +226,35 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 10, "y": 12 },
+      "position": {
+        "x": 10,
+        "y": 12
+      },
+      "facing": "south"
+    },
+    {
+      "unit": {
+        "schemaVersion": 1,
+        "id": "quill",
+        "name": "Prelate-Assayer Quill",
+        "spriteId": "conduit",
+        "level": 2,
+        "jobId": "conduit",
+        "disposition": {
+          "resolve": 60,
+          "attunement": 66
+        },
+        "learnedAbilityIds": [],
+        "equipment": {
+          "head": "assay-visor",
+          "body": "oiled-jacket"
+        }
+      },
+      "team": "neutral",
+      "position": {
+        "x": 10,
+        "y": 2
+      },
       "facing": "south"
     }
   ],
@@ -158,19 +262,40 @@
     {
       "kind": "reachTiles",
       "tiles": [
-        { "x": 7, "y": 1 },
-        { "x": 6, "y": 1 },
-        { "x": 7, "y": 0 },
-        { "x": 7, "y": 2 }
+        {
+          "x": 7,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 1
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 2
+        }
       ]
     },
-    { "kind": "defeatUnit", "unitId": "nessa-kiln" }
+    {
+      "kind": "defeatUnit",
+      "unitId": "nessa-kiln"
+    }
   ],
-  "lossConditions": [{ "kind": "partyRout" }],
+  "lossConditions": [
+    {
+      "kind": "partyRout"
+    }
+  ],
   "triggers": [
     {
       "id": "under-measurement",
-      "when": { "kind": "battleStart" },
+      "when": {
+        "kind": "battleStart"
+      },
       "once": true,
       "actions": [
         {
@@ -202,22 +327,70 @@
         "kind": "unitEntersTiles",
         "team": "player",
         "tiles": [
-          { "x": 0, "y": 12 },
-          { "x": 2, "y": 12 },
-          { "x": 4, "y": 12 },
-          { "x": 5, "y": 12 },
-          { "x": 6, "y": 12 },
-          { "x": 7, "y": 12 },
-          { "x": 8, "y": 12 },
-          { "x": 9, "y": 12 },
-          { "x": 10, "y": 12 },
-          { "x": 11, "y": 12 },
-          { "x": 12, "y": 12 },
-          { "x": 13, "y": 12 },
-          { "x": 14, "y": 12 },
-          { "x": 15, "y": 12 },
-          { "x": 16, "y": 12 },
-          { "x": 17, "y": 12 }
+          {
+            "x": 0,
+            "y": 12
+          },
+          {
+            "x": 2,
+            "y": 12
+          },
+          {
+            "x": 4,
+            "y": 12
+          },
+          {
+            "x": 5,
+            "y": 12
+          },
+          {
+            "x": 6,
+            "y": 12
+          },
+          {
+            "x": 7,
+            "y": 12
+          },
+          {
+            "x": 8,
+            "y": 12
+          },
+          {
+            "x": 9,
+            "y": 12
+          },
+          {
+            "x": 10,
+            "y": 12
+          },
+          {
+            "x": 11,
+            "y": 12
+          },
+          {
+            "x": 12,
+            "y": 12
+          },
+          {
+            "x": 13,
+            "y": 12
+          },
+          {
+            "x": 14,
+            "y": 12
+          },
+          {
+            "x": 15,
+            "y": 12
+          },
+          {
+            "x": 16,
+            "y": 12
+          },
+          {
+            "x": 17,
+            "y": 12
+          }
         ]
       },
       "once": true,
@@ -225,18 +398,41 @@
         {
           "kind": "dialogue",
           "lines": [
-            { "speaker": "Nessa Kiln", "text": "Interlock is off the rack. Clear the terrace." },
-            { "speaker": "Prelate-Assayer Quill", "text": "Recording. Rack one, first cell." }
+            {
+              "speaker": "Nessa Kiln",
+              "text": "Interlock is off the rack. Clear the terrace."
+            },
+            {
+              "speaker": "Prelate-Assayer Quill",
+              "text": "Recording. Rack one, first cell."
+            }
           ]
         },
-        { "kind": "destroyObject", "objectId": "bank-cell-one" },
-        { "kind": "destroyObject", "objectId": "tower-walk-south" },
-        { "kind": "setPower", "objectId": "charge-hoist-west", "powered": false },
-        { "kind": "setPower", "objectId": "charge-hoist-east", "powered": false },
+        {
+          "kind": "destroyObject",
+          "objectId": "bank-cell-one"
+        },
+        {
+          "kind": "destroyObject",
+          "objectId": "tower-walk-south"
+        },
+        {
+          "kind": "setPower",
+          "objectId": "charge-hoist-west",
+          "powered": false
+        },
+        {
+          "kind": "setPower",
+          "objectId": "charge-hoist-east",
+          "powered": false
+        },
         {
           "kind": "dialogue",
           "lines": [
-            { "speaker": "Rowen Corvane", "text": "South walk is gone. Everyone off the ring — the hoists are dead, you go by the ramps or you stay up there." },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "South walk is gone. Everyone off the ring \u2014 the hoists are dead, you go by the ramps or you stay up there."
+            },
             {
               "speaker": "Prelate-Assayer Quill",
               "text": "Four cells in series, and the grid browns out on cue. Accidents are not this tidy."
@@ -255,20 +451,62 @@
         "kind": "unitEntersTiles",
         "team": "player",
         "tiles": [
-          { "x": 6, "y": 6 },
-          { "x": 7, "y": 6 },
-          { "x": 8, "y": 6 },
-          { "x": 9, "y": 6 },
-          { "x": 10, "y": 6 },
-          { "x": 11, "y": 6 },
-          { "x": 6, "y": 7 },
-          { "x": 6, "y": 8 },
-          { "x": 6, "y": 9 },
-          { "x": 6, "y": 10 },
-          { "x": 11, "y": 7 },
-          { "x": 11, "y": 8 },
-          { "x": 11, "y": 9 },
-          { "x": 11, "y": 10 }
+          {
+            "x": 6,
+            "y": 6
+          },
+          {
+            "x": 7,
+            "y": 6
+          },
+          {
+            "x": 8,
+            "y": 6
+          },
+          {
+            "x": 9,
+            "y": 6
+          },
+          {
+            "x": 10,
+            "y": 6
+          },
+          {
+            "x": 11,
+            "y": 6
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 8
+          },
+          {
+            "x": 6,
+            "y": 9
+          },
+          {
+            "x": 6,
+            "y": 10
+          },
+          {
+            "x": 11,
+            "y": 7
+          },
+          {
+            "x": 11,
+            "y": 8
+          },
+          {
+            "x": 11,
+            "y": 9
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
         ]
       },
       "once": true,
@@ -280,7 +518,10 @@
               "speaker": "Nessa Kiln",
               "text": "Height buys you nothing here. The tower does not care which side of it you are standing on."
             },
-            { "speaker": "Rowen Corvane", "text": "It is not for seeing. It is the way to the board." }
+            {
+              "speaker": "Rowen Corvane",
+              "text": "It is not for seeing. It is the way to the board."
+            }
           ]
         }
       ]
@@ -291,10 +532,22 @@
         "kind": "unitEntersTiles",
         "team": "player",
         "tiles": [
-          { "x": 6, "y": 2 },
-          { "x": 7, "y": 2 },
-          { "x": 8, "y": 2 },
-          { "x": 9, "y": 2 }
+          {
+            "x": 6,
+            "y": 2
+          },
+          {
+            "x": 7,
+            "y": 2
+          },
+          {
+            "x": 8,
+            "y": 2
+          },
+          {
+            "x": 9,
+            "y": 2
+          }
         ]
       },
       "once": true,
@@ -306,15 +559,25 @@
               "speaker": "Nessa Kiln",
               "text": "You are an hour and a half late. The load schedule was filed this morning."
             },
-            { "speaker": "Rowen Corvane", "text": "Filed by whom." },
-            { "speaker": "Nessa Kiln", "text": "Corvane Freight. Same as everything else on this floor." }
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Filed by whom."
+            },
+            {
+              "speaker": "Nessa Kiln",
+              "text": "Corvane Freight. Same as everything else on this floor."
+            }
           ]
         }
       ]
     },
     {
       "id": "the-licence-does-not-carry-her",
-      "when": { "kind": "unitHpBelowPercent", "unitId": "nessa-kiln", "percent": 40 },
+      "when": {
+        "kind": "unitHpBelowPercent",
+        "unitId": "nessa-kiln",
+        "percent": 40
+      },
       "once": true,
       "actions": [
         {

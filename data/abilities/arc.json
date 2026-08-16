@@ -22,7 +22,7 @@
       "emptyTile"
     ]
   },
-  "chargeCost": 4,
+  "chargeCost": 5,
   "castSpeed": null,
   "effects": [
     {
@@ -30,7 +30,7 @@
       "damageType": "arc",
       "amount": {
         "base": "mag",
-        "power": 8
+        "power": 21
       }
     }
   ]

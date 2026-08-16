@@ -10,11 +10,11 @@
   "statCurve": {
     "hp": {
       "growth": 8,
-      "multiplierPercent": 90
+      "multiplierPercent": 105
     },
     "charge": {
       "growth": 4,
-      "multiplierPercent": 90
+      "multiplierPercent": 100
     },
     "speed": {
       "growth": 4,
@@ -22,7 +22,7 @@
     },
     "phys": {
       "growth": 7,
-      "multiplierPercent": 105
+      "multiplierPercent": 110
     },
     "mag": {
       "growth": 3,

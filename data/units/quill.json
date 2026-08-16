@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "name": "Prelate-Assayer Quill",
+  "id": "quill",
+  "spriteId": "conduit",
+  "level": 2,
+  "jobId": "conduit",
+  "disposition": {
+    "resolve": 60,
+    "attunement": 66
+  },
+  "learnedAbilityIds": [],
+  "equipment": {
+    "head": "assay-visor",
+    "body": "oiled-jacket"
+  }
+}

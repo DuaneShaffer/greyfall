@@ -19,15 +19,39 @@
     "marek-sump",
     "orin-vane"
   ],
-  "startingStandingBonus": 250,
+  "startingStandingBonus": 150,
   "startingInventory": [
-    { "itemId": "riot-shield", "count": 1 },
-    { "itemId": "riot-helm", "count": 1 },
-    { "itemId": "watch-cuirass", "count": 1 },
-    { "itemId": "canvas-coat", "count": 2 },
-    { "itemId": "dust-hood", "count": 2 },
-    { "itemId": "spare-cell", "count": 1 },
-    { "itemId": "grounding-strap", "count": 1 },
-    { "itemId": "coagulant-vial", "count": 3 }
+    {
+      "itemId": "riot-shield",
+      "count": 1
+    },
+    {
+      "itemId": "riot-helm",
+      "count": 1
+    },
+    {
+      "itemId": "watch-cuirass",
+      "count": 1
+    },
+    {
+      "itemId": "canvas-coat",
+      "count": 2
+    },
+    {
+      "itemId": "dust-hood",
+      "count": 2
+    },
+    {
+      "itemId": "spare-cell",
+      "count": 1
+    },
+    {
+      "itemId": "grounding-strap",
+      "count": 1
+    },
+    {
+      "itemId": "coagulant-vial",
+      "count": 3
+    }
   ]
 }

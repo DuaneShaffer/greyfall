@@ -23,13 +23,13 @@
       "emptyTile"
     ]
   },
-  "chargeCost": 4,
-  "castSpeed": 40,
+  "chargeCost": 3,
+  "castSpeed": null,
   "effects": [
     {
       "kind": "applyStatus",
       "statusId": "kettled",
-      "chance": 70
+      "chance": 80
     }
   ]
 }

@@ -12,14 +12,16 @@
     "attunement": 30
   },
   "learnedAbilityIds": [
+    "gas-line-tap",
     "rig-machinery",
-    "smoke-canister",
-    "shaped-charge"
+    "shaped-charge",
+    "smoke-canister"
   ],
   "movementAbilityId": "catwalk-sense",
   "equipment": {
     "weapon": "pry-bar",
     "body": "canvas-coat",
     "head": "dust-hood"
-  }
+  },
+  "supportAbilityId": "light-hands"
 }

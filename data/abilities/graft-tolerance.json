@@ -8,7 +8,7 @@
   "slot": "support",
   "passive": {
     "statMods": {
-      "hp": 14,
+      "hp": 10,
       "charge": 4
     }
   }

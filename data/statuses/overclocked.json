@@ -6,10 +6,10 @@
   "category": "buff",
   "duration": {
     "kind": "turns",
-    "turns": 3
+    "turns": 2
   },
   "hooks": {
-    "ctMultiplierPercent": 160,
+    "ctMultiplierPercent": 135,
     "statMods": {
       "phys": 4,
       "evade": -4

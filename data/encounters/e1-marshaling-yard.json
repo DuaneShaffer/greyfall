@@ -14,21 +14,45 @@
         "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 55, "attunement": 45 },
-        "learnedAbilityIds": ["pin"],
-        "equipment": { "weapon": "shock-maul" }
+        "disposition": {
+          "resolve": 55,
+          "attunement": 45
+        },
+        "learnedAbilityIds": [
+          "pin"
+        ],
+        "equipment": {
+          "weapon": "shock-maul"
+        }
       },
       "team": "enemy",
-      "position": { "x": 4, "y": 0 },
+      "position": {
+        "x": 4,
+        "y": 0
+      },
       "facing": "south"
     }
   ],
-  "winConditions": [{ "kind": "rout" }],
-  "lossConditions": [{ "kind": "partyRout" }],
+  "winConditions": [
+    {
+      "kind": "rout"
+    }
+  ],
+  "lossConditions": [
+    {
+      "kind": "partyRout"
+    },
+    {
+      "kind": "unitDowned",
+      "unitId": "rowen"
+    }
+  ],
   "triggers": [
     {
       "id": "opening-words",
-      "when": { "kind": "battleStart" },
+      "when": {
+        "kind": "battleStart"
+      },
       "once": true,
       "actions": [
         {
@@ -37,6 +61,158 @@
             {
               "speaker": "Maren Voss",
               "text": "Nobody on this line raised a hand until your people showed up, officer. Ask yourself who fired first."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Clear the yard gate. You are standing in breach of the charter's carriage terms."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Batons down until I say otherwise. Nobody on that line is armed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "the-first-maul",
+      "when": {
+        "kind": "turnStart",
+        "turn": 2
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "spawnUnits",
+          "units": [
+            {
+              "unit": {
+                "schemaVersion": 1,
+                "id": "provocateur-b",
+                "name": "Provocateur",
+                "spriteId": "enforcer",
+                "level": 1,
+                "jobId": "enforcer",
+                "disposition": {
+                  "resolve": 55,
+                  "attunement": 45
+                },
+                "learnedAbilityIds": [
+                  "pin"
+                ],
+                "equipment": {
+                  "weapon": "shock-maul"
+                }
+              },
+              "team": "enemy",
+              "position": {
+                "x": 1,
+                "y": 0
+              },
+              "facing": "south"
+            },
+            {
+              "unit": {
+                "schemaVersion": 1,
+                "id": "maren-voss",
+                "name": "Maren Voss",
+                "spriteId": "railrunner",
+                "level": 1,
+                "jobId": "railrunner",
+                "disposition": {
+                  "resolve": 78,
+                  "attunement": 24
+                },
+                "learnedAbilityIds": [],
+                "equipment": {
+                  "body": "canvas-coat"
+                }
+              },
+              "team": "neutral",
+              "position": {
+                "x": 2,
+                "y": 3
+              },
+              "facing": "north"
+            }
+          ]
+        },
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Maren Voss",
+              "text": "That came from behind us! Behind our own line \u2014 look at the coat and look at the maul!"
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Watch issue. Foundry coat. Two of them, and neither is on our roll."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Ma'am, the line is resisting. That is the finding I have to write."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Write what happened. Take the two with the mauls; the line stands where it is."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "down-the-rail",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          {
+            "x": 2,
+            "y": 1
+          },
+          {
+            "x": 2,
+            "y": 2
+          }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Maren Voss",
+              "text": "Mind the running rail. A yard hand crosses that in one step and takes it the whole length of the shed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "on-the-lift-deck",
+      "when": {
+        "kind": "unitEntersTiles",
+        "team": "player",
+        "tiles": [
+          {
+            "x": 5,
+            "y": 4
+          }
+        ]
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Maren Voss",
+              "text": "Freight lift's live. Throw the switch off the yard and the deck drops out from under whoever is on it."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Noted. Height is a thing you can be given and a thing you can be taken off."
             }
           ]
         }
@@ -44,14 +220,51 @@
     },
     {
       "id": "cell-goes-up",
-      "when": { "kind": "objectDestroyed", "objectId": "yard-cell" },
+      "when": {
+        "kind": "objectDestroyed",
+        "objectId": "yard-cell"
+      },
       "once": true,
       "actions": [
         {
           "kind": "dialogue",
           "lines": [
-            { "speaker": "Watch Sergeant", "text": "There goes the cell! Mind the flare!" }
+            {
+              "speaker": "Watch Sergeant",
+              "text": "There goes the cell! Mind the flare!"
+            }
           ]
+        }
+      ]
+    },
+    {
+      "id": "over-the-wall",
+      "when": {
+        "kind": "turnStart",
+        "turn": 8
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Maren Voss",
+              "text": "The other one's away over the wall. Straight over, like he knew the yard."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "He knew where the gate was before he swung. Sergeant, that goes in the record ahead of the arrests."
+            },
+            {
+              "speaker": "Watch Sergeant",
+              "text": "It goes in as an unidentified party leaving the scene, ma'am. That is the wording we have."
+            }
+          ]
+        },
+        {
+          "kind": "removeUnit",
+          "unitId": "provocateur-b"
         }
       ]
     }

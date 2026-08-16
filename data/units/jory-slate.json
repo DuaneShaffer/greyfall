@@ -11,8 +11,9 @@
     "attunement": 44
   },
   "learnedAbilityIds": [
-    "coagulant-jet",
+    "bracer-shot",
     "cinder-oil",
+    "coagulant-jet",
     "triage"
   ],
   "supportAbilityId": "bench-grade",
@@ -20,5 +21,6 @@
     "weapon": "dosing-gun",
     "body": "canvas-coat",
     "head": "dust-hood"
-  }
+  },
+  "reactionAbilityId": "reflex-dose"
 }

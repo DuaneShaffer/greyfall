@@ -9,13 +9,24 @@ Governing docs: `docs/COMBAT_RULES.md` (the formulas), `docs/CONTENT_NOTES.md`
 cannot see). Workstream 20 in `docs/PROJECT_BREAKDOWN.md`; this report answers
 findings-queue item 6.
 
-> **Status (engine-amendment pass, 2026-08-15).** **§4(b) applied** — the
-> level-scaled divisor `D(L) = 400 + 250(L-1)` is in `src/core/rules/damage.ts`
-> and `COMBAT_RULES` §4, level 1 byte-identical. **§4(c) C1 and C3–C5 applied**
-> in `src/core/ai/`; C2 was not needed once C3 landed, and `selfHarmPercent`
-> stays at 200 because it now weights harm only. **§4(a) data changes not
-> applied** — they belong to the content pass, which should re-measure first:
-> every number in F2, F3, and F4 was taken before these changes.
+> **Status (rebalance pass, 2026-08-15).** Everything below §4 is the
+> *pre-rebalance* record and is kept as written, because it is the evidence the
+> changeset was argued from. **§6 is the post-rebalance measurement** — job
+> spread, never-chosen count, encounter win rates, TTK matrix, and the
+> remaining imbalances with reasons. Read §6 first if you want the shipped
+> numbers; read F1–F7 if you want to know why they are what they are.
+>
+> Trail: **§4(b) applied** by the engine pass (level-scaled divisor
+> `D(L) = 400 + 250(L-1)`, level 1 byte-identical). **§4(c) C1 and C3–C5
+> applied** in `src/core/ai/`. **§4(a) superseded** — the data changes were
+> re-derived from scratch after the engine pass, because three of the seven
+> read differently once the AI could see the whole kit; §6 records what
+> actually shipped.
+>
+> **`src/sim/variants.ts` is stale.** `divisorVariant()` emulates a fix that is
+> now *in* the engine, so running it double-applies the divisor. §4(b)'s
+> variant table is historical evidence for a decision already taken; do not read
+> it as a live comparison. §6's numbers come from a variant-free sweep.
 
 ---
 
@@ -29,10 +40,31 @@ sources, and `node --experimental-strip-types` does not rewrite them.
 # the CI-sized smoke sweep plus every harness test — about 12 seconds
 npx vitest run tests/sim
 
-# the full measurement run behind every number in this report — about 5 minutes
+# the full measurement run behind F1-F7 — about 5 minutes
 GREYFALL_SIM=full GREYFALL_SIM_OUT=/tmp/greyfall-sweep.md \
   npx vitest run tests/sim/sweeps.test.ts
 ```
+
+**For §6's numbers, drop the variant and weight sweeps.** `GREYFALL_SIM=full`
+still passes `CANDIDATE_VARIANTS`, and `divisorVariant` now double-applies a
+divisor the engine already scales, so half of that run measures an engine that
+does not exist. The post-rebalance sweep is the same `FULL_CONFIG` with the
+synthetic engines switched off — 1,268 battles, about four minutes:
+
+```ts
+// tests/sim/<anything>.test.ts
+const { report } = runSweepReport({ full: true, variants: [], weightTables: [] });
+```
+
+**§6.4's encounter numbers are a separate pass**, because `encounterSweep`
+plays five seeds and reports no Standing. The recipe, for whoever adopts it
+into `src/sim`: walk `campaign.encounterIds` in order; for each, deploy
+`campaign.startingRosterUnitIds.slice(0, min(maxDeployedUnits, deployTiles,
+roster))` on `orderedDeployTiles(map)` at the units' authored levels; run
+`runBattle(library, { kind: "encounter", ... }, seed, { commandCap: 900 })` over
+ten seeds; and accumulate `unit.standingEarned` per unit so `jobLevelFor` can be
+read at each step. Ten seeds matters: at five, a single configuration of e5 read
+anywhere from 0% to 100%.
 
 The second command writes the complete measurement dump — every table quoted
 below, plus the full 7x7 pair matrix, the full ability-usage table, and the
@@ -483,7 +515,9 @@ make shoot, but the shipped JSON carries no `attack` payload yet.
 
 ---
 
-## 5. Suggested order for the next wave
+## 5. Suggested order for the next wave *(historical — all done)*
+
+The order this report proposed, and the order it happened in.
 
 1. **(c) C1–C5** — make the AI able to see the content. Cheap, and everything
    downstream is measured through it.
@@ -494,6 +528,190 @@ make shoot, but the shipped JSON carries no `attack` payload yet.
 4. **(a) A1–A3, A6** — the changes that do not depend on the re-read.
 5. **(a) A4–A5** — after the re-read.
 6. **A7 / the Machinist** — with the encounter and engine workstreams.
+
+---
+
+## 6. Post-rebalance measurement
+
+The content pass. 1,268 battles on the live engine — no formula variants, no
+alternate weight tables, `FULL_CONFIG` seeds `[101, 202, 303]`, levels 1/3/5,
+arena and Marshaling Yard. "Before" is the same sweep run against the content
+as it stood after the engine pass and before any data change.
+
+### 6.1 Job spread
+
+| job | before | **after** | L1 | L3 | L5 | mean turns |
+|---|---|---|---|---|---|---|
+| enforcer | 99% | **68%** | 46% | 68% | 89% | 12.4 |
+| chemist | 32% | **56%** | 57% | 57% | 53% | 15.9 |
+| conduit | **3%** | **51%** | 42% | 51% | 61% | 7.1 |
+| railrunner | 77% | **50%** | 31% | 57% | 63% | 11.4 |
+| augmented | 67% | **47%** | 51% | 51% | 39% | 9.9 |
+| saboteur | 42% | **44%** | 68% | 36% | 29% | 7.7 |
+| machinist | 30% | **34%** | 56% | 29% | 17% | 9.1 |
+
+Spread **3–99% → 34–68%**. Five of seven inside the 35–65% band; the Enforcer
+is 3 points over and the Machinist 1 point under. The mirror-adjusted rate is
+±5 points at this sample size (216 duels per job), so both are inside the
+noise of the band edge.
+
+What moved each row, in order of size:
+
+| job | change | why |
+|---|---|---|
+| conduit | `arc` power 8 → 21, cost 4 → 5; `flare` 12 → 9; `ground` 6 → 5 | the Conduit did **2 damage** with a weapon and its only damaging ability dealt 12 after double Attunement scaling. Arc is now a real line weapon and the job's whole 3% → 51% is that one number. The kit is otherwise untouched. |
+| enforcer | `braced` evade 18 → 14; `riot-drill` hp +10/evade +4 → +2/+1; `riot-plate` 12 → 5 hp, −2 → −4 evade, **−1 speed**; `riot-helm` 6 → 2 hp; `baton-answer` weapon 50 → 30 | its curve is frozen by `tests/core/stats.test.ts` and `pin` is frozen by `src/ui/mock.ts`, so every lever was armour and passives. Heavy armour is Enforcer-and-Augmented-only, which is why it was the right place to take it from. |
+| railrunner | speed ×115 → ×105; `baseEvade` 14 → 12; `yard-legs` evade +6 → +3; `undercut` 90 → 68 power, Fouled 55% → 30%; `running-coupling` gains `requires: railUnderfoot` | Speed 8 against everyone else's 6 was the single most extreme cell in the pre-engine sweep (96% at L1). It is Speed 7 now, and its signature is a rail-map signature. |
+| machinist | hp 8 ×95 → 9 ×112, phys ×90 → ×105, speed ×95 → ×100, charge ×115 → ×125; three working deployables (§6.2) | it had no reachable board kit at all. It is the one job still outside the band and the reason is level 5 (§6.5). |
+| chemist | hp ×100 → ×110, mag ×105 → ×115; `cinder-oil` power 5 → 7; `dosing-gun` 6 → 8; `bracer-shot` +4 → +5 | a support kit in a 1v1 round robin has nothing to support, so this is the row least worth reading; the comp sweep was always kinder to it. |
+| augmented | `overclocked` 160% → 135% for 2 turns instead of 3; `overdrive` 6 flux/8 hp → 7/5; hp ×110 → ×105; `graft-tolerance` hp +14 → +10; `piston-lunge` gains `moveSelf` and range 4 | Overclocked was the best action in the game (§F4) and the Augmented was spending three turns a battle and 24 HP buying it. |
+| saboteur | hp ×90 → ×105, phys ×105 → ×110, charge ×90 → ×100; `shaped-charge` power 5 → 7; `gas-line-tap` instant at range 2; `smoked` −5/−5/−8 → −8/−8/−4 | the smallest net move in the table, and the widest level spread left (§6.5). |
+
+### 6.2 Never-chosen abilities
+
+**16 → 12 (engine pass) → 8.** Offered in 252 unit-battles each and chosen zero
+times in 882 duels:
+
+| still never chosen | diagnosis |
+|---|---|
+| `rejection` | needs two or more hostiles inside radius 2 to out-value the blast it takes on the caster. Repriced (hpCost 10 → 0 — the blast *is* the cost; radius 1 → 2; 12% → 15% max HP; Scalded 50% → 70%) and it still does not clear, because the melee profile does not walk into being surrounded. Situational by design; a player who is surrounded will find it. |
+| `crossfeed` | redesigned to `ally`-only with `+10 charge` alongside Overclocked, so it cannot be a self-buff loop. There are no allies in a duel. It is chosen in the 4v4 comp sweep. |
+| `kettle` | a radius-2 root is a *multi-target* ability and a duel has one target, where it is a strictly worse Pin. Repriced anyway (4 flux/cast 40/70% → 3 flux/instant/80%) and it is chosen in the comp sweep. |
+| `field-repair` | reachable since the engine pass; loses to Sentry Frame while the Machinist has flux, and it has none left after two deploys. Chosen in the comp sweep. |
+| `tap-line`, `throw-the-breaker`, `overload-cell`, `bring-it-down` | object- and infrastructure-keyed. **A 12x12 arena has no objects and the Marshaling Yard has four**, so the duel sweep structurally cannot show them. Re-run on Foundry Floor Nine (16 objects) `tap-line` is 4–6% of Conduit actions and `rig-machinery` 18% of Saboteur actions. `throw-the-breaker`, `overload-cell` and `bring-it-down` are chosen nowhere, for a reason that is not content — see §6.6. |
+
+Newly reachable this pass: `sentry-frame`, `skitter-drone`, `tripwire-charge`,
+`coupling-hook`, `signal-jump`, `smoke-canister`, `rig-machinery`. The three
+Machinist deployables and the two Railrunner abilities are the vocabulary
+wiring; the rest is pricing.
+
+### 6.3 Over-users
+
+| job \| ability | before | after |
+|---|---|---|
+| augmented \| overdrive | 55% | **42%** |
+| machinist \| crossfeed | 50% | **0%** |
+| conduit \| ground | 54% | 2% |
+| railrunner \| undercut | 56% | 41% |
+| enforcer \| pin | 49% | 58% |
+| machinist \| sentry-frame | — | 59% |
+| conduit \| arc | 0% | 89% |
+| saboteur \| bring-the-house | 38% | 42% |
+
+Six abilities over 40% instead of eight, and the two the brief named are dealt
+with: Overdrive under the flag, Crossfeed off it entirely. Three of the six are
+honest reports of a small kit rather than a balance problem — the Conduit has
+exactly one damaging ability it can afford in a duel, the Machinist's board
+kit *is* its kit, and Pin is the Enforcer's only free attack. `arc` at 89% is
+the one worth watching: it is the price of taking the Conduit from 3% to 51%
+with a single number, and the honest fix is a second damaging Conduit ability
+rather than a smaller Arc.
+
+### 6.4 Encounters
+
+The campaign roster at the levels the campaign actually produces. **Nothing in
+`src/core/progression` raises `Unit.level`**, so "the levels the campaign
+produces" are the authored ones — 1 and 2 — for the whole chapter; the sim's
+`chapter` mode, which assumes a level per battle, is a fiction and is reported
+only for contrast. Ten seeds per encounter, roster in join order, deployed on
+the map's own tiles, authored kits with nothing bought:
+
+| encounter | before | **after** | mean losses | mean surviving hp% | mean unit turns | Standing banked per unit |
+|---|---|---|---|---|---|---|
+| e1 Marshaling Yard | 100% | **100%** | 0.0 of 4 | 95% | 11 | 18 |
+| e2 Foundry Floor Nine | **0%** | **70%** | 2.8 of 5 | 28% | 70 | 56 |
+| e3 Tallow Row | **0%** | **40%** | 5.0 of 6 | 10% | 78 | 46 |
+| e4 Refinery Three | **0%** | **70%** | 4.4 of 6 | 20% | 106 | 47 |
+| e5 Charterhouse Steps | **0%** | **80%** | 3.6 of 7 | 37% | 72 | 32 |
+
+e1 is a comfortable tutorial and e2–e5 are all inside the 40–80% target. Tallow
+Row is the wall of the chapter — 40% and five of six units down for a win —
+which is the right shape for the battle the story turns on. Both sides are
+AI-driven with authored loadouts and nothing bought with Standing, so these are
+floors, not predictions.
+
+The numbers are also *jumpy*: one level on the e5 boss is worth 20–30 points,
+and at five seeds a single configuration of e5 read anywhere from 0% to 100%.
+Everything above is ten seeds. Treat ±10 points as noise.
+
+Three levers did the work, in order of size: **party size** (e2 4 → 5, e3/e4
+5 → 6, e5 5 → **7** — the finale deploys the whole company), **enemy levels**
+(most of e2–e5 dropped one, and the boss's level is worth 20–30 points on its
+own), and **enemy counts** (one reinforcement instead of two in e3 and e5, one
+fewer body on the Charterhouse terraces). The six non-frozen roster units each
+gained one signature ability and one passive slot, because the enemy templates
+already carried passives and the party did not.
+
+**Standing flow, measured.** ~199 per unit across the chapter (18 / 56 / 46 /
+47 / 32 by battle). `startingStandingBonus` went **250 → 150**: 250 was worth
+more than the whole chapter, and zero leaves the learning screen empty until
+battle 3 because the roster's cheapest unlearned ability is 150. At 150 every
+unit opens at job level 2 with one affordable purchase and finishes the chapter
+at job level 3. `docs/PROGRESSION.md` §2 and §5 carry the numbers; the flag is
+discharged.
+
+### 6.5 TTK
+
+The divisor fix holds under the new curves. Scripted weapon duels, no
+abilities, no armour, no passives, all 49 pairings:
+
+| level | before the engine pass | after the engine pass | **after this pass** | one-shot pairings |
+|---|---|---|---|---|
+| 1 | 7.45 | 7.45 | **7.22** | 0 |
+| 2 | 4.00 | 6.45 | **6.37** | 0 |
+| 3 | 3.33 | 7.02 | **6.98** | 0 |
+| 4 | 2.78 | 7.67 | **7.69** | 0 |
+| 5 | 2.63 | 8.37 | **8.45** | 0 |
+
+Zero one-shot pairings at every level, against 16 of 49 at level 5 before.
+Mean unit turns per duel is 10.9 with **zero stalemates in 882 duels** and zero
+first-round downs.
+
+### 6.6 What was left, and why
+
+- **Enforcer 68% / Machinist 34%.** Both are one band-edge away and both are
+  blocked, not unattended. The Enforcer's residual is `pin`: a measured A/B
+  over 392 duels puts Stunned `chance` 60 → 35 at **68% → 53%**, the largest
+  single lever in the game. `data/abilities/pin.json` is mirrored verbatim in
+  `src/ui/mock.ts` and asserted by `tests/ui/mock.test.ts`, so it could not be
+  edited without breaking a test outside this pass's remit. Same for
+  `overload-cell` (wanted: 8 → 5 flux, power 16 → 20, `requires: targetPowered`).
+  `CONTENT_NOTES` §9 carries both diffs for the UI workstream.
+- **Level 5 is out of band for three jobs** (Enforcer 89%, Machinist 17%,
+  Saboteur 29%) while levels 1 and 3 are 46/68 and 56/29 and 68/36. The
+  Enforcer's `hp` growth of 11 ×120 against everyone else's 8–10 compounds with
+  level, and it is frozen by `tests/core/stats.test.ts`. The five non-frozen
+  jobs were raised towards it as far as their personalities allow; closing the
+  rest means unfreezing the Enforcer's curve. **The shipped chapter runs levels
+  1–3**, where the spread is 31–68%, so this was left.
+- **`conduit | arc` at 89%.** Deliberate: see §6.3.
+- **Deployment-side bias, 35%.** Unchanged and unchanged in cause: F5 showed it
+  tracks *who acts first*, not which band deploys, and swapping unit ids moves
+  it to 54–62%. Averaged over both orderings the arena is 45% and the yard 48%.
+  Tempo is a liability in this engine; that is a design fact, not a bug.
+- **Conduit flux never binds** — 47% of Conduits never spend below 75% of a
+  53-point pool. Arc costs 5 and there is nothing else worth buying in a duel.
+  The pool is sized for a Conduit with a live map under it, which the arena is
+  not.
+
+### 6.7 Engine and AI friction found
+
+Content could not reach these; each is reported with the number it costs.
+
+| # | where | what | cost |
+|---|---|---|---|
+| G1 | `src/core/ai/score.ts`, `extraEffectValue` | **`moveSelf` is unpriced** — it falls to the `default` branch and scores 0. An ability whose point is repositioning can never be chosen *for* the repositioning. | Piston Lunge is 5% of Augmented actions and Signal Jump 0% in the arena, both entirely on their damage/status halves. It is also half of why Overdrive holds 42%: on an approach turn the Augmented has no priced alternative. |
+| G2 | `src/core/ai/score.ts`, `statusValue` | **A status the target already holds is priced as if it were new.** Combined with G1 there is no setting at which a cheap self-buff is both chosen and non-spammy: at 0 flux the AI re-applies it every idle turn (Signal Jump, 9 casts in one battle), and at any non-zero cost the chip penalty deletes it. | Signal Jump had to take `requires: railUnderfoot` partly to bound the loop. |
+| G3 | `src/core/ai/score.ts`, `abilityValue` | **The chip penalty is a cliff for cheap utility.** It is proportional now, but it is still `chipPenalty × (chipThreshold − gross) / chipThreshold`, so an ability with gross 32 and cost 1 flux scores −190. Everything under ~200 gross that costs any flux is unchoosable. | Breach Posture only re-entered the kit at Braced evade ≥ 14; Kettle needed 80% chance *and* instant *and* 3 flux to clear zero. |
+| G4 | `src/core/ai/score.ts`, `destroyValue` / `objectHitValue` | **An object with no unit standing in its payload is worth `objectStructurePoint` (15).** With G3 that means every object-only ability with a flux cost is dead: `bring-it-down` (3 flux, phys 28) scores ~20 gross against a 225 chip penalty. `rig-machinery` is chosen only because it costs 0. | `bring-it-down`, `overload-cell`, `throw-the-breaker` never chosen; the whole "the map is the target" pillar is invisible to the search unless somebody is standing on the thing. |
+| G5 | `src/core/ai/score.ts`, `powerSwingValue` | **A power swing is worth 0 unless the object carries a `surfaceHeight` deck with a unit on it.** Cutting power to a press line or a pour ladle — the entire point of `floor-nine-mains` — prices at zero. | `throw-the-breaker` is never chosen on any map, at any price. It is repriced to 1 flux and range 5 on the assumption a human will use it. |
+| G6 | `src/core/ai/score.ts`, `spawnValue` | **`autoAttackPercent` (250) credits a deployable with 2.5 shots and no discount** for the deployable being destroyed, the target walking out of range, or the turns of setup. A Sentry Frame scores ~700 against a basic attack's ~200, so the Machinist builds until its flux is gone and dies doing it. The content answer was to price the frame at 12 flux of an 18-point pool so it can only afford two. | Sentry Frame is 59% of Machinist actions; the job's level-5 rate is 17%. |
+| G7 | `src/core/rules/effects.ts`, `checkContact` | **An `onContact` payload resolves with `actorId: null`**, so `phys`/`mag`/`weapon` amounts land as 0 damage while `damageBite` prices them the same way. A mine authored with `phys 8` is silently inert. `autoAttack` does not have this problem — it resolves against the deployer. Worth either documenting on the schema or resolving contact against `ownerUnitId` the way `autoAttack` does. | Cost one debugging pass; `tripwire-charge` ships as `fixed 20`. |
+| G8 | `src/ui/mock.ts` + `tests/ui/mock.test.ts` | **Seven content files are frozen by a UI fidelity mirror** — `jobs/enforcer`, `jobs/conduit`, `abilities/pin`, `abilities/overload-cell`, `items/shock-maul`, `statuses/stunned`, `units/rowen`. | The two biggest un-taken levers in the game, quantified in §6.6. |
+| G9 | `src/core/ai/index.ts` | **Search cost is superlinear in Move.** `actionOptions` is evaluated from every reachable tile, so one point of Move on one unit multiplies that unit's per-turn search by the growth of its reachable set. Measured: slotting `earth-strap` (move +1) on Vale took `tests/app/campaignLoop.test.ts`'s two-battle run from **1.42 s to 2.36 s** — a 65% increase in the whole test from one stat point on one unit. | Vale ships without a movement passive. Any future Move-boosting content wants a pruning pass in the search first. |
+
+None of G1–G6 is tunable from `weights.ts`; they are all valuation gaps in
+`score.ts`, in the same family as the C3–C5 that landed last pass.
 
 ---
 
@@ -520,7 +738,16 @@ GREYFALL_SIM=full GREYFALL_SIM_OUT=/tmp/greyfall-sweep.md \
 | (b) variant comparison | §8 |
 | (c) weight-table comparison | §9 |
 
-Totals for this run: **2,591 battles**, 288 s of simulation — 882 duels, 84
+Totals for that run: **2,591 battles**, 288 s of simulation — 882 duels, 84
 four-versus-four comp battles, 50 encounter battles, 588 formula-variant duels,
 735 weight-table duels, 252 tempo-control duels, plus about 4,400 scripted
 weapon duels for the TTK matrices.
+
+**§6's numbers come from a variant-free run of the same config** — 1,268
+battles, 236 s: 882 duels, 84 comps, 50 encounter battles, 252 tempo controls,
+plus the TTK matrices. Its dump uses the same section numbers minus §8 and §9,
+which are empty without variants and weight tables. The encounter figures in
+§6.4 are a separate ten-seed pass over the five shipped encounters in campaign
+order, which also reports Standing banked per unit per battle; the five-seed
+figures in the sweep's own §6 agree with it to within the sample
+(e1 100 / e2 80 / e3 40 / e4 80 / e5 60).

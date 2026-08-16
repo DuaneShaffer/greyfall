@@ -10,7 +10,7 @@
   },
   "hooks": {
     "statMods": {
-      "evade": 18,
+      "evade": 14,
       "move": -1
     }
   }

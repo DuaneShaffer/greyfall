@@ -9,7 +9,7 @@
   "statCurve": {
     "hp": {
       "growth": 8,
-      "multiplierPercent": 95
+      "multiplierPercent": 100
     },
     "charge": {
       "growth": 4,
@@ -17,7 +17,7 @@
     },
     "speed": {
       "growth": 5,
-      "multiplierPercent": 115
+      "multiplierPercent": 105
     },
     "phys": {
       "growth": 6,
@@ -30,7 +30,7 @@
   },
   "baseMove": 5,
   "baseJump": 3,
-  "baseEvade": 14,
+  "baseEvade": 12,
   "innateAbilityIds": [],
   "learnableAbilityIds": [
     "switch-kick",

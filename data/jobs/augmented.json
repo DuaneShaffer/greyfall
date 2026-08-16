@@ -10,7 +10,7 @@
   "statCurve": {
     "hp": {
       "growth": 10,
-      "multiplierPercent": 110
+      "multiplierPercent": 105
     },
     "charge": {
       "growth": 6,

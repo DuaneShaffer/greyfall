@@ -12,14 +12,16 @@
     "attunement": 50
   },
   "learnedAbilityIds": [
-    "tripwire-charge",
     "field-repair",
-    "skitter-drone"
+    "sentry-frame",
+    "tripwire-charge"
   ],
   "movementAbilityId": "gantry-step",
   "equipment": {
     "weapon": "spanner",
     "body": "canvas-coat",
-    "accessory": "spare-cell"
-  }
+    "accessory": "spare-cell",
+    "head": "dust-hood"
+  },
+  "supportAbilityId": "bench-eye"
 }

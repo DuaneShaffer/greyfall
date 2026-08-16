@@ -20,14 +20,14 @@
       "object"
     ]
   },
-  "chargeCost": 6,
-  "castSpeed": 25,
+  "chargeCost": 3,
+  "castSpeed": null,
   "effects": [
     {
       "kind": "damageObject",
       "amount": {
         "base": "phys",
-        "power": 18
+        "power": 28
       }
     }
   ]

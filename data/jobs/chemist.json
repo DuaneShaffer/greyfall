@@ -7,7 +7,7 @@
   "statCurve": {
     "hp": {
       "growth": 8,
-      "multiplierPercent": 100
+      "multiplierPercent": 110
     },
     "charge": {
       "growth": 6,
@@ -23,7 +23,7 @@
     },
     "mag": {
       "growth": 6,
-      "multiplierPercent": 105
+      "multiplierPercent": 115
     }
   },
   "baseMove": 3,

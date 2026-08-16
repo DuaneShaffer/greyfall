@@ -27,9 +27,9 @@
     {
       "kind": "modifyStats",
       "mods": {
-        "phys": 4,
-        "mag": 4,
-        "evade": 4
+        "phys": 5,
+        "mag": 5,
+        "evade": 5
       },
       "duration": 3
     }

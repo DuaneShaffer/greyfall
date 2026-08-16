@@ -10,9 +10,9 @@
   },
   "hooks": {
     "statMods": {
-      "phys": -5,
-      "mag": -5,
-      "evade": -8
+      "phys": -8,
+      "mag": -8,
+      "evade": -4
     }
   }
 }

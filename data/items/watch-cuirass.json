@@ -9,7 +9,7 @@
   "price": 1100,
   "slot": "body",
   "statMods": {
-    "hp": 20,
+    "hp": 14,
     "evade": -3,
     "speed": -1
   }

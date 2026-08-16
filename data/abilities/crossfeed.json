@@ -17,17 +17,20 @@
     },
     "requiresLos": true,
     "validTargets": [
-      "ally",
-      "self"
+      "ally"
     ]
   },
-  "chargeCost": 7,
+  "chargeCost": 4,
   "castSpeed": null,
   "effects": [
     {
       "kind": "applyStatus",
       "statusId": "overclocked",
       "chance": 100
+    },
+    {
+      "kind": "modifyCharge",
+      "amount": 10
     }
   ]
 }

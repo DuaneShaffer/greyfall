@@ -4,7 +4,7 @@
   "name": "Tallow Row",
   "mapId": "tallow-row",
   "rngSeed": 1003,
-  "maxDeployedUnits": 5,
+  "maxDeployedUnits": 6,
   "enemies": [
     {
       "unit": {
@@ -13,9 +13,12 @@
         "name": "Wick",
         "spriteId": "saboteur",
         "portraitId": "wick",
-        "level": 3,
+        "level": 2,
         "jobId": "saboteur",
-        "disposition": { "resolve": 58, "attunement": 26 },
+        "disposition": {
+          "resolve": 58,
+          "attunement": 26
+        },
         "learnedAbilityIds": [
           "smoke-canister",
           "rig-machinery",
@@ -33,7 +36,10 @@
         }
       },
       "team": "enemy",
-      "position": { "x": 8, "y": 2 },
+      "position": {
+        "x": 8,
+        "y": 2
+      },
       "facing": "south"
     },
     {
@@ -42,15 +48,30 @@
         "id": "torch-hand-east-room",
         "name": "Torch-Hand",
         "spriteId": "saboteur",
-        "level": 2,
+        "level": 1,
         "jobId": "saboteur",
-        "disposition": { "resolve": 45, "attunement": 28 },
-        "learnedAbilityIds": ["smoke-canister", "shaped-charge", "gas-line-tap", "rig-machinery"],
+        "disposition": {
+          "resolve": 45,
+          "attunement": 28
+        },
+        "learnedAbilityIds": [
+          "smoke-canister",
+          "shaped-charge",
+          "gas-line-tap",
+          "rig-machinery"
+        ],
         "movementAbilityId": "catwalk-sense",
-        "equipment": { "weapon": "cutting-torch", "body": "canvas-coat", "head": "dust-hood" }
+        "equipment": {
+          "weapon": "cutting-torch",
+          "body": "canvas-coat",
+          "head": "dust-hood"
+        }
       },
       "team": "enemy",
-      "position": { "x": 11, "y": 8 },
+      "position": {
+        "x": 11,
+        "y": 8
+      },
       "facing": "west"
     },
     {
@@ -59,15 +80,29 @@
         "id": "torch-hand-south-room",
         "name": "Torch-Hand",
         "spriteId": "saboteur",
-        "level": 2,
+        "level": 1,
         "jobId": "saboteur",
-        "disposition": { "resolve": 42, "attunement": 30 },
-        "learnedAbilityIds": ["smoke-canister", "shaped-charge", "gas-line-tap"],
+        "disposition": {
+          "resolve": 42,
+          "attunement": 30
+        },
+        "learnedAbilityIds": [
+          "smoke-canister",
+          "shaped-charge",
+          "gas-line-tap"
+        ],
         "movementAbilityId": "catwalk-sense",
-        "equipment": { "weapon": "pry-bar", "body": "canvas-coat", "head": "dust-hood" }
+        "equipment": {
+          "weapon": "pry-bar",
+          "body": "canvas-coat",
+          "head": "dust-hood"
+        }
       },
       "team": "enemy",
-      "position": { "x": 3, "y": 13 },
+      "position": {
+        "x": 3,
+        "y": 13
+      },
       "facing": "east"
     },
     {
@@ -76,15 +111,28 @@
         "id": "cell-machinist",
         "name": "Shop Machinist",
         "spriteId": "machinist",
-        "level": 2,
+        "level": 1,
         "jobId": "machinist",
-        "disposition": { "resolve": 46, "attunement": 48 },
-        "learnedAbilityIds": ["tripwire-charge", "skitter-drone"],
+        "disposition": {
+          "resolve": 46,
+          "attunement": 48
+        },
+        "learnedAbilityIds": [
+          "tripwire-charge",
+          "skitter-drone"
+        ],
         "supportAbilityId": "bench-eye",
-        "equipment": { "weapon": "spanner", "body": "canvas-coat", "accessory": "spare-cell" }
+        "equipment": {
+          "weapon": "spanner",
+          "body": "canvas-coat",
+          "accessory": "spare-cell"
+        }
       },
       "team": "enemy",
-      "position": { "x": 8, "y": 10 },
+      "position": {
+        "x": 8,
+        "y": 10
+      },
       "facing": "south"
     },
     {
@@ -93,14 +141,25 @@
         "id": "provocateur-barricade",
         "name": "Provocateur",
         "spriteId": "enforcer",
-        "level": 2,
+        "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 44, "attunement": 38 },
-        "learnedAbilityIds": ["pin", "shield-advance"],
-        "equipment": { "weapon": "shock-maul" }
+        "disposition": {
+          "resolve": 44,
+          "attunement": 38
+        },
+        "learnedAbilityIds": [
+          "pin",
+          "shield-advance"
+        ],
+        "equipment": {
+          "weapon": "shock-maul"
+        }
       },
       "team": "enemy",
-      "position": { "x": 6, "y": 10 },
+      "position": {
+        "x": 6,
+        "y": 10
+      },
       "facing": "south"
     },
     {
@@ -109,26 +168,77 @@
         "id": "provocateur-tram",
         "name": "Provocateur",
         "spriteId": "enforcer",
-        "level": 2,
+        "level": 1,
         "jobId": "enforcer",
-        "disposition": { "resolve": 44, "attunement": 38 },
-        "learnedAbilityIds": ["pin"],
-        "equipment": { "weapon": "shock-maul" }
+        "disposition": {
+          "resolve": 44,
+          "attunement": 38
+        },
+        "learnedAbilityIds": [
+          "pin"
+        ],
+        "equipment": {
+          "weapon": "shock-maul"
+        }
       },
       "team": "enemy",
-      "position": { "x": 14, "y": 8 },
+      "position": {
+        "x": 14,
+        "y": 8
+      },
       "facing": "south"
     }
   ],
   "winConditions": [
-    { "kind": "defeatUnit", "unitId": "wick" },
-    { "kind": "rout" }
+    {
+      "kind": "defeatUnit",
+      "unitId": "wick"
+    },
+    {
+      "kind": "rout"
+    }
   ],
-  "lossConditions": [{ "kind": "partyRout" }],
+  "lossConditions": [
+    {
+      "kind": "partyRout"
+    },
+    {
+      "kind": "unitReachesTiles",
+      "unitId": "wick",
+      "tiles": [
+        {
+          "x": 5,
+          "y": 0
+        },
+        {
+          "x": 6,
+          "y": 0
+        },
+        {
+          "x": 7,
+          "y": 0
+        },
+        {
+          "x": 8,
+          "y": 0
+        },
+        {
+          "x": 9,
+          "y": 0
+        },
+        {
+          "x": 10,
+          "y": 0
+        }
+      ]
+    }
+  ],
   "triggers": [
     {
       "id": "foot-of-the-row",
-      "when": { "kind": "battleStart" },
+      "when": {
+        "kind": "battleStart"
+      },
       "once": true,
       "actions": [
         {
@@ -156,19 +266,58 @@
         "kind": "unitEntersTiles",
         "team": "player",
         "tiles": [
-          { "x": 0, "y": 11 },
-          { "x": 1, "y": 11 },
-          { "x": 2, "y": 11 },
-          { "x": 3, "y": 11 },
-          { "x": 4, "y": 11 },
-          { "x": 5, "y": 11 },
-          { "x": 6, "y": 11 },
-          { "x": 9, "y": 11 },
-          { "x": 10, "y": 11 },
-          { "x": 11, "y": 11 },
-          { "x": 12, "y": 11 },
-          { "x": 13, "y": 11 },
-          { "x": 15, "y": 11 }
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 1,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          },
+          {
+            "x": 3,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 5,
+            "y": 11
+          },
+          {
+            "x": 6,
+            "y": 11
+          },
+          {
+            "x": 9,
+            "y": 11
+          },
+          {
+            "x": 10,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 11
+          },
+          {
+            "x": 12,
+            "y": 11
+          },
+          {
+            "x": 13,
+            "y": 11
+          },
+          {
+            "x": 15,
+            "y": 11
+          }
         ]
       },
       "once": true,
@@ -176,7 +325,10 @@
         {
           "kind": "dialogue",
           "lines": [
-            { "speaker": "Wick", "text": "Hold the refuse. Two down the gutter — take them off it from the side." }
+            {
+              "speaker": "Wick",
+              "text": "Hold the refuse. Two down the gutter \u2014 take them off it from the side."
+            }
           ]
         },
         {
@@ -188,31 +340,25 @@
                 "id": "provocateur-gutter",
                 "name": "Provocateur",
                 "spriteId": "enforcer",
-                "level": 2,
+                "level": 1,
                 "jobId": "enforcer",
-                "disposition": { "resolve": 44, "attunement": 38 },
-                "learnedAbilityIds": ["pin", "shield-advance"],
-                "equipment": { "weapon": "shock-maul" }
+                "disposition": {
+                  "resolve": 44,
+                  "attunement": 38
+                },
+                "learnedAbilityIds": [
+                  "pin",
+                  "shield-advance"
+                ],
+                "equipment": {
+                  "weapon": "shock-maul"
+                }
               },
               "team": "enemy",
-              "position": { "x": 1, "y": 11 },
-              "facing": "east"
-            },
-            {
-              "unit": {
-                "schemaVersion": 1,
-                "id": "torch-hand-gutter",
-                "name": "Torch-Hand",
-                "spriteId": "saboteur",
-                "level": 2,
-                "jobId": "saboteur",
-                "disposition": { "resolve": 42, "attunement": 28 },
-                "learnedAbilityIds": ["shaped-charge", "gas-line-tap"],
-                "movementAbilityId": "catwalk-sense",
-                "equipment": { "weapon": "cutting-torch", "body": "canvas-coat" }
+              "position": {
+                "x": 1,
+                "y": 11
               },
-              "team": "enemy",
-              "position": { "x": 1, "y": 8 },
               "facing": "east"
             }
           ]
@@ -225,10 +371,22 @@
         "kind": "unitEntersTiles",
         "team": "player",
         "tiles": [
-          { "x": 3, "y": 3 },
-          { "x": 4, "y": 3 },
-          { "x": 3, "y": 4 },
-          { "x": 4, "y": 4 }
+          {
+            "x": 3,
+            "y": 3
+          },
+          {
+            "x": 4,
+            "y": 3
+          },
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
         ]
       },
       "once": true,
@@ -248,14 +406,20 @@
               "speaker": "Wick",
               "text": "You're only now reading the box? We've been carrying your name up this street for a month."
             },
-            { "speaker": "Watch Sergeant", "text": "Ma'am. That is a paperwork matter." }
+            {
+              "speaker": "Watch Sergeant",
+              "text": "Ma'am. That is a paperwork matter."
+            }
           ]
         }
       ]
     },
     {
       "id": "main-at-the-stair",
-      "when": { "kind": "objectDestroyed", "objectId": "gas-main-north" },
+      "when": {
+        "kind": "objectDestroyed",
+        "objectId": "gas-main-north"
+      },
       "once": true,
       "actions": [
         {
@@ -265,28 +429,52 @@
               "speaker": "Watch Sergeant",
               "text": "Main's gone at the stair head. Hold where you are until it burns itself down."
             },
-            { "speaker": "Wick", "text": "That's the whole Row's cooking gas. Somebody's supper, that." }
+            {
+              "speaker": "Wick",
+              "text": "That's the whole Row's cooking gas. Somebody's supper, that."
+            }
           ]
         }
       ]
     },
     {
       "id": "wick-breaks-for-the-stair",
-      "when": { "kind": "unitHpBelowPercent", "unitId": "wick", "percent": 40 },
+      "when": {
+        "kind": "unitHpBelowPercent",
+        "unitId": "wick",
+        "percent": 40
+      },
       "once": true,
       "actions": [
         {
           "kind": "dialogue",
           "lines": [
-            { "speaker": "Wick", "text": "That's me done standing. Stair's four doors up. I've walked it drunk." },
-            { "speaker": "Rowen Corvane", "text": "Cut him off at the head of the Row." }
+            {
+              "speaker": "Wick",
+              "text": "That's me done standing. Stair's four doors up. I've walked it drunk."
+            },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "He is on the stair. Cut him off at the head of the Row or we lose the whole street's evidence with him."
+            }
           ]
+        },
+        {
+          "kind": "moveUnit",
+          "unitId": "wick",
+          "to": {
+            "x": 8,
+            "y": 1
+          }
         }
       ]
     },
     {
       "id": "wick-down",
-      "when": { "kind": "unitDowned", "unitId": "wick" },
+      "when": {
+        "kind": "unitDowned",
+        "unitId": "wick"
+      },
       "once": true,
       "actions": [
         {
@@ -296,12 +484,18 @@
               "speaker": "Wick",
               "text": "You want a name off me. There isn't one. There's a docket, and a yard, and a man who never comes down to the yard."
             },
-            { "speaker": "Rowen Corvane", "text": "Sergeant. Bag the seals." },
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Sergeant. Bag the seals."
+            },
             {
               "speaker": "Watch Sergeant",
               "text": "Evidence goes to the Watch house, ma'am. That is the procedure."
             },
-            { "speaker": "Rowen Corvane", "text": "Then it goes in my coat." }
+            {
+              "speaker": "Rowen Corvane",
+              "text": "Then it goes in my coat."
+            }
           ]
         }
       ]

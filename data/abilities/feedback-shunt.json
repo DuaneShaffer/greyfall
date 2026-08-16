@@ -12,8 +12,9 @@
       "kind": "damage",
       "damageType": "arc",
       "amount": {
-        "base": "fixed",
-        "power": 12
+        "base": "mag",
+        "power": 4,
+        "attunementScaled": false
       }
     },
     {

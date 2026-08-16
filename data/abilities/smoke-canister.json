@@ -23,7 +23,7 @@
       "emptyTile"
     ]
   },
-  "chargeCost": 2,
+  "chargeCost": 1,
   "castSpeed": null,
   "effects": [
     {

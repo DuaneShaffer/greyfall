@@ -12,9 +12,10 @@
     "attunement": 78
   },
   "learnedAbilityIds": [
+    "overdrive",
     "piston-lunge",
-    "siphon",
-    "overdrive"
+    "press-frame",
+    "siphon"
   ],
   "reactionAbilityId": "pain-gate",
   "supportAbilityId": "graft-tolerance",
@@ -22,5 +23,6 @@
     "weapon": "graft-fist",
     "body": "riot-plate",
     "head": "riot-helm"
-  }
+  },
+  "movementAbilityId": "hydraulic-stride"
 }

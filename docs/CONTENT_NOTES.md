@@ -7,7 +7,7 @@ vocabulary could not say what the creative bible asked for.
 Governing docs: `docs/CREATIVE_BIBLE.md` (§5 rules of magic, §6 job fantasies,
 §9 naming) and `docs/COMBAT_RULES.md` (every formula quoted below).
 
-Counts: **7 jobs · 56 abilities · 11 statuses · 35 items · 15 units**.
+Counts: **7 jobs · 56 abilities · 11 statuses · 35 items · 17 units**.
 
 ---
 
@@ -52,11 +52,14 @@ equippable at all — without them no job shares a tag with either item class.
 |---|---|---|---|---|---|---|
 | Enforcer | 11 ×120 | 2 ×70 | 4 ×100 | 8 ×115 | 2 ×75 | 3/2/8 |
 | Conduit | 7 ×85 | 9 ×130 | 4 ×100 | 3 ×70 | 8 ×125 | 3/1/5 |
-| Chemist | 8 ×100 | 6 ×100 | 4 ×100 | 5 ×90 | 6 ×105 | 3/2/6 |
-| Machinist | 8 ×95 | 7 ×115 | 4 ×95 | 5 ×90 | 5 ×95 | 3/2/6 |
-| Saboteur | 8 ×90 | 4 ×90 | 4 ×105 | 7 ×105 | 3 ×80 | 4/2/10 |
-| Railrunner | 8 ×95 | 4 ×85 | 5 ×115 | 6 ×100 | 3 ×80 | 5/3/14 |
-| Augmented | 10 ×110 | 6 ×105 | 3 ×100 | 10 ×115 | 4 ×85 | 3/4/4 |
+| Chemist | 8 ×**110** | 6 ×100 | 4 ×100 | 5 ×90 | 6 ×**115** | 3/2/6 |
+| Machinist | **9** ×**105** | 7 ×**125** | 4 ×**100** | 5 ×**100** | 5 ×95 | 3/2/6 |
+| Saboteur | 8 ×**100** | 4 ×**100** | 4 ×105 | 7 ×105 | 3 ×80 | 4/2/10 |
+| Railrunner | 8 ×**100** | 4 ×85 | 5 ×**105** | 6 ×100 | 3 ×80 | 5/3/**12** |
+| Augmented | 10 ×**105** | 6 ×105 | 3 ×100 | 10 ×115 | 4 ×85 | 3/4/4 |
+
+Bold entries are the rebalance pass's changes; see `docs/BALANCE_REPORT.md`
+§6 for the before/after win rates each one bought.
 
 **Enforcer and Conduit were not touched.** Their curves and flats are asserted
 verbatim by `tests/core/stats.test.ts` and quoted as worked examples in
@@ -69,17 +72,23 @@ Resulting level-1 lines (no equipment):
 |---|---|---|---|---|---|
 | Enforcer | 61 | 7 | 6 | 9 | 1 |
 | Conduit | 39 | 22 | 6 | 2 | 10 |
-| Chemist | 48 | 14 | 6 | 4 | 6 |
-| Machinist | 45 | 17 | 5 | 4 | 4 |
-| Saboteur | 43 | 10 | 6 | 7 | 2 |
-| Railrunner | 45 | 10 | **8** | 6 | 2 |
-| Augmented | 55 | 14 | 5 | **11** | 3 |
+| Chemist | 52 | 14 | 6 | 4 | 6 |
+| Machinist | 51 | 18 | 6 | 5 | 4 |
+| Saboteur | 48 | 12 | 6 | 7 | 2 |
+| Railrunner | 48 | 10 | **7** | 6 | 2 |
+| Augmented | 52 | 14 | 5 | **11** | 3 |
 
 Personality read: the Enforcer is the HP wall, the Augmented the damage
-outlier that pays in HP and Evade, the Railrunner buys a third more turns than
-anyone else (Speed 8 vs 6) with the thinnest damage, the Conduit and Machinist
-hold the two big charge pools, and the Chemist is deliberately the flat
-average against which the others read as extreme.
+outlier that pays in HP and Evade, the Railrunner buys extra turns (Speed 7 vs
+6) and Move 5 with the thinnest damage, the Conduit and Machinist hold the two
+big charge pools, and the Chemist is deliberately the flat average against
+which the others read as extreme.
+
+The rebalance pass narrowed the spread rather than the personalities. Speed 8
+was the single most extreme cell in the whole sweep (the Railrunner won 96% of
+its level-1 duels off it), and the five non-frozen jobs' HP curves were raised
+towards the Enforcer's because the Enforcer's ×120 is asserted by
+`tests/core/stats.test.ts` and cannot come down.
 
 ## 3. Charge economies
 
@@ -88,11 +97,11 @@ average against which the others read as extreme.
 
 | Job | L1 pool | Signature | Uses per battle at L1 |
 |---|---|---|---|
-| Enforcer | 7 | Kettle 4 | one Kettle, then it is a maul job again — correct, the Watch does not run on flux |
-| Conduit | 22 (+8 with Licensed Draw) | Flare 12 | one Flare, or two Grounds, or five Arcs |
-| Chemist | 14 | Field Transfusion 8 | one big heal or three small ones |
-| Machinist | 17 (+4 with Bench Eye) | Sentry Frame 8 | two deploys, or one deploy and a Crossfeed |
-| Saboteur | 10 | Bring the House 9 | exactly one; Rig Machinery costs 0 on purpose |
+| Enforcer | 7 | Kettle 3 | two Kettles, then it is a maul job again — correct, the Watch does not run on flux |
+| Conduit | 22 (+8 with Licensed Draw) | Flare 9 | one Flare, or two Grounds, or four Arcs |
+| Chemist | 14 | Field Transfusion 6 | one big heal or four small ones |
+| Machinist | 18 (+4 with Bench Eye) | Sentry Frame 12 | one frame and a drone, or a frame and a Crossfeed |
+| Saboteur | 12 | Bring the House 9 | exactly one; Rig Machinery costs 0 on purpose |
 | Railrunner | 10 | Running Coupling 6 | the rest of the kit is 0–2, so mobility never runs dry |
 | Augmented | 14 (+4 with Graft Tolerance) | Press Frame 8 | Siphon *refills* — the intended loop is steal, then spend |
 
@@ -107,21 +116,21 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 | Pin | action | 100 / 0 | weapon 80, Stunned 60% *(pre-existing)* |
 | Shield Advance | action | 150 / 0 | line 2, weapon 60 + shove 1 along facing |
 | Breach Posture | action | 300 / 2 | self, Braced (evade +18, move −1) |
-| Kettle | action | 450 / 4, cast 40 | radius 2, Kettled 70% — a zone root, not a stun |
-| Baton Answer | reaction (damaged) | 500 | weapon 50 counter |
+| Kettle | action | 450 / 3 | radius 2, Kettled 80% — a zone root, not a stun, and instant |
+| Baton Answer | reaction (damaged) | 500 | weapon 30 counter |
 | Hold the Line | reaction (allyDowned) | 600 | self Braced + Resolve +4 |
-| Riot Drill | support | 400 | hp +10, evade +4 |
+| Riot Drill | support | 400 | hp +2, evade +1 |
 | Press Through | movement | 500 | moveThroughEnemies, move +1 |
 
 ### Conduit — the map is the spellbook
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
-| Arc | action | 150 / 4 | line 3, mag 8 arc (Attunement-scaled both ends) |
-| Tap Line | action | 200 / 0 | ally/self charge +10 — the answer to "where does the power come from" |
-| Throw the Breaker | action | 250 / 3 | object setPower toggle |
+| Arc | action | 150 / 5 | line 3, mag 21 arc (Attunement-scaled both ends) |
+| Tap Line | action | 200 / 0, requires `adjacentPoweredObject` | ally/self charge +10 — the answer to "where does the power come from" |
+| Throw the Breaker | action | 250 / 1 | object setPower toggle, range 5 |
 | Overload Cell | action | 250 / 8, cast 25 | object mag 16 *(pre-existing)* |
-| Ground | action | 550 / 6, cast 60 | Grounded 80% + charge −10 siphoned to the caster + setPower off |
-| Flare | action | 950 / 12, cast 20 | radius 2, mag 14 arc + Flux Burn 60% + object mag 8 |
+| Ground | action | 550 / 5, cast 60 | Grounded 80% + charge −10 siphoned to the caster + setPower off |
+| Flare | action | 950 / 9, cast 20 | radius 2, mag 14 arc + Flux Burn 60% + object mag 8 |
 | Licensed Draw | support | 450 | charge +8 |
 | Earth Strap | movement | 350 | ignoresHazardTiles, move +1 |
 
@@ -133,11 +142,11 @@ mechanized as `applyStatus` + `modifyCharge{siphonToActor}` + `setPower`.
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
 | Coagulant Jet | action | 200 / 3 | heal mag 6, **not** Attunement-scaled |
-| Cinder Oil | action | 350 / 4, cast 40 | radius 1, thermal mag 5 unscaled + Scalded 75% |
+| Cinder Oil | action | 350 / 4, cast 40 | radius 1, thermal mag 7 unscaled + Scalded 75% |
 | Triage | action | 450 / 4 | clears Scalded/Fouled/Smoked/Seized + heal mag 3 |
-| Bracer Shot | action | 450 / 3 | modifyStats phys/mag/evade +4 for 3 turns |
+| Bracer Shot | action | 450 / 3 | modifyStats phys/mag/evade +5 for 3 turns |
 | Numbing Fog | action | 550 / 5, cast 30 | radius 2, Fouled 80% (CT ×60%) |
-| Field Transfusion | action | 900 / 8, cast 25 | heal mag 12 + clears Flux Burn and Grounded |
+| Field Transfusion | action | 900 / 6, cast 35 | heal mag 14 + clears Flux Burn and Grounded |
 | Bench Grade | support | 500 | consumableEffectBonusPercent 50 — the job identity |
 | Reflex Dose | reaction (hpCritical) | 600 | self heal mag 6 + clears Scalded |
 
@@ -150,11 +159,11 @@ Conduit-only signature.
 ### Machinist — the only job that adds to the map
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
-| Tripwire Charge | action | 250 / 4 | spawnObject mine, hp 8 |
+| Tripwire Charge | action | 250 / 4 | mine, hp 8, `onContact` fixed 20 kinetic + Stunned 45%, destroys itself |
 | Field Repair | action | 200 / 3 | repairObject fixed 20 — machines only, per bible |
-| Skitter Drone | action | 400 / 6 | spawnObject drone, hp 12 (blocks movement) |
-| Sentry Frame | action | 500 / 8 | spawnObject turret, hp 24 (blocks movement) |
-| Crossfeed | action | 700 / 7 | ally/self Overclocked |
+| Skitter Drone | action | 400 / 6 | drone, hp 12, `attack` mag 5 unscaled, range 1–2, speed 5, no LoS needed |
+| Sentry Frame | action | 500 / 12 | turret, hp 24, `attack` mag 9 unscaled, range 1–4 vertical 2, speed 6 |
+| Crossfeed | action | 700 / 4 | **ally only**: Overclocked + charge +10 |
 | Feedback Shunt | reaction (damaged) | 550 | arc fixed 12 + Seized 25% |
 | Bench Eye | support | 400 | mag +3, charge +4 |
 | Gantry Step | movement | 450 | ignoresHazardTiles, jump +2 |
@@ -165,11 +174,11 @@ biggest gap between this kit and its bible fantasy.
 ### Saboteur — the map is the target
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
-| Smoke Canister | action | 300 / 2 | radius 2, Smoked 85% |
-| Rig Machinery | action | 350 / **0** | adjacent object: setPower off + phys 4 |
-| Shaped Charge | action | 400 / 3, cast 35 | radius 1, phys 5 to units + phys 8 to objects |
-| Gas Line Tap | action | 500 / 4, cast 30 | line 3, thermal phys 4 + Scalded 70% + object phys 5 |
-| Bring It Down | action | 750 / 6, cast 25 | object phys 18 — a structure killer |
+| Smoke Canister | action | 300 / 1 | radius 2, Smoked 85% |
+| Rig Machinery | action | 350 / **0** | adjacent object: setPower off + phys 12 |
+| Shaped Charge | action | 400 / 3, cast 35 | radius 1, phys 7 to units + phys 8 to objects |
+| Gas Line Tap | action | 500 / 4 | line 3 at range 2, thermal phys 4 + Scalded 70% + object phys 5, instant |
+| Bring It Down | action | 750 / 3 | object phys 28 — a structure killer, instant |
 | Bring the House | action | 1100 / 9, cast 15 | radius 3, phys 8 + shove 2 + object phys 14 |
 | Light Hands | support | 500 | evade +6, speed +1 |
 | Catwalk Sense | movement | 400 | ignoresHazardTiles, jump +1, move +1 |
@@ -187,12 +196,12 @@ the Conduit's.
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
 | Switch Kick | action | 200 / 0 | weapon 70 + push 2 |
-| Signal Jump | action | 300 / 2 | self Sprung (move +2, jump +1) |
-| Undercut | action | 350 / 2 | weapon 90 + Fouled 55% |
-| Coupling Hook | action | 400 / 2 | range 2–5, weapon 60 + **pull 3** |
-| Running Coupling | action | 900 / 6, cast 50 | line 4, weapon 130 + pull 2 + Stunned 35% |
+| Signal Jump | action | 300 / 0, requires `railUnderfoot` | `moveSelf` forward 3 + Sprung (move +2, jump +1) |
+| Undercut | action | 350 / 2 | weapon 68 + Fouled 30% |
+| Coupling Hook | action | 400 / 1 | range 2–5, weapon 75 + **pull 3** + Stunned 25% |
+| Running Coupling | action | 900 / 6, cast 50, requires `railUnderfoot` | line 4, weapon 130 + pull 2 + Stunned 35% |
 | Shoulder Off | reaction (targetedByAction) | 550 | push 1 + Fouled 30% |
-| Yard Legs | support | 600 | speed +1, evade +6 |
+| Yard Legs | support | 600 | speed +1, evade +3 |
 | Rail Dash | movement | 500 | railMoveMultiplier 3 |
 
 The Railrunner has the lowest damage per hit of any melee job by design. Its
@@ -203,13 +212,13 @@ rail map's Move 5 into an effective 15 along the track (COMBAT_RULES §10).
 ### Augmented — every strength on credit
 | Ability | Slot | Standing / Charge / HP | Effect |
 |---|---|---|---|
-| Piston Lunge | action | 350 / 2 / **4 hp** | range 1–3, **vertical 3**, weapon 110 |
+| Piston Lunge | action | 350 / 2 / **3 hp** | range 1–4, **vertical 3**, `moveSelf` toward-target 2 + weapon 110 |
 | Siphon | action | 400 / 0 | adjacent: charge −8 siphoned to the caster + arc phys 3 |
-| Overdrive | action | 800 / 6 / **8 hp** | Overclocked + **Attunement +6, Resolve −6, permanently** |
-| Rejection | action | 700 / 0 / **10 hp** | radius 1 on self: chemical 12% max-HP to everything including the caster + Scalded 50% |
+| Overdrive | action | 800 / 7 / **5 hp** | Overclocked + **Attunement +6, Resolve −6, permanently** |
+| Rejection | action | 700 / 0 | radius **2** on self: chemical 15% max-HP to everything including the caster + Scalded 70% |
 | Press Frame | action | 1000 / 8 / **6 hp** | radius 1, weapon 140 + push 2 + Stunned 40% |
 | Pain Gate | reaction (hpCritical) | 650 | self Overclocked + Resolve −4 |
-| Graft Tolerance | support | 500 | hp +14, charge +4 |
+| Graft Tolerance | support | 500 | hp +10, charge +4 |
 | Hydraulic Stride | movement | 450 | jump +3, move +1 |
 
 Overdrive and Pain Gate are the only abilities in the slice that permanently
@@ -238,9 +247,9 @@ so a party without a Chemist is inconvenienced rather than crippled.
 
 ## 6. Balance assumptions
 
-**Weapon damage** is `floor(phys × weaponPower × power / 400)` with basic
-attack at power 100 (COMBAT_RULES §4). Level-1 basic attacks and the hits
-needed to down a peer:
+**Weapon damage** is `floor(phys × weaponPower × power / D(L))` with basic
+attack at power 100 and `D(1) = 400` (COMBAT_RULES §4). Level-1 basic attacks
+and the hits needed to down a peer:
 
 | Attacker (L1, tier-1 weapon) | Basic hit | vs Enforcer 61 hp | vs Conduit 39 hp |
 |---|---|---|---|
@@ -248,8 +257,8 @@ needed to down a peer:
 | Enforcer (Shock Maul) | 20 | 4 | 2 |
 | Saboteur (Pry Bar) | 14 | 5 | 3 |
 | Railrunner (Hook Bar) | 13 | 5 | 3 |
-| Machinist (Bench Spanner) | 9 | 7 | 5 |
-| Chemist (Dosing Gun) | 6 | 11 | 7 |
+| Machinist (Bench Spanner) | 11 | 6 | 4 |
+| Chemist (Dosing Gun) | 8 | 8 | 5 |
 | Conduit (Tap Rod) | 2 | 31 | 20 |
 
 That is the target band at level 1: 3–5 hits between the fighting jobs, and
@@ -257,28 +266,27 @@ support jobs that genuinely cannot fight with a weapon (their damage is
 abilities, and the Conduit's Arc against a high-Attunement target does more
 than four maul swings would).
 
-**Known scaling problem, flagged rather than papered over.** Because
-`STAT_BASE.hp` is 40 and `STAT_BASE.phys` is 0, HP grows sub-linearly with
-level while Phys grows linearly, so time-to-kill collapses:
+**The scaling problem this section used to flag is fixed in `src/core`.**
+`STAT_BASE.hp` is 40 and `STAT_BASE.phys` is 0, so HP grew sub-linearly while
+Phys grew linearly and time-to-kill collapsed — 7.45 swings to down at level 1
+and 2.63 at level 5, with 16 of 49 pairings one-shotting. The engine pass
+level-scaled the damage divisor, `D(L) = 400 + 250(L−1)`, which holds the mean
+between 6.5 and 8.4 swings across levels 1–5 with **zero one-shot pairings at
+any level** (`docs/BALANCE_REPORT.md` §4(b), re-measured post-rebalance in §6).
+`D(1) = 400`, so every level-1 number in this document is the number it always
+was.
 
 | Level | Enforcer basic hit | Enforcer HP | Hits to down |
 |---|---|---|---|
 | 1 | 20 | 61 | 4 |
-| 3 | 60 | 87 | 2 |
-| 5 | 138 | 114 | 1 |
+| 3 | 27 | 87 | 4 |
+| 5 | 29 | 114 | 4 |
 
-At level 5 every melee job one-shots every other job. **No content-side lever
-fixes this**: armor HP mods large enough to matter at level 5 would double a
-level-1 unit's health, and the two curves that set the pace (Enforcer's
-phys 8 ×115) are frozen by `tests/core/stats.test.ts`. The fix belongs in
-`src/core`: either scale `WEAPON_DAMAGE_DIVISOR` with level, raise
-`STAT_BASE.hp` substantially, or give `phys` a non-zero base so its growth is
-proportionally slower. Recorded here for the balance pass.
-
-Mitigations actually applied: weapon power kept in a narrow band, tier-2
-weapons gaining only +2/+3, and armor carrying real HP (heavy tier 2 is
-+20 hp). The slice's five battles are expected to run levels 1–3, where the
-numbers are 2–4 hits and playable.
+Armor is a smaller share of a unit's HP than it was: the rebalance pass cut
+heavy armour hard (Riot Plate 12 → 5 hp and −4 evade / −1 speed, Watch Cuirass
+20 → 14) because heavy armour is Enforcer-and-Augmented-only and those two
+jobs were the sweep's over-performers. Weapon power is still deliberately kept
+in a narrow 5–13 band with tier-2 gaining only +2/+3.
 
 **Status durations** are 1–3 turns of the *afflicted unit's own* turns
 (COMBAT_RULES §8). Stunned stays at 1 turn — it costs exactly one turn and
@@ -301,25 +309,43 @@ not expected values.
 
 Reported, not worked around. Nothing below was faked with a wrong mechanic.
 
-> **Closed by the engine-amendment pass (2026-08-15):** gaps **1** (deployables
-> now take `onContact` and `attack` payloads), **2** (`moveSelf`), and **7**
-> (`requires` on action abilities). The engine supports them; the *content*
-> does not use them yet. Concretely, this is the authoring work they create:
+> **Closed, and now used by the content (rebalance pass, 2026-08-15).** Gaps
+> **1**, **2**, and **7** were closed by the engine-amendment pass; this pass
+> wired all three into the kits.
 >
-> - `tripwire-charge` wants an `onContact` payload; `sentry-frame` and
->   `skitter-drone` want an `attack` profile with an `amount`, a `range`, and a
->   `speed`. Until those are authored the three are still obstacles, and the sim
->   still never chooses two of them.
-> - `piston-lunge` and `signal-jump` want a `moveSelf` effect.
-> - `tap-line` already carries `requires: ["adjacentPoweredObject"]` — the one
->   ability this section named. Whether Rail Dash's job wants `railUnderfoot`
->   gating, and whether `throw-the-breaker` or `rig-machinery` want
->   `targetPowered`, are content calls this pass deliberately did not make.
+> - **Deployables act.** `tripwire-charge` carries an `onContact` payload
+>   (fixed 20 kinetic + Stunned 45%, destroys itself). `sentry-frame` and
+>   `skitter-drone` carry `attack` profiles. All three are now chosen by the
+>   search; the Machinist went 30% → 45% of its duels on the strength of them.
+>   Two authoring rules the schema does not enforce but the engine implies:
+>   an `onContact` payload runs **with no caster**, so its amounts must be
+>   `fixed` or `maxHpPercent` (a `phys` base resolves to 0); an `attack`
+>   payload resolves against the deploying unit, so `mag`/`phys`/`weapon` all
+>   work there. Both turret amounts are `attunementScaled: false` for the same
+>   reason the Chemist's compounds are — a frame is a machine, and it shoots a
+>   licensed Conduit and a brick wall the same.
+> - **`moveSelf`.** `piston-lunge` opens with `moveSelf toward-target 2` and
+>   reaches to range 4: the arm goes where the shoulder cannot, and the body
+>   follows it. `signal-jump` is `moveSelf forward 3` plus Sprung.
+> - **`requires`.** Three abilities are gated, each a separate judgment:
+>   `running-coupling` takes `railUnderfoot` (it is literally coupling to
+>   running freight — the Railrunner's signature is now a rail-map signature,
+>   and losing it on a bare arena is most of why the job came down from 77%);
+>   `signal-jump` takes `railUnderfoot` (a signal is trackside furniture, and
+>   the gate is also what stops a 0-flux self-buff being recast on every tile
+>   of every map — see the AI note below); `tap-line` keeps
+>   `adjacentPoweredObject` from the engine pass. **Not gated, deliberately:**
+>   `coupling-hook` (a hook is a hook — and gating the one Railrunner ability
+>   this pass was trying to revive would have killed it), `rig-machinery` and
+>   `throw-the-breaker` (`targetPowered` on either makes a *strictly worse*
+>   ability, since `setPower off` on an unpowered object is already a no-op and
+>   the integrity damage is still worth having), and `overload-cell`, which
+>   wants `targetPowered` and could not be edited at all — see §9.
 >
 > Gap **4** (consumables) is deferred with a design sketch in
 > `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10 are open.
 
-1. **Deployables are inert.** `spawnObject` takes only `object` and `hp`, and
+1. ~~**Deployables are inert.**~~ **Closed and used.** `spawnObject` takes only `object` and `hp`, and
    `spawnObject()` in `src/core/rules/effects.ts` builds them with
    `operable: null`, `onDestroyed: null`, `powered: null` and no behaviour.
    A Sentry Frame does not shoot, a Tripwire Charge does not detonate when
@@ -329,7 +355,7 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
    AI hook that makes `turret`/`drone` objects act on the clock, or an
    authorable `onDestroyed` / `operable` payload on the spawn effect. **This
    is the largest gap in the slice.**
-2. **No self-movement effect.** `forceMove` moves units in the target *area*
+2. ~~**No self-movement effect.**~~ **Closed and used.** `forceMove` moves units in the target *area*
    relative to the caster; there is no way to move the caster. Piston Lunge,
    Signal Jump and Rail Dash all want to reposition the user. Expressed
    instead through range/vertical (Piston Lunge reaches 3 heights up) and
@@ -353,7 +379,7 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 6. **`statMods` and `modifyStats` are flat integers only.** No percentage
    form, so a buff cannot scale with level. Bracer Shot's flat +4 phys is
    significant at level 1 and irrelevant by level 5.
-7. **No conditional gating on abilities** beyond charge and HP. Nothing can
+7. ~~**No conditional gating on abilities**~~ **Closed and used.** Nothing could
    require a shield equipped, a rail tile underfoot, or an adjacent powered
    object. Bible §5.2's "a Conduit on a dead map with no cells is nearly
    powerless" is therefore *flavour only* — Tap Line restores charge whether
@@ -375,13 +401,23 @@ Party (seven units, one per job, so every pillar is playable):
 
 | Unit | Job | Lv | Resolve / Attunement | Note |
 |---|---|---|---|---|
-| Rowen Corvane | Enforcer | 1 | 72 / 38 | Unchanged shape; equipment left weapon-only so the level-1 line in COMBAT_RULES §2 still reads true off this file. Gained a reaction slot (Baton Answer). |
-| Vale Tarn | Conduit | 1 | 50 / 70 | Replaces the placeholder in `src/app/content.ts`. Equipment carries no mag mods, so the Mag 10 / Attunement 70 worked example in COMBAT_RULES §4 stays literally correct. |
-| Jory Slate | Chemist | 1 | 64 / 44 | Foundry hand; bench work is the trades' entry job. |
-| Ivo Brace | Machinist | 2 | 48 / 50 | Secondary Chemist, matching the job tree. |
-| Della Tine | Railrunner | 2 | 58 / 35 | Rail Dash slotted. |
-| Marek Sump | Saboteur | 2 | 44 / 30 | Lowest Resolve in the party — nerve for wiring, not for standing. |
-| Orin Vane | Augmented | 2 | 66 / **78** | Highest Attunement in the game: power and vulnerability in one number. |
+| Rowen Corvane | Enforcer | 1 | 72 / 38 | Unchanged shape; equipment left weapon-only so the level-1 line in COMBAT_RULES §2 still reads true off this file. Reaction slot: Baton Answer. **Frozen — see §9.** |
+| Vale Tarn | Conduit | 1 | 50 / 70 | Equipment carries no mag mods, so the Mag 10 / Attunement 70 worked example in COMBAT_RULES §4 stays literally correct. Gained Ground. **No movement passive, deliberately** — slotting Earth Strap's Move +1 on her raised the AI's search cost 65% (`docs/BALANCE_REPORT.md` §6.7 G9). |
+| Jory Slate | Chemist | 1 | 64 / 44 | Foundry hand; bench work is the trades' entry job. Gained Bracer Shot and Reflex Dose. |
+| Ivo Brace | Machinist | 2 | 48 / 50 | Secondary Chemist, matching the job tree. Trades Skitter Drone for Sentry Frame and gains Bench Eye and a dust hood — two deployables is what his flux affords, and the frame is the better showcase. |
+| Della Tine | Railrunner | 2 | 58 / 35 | Rail Dash slotted. Gained Undercut, Yard Legs, a dust hood. |
+| Marek Sump | Saboteur | 2 | 44 / 30 | Lowest Resolve in the party — nerve for wiring, not for standing. Gained Gas Line Tap and Light Hands. |
+| Orin Vane | Augmented | 2 | 66 / **78** | Highest Attunement in the game: power and vulnerability in one number. Gained Press Frame and Hydraulic Stride. |
+| Maren Voss | Railrunner | 1 | 78 / 24 | **Non-combatant.** Combine line steward at the yard; placed `neutral` in e1 so the opening line comes out of a body instead of the air. No learned abilities. |
+| Prelate-Assayer Quill | Conduit | 2 | 60 / 66 | **Non-combatant.** Placed `neutral` in e4 and e5. The Assay does not take a side; it measures and files. No learned abilities. |
+
+The six non-frozen party units each gained a signature ability and, where the
+search could afford it, a passive slot. That is not power creep for its own sake: the enemy templates in
+e2–e5 already carried support and movement passives and the party did not, and
+the chapter's own Standing (measured at ~210 across five battles, see
+`docs/PROGRESSION.md` §2) buys about that much. The encounter sweep is run
+against these authored kits, so the numbers in `docs/BALANCE_REPORT.md` §6 are
+a floor that a player who spends Standing beats.
 
 Enemy templates for the encounter workstream to instantiate: `watch-enforcer`,
 `watch-sergeant`, `watch-conduit`, `provocateur`, `provocateur-torch`,
@@ -393,11 +429,20 @@ into the data rather than only into dialogue.
 
 ## 9. Downstream work this creates
 
-- `src/ui/mock.ts` hardcodes copies of `jobs/enforcer`, `jobs/conduit` and
-  `units/rowen`; `tests/ui/mock.test.ts` asserts they match the authored JSON
-  and now fails on all three (added learnable abilities, added equip tags,
-  added Rowen's reaction slot). The UI/progression workstream owns that file
-  and needs to re-sync it. Everything else in the suite is green.
+- **`src/ui/mock.ts` freezes seven content files, and that blocked real balance
+  work.** `realContent` mirrors `jobs/enforcer`, `jobs/conduit`,
+  `abilities/pin`, `abilities/overload-cell`, `items/shock-maul`,
+  `statuses/stunned`, and `units/rowen`, and `tests/ui/mock.test.ts` asserts
+  byte-equality with the authored JSON. The rebalance pass could therefore not
+  touch any of them. Two changes it wanted and measured are parked on that:
+
+  | file | wanted change | measured effect |
+  |---|---|---|
+  | `data/abilities/pin.json` | Stunned `chance` 60 → 35 | Enforcer duel win rate **68% → 53%** in a 392-duel A/B; the single largest lever in the game and the reason the Enforcer still sits at the top of the band |
+  | `data/abilities/overload-cell.json` | `chargeCost` 8 → 5, `damageObject` power 16 → 20, `requires: ["targetPowered"]` | the Conduit's anti-machine strike is 8 flux of a 22 pool for one object; it is chosen once in 1,764 unit-battles |
+
+  Re-syncing `mock.ts` is the UI workstream's call; the numbers above are what
+  it buys. Everything else in the suite is green (449 tests).
 - `src/app/content.ts` still hand-lists content files and carries the
   `VALE_PLACEHOLDER`. `data/units/vale.json` now exists; the placeholder can
   be deleted and the directory loaded.

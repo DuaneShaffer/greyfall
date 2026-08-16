@@ -8,7 +8,7 @@
   ],
   "price": 340,
   "slot": "weapon",
-  "power": 6,
+  "power": 8,
   "damageType": "chemical",
   "range": {
     "min": 1,

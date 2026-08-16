@@ -92,8 +92,8 @@ describe("sim telemetry", () => {
       enforcer: 20,
       saboteur: 14,
       railrunner: 13,
-      machinist: 9,
-      chemist: 6,
+      machinist: 11,
+      chemist: 8,
       conduit: 2,
     };
     for (const [job, damage] of Object.entries(expected)) {

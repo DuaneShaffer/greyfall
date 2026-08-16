@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "Maren Voss",
+  "id": "maren-voss",
+  "spriteId": "railrunner",
+  "level": 1,
+  "jobId": "railrunner",
+  "disposition": {
+    "resolve": 78,
+    "attunement": 24
+  },
+  "learnedAbilityIds": [],
+  "equipment": {
+    "body": "canvas-coat"
+  }
+}

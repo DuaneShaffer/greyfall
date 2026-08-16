@@ -118,6 +118,47 @@ describe("content cross-references", () => {
     }
   });
 
+  // `checkContact` applies the payload with no acting unit, so a `phys`/`mag`/
+  // `weapon` amount resolves to 0 and the mine is silently inert. `autoAttack`
+  // is the opposite: it resolves against the deploying unit, so it may scale.
+  it("contact payloads use caster-free amounts", () => {
+    for (const ability of abilities.values()) {
+      if (ability.slot !== "action") continue;
+      for (const effect of ability.effects) {
+        if (effect.kind !== "spawnObject" || effect.onContact === undefined) continue;
+        for (const payload of effect.onContact.effects) {
+          if (payload.kind !== "damage" && payload.kind !== "heal") continue;
+          expect(
+            ["fixed", "maxHpPercent"],
+            `${ability.id}: onContact ${payload.kind} base "${payload.amount.base}" resolves to 0 without a caster`,
+          ).toContain(payload.amount.base);
+        }
+      }
+    }
+  });
+
+  it("triggers that move or remove a unit name one the encounter places", () => {
+    for (const enc of encounters.values()) {
+      const placed = new Set(enc.enemies.map((p) => p.unit.id));
+      for (const trigger of enc.triggers) {
+        for (const action of trigger.actions) {
+          if (action.kind === "spawnUnits") {
+            for (const p of action.units) placed.add(p.unit.id);
+          }
+        }
+      }
+      for (const trigger of enc.triggers) {
+        for (const action of trigger.actions) {
+          if (action.kind !== "moveUnit" && action.kind !== "removeUnit") continue;
+          expect(
+            placed.has(action.unitId),
+            `${enc.id}/${trigger.id}: ${action.kind} names ${action.unitId}, which the encounter never places`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
   it("encounters reference existing maps, units, and objects", () => {
     for (const enc of encounters.values()) {
       const map = maps.get(enc.mapId);

@@ -31,7 +31,7 @@
       "damageType": "thermal",
       "amount": {
         "base": "mag",
-        "power": 5,
+        "power": 7,
         "attunementScaled": false
       }
     },

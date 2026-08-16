@@ -20,13 +20,28 @@
       "emptyTile"
     ]
   },
-  "chargeCost": 8,
+  "chargeCost": 12,
   "castSpeed": null,
   "effects": [
     {
       "kind": "spawnObject",
       "object": "turret",
-      "hp": 24
+      "hp": 24,
+      "attack": {
+        "amount": {
+          "base": "mag",
+          "power": 9,
+          "attunementScaled": false
+        },
+        "damageType": "kinetic",
+        "range": {
+          "min": 1,
+          "max": 4,
+          "vertical": 2
+        },
+        "requiresLos": true,
+        "speed": 6
+      }
     }
   ]
 }

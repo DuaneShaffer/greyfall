@@ -9,7 +9,7 @@
   "passive": {
     "statMods": {
       "speed": 1,
-      "evade": 6
+      "evade": 3
     }
   }
 }

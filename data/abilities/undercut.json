@@ -28,13 +28,13 @@
       "damageType": "kinetic",
       "amount": {
         "base": "weapon",
-        "power": 90
+        "power": 68
       }
     },
     {
       "kind": "applyStatus",
       "statusId": "fouled",
-      "chance": 55
+      "chance": 30
     }
   ]
 }

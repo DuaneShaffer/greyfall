@@ -20,13 +20,21 @@
       "self"
     ]
   },
-  "chargeCost": 2,
+  "chargeCost": 0,
   "castSpeed": null,
   "effects": [
+    {
+      "kind": "moveSelf",
+      "direction": "forward",
+      "distance": 3
+    },
     {
       "kind": "applyStatus",
       "statusId": "sprung",
       "chance": 100
     }
+  ],
+  "requires": [
+    "railUnderfoot"
   ]
 }

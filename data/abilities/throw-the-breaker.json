@@ -9,7 +9,7 @@
   "targeting": {
     "range": {
       "min": 1,
-      "max": 4,
+      "max": 5,
       "vertical": 3
     },
     "area": {
@@ -20,7 +20,7 @@
       "object"
     ]
   },
-  "chargeCost": 3,
+  "chargeCost": 1,
   "castSpeed": null,
   "effects": [
     {

@@ -20,7 +20,7 @@
       "enemy"
     ]
   },
-  "chargeCost": 2,
+  "chargeCost": 1,
   "castSpeed": null,
   "effects": [
     {
@@ -28,13 +28,18 @@
       "damageType": "kinetic",
       "amount": {
         "base": "weapon",
-        "power": 60
+        "power": 75
       }
     },
     {
       "kind": "forceMove",
       "direction": "pull",
       "distance": 3
+    },
+    {
+      "kind": "applyStatus",
+      "statusId": "stunned",
+      "chance": 25
     }
   ]
 }
