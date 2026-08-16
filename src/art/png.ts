@@ -2,8 +2,10 @@
 // runs in the browser preview, in vitest, and in a build script. Only what the
 // sprite pipeline needs: 8-bit RGBA/RGB/grey/indexed decode, RGBA encode.
 //
-// Encoding uses stored (uncompressed) DEFLATE blocks. A 32x48 master is 6 KB
-// either way, and a compressor is a lot of code to maintain for nothing.
+// Encoding compresses with fixed-Huffman DEFLATE over an LZ77 hash chain.
+// Dynamic Huffman would win a few more percent and costs a code-length tree
+// builder; at sheet sizes the fixed tree already turns a 4.5 MB sprite sheet
+// into ~100 KB, and a smaller codec is the one that stays correct.
 
 export interface RGBAImage {
   readonly width: number;
@@ -216,32 +218,150 @@ function adler32(data: Uint8Array): number {
   return ((b << 16) | a) >>> 0;
 }
 
-function deflateStored(data: Uint8Array): Uint8Array {
-  const blocks: Uint8Array[] = [];
-  const max = 65535;
+// ---------------------------------------------------------------------------
+// DEFLATE (RFC 1951) — encode, fixed Huffman over a greedy LZ77 hash chain.
+// ---------------------------------------------------------------------------
+
+/** LSB-first bit stream, which is the order RFC 1951 packs bits into bytes. */
+class BitWriter {
+  private bytes: number[] = [];
+  private bitBuffer = 0;
+  private bitCount = 0;
+
+  bits(value: number, n: number): void {
+    for (let i = 0; i < n; i += 1) {
+      this.bitBuffer |= ((value >>> i) & 1) << this.bitCount;
+      this.bitCount += 1;
+      if (this.bitCount === 8) {
+        this.bytes.push(this.bitBuffer);
+        this.bitBuffer = 0;
+        this.bitCount = 0;
+      }
+    }
+  }
+
+  /** Huffman codes travel most-significant bit first (RFC 1951 §3.1.1). */
+  code(value: number, n: number): void {
+    for (let i = n - 1; i >= 0; i -= 1) this.bits((value >>> i) & 1, 1);
+  }
+
+  finish(): Uint8Array {
+    if (this.bitCount > 0) {
+      this.bytes.push(this.bitBuffer);
+      this.bitBuffer = 0;
+      this.bitCount = 0;
+    }
+    return Uint8Array.from(this.bytes);
+  }
+}
+
+/** Fixed literal/length code: (code, bit length) per RFC 1951 §3.2.6. */
+function fixedLiteral(symbol: number): readonly [number, number] {
+  if (symbol < 144) return [0x30 + symbol, 8];
+  if (symbol < 256) return [0x190 + symbol - 144, 9];
+  if (symbol < 280) return [symbol - 256, 7];
+  return [0xc0 + symbol - 280, 8];
+}
+
+/** Index of the length/distance symbol whose base is the largest ≤ value. */
+function symbolFor(bases: readonly number[], value: number): number {
   let at = 0;
-  do {
-    const size = Math.min(max, data.length - at);
-    const final = at + size >= data.length ? 1 : 0;
-    const header = new Uint8Array(5);
-    header[0] = final;
-    header[1] = size & 0xff;
-    header[2] = (size >> 8) & 0xff;
-    header[3] = ~size & 0xff;
-    header[4] = (~size >> 8) & 0xff;
-    blocks.push(header, data.subarray(at, at + size));
-    at += size;
-  } while (at < data.length);
+  for (let i = 0; i < bases.length; i += 1) if ((bases[i] as number) <= value) at = i;
+  return at;
+}
+
+const MIN_MATCH = 3;
+const MAX_MATCH = 258;
+const WINDOW = 32768;
+const HASH_BITS = 15;
+const HASH_SIZE = 1 << HASH_BITS;
+/** Chain walk cap: the knob that trades ratio for encode time. */
+const MAX_CHAIN = 128;
+
+function deflateFixed(data: Uint8Array): Uint8Array {
+  const bw = new BitWriter();
+  bw.bits(1, 1);
+  bw.bits(1, 2);
+
+  const head = new Int32Array(HASH_SIZE).fill(-1);
+  const prev = new Int32Array(data.length).fill(-1);
+  const hashAt = (i: number): number =>
+    ((u8(data, i) << 10) ^ (u8(data, i + 1) << 5) ^ u8(data, i + 2)) & (HASH_SIZE - 1);
+
+  const emitLiteral = (byte: number): void => {
+    const [code, length] = fixedLiteral(byte);
+    bw.code(code, length);
+  };
+
+  let at = 0;
+  while (at < data.length) {
+    let bestLength = 0;
+    let bestDistance = 0;
+    if (at + MIN_MATCH <= data.length) {
+      const key = hashAt(at);
+      let candidate = i32(head, key);
+      let chain = 0;
+      const limit = Math.max(0, at - WINDOW);
+      while (candidate >= limit && chain < MAX_CHAIN) {
+        chain += 1;
+        if (u8(data, candidate + bestLength) === u8(data, at + bestLength)) {
+          let length = 0;
+          while (
+            length < MAX_MATCH &&
+            at + length < data.length &&
+            u8(data, candidate + length) === u8(data, at + length)
+          ) {
+            length += 1;
+          }
+          if (length > bestLength) {
+            bestLength = length;
+            bestDistance = at - candidate;
+            if (length >= MAX_MATCH) break;
+          }
+        }
+        candidate = i32(prev, candidate);
+      }
+    }
+
+    if (bestLength >= MIN_MATCH) {
+      const li = symbolFor(LENGTH_BASE, bestLength);
+      const [code, bitLength] = fixedLiteral(257 + li);
+      bw.code(code, bitLength);
+      bw.bits(bestLength - (LENGTH_BASE[li] as number), LENGTH_EXTRA[li] as number);
+      const di = symbolFor(DIST_BASE, bestDistance);
+      bw.code(di, 5);
+      bw.bits(bestDistance - (DIST_BASE[di] as number), DIST_EXTRA[di] as number);
+    } else {
+      emitLiteral(u8(data, at));
+      bestLength = 1;
+    }
+
+    // Every consumed position still has to enter the chain, or later matches
+    // cannot see through the run they sit behind.
+    for (let i = 0; i < bestLength; i += 1) {
+      const p = at + i;
+      if (p + MIN_MATCH > data.length) break;
+      const key = hashAt(p);
+      prev[p] = i32(head, key);
+      head[key] = p;
+    }
+    at += bestLength;
+  }
+
+  const [endCode, endLength] = fixedLiteral(256);
+  bw.code(endCode, endLength);
+  return bw.finish();
+}
+
+/** zlib container (RFC 1950) around the compressed stream. */
+function deflateZlib(data: Uint8Array): Uint8Array {
+  const body = deflateFixed(data);
   const checksum = adler32(data);
-  const total = blocks.reduce((n, b) => n + b.length, 0);
-  const out = new Uint8Array(2 + total + 4);
+  const out = new Uint8Array(2 + body.length + 4);
   out[0] = 0x78;
   out[1] = 0x01;
-  let write = 2;
-  for (const block of blocks) {
-    out.set(block, write);
-    write += block.length;
-  }
+  out.set(body, 2);
+  const write = 2 + body.length;
   out[write] = (checksum >>> 24) & 0xff;
   out[write + 1] = (checksum >>> 16) & 0xff;
   out[write + 2] = (checksum >>> 8) & 0xff;
@@ -422,7 +542,7 @@ export function encodePNG(image: RGBAImage): Uint8Array {
   const parts = [
     Uint8Array.from(SIGNATURE),
     chunk("IHDR", ihdr),
-    chunk("IDAT", deflateStored(raw)),
+    chunk("IDAT", deflateZlib(raw)),
     chunk("IEND", new Uint8Array(0)),
   ];
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));

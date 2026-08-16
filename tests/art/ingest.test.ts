@@ -33,6 +33,7 @@ import {
   type PixelGrid,
 } from "../../src/art/pixel.js";
 import { decodePNG, encodePNG } from "../../src/art/png.js";
+import { buildJobSheet } from "../../src/art/sheet.js";
 import {
   buildExternalSheet,
   cutMaster,
@@ -80,9 +81,41 @@ describe("png codec", () => {
     expect(Array.from(decoded.data)).toEqual(Array.from(source.data));
   });
 
+  it("compresses, and a standard inflater reads what we wrote", async () => {
+    const { inflateSync } = await import("node:zlib");
+    const sheet = toRGBA(buildJobSheet("conduit", "player"));
+    const bytes = encodePNG(sheet);
+    // Stored blocks would be larger than the raw pixels; this must not be.
+    expect(bytes.length).toBeLessThan(sheet.data.length / 8);
+    const idat: number[] = [];
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (let at = 8; at < bytes.length; ) {
+      const length = view.getUint32(at);
+      const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
+      if (type === "IDAT") idat.push(...bytes.subarray(at + 8, at + 8 + length));
+      at += 12 + length;
+    }
+    const raw = new Uint8Array(inflateSync(Uint8Array.from(idat)));
+    expect(raw.length).toBe((sheet.width * 4 + 1) * sheet.height);
+    expect(Array.from(decodePNG(bytes).data)).toEqual(Array.from(sheet.data));
+  });
+
+  it("round-trips incompressible data losslessly", () => {
+    const w = 61;
+    const h = 37;
+    const data = new Uint8ClampedArray(w * h * 4);
+    let s = 7;
+    for (let i = 0; i < data.length; i += 1) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      data[i] = (s >>> 13) & 0xff;
+    }
+    const decoded = decodePNG(encodePNG({ width: w, height: h, data }));
+    expect(Array.from(decoded.data)).toEqual(Array.from(data));
+  });
+
   it("reads a PNG produced elsewhere (dynamic-huffman deflate)", async () => {
-    // node:zlib emits a compressed stream; ours emits stored blocks. Decoding
-    // both proves the inflate path, not just our own encoder.
+    // node:zlib emits dynamic-huffman blocks; ours emits fixed. Decoding both
+    // proves the inflate path, not just a mirror of our own encoder.
     const { deflateSync } = await import("node:zlib");
     const source = toRGBA(jobFrame({ jobId: "enforcer", team: "enemy", state: "idle", view: "ne", frame: 0 }));
     const stride = source.width * 4;
