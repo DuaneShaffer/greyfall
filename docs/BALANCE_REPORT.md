@@ -1250,6 +1250,242 @@ e2 is the only row that moves; e1, e3 and e4 reproduce §7.8.1 to the digit and
 e5's 66.7 is 66.6 rounded the other way off the same 16 of 24. All four fought
 encounters are in the 40–100% band and e2–e5 are all inside 40–80%.
 
+### 7.8.3 Addendum — e2's machinery, and e1's second provocateur
+
+**This one was not found by the instrument. It was found by a person.** A
+full-chapter acceptance playthrough, played the way a player plays, lost e2
+**six times out of six** — 75 to 123 unit-turns each, best result three of six
+enemies down — against a §7.8.2 reading of **45.8%**. Nothing in the sweep was
+wrong; the sweep was answering a different question. Two AIs grinding each
+other to a rout on a ninety-turn map converge on an attrition number, and
+attrition is the one thing this encounter was not actually about. What the
+human saw, and what no aggregate in §7.8.2 could have shown, is that **the
+level's premise never once occurred.**
+
+So this addendum is instrumented differently. Alongside win rate it counts
+what the encounter is *for*:
+
+| metric | what it counts |
+|---|---|
+| `pwr` | share of unit-turns on which at least one press was alive **and** powered |
+| `pAct` / `eAct` | `ObjectActivated` on a press, by the player and by the enemy, summed over 24 runs |
+| `pDest` | presses destroyed over 24 runs, attributed to whoever last damaged them |
+| `box` | runs in which a player unit's turn began with a live press and a hostile standing in its two bed tiles |
+
+Same instrument as §7.8.2 otherwise: campaign roster in join order, authored
+levels, nothing bought, `commandCap` 4000, primary seed set (`101 + 37n`) and
+the disjoint alt set (`103 + 41n`), 24 seeds each, both reported. The four
+counters are not in `src/sim` — they were a throwaway loop over `createBattle`
+/ `chooseCommand` / `applyCommand` reading `ObjectActivated`, `ObjectDamaged`,
+`ObjectDestroyed` and per-turn object state. Folding them in is the standing
+recommendation at the foot of this section.
+
+#### What the shipped build measured
+
+| e2 shipped | primary | alt |
+|---|---|---|
+| win | 45.8% | 45.8% |
+| powered-press turns | **12%** | **11%** |
+| press activations, player / enemy | **0 / 0** | **0 / 0** |
+| presses destroyed (of 3) | **2.79 per run** | **2.75 per run** |
+| runs with a live press and a hostile in its box | 24 / 24 | 24 / 24 |
+
+**Zero press activations in 48 runs on the level whose thesis is the press
+line.** The opportunity was there every single run — the box counter says so,
+and `provocateur-press` starts the battle standing on (2,8), which *is*
+`press-line-mid`'s bed — and it was never once taken, because by the time
+anyone was beside a press the press was dark or gone. Two causes, both of them
+the encounter's fault rather than the search's:
+
+1. **The mains.** The Yard Runner spawns at (14,9), one step from
+   `floor-nine-mains` at (13,10), and throws it early in every run — 28
+   enemy flips over 24 runs on the primary set. `machineDenial` (G5) is
+   working exactly as specified. The encounter's answer was `mains-come-back`,
+   `once: true`, at turn 24; the enemy's re-cut costs one action and is
+   repeatable. A one-shot restore against a repeatable cut is not a contest.
+2. **The demolition.** Attribution says `torch-hand-gantry` is the last
+   damager on essentially every destroyed press. With `bring-it-down` (28
+   object damage, range 4) he takes a 60-hp press off the board in two casts,
+   and no `setPower` trigger brings back rubble.
+
+#### The ladder — 24 seeds per cell, both sets
+
+Each row is the shipped tree with one set of encounter-side edits applied in
+memory.
+
+| e2 arm | primary | alt | `pwr` p/a | `pAct` p/a | `pDest` p/a |
+|---|---|---|---|---|---|
+| **shipped (before)** | 45.8% | 45.8% | 12 / 11 | 0 / 0 | 67 / 66 |
+| `bring-it-down` off the Torch-Hand | 20.8% | 16.7% | 28 / 25 | 16 / 11 | 50 / 53 |
+| restores at 48 and 72 only | 45.8% | 37.5% | 16 / 22 | 1 / 2 | 68 / 65 |
+| Yard Runner moved to (14,3) only | 16.7% | 12.5% | 19 / 21 | 0 / 0 | 56 / 58 |
+| `maxDeployedUnits` 5 → 6 only | 79.2% | 87.5% | 6 / 7 | 1 / 4 | 59 / 52 |
+| no-`bid` + restores + drop the Yard Runner | 50.0% | 58.3% | 61 / 61 | 18 / 17 | 38 / 39 |
+| no-`bid` + dense restores + drop the Yard Runner | 45.8% | 66.7% | 73 / 76 | 17 / 19 | 38 / 37 |
+| no-`bid` + restores + drop the Shop Machinist | 37.5% | 29.2% | 75 / 71 | 19 / 20 | 40 / 47 |
+| no-`bid` + drop the Yard Runner + foreman L2 → L1 | 87.5% | 83.3% | 52 / 49 | 13 / 15 | 40 / 37 |
+| no-`bid` + drop the Yard Runner + Machinist to (12,3) | 50.0% | 37.5% | 73 / 67 | 25 / 19 | 36 / 47 |
+| no-`bid` + drop the Yard Runner + `smoke-canister` off | 50.0% | 58.3% | 61 / 60 | 18 / 17 | 38 / 38 |
+| no-`bid` + no-`rig-machinery` + restores + drop the Runner | 50.0% | 50.0% | 59 / 66 | 10 / 9 | 35 / 33 |
+| no-`bid` + restores at 48/72 + deploy 6 | 75.0% | 75.0% | 25 / 27 | 9 / 11 | 36 / 31 |
+| **no-`bid` + dense restores + deploy 6** *(shipped)* | **75.0%** | **75.0%** | **39 / 35** | **19 / 15** | 42 / 37 |
+| that, plus the Runner at (14,3) | 79.2% | 66.7% | 47 / 48 | 15 / 17 | 39 / 41 |
+| that, plus the Runner at (14,3), sparse restores | 83.3% | 79.2% | 39 / 43 | 15 / 16 | 40 / 39 |
+| no-`bid` + restores + drop the Runner + deploy 6 | 100.0% | 100.0% | 26 / 26 | 3 / 5 | 35 / 33 |
+
+**Taking `bring-it-down` off the Torch-Hand costs 25 points of win rate, and
+that is the finding under the finding.** It is not that the ability is weak —
+it is that every enemy turn spent demolishing a press is a turn not spent on
+the party. The shipped 45.8% was propped up by the hostile force wasting
+about a third of its actions deleting the encounter's own premise. Any fix
+that gives the enemy its turns back has to hand the party something in
+exchange, which is why no arm in this table is a single edit.
+
+**Why not drop a body.** Dropping the Yard Runner is the best of the
+composition cuts — 50.0/58.3 with `pwr` at 61% — and it was the leading
+candidate until the deployment row was measured. It costs a placement
+`ENCOUNTER_NOTES` §2 justifies on the map's own terms (the ingot rail is the
+one rail lane and `rail-dash` is the only kit that reads it), it lands five
+points under the band on the primary set, and the alt set disagrees with the
+primary by eight — the same jumpiness §7.8.2 flagged. Dropping the Shop
+Machinist instead is *worse* on both sets (37.5/29.2): he is a low-output body
+that absorbs party attention, and removing him points the floor's real damage
+at the party sooner.
+
+**Why not trim a level.** Foreman L2 → L1 overshoots to 87.5/83.3, and it
+spends the one characterisation the table has — he is the only L2 on the
+floor, which is the tell that he is not a foundry hand.
+
+**Why not reposition the Runner.** Moving him to the north rail so a re-cut
+costs him a walk reads well and measures badly: **16.7/12.5** on its own. A
+Railrunner who is not spending his turns at the switchboard is a Railrunner
+spending them on `coupling-hook`, and the encounter cannot afford that.
+
+**Why not take `rig-machinery` too.** It buys nothing: 59/66 `pwr` against
+61/61 with the ability left in, and `pAct` actually falls. The presses die to
+whatever the Torch-Hand has; `bring-it-down` is the only one that kills a
+press fast enough to matter.
+
+**Why the restores are five silent triggers and not `once: false`.**
+`isConditionMet` reads current state, not the event batch, so a `turnStart`
+trigger with `once: false` refires once per *command* for the rest of the
+battle — the mains would simply stop being cuttable and the enemy would grind
+its turns against a switch that snaps back. The engine has no interval
+condition (gap 7 in `ENCOUNTER_NOTES`), so the repeatable restore is spelled
+as a ladder: `mains-come-back` keeps its dialogue at turn 24 and
+`mains-hold-36/48/60/72/84` repeat the four `setPower` actions silently, one
+restore per twelve unit-turns, which is about one per round on a twelve-body
+field. Sparse (48, 72 only) and dense (every 12) land on the same **75.0% on
+both sets**; dense is chosen because the thesis metric is materially better —
+`pwr` 39/35 against 25/27, `pAct` 19/15 against 9/11.
+
+#### The change, and what it measures
+
+| file | change |
+|---|---|
+| `data/encounters/e2-foundry-floor-nine.json` | `bring-it-down` removed from `torch-hand-gantry`'s `learnedAbilityIds`; five `mains-hold-*` triggers added; `maxDeployedUnits` 5 → 6 |
+
+Nothing else moved. Six enemies, their levels, positions, dispositions,
+equipment and remaining kits; the two Coagulant Vials and Perren's Bench
+Grade; the AND-group win condition; and all five authored triggers with every
+line of dialogue are exactly as they were.
+
+| e2 | before | **after (primary)** | **after (alt)** |
+|---|---|---|---|
+| win | 45.8% / 45.8% | **75.0%** | **75.0%** |
+| mean turns | 90 / 96 | 84 | 81 |
+| party lost | 3.71 of 5 | 3.21 of 6 | 3.42 of 6 |
+| enemies downed | 4.83 of 6 | 4.96 | 4.96 |
+| powered-press turns | 12% / 11% | **39%** | **35%** |
+| press activations, player | **0** | **19** | **15** |
+| press activations, enemy | 0 | 0 | 1 |
+| presses destroyed per run | 2.79 / 2.75 | 1.75 | 1.54 |
+| runs with a live press and a hostile in its box | 24 / 24 | 24 / 24 | 24 / 24 |
+
+**75.0% on both disjoint sets, to the digit** — the flattest read in this
+document alongside §7.8.2's own landing, and 75.0 is deliberately the top of
+the 55–75% target rather than its middle. The human evidence is the reason:
+the instrument said 45.8% for a build a person lost six times running, so on
+this map the sweep's number is an upper bound on a human's, and the top of the
+band is the side to be wrong on. **A single 24-seed read of e2 is still not a
+landing** (§7.8.2), and the two sets agreeing exactly is the only reason to
+believe this one.
+
+#### e1 — the second provocateur never acted, and it was the CT clock
+
+Same playthrough, second finding: `provocateur-b` spawns on turn 2 at (1,0),
+is scripted off the field on turn 8, and in six attempts existed only as
+something to stand next to. The sim agreed without qualification — **0 turns,
+0 moves, 0 damage in 48 of 48 runs** — and the cause is not placement.
+
+A spawned unit enters at `ct: 0` (`createBattleUnit`) while everybody else is
+mid-clock, and `state.turn` counts unit turns, not rounds (gap 3): on a
+seven-body field a unit turn costs roughly two ticks, so turn 2 to turn 8 is
+about eleven ticks. At the Enforcer's level-1 Speed of 6 he peaks at **66 CT**
+and is removed still holding it. Moving the spawn to (3,1), (3,2), (2,2) or
+(1,2) does not change a single number, because he never gets a turn from any
+of them.
+
+| e1 arm | win p/a | b's turns, mean | runs with ≥1 turn | b's damage p/a | b's peak CT |
+|---|---|---|---|---|---|
+| **shipped (before)** | 100 / 100 | 0.00 | 0 / 24, 0 / 24 | 0.0 / 0.0 | 66 |
+| spawn at (3,1) / (3,2) / (2,2) / (1,2) | 100 / 100 | 0.00 | 0 / 24 | 0.0 | 66 |
+| removal pushed to turn 12 | 100 / 100 | 0.00 | 0 / 24 | 0.0 | 66 |
+| removal pushed to turn 14 | 100 / 100 | 0.17 / 0.00 | 4 / 24, 0 / 24 | 0.0 | 100 |
+| **level 1 → 2** *(shipped)* | **100 / 100** | **1.00** | **24 / 24 both sets** | **37.2 / 38.0** | 100 |
+| level 2, spawn at (2,1) | 100 / 100 | 1.00 | 24 / 24 | 37.2 / 38.0 | 100 |
+| level 2, spawn at (3,1) | 100 / 100 | 1.00 | 24 / 24 | **0.0** | 100 |
+| level 3, spawn at (3,1) | 100 / 100 | 1.00 | 24 / 24 | 17.5 / 18.4 | 112 |
+| level 2, removal at turn 14 | 100 / 100 | 1.33 / 1.50 | 24 / 24 | 37.2 / 38.0 | 100 |
+
+**The change is one integer.** Level 2 puts his Speed at 10, he clears 100 CT
+inside the window, and he spends his one turn walking into the Watch line and
+putting a shock maul into somebody for 37–38 points. The spawn tile stayed at
+(1,0): from there and from (2,1) the numbers are identical, and (3,1)/(2,2)
+are strictly worse — he arrives engaged and gets killed instead of swinging,
+and the battle stretches from 11.7 to 17 turns for no beat.
+
+**Two turns is not available at turn 8 and should not be bought.** A second
+turn needs another ~100 CT, about ten more ticks, which lands past turn 12;
+removal at 14 delivers it in only 8–12 of 24 runs and costs the beat outright
+(the party downs him before the wall in 20 of 24). `over-the-wall` stayed at
+turn 8 with its dialogue untouched, as did `the-first-maul`, Maren's spawn,
+and every other line.
+
+| file | change |
+|---|---|
+| `data/encounters/e1-marshaling-yard.json` | `provocateur-b.level` 1 → 2 |
+
+e1 remains the walkover it is designed to be: **100.0% on both 24-seed sets,
+zero party losses**, mean 11.0 → 11.7 unit turns.
+
+#### Encounters after — campaign roster, authored levels, 24 seeds
+
+| encounter | §7.8.2 primary | **7.8.3 primary** | **7.8.3 alt** |
+|---|---|---|---|
+| e1 Marshaling Yard | 100.0% | **100.0%** | **100.0%** |
+| e2 Foundry Floor Nine | 45.8% | **75.0%** | **75.0%** |
+
+e3, e4 and e5 were not re-measured here: they are outside this pass's remit and
+were being edited concurrently by another workstream, so any number taken for
+them would have been a number for somebody else's build.
+
+#### The honest note
+
+**The driving evidence for both changes was a human disagreeing with the
+sweep, and neither change would have been made from the sweep alone.** e2 read
+45.8% — mid-band, the flattest number in §7.8.2, nothing to act on — while a
+person lost it six times in a row. e1 read 100% and would have gone on reading
+100% forever with a unit on the field that never took a turn, because no
+aggregate in `src/sim/analysis.ts` asks whether a placed unit ever acted. The
+instrument is not wrong; it is answering "does the party win" when the
+questions that mattered were "does the level's premise ever happen" and "does
+this character ever do anything." Both were cheap to count once someone knew
+to count them, and the counters used here (`pwr`, `pAct`, `pDest`, `box`,
+per-unit turns-taken) are worth folding into `analysis.ts` as standing
+findings rather than being rebuilt by hand the next time a playthrough
+disagrees with a sweep.
+
 ### 7.9 Regenerated test expectations
 
 Three, all of them AI-choice replays or valuations the pass deliberately

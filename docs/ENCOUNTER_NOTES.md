@@ -56,23 +56,27 @@ someone wants it running. Jory Slate is present and on the wrong side of the
 kettle line, and the battle's job is to make the player feel the cost of
 winning it cleanly.
 
-**Composition (6 enemies, L1–2; 5 deployed).**
+**Composition (6 enemies, L1–2; 6 deployed).**
 
 | id | template | Lv | tile | why there |
 |---|---|---|---|---|
 | `provocateur-foreman` | provocateur | 2 | (9,1) | Tap deck. Ringleader; shock maul, no armor — the tell. The only L2 on the floor. |
-| `torch-hand-gantry` | provocateur-torch | 1 | (6,4) | On `ladle-gantry` at height 4, per MAP_NOTES: teaches what the gantry is in one glance. Carries `bring-it-down` so the bay bridge is a live threat. |
+| `torch-hand-gantry` | provocateur-torch | 1 | (6,4) | On `ladle-gantry` at height 4, per MAP_NOTES: teaches what the gantry is in one glance. `smoke-canister`, `shaped-charge`, `rig-machinery` — demolition without the press-killer; see the tug-of-war below. |
 | `provocateur-press` | provocateur | 1 | (2,8) | West press lane, beside `press-line-mid`. |
 | `hand-perren` | combine-hand | 1 | (8,9) | Mid-aisle. Named — see the trigger map. |
 | `hand-runner-east` | combine-runner | 1 | (14,9) | Ingot rail; `rail-dash` on the one rail lane. |
 | `hand-machinist-gantry` | shop-machinist | 1 | (13,6) | Gantry walk east, covering `floor-nine-mains` at (13,10). |
 
 The whole floor except the foreman dropped to level 1 in the rebalance pass,
-and the party deploys five instead of four: at the authored roster levels the
+and the party went from four deployed to five: at the authored roster levels the
 old composition was a **0% win across five seeds with all four units lost**
 (`docs/BALANCE_REPORT.md` F6). It is **70%** now, at 2.8 of 5 lost — **45.8%**
 at 3.7 of 5 on the later 24-seed instrument, which reads every encounter lower
 than the ten-seed pass did.
+
+**Then a human played it six times and lost six times**, and the fifth deploy
+went to a sixth — see the tug-of-war below and `BALANCE_REPORT` §7.8.3. Six
+against six is also what e3 and e4 field; e2 was the odd one out.
 
 Two provocateurs plus a torch-hand carry the fight; the three strikers are
 chemist / railrunner / machinist — the three lowest basic-attack jobs in the
@@ -96,6 +100,44 @@ is a medical kit, which is also the right reading of the floor**: Perren Ash has
 thirty years on the pour and a son in the yard, and he is dosing people, not
 throwing scrub concentrate at a Watch sergeant.
 
+### The machinery tug-of-war
+
+**The premise of this level is a live press line, and for six shipped months
+it was switched off before the player reached it.** A human acceptance
+playthrough lost six straight attempts here; instrumenting the sim found the
+reason, and it was not difficulty. Across 24 runs of the shipped build there
+were **zero press activations by either side** and a press was live on **12%
+of unit-turns**, because two enemy behaviours both fire on turn one or two and
+neither is a mistake:
+
+- the Yard Runner is a step from `floor-nine-mains` at (13,10) and throws it,
+  which cuts all three presses and the ladle at once. The AI is right to
+  (`BALANCE_REPORT` G5 gave the search `machineDenial` precisely so it would
+  see the reason); the encounter is wrong to have made the re-cut free and
+  the restore a one-shot.
+- the Torch-Hand carried `bring-it-down` — 28 object damage at range 4 — and
+  demolished the presses outright. **2.8 of 3 presses were destroyed per run.**
+  A `once: true` restore cannot bring back a machine that is rubble.
+
+The design intent, stated so the next pass does not undo it: **the mains are a
+tug-of-war, not a switch.** Either side may cut them and the tap deck keeps
+putting them back, so cutting the line costs the cutter a turn every time and
+buys a dozen unit-turns, not the battle. The three fixes are the three halves
+of that sentence.
+
+| lever | change | why |
+|---|---|---|
+| the press-killer | `bring-it-down` off `torch-hand-gantry`'s learned list | An enemy that can delete the presses deletes the thesis, and nothing scripted refers to the ability. The Torch-Hand keeps `shaped-charge`, `rig-machinery` and `smoke-canister`, so the bay bridge is still a live threat and he is still the demolition character — he just cannot take a 60-hp press off the board in two casts. |
+| the one-shot restore | `mains-hold-36/48/60/72/84`, five silent `setPower` triggers beside `mains-come-back` | `once: false` is not usable here: conditions read state, not the event batch, so a repeating `turnStart` trigger refires once per *command* and the switch would simply stop working. A twelve-unit-turn ladder — roughly a round on a twelve-body field — is the repeatable restore expressed in the trigger vocabulary that exists. `mains-come-back` keeps the dialogue; the five that follow are silent, because the foreman does not get to say the same two lines six times. |
+| the attrition | `maxDeployedUnits` 5 → 6 | Six enemies against five deploys was the arithmetic behind the human's six losses, and e3 and e4 both field six. Nothing about the floor changes: no enemy is removed, no level trimmed, no position moved, no satchel touched. |
+
+Measured: powered-press turns **11–12% → 35–39%**, press activations by the
+player **0 → 19 and 15** across two disjoint 24-seed sets, and a live press
+with a hostile standing in its box now occurs in **24 of 24 runs on both sets**
+where before it also occurred and could never be used. Win rate 45.8% → 75.0%
+on both sets. The full ladder, including the four rejected alternatives, is in
+`BALANCE_REPORT` §7.8.3.
+
 **Win: `all` of the three provocateurs, or `rout`.** The merciful alternative
 asked for, and now the objective the fiction actually wants: put down the
 foreman on the tap deck, the provocateur in the press lane, and the torch-hand
@@ -114,12 +156,19 @@ west press lane, and the gantry.
 | `aisle-mouth` | player on (6,11)…(9,11) | MAP_NOTES' aisle-mouth tiles. A striker shouts a warning *at the Watch* before the ladle tips; Rowen tells the record to note it. First seeding of the Inquiry frame. |
 | `bridge-in-the-bay` | `objectDestroyed: bay-bridge` | The east flank severed. Jory: "That wasn't us. We work here." |
 | `mains-come-back` | `turnStart: 24` | MAP_NOTES' suggestion that the shutdown be a delay, not a solve: re-powers the three presses and the ladle. Phrased to read correctly whether or not the player ever cut them. |
+| `mains-hold-36` … `-84` | `turnStart: 36/48/60/72/84` | The same four `setPower` actions, silent, every twelve unit-turns. The tap deck does not give up after one attempt; the mains are a tug-of-war, not a switch. |
 | `perren-goes-down` | `unitDowned: hand-perren` | The one that should hurt. Jory names him; Rowen tells the sergeant to log the name; the sergeant answers "We log numbers, ma'am." |
 
-**Difficulty.** Party L1–2, four deployed, six enemies. Playable straight,
-but the intended solution is machinery: the press niches at x 1, the sluice
-covering a withdrawal, and the mains as the strategic option. A party that
-treats the floor as scenery should lose units.
+**Difficulty.** Party L1–2, six deployed, six enemies: **75.0%** on both the
+primary and the alt 24-seed set, mean 84 and 81 turns, 3.2 and 3.4 of 6 lost.
+That is the top of the 55–75% band on purpose. The sim reads this map easier
+than a human plays it — it said 45.8% for a build a person lost six times out
+of six — so on e2 the instrument's number is an upper bound and the top of the
+band is the safe side of it. The intended solution is still machinery: the
+press niches at x 1, the sluice covering a withdrawal, and the mains as the
+strategic option — the difference is that the machinery is now on when the
+player gets there. A party that treats the floor as scenery should still lose
+units.
 
 ---
 
@@ -468,6 +517,30 @@ Staging on turn 2 costs nothing dramatically — the beat *wants* to land after
 the first blow, not before it — and it means the tutorial's opening frame is
 still Rowen, one provocateur, and a line about who fired first.
 
-**Difficulty.** Still a walkover by design: 100% across five seeds with no
-losses and 94% surviving HP. It is the tutorial; it now takes two kills, a
-withdrawal, and about 12 unit turns rather than one kill and eight.
+**`provocateur-b` is level 2, and that is the only thing keeping him from
+being scenery.** The acceptance playthrough reported that the second
+provocateur never did anything, and the sim agreed exactly: across 24 seeds on
+each of two sets he took **0 turns, moved 0 tiles and dealt 0 damage in 48 of
+48 runs**. Not a placement problem — moving the spawn to (3,1), (3,2), (2,2)
+or (1,2) changed nothing, because he never reached 100 CT at all. A spawned
+unit enters at `ct: 0` (`createBattleUnit`) while everyone else is mid-clock;
+on a seven-body field a unit turn costs about two ticks, so `the-first-maul`
+at turn 2 and `over-the-wall` at turn 8 gave him roughly eleven ticks, and at
+the Enforcer's level-1 Speed of 6 he peaked at **66 CT** and was removed
+holding it. At level 2 his Speed is 10, he reaches 100, and he takes his one
+turn in **24 of 24 runs on both seed sets** — walks in and puts a shock maul
+into someone for 37–38 points. Position was left at (1,0): the L2 arm reads
+identically from there and from (2,1), and the tiles further forward are
+strictly worse (he is engaged and killed instead of swinging).
+
+**Two turns is arithmetically unavailable and that is a `turnStart` problem,
+not a tuning one.** A second turn needs another 100 CT — about ten more ticks,
+which lands past turn 12 — so it cannot coexist with removal at turn 8.
+Pushing `over-the-wall` to 14 buys a second turn in only 8–12 of 24 runs and
+costs the beat: the party kills him before the wall in 20 of 24. The removal
+stayed at turn 8. This is gap 3 in the list above — `state.turn` counts unit
+turns, so "he gets six turns" was never true of any unit on this map.
+
+**Difficulty.** Still a walkover by design: **100% on both 24-seed sets, no
+losses**, mean 11.7 unit turns. It is the tutorial; it now takes two kills, a
+withdrawal, and one real blow from the man who leaves.

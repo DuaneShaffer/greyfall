@@ -91,7 +91,7 @@
                 "id": "provocateur-b",
                 "name": "Provocateur",
                 "spriteId": "enforcer",
-                "level": 1,
+                "level": 2,
                 "jobId": "enforcer",
                 "disposition": {
                   "resolve": 55,

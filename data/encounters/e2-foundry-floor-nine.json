@@ -4,7 +4,7 @@
   "name": "Foundry Floor Nine",
   "mapId": "foundry-floor-nine",
   "rngSeed": 1002,
-  "maxDeployedUnits": 5,
+  "maxDeployedUnits": 6,
   "enemies": [
     {
       "unit": {
@@ -48,8 +48,7 @@
         "learnedAbilityIds": [
           "smoke-canister",
           "shaped-charge",
-          "rig-machinery",
-          "bring-it-down"
+          "rig-machinery"
         ],
         "movementAbilityId": "catwalk-sense",
         "equipment": {
@@ -353,6 +352,156 @@
               "text": "Nobody on this floor gave that order."
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "mains-hold-36",
+      "when": {
+        "kind": "turnStart",
+        "turn": 36
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "press-line-north",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-mid",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-south",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "pour-ladle-tap",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "mains-hold-48",
+      "when": {
+        "kind": "turnStart",
+        "turn": 48
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "press-line-north",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-mid",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-south",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "pour-ladle-tap",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "mains-hold-60",
+      "when": {
+        "kind": "turnStart",
+        "turn": 60
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "press-line-north",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-mid",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-south",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "pour-ladle-tap",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "mains-hold-72",
+      "when": {
+        "kind": "turnStart",
+        "turn": 72
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "press-line-north",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-mid",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-south",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "pour-ladle-tap",
+          "powered": true
+        }
+      ]
+    },
+    {
+      "id": "mains-hold-84",
+      "when": {
+        "kind": "turnStart",
+        "turn": 84
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "setPower",
+          "objectId": "press-line-north",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-mid",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "press-line-south",
+          "powered": true
+        },
+        {
+          "kind": "setPower",
+          "objectId": "pour-ladle-tap",
+          "powered": true
         }
       ]
     },
