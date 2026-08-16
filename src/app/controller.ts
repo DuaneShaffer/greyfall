@@ -23,6 +23,7 @@ import {
   activeUnit,
   affectedTiles,
   aimTarget,
+  allObjects,
   allUnits,
   applyCommand,
   battleMap,
@@ -152,6 +153,81 @@ const sameTarget = (a: TargetRef, b: TargetRef): boolean => {
   return false;
 };
 
+const powerSnapshot = (state: GameState): Map<string, boolean> => {
+  const out = new Map<string, boolean>();
+  for (const object of allObjects(state)) {
+    if (object.powered !== null) out.set(object.def.id, object.powered);
+  }
+  return out;
+};
+
+/** Two names read; more than two are a count, because machine names are long. */
+const machineList = (names: readonly string[]): string =>
+  names.length <= 2 ? names.join(" and ") : `${names.length} machines`;
+
+/**
+ * What the machine actually did, not that it was touched. A switch usually
+ * changes something else on the floor — e2's mains carry three presses — and
+ * "Floor Nine Mains operated." left the player to discover the consequence by
+ * walking up to a press and finding its controls dead.
+ */
+function operateNotice(state: GameState, name: string, before: Map<string, boolean>): string {
+  const lost: string[] = [];
+  const gained: string[] = [];
+  for (const object of allObjects(state)) {
+    if (object.powered === null) continue;
+    const was = before.get(object.def.id);
+    if (was === undefined || was === object.powered) continue;
+    (object.powered ? gained : lost).push(object.def.name);
+  }
+  const clauses: string[] = [];
+  if (lost.length > 0) clauses.push(`${machineList(lost)} lost power`);
+  if (gained.length > 0) clauses.push(`${machineList(gained)} came back up`);
+  if (clauses.length === 0) return `${name} operated.`;
+  return `${name} operated — ${clauses.join("; ")}.`;
+}
+
+/** The switch that carries these machines, if the floor has one. */
+function switchFor(state: GameState, objectIds: readonly string[]): string | null {
+  for (const object of allObjects(state)) {
+    if (object.destroyed || object.def.operable === null) continue;
+    if (objectIds.some((id) => object.def.operable?.targetObjectIds.includes(id) === true)) {
+      return object.def.name;
+    }
+  }
+  return null;
+}
+
+/**
+ * Power that went out without the player throwing anything. The enemy cutting
+ * the mains on Floor Nine used to be invisible — the presses simply stopped
+ * answering, and a player not standing beside one never learned the floor had a
+ * lever on it at all. Naming the switch that carries them says the cut is a
+ * position to be fought over, not a fact of the map.
+ */
+function powerChangeNotice(state: GameState, events: readonly BattleEvent[]): string | null {
+  const lost: string[] = [];
+  const gained: string[] = [];
+  const lostIds: string[] = [];
+  for (const event of events) {
+    if (event.type !== "PowerChanged") continue;
+    const name = getObject(state, event.objectId)?.def.name ?? event.objectId;
+    if (event.powered) {
+      gained.push(name);
+    } else {
+      lost.push(name);
+      lostIds.push(event.objectId);
+    }
+  }
+  if (lost.length === 0 && gained.length === 0) return null;
+  if (lost.length === 0) return `${machineList(gained)} came back up.`;
+  const carrier = switchFor(state, lostIds);
+  const carried = lost.length === 1 ? "it" : "them";
+  const lever = carrier === null ? "" : ` ${carrier} carries ${carried}, and it works both ways.`;
+  const rest = gained.length === 0 ? "" : ` ${machineList(gained)} came back up.`;
+  return `${machineList(lost)} lost power.${lever}${rest}`;
+}
+
 const facingToward = (from: TileCoord, to: TileCoord): Facing => {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -180,6 +256,8 @@ export class BattleController {
   private aimReach: TileCoord[] = [];
   private lastCommandError: CommandError | null = null;
   private started = false;
+  /** Set while the player's own Operate is in flight; it reports itself. */
+  private operating = false;
 
   constructor(options: ControllerOptions) {
     this.gameState = options.state;
@@ -428,19 +506,13 @@ export class BattleController {
    * the click landed.
    */
   private operate(unitId: string, objectId: string): void {
-    const before = getObject(this.gameState, objectId);
-    const name = before?.def.name ?? "Machinery";
-    const poweredBefore = before?.powered ?? null;
-    if (!this.dispatch({ kind: "activateObject", unitId, objectId })) return;
-    const after = getObject(this.gameState, objectId);
-    const poweredAfter = after?.powered ?? null;
-    const changed =
-      poweredAfter === null || poweredBefore === poweredAfter
-        ? "operated"
-        : poweredAfter
-          ? "powered up"
-          : "shut down";
-    this.ui.notify?.(`${name} ${changed}.`, "machine");
+    const name = getObject(this.gameState, objectId)?.def.name ?? "Machinery";
+    const before = powerSnapshot(this.gameState);
+    this.operating = true;
+    const sent = this.dispatch({ kind: "activateObject", unitId, objectId });
+    this.operating = false;
+    if (!sent) return;
+    this.ui.notify?.(operateNotice(this.gameState, name, before), "machine");
   }
 
   private commitAct(unitId: string, abilityId: string, target: TargetRef | null): void {
@@ -453,11 +525,7 @@ export class BattleController {
     this.dispatch({ kind: "act", unitId, abilityId, target });
   }
 
-  /**
-   * The forecast panel's Commit button reports its first row as a unit target,
-   * which is wrong for machinery. The staged selection is authoritative when
-   * there is one; the reported target is only a fallback.
-   */
+  /** The staged selection is authoritative; the reported target is a fallback. */
   private resolveUiTarget(
     unitId: string,
     abilityId: string,
@@ -515,6 +583,10 @@ export class BattleController {
     if (renderEvents.length > 0) this.renderer.applyRenderEvents(renderEvents);
     for (const event of events) {
       if (event.type === "DialogueRequested") this.pendingDialogue.push(...event.lines);
+    }
+    if (!this.operating) {
+      const notice = powerChangeNotice(stateAfter, events);
+      if (notice !== null) this.ui.notify?.(notice, "machine");
     }
     this.awaitingPresentation = renderEvents.length > 0;
   }

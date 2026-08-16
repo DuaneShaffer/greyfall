@@ -45,6 +45,11 @@ export class ForecastPanel implements Component<ForecastView | null> {
   }
 
   update(view: ForecastView | null): void {
+    // A committed order is the record of what was sent (UI_DESIGN §8): the
+    // redraw that follows it carries no pending selection, and letting that
+    // blank the panel threw the numbers away the instant they mattered most.
+    // It holds until a new order is staged, or `clear()` closes the field.
+    if (view === null && this.locked) return;
     this.view = view;
     this.locked = false;
     this.el.classList.toggle("is-empty", view === null);
@@ -55,8 +60,10 @@ export class ForecastPanel implements Component<ForecastView | null> {
       return;
     }
     // An action aimed at nothing has nothing to commit. Offering the stamp
-    // anyway is the panel claiming an outcome it cannot produce.
-    const empty = view.targets.length === 0;
+    // anyway is the panel claiming an outcome it cannot produce — but an
+    // ability whose whole payload is a machine laid on an empty tile has an
+    // outcome and no rows, and refusing it was the same lie in reverse.
+    const empty = view.targets.length === 0 && view.effects.length === 0;
     const commit = el("button", {
       class: "gf-button",
       attrs: { type: "button", ...(empty ? { disabled: true } : {}) },
@@ -95,12 +102,24 @@ export class ForecastPanel implements Component<ForecastView | null> {
           }),
         ],
       }),
+      ...(view.effects.length === 0
+        ? []
+        : [
+            el("ul", {
+              class: "gf-forecast-effects is-ability",
+              children: view.effects.map((line) =>
+                el("li", { class: "gf-forecast-effect", text: line }),
+              ),
+            }),
+          ]),
       empty
         ? el("p", { class: "gf-empty-note", text: "Nothing in the area. Pick another tile." })
-        : el("ul", {
-            class: "gf-forecast-targets",
-            children: view.targets.map((target) => this.renderTarget(target)),
-          }),
+        : view.targets.length === 0
+          ? el("p", { class: "gf-empty-note", text: "Nobody in the area — the order stands." })
+          : el("ul", {
+              class: "gf-forecast-targets",
+              children: view.targets.map((target) => this.renderTarget(target)),
+            }),
       el("footer", {
         class: "gf-forecast-footer",
         children: [commit, withdraw],
@@ -108,17 +127,16 @@ export class ForecastPanel implements Component<ForecastView | null> {
     ]);
   }
 
-  /** Commits the pending action against its first target. */
+  /** Commits the pending action against what it is actually aimed at. */
   confirm(): void {
     const view = this.view;
-    const first = view?.targets[0];
-    if (!view || !first || this.locked) return;
-    const target = { kind: "unit" as const, unitId: first.unitId };
+    if (!view || this.locked) return;
+    if (view.targets.length === 0 && view.effects.length === 0) return;
     if (view.item) {
-      this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, target);
+      this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, view.aimedAt);
       return;
     }
-    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, target);
+    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, view.aimedAt);
   }
 
   /** The order is away: keep the numbers, kill the stamp. */
@@ -130,6 +148,12 @@ export class ForecastPanel implements Component<ForecastView | null> {
       this.commitButton.disabled = true;
       this.commitButton.textContent = "Committed";
     }
+  }
+
+  /** Empty the panel whether or not it is holding a committed record. */
+  clear(): void {
+    this.locked = false;
+    this.update(null);
   }
 
   destroy(): void {
@@ -145,6 +169,9 @@ export class ForecastPanel implements Component<ForecastView | null> {
         : `${formatDamageRange(damage)}${damage.damageType ? ` ${damage.damageType}` : ""}`;
     // Machinery has no facing and no portrait: it reads as a machine, in copper.
     const isObject = target.relativeFacing === null && target.portraitId === undefined;
+    // An order that deals no damage prints no damage row: "Damage —" beside a
+    // three-turn buff reads as "this does nothing".
+    const silent = target.statuses.length === 0 && target.effects.length === 0;
     return el("li", {
       class: `gf-forecast-target${isObject ? " is-object" : ""}`,
       data: { unit: target.unitId },
@@ -155,19 +182,28 @@ export class ForecastPanel implements Component<ForecastView | null> {
           children: [
             el("h3", { class: "gf-forecast-target-name", text: target.name }),
             labelledValue("Hit", `${target.hitChancePercent}%`, "gf-forecast-hit"),
-            labelledValue(damageLabel, damageText, "gf-forecast-damage"),
+            ...(damage === null ? [] : [labelledValue(damageLabel, damageText, "gf-forecast-damage")]),
             el("ul", {
               class: "gf-forecast-statuses",
-              children:
-                target.statuses.length === 0
-                  ? [el("li", { class: "gf-forecast-status is-none", text: "No status effects" })]
-                  : target.statuses.map((status) =>
-                      el("li", {
-                        class: "gf-forecast-status",
-                        text: `${status.name} ${status.chancePercent}%`,
-                      }),
-                    ),
+              children: silent
+                ? [el("li", { class: "gf-forecast-status is-none", text: "No further effect" })]
+                : target.statuses.map((status) =>
+                    el("li", {
+                      class: "gf-forecast-status",
+                      text: `${status.name} ${status.chancePercent}%`,
+                    }),
+                  ),
             }),
+            ...(target.effects.length === 0
+              ? []
+              : [
+                  el("ul", {
+                    class: "gf-forecast-effects",
+                    children: target.effects.map((line) =>
+                      el("li", { class: "gf-forecast-effect", text: line }),
+                    ),
+                  }),
+                ]),
             el("p", {
               class: "gf-forecast-modifiers",
               text: [

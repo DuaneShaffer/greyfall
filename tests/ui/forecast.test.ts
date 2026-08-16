@@ -38,6 +38,7 @@ describe("ForecastPanel", () => {
             hitChancePercent: 100,
             damage: { kind: "heal", min: 18, max: 18 },
             statuses: [],
+            effects: [],
             relativeFacing: null,
             heightAdvantage: 0,
           },
@@ -48,7 +49,7 @@ describe("ForecastPanel", () => {
     expect(textOf(panel.el, ".gf-forecast-cost")).toBe("Charge 6 · Cast 30");
     expect(textOf(panel.el, ".gf-forecast-damage")).toContain("Recovery");
     expect(textOf(panel.el, ".gf-forecast-damage")).toContain("18");
-    expect(textOf(panel.el, ".gf-forecast-status")).toBe("No status effects");
+    expect(textOf(panel.el, ".gf-forecast-status")).toBe("No further effect");
   });
 
   it("shows an empty state and emits confirmTarget on commit", () => {
@@ -87,5 +88,71 @@ describe("ForecastPanel", () => {
         args: ["rowen", "coagulant-vial", { kind: "unit", unitId: "provocateur-a" }],
       },
     ]);
+  });
+
+  it("describes an order that grants rather than damages", () => {
+    const panel = new ForecastPanel();
+    panel.update(
+      mockForecastView({
+        abilityId: "bracer-shot",
+        abilityName: "Bracer Shot",
+        chargeCost: 3,
+        targets: [
+          {
+            unitId: "dunn-brack",
+            name: "Dunn Brack",
+            hitChancePercent: 100,
+            damage: null,
+            statuses: [],
+            effects: ["Phys +5 · Mag +5 · Evade +5 for 3 turns"],
+            relativeFacing: null,
+            heightAdvantage: 0,
+          },
+        ],
+      }),
+    );
+
+    // No damage row at all: "Damage —" beside a buff reads as "does nothing".
+    expect(panel.el.querySelector(".gf-forecast-damage")).toBeNull();
+    expect(panel.el.querySelector(".gf-forecast-status.is-none")).toBeNull();
+    expect(textOf(panel.el, ".gf-forecast-effect")).toBe("Phys +5 · Mag +5 · Evade +5 for 3 turns");
+  });
+
+  it("offers the stamp to an order whose whole payload lands on nobody", () => {
+    const { intents, calls } = recordingIntents();
+    const panel = new ForecastPanel({ intents });
+    panel.update(
+      mockForecastView({
+        abilityId: "sentry-frame",
+        abilityName: "Sentry Frame",
+        targets: [],
+        effects: ["Sentry frame placed · 24 integrity"],
+        aimedAt: { kind: "tile", tile: { x: 3, y: 2 } },
+      }),
+    );
+
+    const commit = panel.el.querySelector<HTMLButtonElement>(".gf-button");
+    expect(commit?.disabled).toBe(false);
+    expect(textOf(panel.el, ".gf-forecast-effects.is-ability")).toContain("Sentry frame placed");
+    commit?.click();
+    expect(calls).toEqual([
+      { name: "confirmTarget", args: ["rowen", "sentry-frame", { kind: "tile", tile: { x: 3, y: 2 } }] },
+    ]);
+  });
+
+  it("keeps a committed order's numbers through the redraw that follows it", () => {
+    const panel = new ForecastPanel();
+    panel.update(mockForecastView());
+    panel.lock();
+
+    panel.update(null);
+    expect(panel.el.classList.contains("is-empty")).toBe(false);
+    expect(textOf(panel.el, ".gf-forecast-ability")).toBe("Pin");
+    expect(panel.el.querySelector<HTMLButtonElement>(".gf-button")?.disabled).toBe(true);
+    expect(panel.el.querySelector<HTMLButtonElement>(".gf-button")?.textContent).toBe("Committed");
+
+    panel.clear();
+    expect(panel.el.classList.contains("is-empty")).toBe(true);
+    expect(textOf(panel.el, ".gf-empty-note")).toBe("No action selected.");
   });
 });

@@ -137,7 +137,7 @@ const uiPort: UiPort = {
     if (view !== null) hud.render(view);
     // Nothing on the field is live any more: no pending action, no orders, and
     // nothing to inspect that the closing panel does not already say.
-    hud.forecast.update(null);
+    hud.forecast.clear();
     hud.status.update(null);
     hud.setMode("ended", null);
     hud.actionMenu.menus.detach();

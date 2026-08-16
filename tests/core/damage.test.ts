@@ -79,6 +79,7 @@ describe("damage formulas", () => {
         heal: 0,
         expectedDamage: 70,
         statusChances: [],
+        outcomes: [],
       },
     ]);
   });

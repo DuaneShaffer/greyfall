@@ -1,4 +1,16 @@
-import type { Ability, Encounter, GameMap, Item, ItemStack, Job, Status, Team, TileCoord } from "../data/index.js";
+import type {
+  Ability,
+  Effect,
+  Encounter,
+  GameMap,
+  Item,
+  ItemStack,
+  Job,
+  StatMods,
+  Status,
+  Team,
+  TileCoord,
+} from "../data/index.js";
 import type { DerivedStats } from "./progression/stats.js";
 import { resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
@@ -153,6 +165,32 @@ export function activatableObjects(state: GameState, unitId: string): readonly O
 
 export function getObject(state: GameState, objectId: string): ObjectRuntime | null {
   return objectById(state, objectId) ?? null;
+}
+
+export interface PoweredObject {
+  objectId: string;
+  name: string;
+  powered: boolean;
+}
+
+/**
+ * Electrical machinery whose power is something the battle is fought over: it
+ * has controls of its own, or a switch somewhere on the map throws it. Feeder
+ * cells and other scenery carry a `powered` flag nobody can move and are left
+ * out — the readout is a list of live questions, not an inventory.
+ */
+export function poweredObjects(state: GameState): PoweredObject[] {
+  const switched = new Set<string>();
+  for (const object of state.map.objects) {
+    for (const id of object.def.operable?.targetObjectIds ?? []) switched.add(id);
+  }
+  const out: PoweredObject[] = [];
+  for (const object of state.map.objects) {
+    if (object.destroyed || object.powered === null) continue;
+    if (object.def.operable === null && !switched.has(object.def.id)) continue;
+    out.push({ objectId: object.def.id, name: object.def.name, powered: object.powered });
+  }
+  return out;
 }
 
 /** Stats after statuses and timed modifiers, which is what the rules use. */
@@ -325,6 +363,21 @@ export function lineOfSight(state: GameState, from: TileCoord, to: TileCoord): b
   return hasLos(state, from, to);
 }
 
+/**
+ * Everything an ability does that is not a number of damage, a number of
+ * healing, or a status roll — the effects the forecast used to swallow, so a
+ * pure buff read as "Damage —, no status effects".
+ */
+export type ForecastOutcome =
+  | { kind: "statMods"; mods: StatMods; durationTurns: number | null }
+  | { kind: "removeStatus"; statusId: string }
+  | { kind: "charge"; amount: number; siphonedToActor: boolean }
+  | { kind: "disposition"; stat: "resolve" | "attunement"; amount: number }
+  | { kind: "forceMove"; direction: "push" | "pull" | "toward-actor-facing"; distance: number }
+  | { kind: "power"; mode: "on" | "off" | "toggle" }
+  | { kind: "moveSelf"; direction: "toward-target" | "away-from-target" | "forward"; distance: number }
+  | { kind: "spawn"; object: "turret" | "mine" | "drone"; hp: number };
+
 export interface ForecastEntry {
   unitId: string | null;
   objectId: string | null;
@@ -337,6 +390,55 @@ export interface ForecastEntry {
   /** `floor(damage * hitChance / 100)`. */
   expectedDamage: number;
   statusChances: { statusId: string; chance: number }[];
+  outcomes: ForecastOutcome[];
+}
+
+/** What an effect does to a unit standing in the area, beyond damage and status. */
+function unitOutcome(effect: Effect): ForecastOutcome | null {
+  switch (effect.kind) {
+    case "modifyStats":
+      return { kind: "statMods", mods: effect.mods, durationTurns: effect.duration ?? null };
+    case "removeStatus":
+      return { kind: "removeStatus", statusId: effect.statusId };
+    case "modifyCharge":
+      return {
+        kind: "charge",
+        amount: effect.amount,
+        siphonedToActor: effect.siphonToActor ?? false,
+      };
+    case "modifyDisposition":
+      return { kind: "disposition", stat: effect.stat, amount: effect.amount };
+    case "forceMove":
+      return { kind: "forceMove", direction: effect.direction, distance: effect.distance };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Consequences aimed at nobody in particular: the actor's own step, and the
+ * machine an ability leaves behind. An ability with only these — a turret laid
+ * on an empty tile — has no forecast rows at all, and without them the panel
+ * had nothing to report and no reason to offer its stamp.
+ */
+export function abilityOutcomes(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+): ForecastOutcome[] {
+  const actor = unitById(state, unitId);
+  if (actor === undefined) return [];
+  const ability = getAbility(state, actor, abilityId);
+  if (ability === undefined || ability.slot !== "action") return [];
+  const out: ForecastOutcome[] = [];
+  for (const effect of ability.effects) {
+    if (effect.kind === "moveSelf") {
+      out.push({ kind: "moveSelf", direction: effect.direction, distance: effect.distance });
+    } else if (effect.kind === "spawnObject") {
+      out.push({ kind: "spawn", object: effect.object, hp: effect.hp });
+    }
+  }
+  return out;
 }
 
 /**
@@ -370,6 +472,7 @@ export function forecast(
       heal: 0,
       expectedDamage: 0,
       statusChances: [],
+      outcomes: [],
     };
     for (const effect of ability.effects) {
       if (effect.kind === "damage") {
@@ -381,6 +484,9 @@ export function forecast(
           statusId: effect.statusId,
           chance: Math.floor((effect.chance * chance) / 100),
         });
+      } else {
+        const outcome = unitOutcome(effect);
+        if (outcome !== null) entry.outcomes.push(outcome);
       }
     }
     entry.expectedDamage = Math.floor((entry.damage * chance) / 100);
@@ -392,14 +498,17 @@ export function forecast(
     if (obj === undefined) continue;
     let damage = 0;
     let heal = 0;
+    const outcomes: ForecastOutcome[] = [];
     for (const effect of ability.effects) {
       if (effect.kind === "damageObject") {
         damage += resolveAmount(state, effect.amount, actor, inertAmountTarget(objectMaxHp(obj)));
       } else if (effect.kind === "repairObject") {
         heal += resolveAmount(state, effect.amount, actor, inertAmountTarget(objectMaxHp(obj)));
+      } else if (effect.kind === "setPower") {
+        outcomes.push({ kind: "power", mode: effect.mode });
       }
     }
-    if (damage === 0 && heal === 0) continue;
+    if (damage === 0 && heal === 0 && outcomes.length === 0) continue;
     out.push({
       unitId: null,
       objectId: id,
@@ -408,6 +517,7 @@ export function forecast(
       heal,
       expectedDamage: damage,
       statusChances: [],
+      outcomes,
     });
   }
   return out;

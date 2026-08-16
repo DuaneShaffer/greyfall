@@ -1,10 +1,13 @@
 import type { Ability, DialogueLine, Item, Job, Status, Unit } from "../data/index.js";
 import type {
   ActionMenuView,
+  BattleResultsView,
+  ChapterCloseView,
   DeploymentView,
   EquipSlot,
   EquipSlotView,
   EquipmentView,
+  FallenEntryView,
   ForecastView,
   ItemEntryView,
   ItemOptionView,
@@ -367,10 +370,13 @@ export function mockForecastView(overrides: Partial<ForecastView> = {}): Forecas
         hitChancePercent: 82,
         damage: { kind: "damage", min: 24, max: 31, damageType: "kinetic" },
         statuses: [{ name: "Stunned", chancePercent: 35 }],
+        effects: [],
         relativeFacing: "side",
         heightAdvantage: 1,
       },
     ],
+    effects: [],
+    aimedAt: { kind: "unit", unitId: "provocateur-a" },
     ...overrides,
   };
 }
@@ -388,15 +394,82 @@ export function mockTurnOrderView(): TurnOrderView {
   };
 }
 
-export function mockPartyView(): PartyView {
+export const mockFallen: FallenEntryView[] = [
+  {
+    unitId: "ivo-brace",
+    name: "Ivo Brace",
+    jobName: "Machinist",
+    level: 3,
+    encounterName: "Foundry Floor Nine",
+  },
+];
+
+export function mockPartyView(overrides: Partial<PartyView> = {}): PartyView {
   return {
     deployedLimit: 4,
+    fallen: mockFallen,
     members: [
       { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, note: "Deployed" },
       { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, note: "Deployed" },
       { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, note: "Deployed" },
       { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, note: "Downed" },
     ],
+    ...overrides,
+  };
+}
+
+export function mockBattleResultsView(
+  overrides: Partial<BattleResultsView> = {},
+): BattleResultsView {
+  return {
+    result: "win",
+    encounterId: "e2-foundry-floor-nine",
+    encounterName: "Foundry Floor Nine",
+    headline: "Field Held",
+    note: "Engagement closed and entered on the chapter.",
+    standing: [
+      {
+        unitId: "rowen",
+        name: "Rowen Corvane",
+        jobName: "Enforcer",
+        amount: 110,
+        jobLevel: 3,
+        jobLevelsGained: 1,
+        struck: false,
+      },
+      {
+        unitId: "ivo-brace",
+        name: "Ivo Brace",
+        jobName: "Machinist",
+        amount: 40,
+        jobLevel: 3,
+        jobLevelsGained: 0,
+        struck: true,
+      },
+    ],
+    standingTotal: 150,
+    fallen: mockFallen,
+    consumed: [{ itemId: "coagulant-vial", name: "Coagulant Vial", count: 2 }],
+    advanced: true,
+    ...overrides,
+  };
+}
+
+export function mockChapterCloseView(overrides: Partial<ChapterCloseView> = {}): ChapterCloseView {
+  return {
+    chapterName: "The Foundry Chapter",
+    note: "No further engagements are on the docket.",
+    engagements: [
+      { encounterId: "e1-marshaling-yard", name: "The Marshaling Yard" },
+      { encounterId: "e2-foundry-floor-nine", name: "Foundry Floor Nine" },
+    ],
+    standingTotal: 640,
+    survivors: [
+      { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 3 },
+      { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2 },
+    ],
+    fallen: mockFallen,
+    ...overrides,
   };
 }
 

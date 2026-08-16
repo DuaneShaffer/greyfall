@@ -21,6 +21,7 @@ import {
   unitSheetView,
   unitView,
 } from "../../src/app/viewmodels.js";
+import type { Unit } from "../../src/data/index.js";
 import { advanceTo, rowen } from "../core/fixtures.js";
 import { openBattle, VALE } from "./fixtures.js";
 
@@ -138,6 +139,47 @@ describe("forecastView", () => {
     expect(view?.targets[0]?.hitChancePercent).toBe(100);
     expect(view?.targets[0]?.damage?.max).toBeGreaterThan(0);
     expect(view?.targets[0]?.relativeFacing).toBeNull();
+  });
+
+  it("says what a buff grants and for how long instead of reporting no damage", () => {
+    const chemist: Unit = {
+      schemaVersion: 1,
+      id: "perr",
+      name: "Perr Sallow",
+      spriteId: "chemist",
+      level: 1,
+      jobId: "chemist",
+      disposition: { resolve: 45, attunement: 55 },
+      learnedAbilityIds: ["bracer-shot"],
+      equipment: {},
+    };
+    const state = advanceTo(openBattle([rowen(), chemist]).state, "perr");
+    const view = forecastView(state, "perr", "bracer-shot", { kind: "unit", unitId: "perr" });
+
+    expect(view?.targets[0]?.damage).toBeNull();
+    expect(view?.targets[0]?.statuses).toEqual([]);
+    expect(view?.targets[0]?.effects).toEqual(["Phys +5 · Mag +5 · Evade +5 for 3 turns"]);
+    expect(view?.aimedAt).toEqual({ kind: "unit", unitId: "perr" });
+  });
+
+  it("reports a machine laid on an empty tile, which has no target row at all", () => {
+    const machinist: Unit = {
+      schemaVersion: 1,
+      id: "ivo",
+      name: "Ivo Brace",
+      spriteId: "machinist",
+      level: 1,
+      jobId: "machinist",
+      disposition: { resolve: 48, attunement: 50 },
+      learnedAbilityIds: ["sentry-frame"],
+      equipment: {},
+    };
+    const state = advanceTo(openBattle([rowen(), machinist]).state, "ivo");
+    const view = forecastView(state, "ivo", "sentry-frame", { kind: "tile", tile: { x: 1, y: 3 } });
+
+    expect(view?.targets).toEqual([]);
+    expect(view?.effects[0]).toContain("Sentry frame placed");
+    expect(view?.aimedAt).toEqual({ kind: "tile", tile: { x: 1, y: 3 } });
   });
 });
 

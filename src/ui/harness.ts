@@ -62,6 +62,14 @@ const battleView: BattleHudView = {
   turnOrder: mockTurnOrderView(),
   forecast: null,
   dialogue: mockDialogue,
+  power: {
+    entries: [
+      { objectId: "floor-nine-mains", name: "Floor Nine Mains", powered: true },
+      { objectId: "press-line-north", name: "Blanking Press, Number One", powered: true },
+      { objectId: "press-line-mid", name: "Blanking Press, Number Two", powered: false },
+      { objectId: "charge-lift", name: "Charging Lift", powered: false },
+    ],
+  },
 };
 
 const hud = new BattleHud({
@@ -94,10 +102,12 @@ function previewFor(abilityId: string) {
           hitChancePercent: 100,
           damage: { kind: "damage", min: 38, max: 46, damageType: "arc" },
           statuses: [],
+          effects: ["Power off"],
           relativeFacing: null,
           heightAdvantage: 0,
         },
       ],
+      aimedAt: { kind: "object", objectId: "yard-cell" },
     });
   }
   return mockForecastView();

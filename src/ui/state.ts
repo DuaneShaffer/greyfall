@@ -1,4 +1,5 @@
 import type { DamageType, DialogueLine, Disposition, Facing, StatKey, Team, TileCoord } from "../data/index.js";
+import type { TargetRef } from "./intents.js";
 
 // VIEW MODELS — the read side of the UI seam.
 //
@@ -141,6 +142,8 @@ export interface ForecastTargetView {
     damageType?: DamageType;
   } | null;
   statuses: { name: string; chancePercent: number }[];
+  /** What else lands on this target: stat changes, cleansed statuses, a shove. */
+  effects: string[];
   /** Facing the attack comes in on; drives the hit bonus the player is reading. */
   relativeFacing: "front" | "side" | "back" | null;
   heightAdvantage: number;
@@ -156,6 +159,10 @@ export interface ForecastView {
   /** Set when the pending action is a consumable rather than an ability. */
   item?: { itemId: string; remaining: number };
   targets: ForecastTargetView[];
+  /** Consequences aimed at nobody in the area: the caster's own step, a machine laid. */
+  effects: string[];
+  /** Exactly what the stamp will send, so the panel never has to guess from a row. */
+  aimedAt: TargetRef;
 }
 
 export interface TurnOrderEntryView {
@@ -173,6 +180,21 @@ export interface TurnOrderEntryView {
 
 export interface TurnOrderView {
   entries: TurnOrderEntryView[];
+}
+
+/**
+ * One machine on the power register. The only cue that the mains had been cut
+ * used to be the Operate entry quietly greying out, which is a fact the player
+ * has to go looking for; the register states it.
+ */
+export interface PowerEntryView {
+  objectId: string;
+  name: string;
+  powered: boolean;
+}
+
+export interface PowerLedgerView {
+  entries: PowerEntryView[];
 }
 
 /**
@@ -199,6 +221,8 @@ export interface BattleHudView {
   turnOrder: TurnOrderView;
   forecast: ForecastView | null;
   dialogue: DialogueLine[];
+  /** Machinery whose power the battle is fought over; absent on maps with none. */
+  power?: PowerLedgerView;
 }
 
 export interface RosterEntryView {
@@ -216,10 +240,69 @@ export interface RosterEntryView {
   note?: string;
 }
 
+/**
+ * A unit struck from the roster. Permadeath is canon (CREATIVE_BIBLE §5.4), so
+ * this is the only trace left of them: the record keeps the name, nothing
+ * recalls the person.
+ */
+export interface FallenEntryView {
+  unitId: string;
+  name: string;
+  jobName: string;
+  level: number;
+  /** Where they fell, named — never the encounter id. */
+  encounterName: string;
+}
+
 export interface PartyView {
   /** The chapter's party, in roster order. */
   members: RosterEntryView[];
   deployedLimit: number;
+  /** The chapter's dead, in the order they were lost. */
+  fallen?: FallenEntryView[];
+}
+
+/** One unit's take from a battle, as the results ledger prints it. */
+export interface StandingAwardView {
+  unitId: string;
+  name: string;
+  jobName: string;
+  amount: number;
+  /** Job level once the battle's Standing was banked. */
+  jobLevel: number;
+  /** Levels this battle's Standing carried the job up; 0 for none. */
+  jobLevelsGained: number;
+  /** True when the unit banked this and did not come home. */
+  struck: boolean;
+}
+
+/** The filed record of one battle: what it banked, and what it cost. */
+export interface BattleResultsView {
+  result: "win" | "loss";
+  encounterId: string;
+  encounterName: string;
+  /** The verdict, stamped: "Field Held" / "Line Broken". */
+  headline: string;
+  /** One line of record prose under the verdict. */
+  note: string;
+  standing: StandingAwardView[];
+  standingTotal: number;
+  fallen: FallenEntryView[];
+  /** Field kit spent, already named and counted. */
+  consumed: { itemId: string; name: string; count: number }[];
+  /** True when the chapter's index moved on — a first win, not a return. */
+  advanced: boolean;
+}
+
+/** The chapter's closing record: what the party has to show for it. */
+export interface ChapterCloseView {
+  chapterName: string;
+  note: string;
+  /** Engagements won, in the order they were won. */
+  engagements: { encounterId: string; name: string }[];
+  standingTotal: number;
+  survivors: { unitId: string; name: string; jobName: string; level: number }[];
+  fallen: FallenEntryView[];
 }
 
 export interface StatLineView {

@@ -9,6 +9,7 @@
 import {
   BASIC_ATTACK_ID,
   abilityInfo,
+  abilityOutcomes,
   activatableObjects,
   activeTurnState,
   activeUnit,
@@ -24,6 +25,7 @@ import {
   itemIdFromAbilityId,
   itemInfo,
   jobInfo,
+  poweredObjects,
   standHeight,
   statusInfo,
   turnOrderPreview,
@@ -35,6 +37,7 @@ import {
   usableItems,
   type ActionAbility,
   type BattleUnit,
+  type ForecastOutcome,
   type GameState,
   type TargetRef,
 } from "../core/index.js";
@@ -52,11 +55,13 @@ import {
   type ForecastView,
   type ItemEntryView,
   type PartyView,
+  type PowerLedgerView,
   type RosterEntryView,
   type SkillsetView,
   type StatLineView,
   type StatModView,
   type StatusView,
+  type TargetRef as UiTargetRef,
   type TurnOrderEntryView,
   type TurnOrderView,
   type UnitSheetView,
@@ -235,6 +240,70 @@ const damageTypeOf = (ability: ActionAbility): DamageType | undefined => {
   return undefined;
 };
 
+const SPAWN_LABELS: Record<"turret" | "mine" | "drone", string> = {
+  turret: "Sentry frame",
+  mine: "Charge",
+  drone: "Drone",
+};
+
+const MOVE_SELF_LABELS: Record<"toward-target" | "away-from-target" | "forward", string> = {
+  "toward-target": "toward the target",
+  "away-from-target": "back from the target",
+  forward: "forward",
+};
+
+const FORCE_MOVE_LABELS: Record<"push" | "pull" | "toward-actor-facing", string> = {
+  push: "Pushed",
+  pull: "Pulled",
+  "toward-actor-facing": "Driven",
+};
+
+const turnsLabel = (turns: number): string => `${turns} turn${turns === 1 ? "" : "s"}`;
+
+/**
+ * One line of plain English per consequence. A forecast that reports "Damage —"
+ * and nothing else for a three-turn buff is lying about what the order does;
+ * these are the sentences that make it stop.
+ */
+function outcomeLine(state: GameState, outcome: ForecastOutcome): string | null {
+  switch (outcome.kind) {
+    case "statMods": {
+      const parts = Object.entries(outcome.mods)
+        .filter((entry): entry is [StatKey, number] => typeof entry[1] === "number" && entry[1] !== 0)
+        .map(([key, value]) => `${STAT_LABELS[key]} ${formatSigned(value)}`);
+      if (parts.length === 0) return null;
+      const window =
+        outcome.durationTurns === null ? "rest of battle" : turnsLabel(outcome.durationTurns);
+      return `${parts.join(" · ")} for ${window}`;
+    }
+    case "removeStatus":
+      return `Clears ${statusInfo(state, outcome.statusId)?.name ?? outcome.statusId}`;
+    case "charge": {
+      const moved = `Charge ${formatSigned(outcome.amount)}`;
+      return outcome.siphonedToActor ? `${moved}, drawn to the caster` : moved;
+    }
+    case "disposition":
+      return `${outcome.stat === "resolve" ? "Resolve" : "Attunement"} ${formatSigned(outcome.amount)}`;
+    case "forceMove":
+      return `${FORCE_MOVE_LABELS[outcome.direction]} ${outcome.distance}`;
+    case "power":
+      return outcome.mode === "toggle" ? "Power switched" : `Power ${outcome.mode}`;
+    case "moveSelf":
+      return `Caster steps ${outcome.distance} ${MOVE_SELF_LABELS[outcome.direction]}`;
+    case "spawn":
+      return `${SPAWN_LABELS[outcome.object]} placed · ${outcome.hp} integrity`;
+  }
+}
+
+const outcomeLines = (state: GameState, outcomes: readonly ForecastOutcome[]): string[] =>
+  outcomes.map((outcome) => outcomeLine(state, outcome)).filter((line): line is string => line !== null);
+
+const uiTarget = (target: TargetRef): UiTargetRef => {
+  if (target.kind === "unit") return { kind: "unit", unitId: target.unitId };
+  if (target.kind === "object") return { kind: "object", objectId: target.objectId };
+  return { kind: "tile", tile: { ...target.tile } };
+};
+
 export function forecastView(
   state: GameState,
   unitId: string,
@@ -270,6 +339,7 @@ export function forecastView(
             ? null
             : { kind, min: amount, max: amount, ...(damageType === undefined ? {} : { damageType }) },
         statuses,
+        effects: outcomeLines(state, entry.outcomes),
         relativeFacing: angle,
         heightAdvantage:
           standHeight(state, attacker.position) - standHeight(state, victim.position),
@@ -286,8 +356,12 @@ export function forecastView(
       unitId: entry.objectId,
       name: object.def.name,
       hitChancePercent: entry.hitChance,
-      damage: { kind, min: amount, max: amount, ...(damageType === undefined ? {} : { damageType }) },
+      damage:
+        amount === 0 && kind === "damage"
+          ? null
+          : { kind, min: amount, max: amount, ...(damageType === undefined ? {} : { damageType }) },
       statuses,
+      effects: outcomeLines(state, entry.outcomes),
       relativeFacing: null,
       heightAdvantage: 0,
     });
@@ -306,6 +380,8 @@ export function forecastView(
     castSpeed: ability.castSpeed,
     ...(itemId === null ? {} : { item: { itemId, remaining: itemRemaining(state, unitId, itemId) } }),
     targets,
+    effects: outcomeLines(state, abilityOutcomes(state, unitId, abilityId)),
+    aimedAt: uiTarget(target),
   };
 }
 
@@ -313,6 +389,12 @@ export function forecastView(
 function itemRemaining(state: GameState, unitId: string, itemId: string): number {
   const entry = usableItems(state, unitId).find((candidate) => candidate.itemId === itemId);
   return Math.max(0, (entry?.count ?? 0) - 1);
+}
+
+/** The floor's power register, or undefined on a map that switches nothing. */
+export function powerLedgerView(state: GameState): PowerLedgerView | undefined {
+  const entries = poweredObjects(state);
+  return entries.length === 0 ? undefined : { entries };
 }
 
 export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT): TurnOrderView {
@@ -375,12 +457,14 @@ export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleH
   const action = actionMenuView(state, subjectId);
   if (action === null) return null;
   const inspectedId = inputs.inspectedUnitId ?? subjectId;
+  const power = powerLedgerView(state);
   return {
     action,
     inspected: inspectedId === null ? null : unitView(state, inspectedId),
     turnOrder: turnOrderView(state, inputs.turnOrderCount ?? DEFAULT_TURN_ORDER_COUNT),
     forecast: inputs.forecast ?? null,
     dialogue: inputs.dialogue ?? [],
+    ...(power === undefined ? {} : { power }),
   };
 }
 

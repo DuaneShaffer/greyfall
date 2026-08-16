@@ -49,6 +49,7 @@ export type { RngState } from "./rng/mulberry32.js";
 
 export {
   abilityInfo,
+  abilityOutcomes,
   activatableObjects,
   activeTurnState,
   activeUnit,
@@ -70,6 +71,7 @@ export {
   jobInfo,
   legalTargetTiles,
   lineOfSight,
+  poweredObjects,
   reachableTiles,
   statusInfo,
   targetableTiles,
@@ -83,6 +85,8 @@ export {
   unitStats,
   usableItems,
   type ForecastEntry,
+  type ForecastOutcome,
+  type PoweredObject,
   type TurnOrderEntry,
   type UsableItemEntry,
 } from "./selectors.js";
