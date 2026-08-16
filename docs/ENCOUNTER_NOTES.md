@@ -70,12 +70,31 @@ winning it cleanly.
 The whole floor except the foreman dropped to level 1 in the rebalance pass,
 and the party deploys five instead of four: at the authored roster levels the
 old composition was a **0% win across five seeds with all four units lost**
-(`docs/BALANCE_REPORT.md` F6). It is **70%** now, at 2.8 of 5 lost.
+(`docs/BALANCE_REPORT.md` F6). It is **70%** now, at 2.8 of 5 lost — **45.8%**
+at 3.7 of 5 on the later 24-seed instrument, which reads every encounter lower
+than the ten-seed pass did.
 
 Two provocateurs plus a torch-hand carry the fight; the three strikers are
 chemist / railrunner / machinist — the three lowest basic-attack jobs in the
 game (6, 13, 9 damage at L1). That asymmetry is deliberate: the people who
 hurt you are the plants, and the people you hurt cannot fight back well.
+
+**Enemy satchel: two Coagulant Vials, and nothing thrown.** Perren Ash keeps
+Bench Grade, so the floor's own coagulants heal for 45 and the fight's one
+Chemist spends a turn or two a battle dosing a hurt striker instead of swinging
+a dosing gun at the Watch. That is the whole point of giving this encounter a
+satchel — the hands are trying to keep each other standing, not to win — and it
+measures as a *net gift to the player*: the healing costs the enemy more tempo
+than it buys back (`BALANCE_REPORT` §7.8.2).
+
+The Caustic Flask that shipped beside the vials came back out. One thrown flask
+a battle put the encounter at 12.5% against a 40–80% band — not for its 20
+points of chemical but for Fouled, which takes a deployed unit's CT to 60% for
+three turns in a fight that runs ninety. Every measured arm carrying the flask
+read 16.7–25.0%; every arm without it read 39.6–45.8%. **The strikers' satchel
+is a medical kit, which is also the right reading of the floor**: Perren Ash has
+thirty years on the pour and a son in the yard, and he is dosing people, not
+throwing scrub concentrate at a Watch sergeant.
 
 **Win: `all` of the three provocateurs, or `rout`.** The merciful alternative
 asked for, and now the objective the fiction actually wants: put down the

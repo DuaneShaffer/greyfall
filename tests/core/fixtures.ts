@@ -174,9 +174,9 @@ export const BENCH_ABILITIES: Ability[] = [
     { kind: "damageObject", amount: { base: "fixed", power: 5 } },
   ]),
   {
-    ...action("rig-burst", "Rig Burst", reach(4, ["object"]), [
+    ...(action("rig-burst", "Rig Burst", reach(4, ["object"]), [
       { kind: "damageObject", amount: { base: "fixed", power: 25 } },
-    ]),
+    ]) as Extract<Ability, { slot: "action" }>),
     chargeCost: 5,
     castSpeed: 25,
   },

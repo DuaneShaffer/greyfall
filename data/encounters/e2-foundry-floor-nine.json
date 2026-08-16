@@ -185,10 +185,6 @@
     {
       "itemId": "coagulant-vial",
       "count": 2
-    },
-    {
-      "itemId": "caustic-flask",
-      "count": 1
     }
   ],
   "winConditions": [

@@ -1063,7 +1063,7 @@ cast is untouched.
 | encounter | before | **after** |
 |---|---|---|
 | e1 Marshaling Yard | 100.0% | **100.0%** |
-| e2 Foundry Floor Nine | 12.5% | **12.5%** (not this pass's — see above) |
+| e2 Foundry Floor Nine | 12.5% | **12.5%** (not this pass's — see above, and §7.8.2) |
 | e3 Tallow Row | 29.1% | **45.8%** |
 | e4 Refinery Three | 62.5% | **83.3%** |
 | e5 Charterhouse Steps | 66.6% | **66.6%** |
@@ -1153,6 +1153,102 @@ was the placement `ENCOUNTER_NOTES` could carry without — nothing scripted
 referred to him and the east-room torch-hand covers the lane — and Smoke
 Canister on all three saboteurs was never justified by the encounter's notes.
 Wick's level is untouched: he is the fight's one L2 and its win condition.
+
+### 7.8.2 Addendum — e2's enemy satchel
+
+§7.8.1's instrument note left e2 at **12.5%** and handed the number back to the
+encounter workstream. This is that follow-up. Same instrument, same party —
+campaign roster in join order, authored levels, nothing bought, `commandCap`
+4000 — on the primary seed set (`101 + 37n`) and the disjoint alt set
+(`103 + 41n`), 24 seeds each, reported pooled over both because e2's single-set
+reads are jumpy enough to invert a conclusion (below).
+
+**One arm, one factor at a time.** The satchel and Bench Grade were varied in
+memory against the shipped tree, so every row is the same build:
+
+| e2 arm | primary | alt | **pooled 48** |
+|---|---|---|---|
+| no satchel, no Bench Grade (pre-use-item-pass) | 45.8% | 33.3% | **39.6%** |
+| **2 vials, Bench Grade** *(shipped)* | **45.8%** | **45.8%** | **45.8%** |
+| 1 vial, Bench Grade | 41.7% | 45.8% | 43.8% |
+| 2 vials, no Bench Grade | 41.7% | 41.7% | 41.7% |
+| flask only, Bench Grade | 16.7% | 33.3% | 25.0% |
+| flask only, no Bench Grade | 8.3% | 25.0% | 16.7% |
+| 2 vials + flask + Bench Grade *(the 12.5% config)* | 12.5% | 33.3% | 22.9% |
+
+**Every arm carrying the Caustic Flask lands 16.7–25.0%; every arm without it
+lands 39.6–45.8%.** The flask is the whole drop and nothing else is any of it.
+
+**It was not the healing.** Two vials on their own take mean enemy healing
+27 → 60 points a battle and the win rate **up**, 39.6% → 45.8%. Enemy damage
+output falls 277 → 279 on the primary set and 322 → 287 on the alt while party
+damage rises 355 → 372 and 357 → 391. The 1.5 turns a battle the hostile force
+spends dosing are turns it does not spend hitting, and 60 points of healing
+against ~370 of party output does not buy them back. **A healing enemy Chemist
+is a net negative for the enemy at this scale**, which is the opposite of the
+worry and is why the vials stayed.
+
+**It was not Bench Grade.** With no satchel it is worth exactly zero (identical
+records, as it must be — it reads only consumables). On the vials it is worth
++4.1 *to the party* (41.7% → 45.8% pooled). On the flask it is worth +8.3 to
+the party as well: **flask without Bench Grade is 16.7% pooled against 25.0%
+with it.** The support's `consumableRangeBonus` gets Perren throwing from five
+tiles instead of three, which spends the flask earlier and from further out
+than holding it would. Dropping Bench Grade would have made e2 harder, not
+easier — the second rung of the candidate ladder is a rung down.
+
+**It was not the flask's damage either, quite.** The flask is one use a battle
+and lands **19–22 points** of chemical against ~330 of enemy damage output.
+What it costs is the party's own output: −48 on the primary set, −41 on the
+alt. That is Fouled — `ctMultiplierPercent` 60 and −6 evade for three turns —
+landing at 70% on one of five deployed units in a fight that already runs 90
+turns. Splitting the item's two effects on the primary set read 37.5%
+damage-only and 50.0% status-only against 16.7% for both, which is a 24-seed
+spread wider than either half can carry on its own; the honest statement is
+that the flask costs ~20 points and the tempo half is the larger part of it.
+
+**The change: one stack out of `enemySatchel`.**
+
+| file | change |
+|---|---|
+| `data/encounters/e2-foundry-floor-nine.json` | `caustic-flask` × 1 removed from `enemySatchel`; two Coagulant Vials and Perren's Bench Grade untouched |
+
+This is the first rung of the ladder and half of it: the brief's "1 vial, no
+flask" reads 43.8% pooled and two vials reads 45.8%, so the smaller cut is also
+the better number, and it leaves the use-item pass its demonstration — a hostile
+Chemist with Bench Grade dosing his people for 45, twice a battle, on the floor
+where the sympathetic strikers are. Nothing about the encounter's drama is
+touched: the AND-group win condition, both provocateurs, the torch-hand, the
+three hands, and all five triggers including `perren-goes-down` are as authored.
+Perren's own `coagulant-jet` was never the issue and is untouched.
+
+**Landing, confirmed on both sets:** 45.8% primary, 45.8% alt, 45.8% pooled
+over 48 runs — mid-band and the flattest read in this document. Mean 90.3 turns
+and 3.71 of 5 lost on the primary set, against 86.0 and 3.75 for the arm with no
+satchel at all: the fight is the same length and costs the same, it just is not
+losing a unit's tempo to a thrown flask any more.
+
+**Non-monotone again, and worth the record.** e2's no-satchel control reads
+45.8% on the primary set and 33.3% on the alt — a 12-point swing on the arm that
+is supposed to be the fixed point, which is §7's own ±10 showing up exactly
+where it was advertised. The shipped config is the only arm in the table that
+reads the same number on both sets. **A single 24-seed read of e2 is not a
+landing**, and the alt set would have said the flask cost nothing (33.3% against
+a 33.3% control) if it had been the only set run.
+
+#### Encounters after — campaign roster, authored levels, 24 seeds, primary set
+
+| encounter | §7.8.1 | **after** |
+|---|---|---|
+| e1 Marshaling Yard | 100.0% | **100.0%** |
+| e2 Foundry Floor Nine | 12.5% | **45.8%** |
+| e3 Tallow Row | 45.8% | **45.8%** |
+| e4 Refinery Three | 83.3% | **83.3%** |
+| e5 Charterhouse Steps | 66.6% | **66.7%** |
+
+e2 is the only row that moves; e1, e3 and e4 reproduce §7.8.1 to the digit and
+e5's 66.7 is 66.6 rounded the other way off the same 16 of 24. All four fought
+encounters are in the 40–100% band and e2–e5 are all inside 40–80%.
 
 ### 7.9 Regenerated test expectations
 

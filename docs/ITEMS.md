@@ -156,9 +156,10 @@ one-note list on battle one, small enough that spending is a decision.
 ## 3. The enemy satchel
 
 `Encounter.enemySatchel` gives the hostile force the same shared pool. Foundry
-Floor Nine carries two Coagulant Vials and a Caustic Flask, and Perren Ash —
-the hand who was already a Chemist — now has Bench Grade slotted, so the
-enemy's own coagulants heal for 45 and their flask reaches five tiles.
+Floor Nine carries two Coagulant Vials, and Perren Ash — the hand who was
+already a Chemist — has Bench Grade slotted, so the enemy's own coagulants
+heal for 45. (A Caustic Flask shipped originally and was removed for
+winnability; BALANCE_REPORT §7.8.2 has the measurement.)
 
 The AI prices an item exactly as it prices an ability, through
 `abilityValue` on the same synthesized ability, minus a flat `itemUsePoint`
