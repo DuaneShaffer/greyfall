@@ -203,14 +203,14 @@ describe("quantization", () => {
   it("reports violations instead of repairing them", () => {
     // A master with a hole punched in the torso: the outline is now open.
     const holed: PixelGrid = { ...master, data: Uint8Array.from(master.data) };
-    for (let y = 20; y < 24; y += 1) {
-      for (let x = 14; x < 18; x += 1) holed.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
+    for (let y = 40; y < 48; y += 1) {
+      for (let x = 28; x < 36; x += 1) holed.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
     }
     const report = auditGrid(holed);
     expect(report.ok).toBe(false);
     expect(report.outlineGaps.length).toBeGreaterThan(0);
     // The grid is not modified: reporting is the whole contract.
-    expect(holed.data[21 * SPRITE_WIDTH + 15]).toBe(TRANSPARENT);
+    expect(holed.data[42 * SPRITE_WIDTH + 30]).toBe(TRANSPARENT);
     expect(formatReport(report, "holed")).toContain("REJECTED");
   });
 
@@ -306,10 +306,10 @@ const importFallback = (jobId: (typeof FALLBACK)[number]) => {
     jobId === "enforcer"
       ? {
           // Shield across the hips, maul off the near hand.
-          se: [propRegion(5, 19, 15, 16, "hip"), propRegion(22, 8, 10, 9, "handNear")],
-          ne: [propRegion(5, 19, 15, 16, "hip"), propRegion(22, 8, 10, 9, "handNear")],
+          se: [propRegion(10, 38, 30, 32, "hip"), propRegion(44, 16, 20, 18, "handNear")],
+          ne: [propRegion(10, 38, 30, 32, "hip"), propRegion(44, 16, 20, 18, "handNear")],
         }
-      : { se: [propRegion(3, 24, 12, 12, "hip")], ne: [propRegion(17, 24, 12, 12, "hip")] };
+      : { se: [propRegion(6, 48, 24, 24, "hip")], ne: [propRegion(34, 48, 24, 24, "hip")] };
   return importExternalMaster({
     id: jobId,
     build: art.build,
@@ -456,7 +456,7 @@ describe("external masters become full animations", () => {
         expect(share, jobId).toBeLessThan(0.14);
       });
 
-      it("assembles into the frozen 256x576 sheet layout", () => {
+      it("assembles into the frozen sheet layout", () => {
         const sheet = buildExternalSheet(imported.master);
         expect(sheet.width).toBe(SHEET_LAYOUT.width);
         expect(sheet.height).toBe(SHEET_LAYOUT.height);

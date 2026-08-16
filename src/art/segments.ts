@@ -13,9 +13,9 @@
 //
 // What this deliberately does not do: rotate. Props translate with the hand and
 // keep their drawn angle. A swing that needs the weapon to turn is a per-frame
-// patch, not a transform, because rotating pixel art at 32px destroys it.
+// patch, not a transform, because rotating pixel art at this density destroys it.
 
-import { jointsFor, poseFor, type Build, type Joints, type JobArt, type Pose } from "./rig.js";
+import { at, jointsFor, poseFor, toPx, type Build, type Joints, type JobArt, type Pose } from "./rig.js";
 import { contactPrims, flashInterior } from "./rig.js";
 import {
   OUTLINE_INDEX,
@@ -34,6 +34,7 @@ import {
   ANIMATIONS,
   DRAWN_VIEWS,
   FIGURE_BOX_BOTTOM,
+  RIG_UNIT,
   SHEET_LAYOUT,
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
@@ -120,10 +121,7 @@ export interface ExternalMaster {
   readonly patches?: readonly FramePatch[];
 }
 
-const canvasOf = (p: { dx: number; up: number }): { x: number; y: number } => ({
-  x: SPRITE_ANCHOR.x + p.dx,
-  y: SPRITE_ANCHOR.y - p.up,
-});
+const canvasOf = (p: { dx: number; up: number }): { x: number; y: number } => at(p.dx, p.up);
 
 function posed(master: ExternalMaster, state: AnimState, frame: number): Pose {
   const art = { posePass: master.posePass } as JobArt;
@@ -141,7 +139,7 @@ const inRect = (r: SegmentRect, x: number, y: number): boolean =>
  * Build the standard six-region partition from the rig itself: head above the
  * shoulder line, the shoulder-to-hip band split into far arm / torso / near
  * arm by column, and everything below the hips split into two legs. The rects
- * tile rows 0..43 without overlapping, so the cut is total and unambiguous.
+ * tile the figure box without overlapping, so the cut is total and unambiguous.
  *
  * A job whose gear crosses those boundaries adds an explicit `prop` region on
  * top; that is the whole reason `prop` cuts first.
@@ -157,13 +155,13 @@ export function defaultRegionMap(
   const j = jointsFor(build, pose);
   const shoulderRow = Math.round(canvasOf(j.shoulder).y);
   const hipRow = Math.round(canvasOf(j.hip).y);
-  const bandTop = Math.max(0, shoulderRow - 1);
-  const bandBottom = Math.min(FIGURE_BOX_BOTTOM + 1, hipRow + 3);
-  const centerX = Math.round(SPRITE_ANCHOR.x + j.shoulder.dx);
-  const half = Math.round(build.hipW / 2) + 1;
+  const bandTop = Math.max(0, shoulderRow - toPx(1));
+  const bandBottom = Math.min(FIGURE_BOX_BOTTOM + 1, hipRow + toPx(3));
+  const centerX = Math.round(canvasOf(j.shoulder).x);
+  const half = Math.round(toPx(build.hipW) / 2) + toPx(1);
   const leftSplit = Math.max(0, Math.min(SPRITE_WIDTH, centerX - half));
   const rightSplit = Math.max(0, Math.min(SPRITE_WIDTH, centerX + half));
-  const legSplit = Math.max(0, Math.min(SPRITE_WIDTH, Math.round(SPRITE_ANCHOR.x + j.hip.dx)));
+  const legSplit = Math.max(0, Math.min(SPRITE_WIDTH, Math.round(canvasOf(j.hip).x)));
   const bandH = Math.max(0, bandBottom - bandTop);
   const legH = Math.max(0, FIGURE_BOX_BOTTOM + 1 - bandBottom);
 
@@ -289,11 +287,16 @@ function segmentOffset(
 }
 
 /**
- * Close 1px holes opened by shearing. Conservative on purpose: a pixel is only
+ * Close holes opened by shearing. Conservative on purpose: a pixel is only
  * filled when it is almost surrounded, so the gap between two legs — which has
- * at most four opaque neighbors — is never welded shut.
+ * at most four opaque neighbors however wide the gap is — is never welded shut.
+ *
+ * The neighbourhood stays 3x3 rather than scaling with RIG_UNIT: widening it
+ * is what would start swallowing the leg gap. A seam is now RIG_UNIT pixels
+ * wide, so instead the fill runs more passes and zippers each seam shut from
+ * its ends, where the neighbour count is high, inward.
  */
-function closeSeams(grid: PixelGrid, shell: PixelGrid, passes = 2): void {
+function closeSeams(grid: PixelGrid, shell: PixelGrid, passes = 2 * RIG_UNIT): void {
   for (let pass = 0; pass < passes; pass += 1) {
     const fills: { x: number; y: number; value: number }[] = [];
     for (let y = 1; y <= FIGURE_BOX_BOTTOM; y += 1) {
@@ -337,7 +340,7 @@ export interface DeriveOptions {
 }
 
 /**
- * One derived frame. Same contract as `jobFrame`: a 32x48 palette-index grid,
+ * One derived frame. Same contract as `jobFrame`: a 64x96 palette-index grid,
  * feet on the anchor, closed emissive-aware outline, contact shadow in the
  * sub-floor band.
  */
@@ -370,7 +373,7 @@ export function deriveExternalFrame(master: ExternalMaster, options: DeriveOptio
   const shell = paint(cutShell(source, map));
   closeSeams(body, shell);
 
-  // The figure box is rows 0..43 and the outer ring belongs to the outline.
+  // The outer ring belongs to the outline, and the sub-floor band to contact.
   for (let y = FIGURE_BOX_BOTTOM + 1; y < SPRITE_HEIGHT; y += 1) {
     for (let x = 0; x < SPRITE_WIDTH; x += 1) body.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
   }

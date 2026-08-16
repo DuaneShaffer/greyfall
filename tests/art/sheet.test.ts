@@ -65,12 +65,12 @@ describe("manifest", () => {
 });
 
 describe("assembly", () => {
-  it("builds a 256x576 sheet whose cells match the frame generator", () => {
+  it("builds a 512x1152 sheet whose cells match the frame generator", () => {
     const sheet = buildJobSheet("conduit", "player");
-    expect(sheet.width).toBe(256);
-    expect(sheet.height).toBe(576);
-    expect(SHEET_LAYOUT.width).toBe(256);
-    expect(SHEET_LAYOUT.height).toBe(576);
+    expect(sheet.width).toBe(512);
+    expect(sheet.height).toBe(1152);
+    expect(SHEET_LAYOUT.width).toBe(512);
+    expect(SHEET_LAYOUT.height).toBe(1152);
     for (const cell of SHEET_MANIFEST) {
       const frame = jobFrame({
         jobId: "conduit",

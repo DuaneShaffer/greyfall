@@ -1,22 +1,34 @@
-// Unit sheet textures. One 256x576 sheet per job/team is generated once from
-// `src/art` (pure palette-index grids), painted to a canvas via ImageData, and
-// sampled with NearestFilter so it stays crisp. Frame selection is a UV window
-// into that sheet — see `cellUV` — so playback costs nothing per frame and a
-// mirrored view is a negative horizontal repeat.
+// Unit sheet textures. One sheet per job/team is generated once from `src/art`
+// (pure palette-index grids) and uploaded as a data texture with its whole mip
+// chain. Frame selection is a UV window into that sheet — see `cellUV` — so
+// playback costs nothing per frame and a mirrored view is a negative horizontal
+// repeat.
 //
-// Geometry comes from the frozen sprite spec (`src/art/sprites.ts`): a 32x48
-// cell, feet anchor at (16, 44), 32 px per world tile edge, so the billboard is
-// exactly 1.0 x 1.5 world units.
+// Filtering: NearestFilter on magnification, because the default camera zoom
+// sits just above the texture's own density and a sprite must show hard pixel
+// edges there; trilinear on minification, because a sheet sampled below its
+// density with nearest filtering crawls as the camera moves. The chain is
+// supplied rather than generated so level 0 can be a hard enlargement while the
+// levels under it are properly box-filtered.
+//
+// Geometry comes from the frozen sprite spec (`src/art/sprites.ts`): a 64x96
+// cell, feet anchor at (32, 88), 64 sprite px per world tile edge, so the
+// billboard is exactly 1.0 x 1.5 world units — unchanged by the density.
 
 import * as THREE from "three";
 import { isJobId, type JobId } from "../art/jobs.js";
-import { writeGridToImageData } from "../art/pixel.js";
-import { buildJobSheet, cellUV, sheetCell, sheetKey } from "../art/sheet.js";
 import {
-  PIXELS_PER_TILE,
-  SHEET_LAYOUT,
+  buildJobSheet,
+  cellUV,
+  flipRows,
+  sheetCell,
+  sheetKey,
+  sheetTextureLevels,
+} from "../art/sheet.js";
+import {
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
+  SPRITE_PIXELS_PER_TILE as SPEC_PIXELS_PER_TILE,
   SPRITE_WIDTH,
   type AnimState,
   type DrawnView,
@@ -25,7 +37,7 @@ import type { Team } from "../data/schemas/common.js";
 
 export const SPRITE_PIXELS_X = SPRITE_WIDTH;
 export const SPRITE_PIXELS_Y = SPRITE_HEIGHT;
-export const SPRITE_PIXELS_PER_TILE = PIXELS_PER_TILE;
+export const SPRITE_PIXELS_PER_TILE = SPEC_PIXELS_PER_TILE;
 /** Row of the feet anchor, measured from the top of the canvas. */
 export const SPRITE_ANCHOR_Y = SPRITE_ANCHOR.y;
 
@@ -40,13 +52,16 @@ export const jobForSprite = (spriteId: string): JobId =>
 
 const configure = (texture: THREE.Texture): THREE.Texture => {
   texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   return texture;
 };
+
+const asBytes = (data: Uint8ClampedArray): Uint8Array =>
+  new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 
 /** The shared sheet for a job/team. Built once, cached for the session. */
 export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
@@ -55,16 +70,22 @@ export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
   const cached = sheets.get(key);
   if (cached) return cached;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = SHEET_LAYOUT.width;
-  canvas.height = SHEET_LAYOUT.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("2d canvas context unavailable for unit sheet");
-  const image = ctx.createImageData(SHEET_LAYOUT.width, SHEET_LAYOUT.height);
-  writeGridToImageData(image, buildJobSheet(jobId, team));
-  ctx.putImageData(image, 0, 0);
-
-  const texture = configure(new THREE.CanvasTexture(canvas));
+  // WebGL ignores flipY for buffer uploads, so every level ships bottom-up.
+  const levels = sheetTextureLevels(buildJobSheet(jobId, team)).map(flipRows);
+  const base = levels[0] as (typeof levels)[number];
+  const texture = new THREE.DataTexture(
+    asBytes(base.data),
+    base.width,
+    base.height,
+    THREE.RGBAFormat,
+  );
+  texture.mipmaps = levels.map((level) => ({
+    data: asBytes(level.data),
+    width: level.width,
+    height: level.height,
+  }));
+  texture.needsUpdate = true;
+  configure(texture);
   sheets.set(key, texture);
   return texture;
 };

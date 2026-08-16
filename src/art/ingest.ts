@@ -1,4 +1,4 @@
-// External master intake (ART_DIRECTION Appendix C.8). Takes a 32x48 RGBA
+// External master intake (ART_DIRECTION Appendix C.8). Takes a 64x96 RGBA
 // master drawn outside this pipeline — colors approximately right, not
 // palette-exact — and turns it into an internal palette-index grid, together
 // with a conformance report saying exactly what moved and what the result
@@ -140,8 +140,18 @@ const DEFAULT_TINT_INDICES: readonly number[] = [
   paletteIndex(TEAM_TINT.enemy.shadow),
 ];
 const CANVAS_PIXELS = SPRITE_WIDTH * SPRITE_HEIGHT;
-/** §2: no more than ~5% of a frame's pixels from the amber ramp. */
-export const AMBER_BUDGET = Math.floor(CANVAS_PIXELS * 0.05);
+/**
+ * §2: amber is scarce. The budget is an *area* share, because the billboard's
+ * world size did not change with the sprite density — what a player sees is the
+ * fraction of the figure that glows, not a pixel count.
+ *
+ * Re-derived at 64x96 rather than carried over: the worst frame in the roster
+ * (conduit/cast, the emissive peak) now spends 174 of 6144 px, 2.8%. The old
+ * 5% was measured against 32x48 areas and left more slack than it looked like;
+ * 4% is the tightest round share that still clears the cast peak.
+ */
+export const AMBER_SHARE = 0.04;
+export const AMBER_BUDGET = Math.floor(CANVAS_PIXELS * AMBER_SHARE);
 export const MAX_FRAME_COLORS = MAX_COLORS_PER_SPRITE + TEAM_TINT_INDEX_COUNT;
 
 const rgbTable = (hexes: readonly Hex[]): readonly (readonly [number, number, number])[] =>
@@ -294,7 +304,9 @@ export function auditGrid(
   let amberPixels = 0;
   for (const [index, count] of counts) if (AMBER_INDICES.has(index)) amberPixels += count;
   if (amberPixels > AMBER_BUDGET) {
-    errors.push(`${amberPixels} amber pixels, budget is ${AMBER_BUDGET} (~5% of the canvas)`);
+    errors.push(
+      `${amberPixels} amber pixels, budget is ${AMBER_BUDGET} (${AMBER_SHARE * 100}% of the canvas)`,
+    );
   }
 
   let teamTintPixels = 0;

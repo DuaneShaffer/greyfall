@@ -98,9 +98,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
   });
 
   it("writes a head close-up", () => {
-    const scale = 10;
-    const w = 16;
-    const h = 20;
+    const scale = 5;
+    const w = 32;
+    const h = 44;
     const pad = 4;
     const img = createImage(JOB_IDS.length * (w * scale + pad) + pad, 2 * (h * scale + pad + 8) + 16, BG);
     drawText(img, `heads ${TAG}`, pad, 3, INK);
@@ -112,7 +112,7 @@ describe.runIf(DUMP)("sprite gallery", () => {
         fillRect(img, x, y, w * scale, h * scale, [11, 13, 16, 255]);
         for (let gy = 0; gy < h; gy += 1) {
           for (let gx = 0; gx < w; gx += 1) {
-            const src = { x: gx + 8, y: gy };
+            const src = { x: gx + (SPRITE_WIDTH - w) / 2, y: gy };
             const v = grid.data[src.y * SPRITE_WIDTH + src.x] ?? 0;
             if (v === 0) continue;
             const sub = { width: 1, height: 1, data: new Uint8Array([v]) };
@@ -122,7 +122,7 @@ describe.runIf(DUMP)("sprite gallery", () => {
         drawText(img, `${jobId.slice(0, 6)} ${view}`, x, y + h * scale + 2, INK);
       });
     });
-    write(`heads-${TAG}-10x.png`, img);
+    write(`heads-${TAG}-5x.png`, img);
   });
 
   it("writes the ingest proof: generated master vs frames derived from it", () => {
@@ -145,10 +145,10 @@ describe.runIf(DUMP)("sprite gallery", () => {
       const prop =
         jobId === "enforcer"
           ? {
-              se: [propRegion(5, 19, 15, 16, "hip" as const), propRegion(22, 8, 10, 9, "handNear" as const)],
-              ne: [propRegion(5, 19, 15, 16, "hip" as const), propRegion(22, 8, 10, 9, "handNear" as const)],
+              se: [propRegion(10, 38, 30, 32, "hip" as const), propRegion(44, 16, 20, 18, "handNear" as const)],
+              ne: [propRegion(10, 38, 30, 32, "hip" as const), propRegion(44, 16, 20, 18, "handNear" as const)],
             }
-          : { se: [propRegion(3, 24, 12, 12, "hip" as const)], ne: [propRegion(17, 24, 12, 12, "hip" as const)] };
+          : { se: [propRegion(6, 48, 24, 24, "hip" as const)], ne: [propRegion(34, 48, 24, 24, "hip" as const)] };
       const { master } = importExternalMaster({
         id: jobId,
         build: art.build,

@@ -1,11 +1,17 @@
 // The shared humanoid armature. Every job draws the same 3-heads-tall chunky
 // figure from the same joint set; jobs only vary build parameters, paint, and
 // gear. Authoring is in rig space — `dx` from the centerline seam, `up` from
-// the ground line at SPRITE_ANCHOR.y — so nothing has to think in canvas rows.
+// the ground line at SPRITE_ANCHOR.y, both in **rig units** — so nothing here
+// has to think in canvas rows, and the whole armature re-scales with RIG_UNIT.
 //
-// Vertical landmarks (up from the ground line): feet 1, hips 15, shoulders 27,
-// head box 28..40. 40 rows of figure with a 13px head is ART_DIRECTION's
-// "3 heads tall, top-heavy" read, and leaves rows 0..3 as helmet/bob headroom.
+// Vertical landmarks (up from the ground line, in units): feet 1, hips 15,
+// shoulders 27, head box 28..40. 40 units of figure with a 13-unit head is
+// ART_DIRECTION's "3 heads tall, top-heavy" read, and leaves 4 units of
+// helmet/bob headroom above it.
+//
+// Widths passed to `limb`, `box` and friends are units too; the 1px light and
+// shadow rims those helpers add are canvas pixels and do **not** scale, which
+// is the difference between drawing at 64x96 and doubling a 32x48 drawing.
 
 import {
   OUTLINE_INDEX,
@@ -35,6 +41,7 @@ import { SOOT_100, SOOT_900 } from "./palette.js";
 import {
   ANIMATIONS,
   FIGURE_BOX_BOTTOM,
+  RIG_UNIT,
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
   SPRITE_WIDTH,
@@ -44,10 +51,14 @@ import {
 
 export const HIP_UP = 15;
 export const SHOULDER_UP = 27;
-export const HEAD_HEIGHT = 13;
-/** Head center sits 7 above the shoulder line, putting the box at 28..40. */
+/** Head box height in canvas rows — glyph data is literal pixels, not units. */
+export const HEAD_HEIGHT = 13 * RIG_UNIT;
+/** Head center sits 7 units above the shoulder line, putting the box at 28..40. */
 export const HEAD_CENTER_OFFSET = 7;
 export const TORSO_LENGTH = SHOULDER_UP - HIP_UP;
+
+/** Rig units -> canvas pixels. */
+export const toPx = (units: number): number => units * RIG_UNIT;
 
 export interface RigPoint {
   readonly dx: number;
@@ -56,12 +67,12 @@ export interface RigPoint {
 
 /** Rig space -> canvas pixels. */
 export const at = (dx: number, up: number): Point => ({
-  x: SPRITE_ANCHOR.x + dx,
-  y: SPRITE_ANCHOR.y - up,
+  x: SPRITE_ANCHOR.x + dx * RIG_UNIT,
+  y: SPRITE_ANCHOR.y - up * RIG_UNIT,
 });
 
 export interface Build {
-  /** Even widths keep the figure symmetric about the x=16 seam. */
+  /** Rig units. Even widths keep the figure symmetric about the canvas seam. */
   readonly headW: number;
   readonly shoulderW: number;
   readonly hipW: number;
@@ -69,7 +80,7 @@ export interface Build {
   readonly armW: number;
   /** Horizontal gap between the two leg centers. */
   readonly stance: number;
-  /** Constant forward pitch of the upper body, in pixels. */
+  /** Constant forward pitch of the upper body, in units. */
   readonly pitch: number;
 }
 
@@ -87,7 +98,7 @@ export interface Pose {
   readonly handFar: RigPoint;
   /** Direction a held prop points, from the near hand outward. */
   readonly propDir: RigPoint;
-  /** Emissive growth for cast/operate, in pixels of radius. */
+  /** Emissive growth for cast/operate, in units of radius. */
   readonly glow: number;
   readonly flash: boolean;
   /** 0 upright .. 1 fully collapsed; gear uses it to slacken. */
@@ -95,7 +106,7 @@ export interface Pose {
 }
 
 /**
- * Reach box for held props, in rig space. A prop point outside it would put
+ * Reach box for held props, in rig units. A prop point outside it would put
  * gear against the canvas edge, where the silhouette outline cannot close.
  */
 export const PROP_REACH = { dx: 11, minUp: 1, maxUp: 41 } as const;
@@ -105,7 +116,7 @@ const clampReach = (dx: number, up: number): RigPoint => ({
   up: Math.max(PROP_REACH.minUp, Math.min(PROP_REACH.maxUp, up)),
 });
 
-/** Point `t` pixels along the prop axis from a hand, clamped to the reach box. */
+/** Point `t` units along the prop axis from a hand, clamped to the reach box. */
 export function alongProp(hand: RigPoint, dir: RigPoint, t: number): RigPoint {
   const len = Math.hypot(dir.dx, dir.up) || 1;
   return clampReach(hand.dx + (dir.dx / len) * t, hand.up + (dir.up / len) * t);
@@ -142,8 +153,8 @@ export function jointsFor(build: Build, pose: Pose): Joints {
     dx: hipDx + pose.torsoLean + build.pitch,
     up: hipUp + pose.torsoLength,
   };
-  // The head carries the widest gear; keeping its center inside +/-8 leaves
-  // room for a helmet and its outline before the canvas edge.
+  // The head carries the widest gear; keeping its center inside +/-8 units
+  // leaves room for a helmet and its outline before the canvas edge.
   const head: RigPoint = {
     dx: Math.max(-8, Math.min(8, shoulder.dx + pose.headTilt)),
     up: shoulder.up + HEAD_CENTER_OFFSET - pose.headDrop,
@@ -151,8 +162,8 @@ export function jointsFor(build: Build, pose: Pose): Joints {
 
   const half = build.stance / 2;
   const shoulderHalf = build.shoulderW / 2 - 1;
-  // Pauldrons hang off the shoulder joints; +/-11 keeps the widest of them and
-  // its outline inside the canvas even at the extremes of the collapse pose.
+  // Pauldrons hang off the shoulder joints; +/-11 units keeps the widest of
+  // them and its outline inside the canvas at the extremes of the collapse pose.
   const shoulderSpan = (dx: number): number => Math.max(-11, Math.min(11, dx));
   const shoulderNear: RigPoint = {
     dx: shoulderSpan(shoulder.dx + shoulderHalf),
@@ -195,9 +206,11 @@ interface Span {
 }
 
 /** The per-step spans of a tapered segment. Shared by `limb` and `shadedLimb`. */
-function limbSpans(a: RigPoint, b: RigPoint, widthA: number, widthB: number): Span[] {
+function limbSpans(a: RigPoint, b: RigPoint, unitsA: number, unitsB: number): Span[] {
   const p0 = at(a.dx, a.up);
   const p1 = at(b.dx, b.up);
+  const widthA = toPx(unitsA);
+  const widthB = toPx(unitsB);
   const dx = p1.x - p0.x;
   const dy = p1.y - p0.y;
   const steps = Math.max(Math.abs(Math.round(dx)), Math.abs(Math.round(dy)));
@@ -250,49 +263,61 @@ export function shadedLimb(
 ): Prim[] {
   const prims: Prim[] = [];
   for (const span of limbSpans(a, b, widthA, widthB)) {
-    const soft = options.soft === true && span.w >= 5;
+    const soft = options.soft === true && span.w >= toPx(5);
+    // Rim thresholds are in units: a 1-unit form is a fold line and stays flat,
+    // however many canvas pixels wide the unit happens to be.
     if (span.horizontal) {
       prims.push(rect(span.x, span.y, span.w, 1, s.base));
-      if (span.w >= 2 && !options.noShadow) prims.push(px(span.x + span.w - 1, span.y, s.shadow));
-      if (span.w >= 3) prims.push(px(span.x + (soft ? 1 : 0), span.y, s.light));
+      if (span.w >= toPx(2) && !options.noShadow) {
+        prims.push(px(span.x + span.w - 1, span.y, s.shadow));
+      }
+      if (span.w >= toPx(3)) prims.push(px(span.x + (soft ? 1 : 0), span.y, s.light));
     } else {
       prims.push(rect(span.x, span.y, 1, span.w, s.base));
-      if (span.w >= 2 && !options.noShadow) prims.push(px(span.x, span.y + span.w - 1, s.shadow));
-      if (span.w >= 3) prims.push(px(span.x, span.y + (soft ? 1 : 0), s.light));
+      if (span.w >= toPx(2) && !options.noShadow) {
+        prims.push(px(span.x, span.y + span.w - 1, s.shadow));
+      }
+      if (span.w >= toPx(3)) prims.push(px(span.x, span.y + (soft ? 1 : 0), s.light));
     }
   }
   return prims;
 }
 
-/** Axis-aligned box centered on a rig point. */
-export function box(center: RigPoint, w: number, h: number, color: number): Prim {
+/** Axis-aligned box centered on a rig point. Size is in rig units. */
+export function box(center: RigPoint, units: number, tall: number, color: number): Prim {
   const p = at(center.dx, center.up);
+  const w = toPx(units);
+  const h = toPx(tall);
   return rect(Math.round(p.x - w / 2), Math.round(p.y - h / 2), w, h, color);
 }
 
 /** Box centered on a rig point, carrying the three shading steps. */
-export function shadedBox(center: RigPoint, w: number, h: number, s: Shade3): Prim[] {
+export function shadedBox(center: RigPoint, units: number, tall: number, s: Shade3): Prim[] {
   const p = at(center.dx, center.up);
+  const w = toPx(units);
+  const h = toPx(tall);
   const x = Math.round(p.x - w / 2);
   const y = Math.round(p.y - h / 2);
   if (w <= 0 || h <= 0) return [];
   const prims: Prim[] = [rect(x, y, w, h, s.base)];
-  if (w >= 3) prims.push(rect(x + w - 1, y, 1, h, s.shadow));
-  if (h >= 3) prims.push(rect(x, y + h - 1, w, 1, s.shadow));
-  if (w >= 3 && h >= 2) prims.push(rect(x, y, 1, h - 1, s.light));
-  if (h >= 3 && w >= 2) prims.push(rect(x, y, w - 1, 1, s.light));
+  if (w >= toPx(3)) prims.push(rect(x + w - 1, y, 1, h, s.shadow));
+  if (h >= toPx(3)) prims.push(rect(x, y + h - 1, w, 1, s.shadow));
+  if (w >= toPx(3) && h >= toPx(2)) prims.push(rect(x, y, 1, h - 1, s.light));
+  if (h >= toPx(3) && w >= toPx(2)) prims.push(rect(x, y, w - 1, 1, s.light));
   return prims;
 }
 
 /** A dither band centered on a rig point (Appendix C.2's approved patterns). */
 export function shadedPatch(
   center: RigPoint,
-  w: number,
-  h: number,
+  units: number,
+  tall: number,
   color: number,
   pattern: DitherPattern = "checker",
 ): Prim {
   const p = at(center.dx, center.up);
+  const w = toPx(units);
+  const h = toPx(tall);
   return patch(Math.round(p.x - w / 2), Math.round(p.y - h / 2), w, h, color, pattern);
 }
 
@@ -421,17 +446,22 @@ function legPrims(ctx: GearContext, near: boolean): Prim[] {
   const foot = near ? j.footNear : j.footFar;
   const cloth = near ? sh.cloth : recessed(sh.cloth);
   const boot = near ? sh.boot : recessed(sh.boot);
-  const w = ctx.build.legW;
+  const units = ctx.build.legW;
+  const w = toPx(units);
   const footBase = at(foot.dx, foot.up);
   const bx = Math.round(footBase.x - w / 2);
+  // The foot joint names the unit the boot stands *in*, so the sole is the last
+  // row of that unit — which is what puts the figure on the ground line.
+  const sole = footBase.y + RIG_UNIT - 1;
+  const bootTop = sole - toPx(3) + 1;
   return [
-    ...shadedLimb(hip, knee, w + 1, w, cloth),
-    ...shadedLimb(knee, foot, w, w, cloth),
+    ...shadedLimb(hip, knee, units + 1, units, cloth),
+    ...shadedLimb(knee, foot, units, units, cloth),
     // The boot: a lit instep row over a shadow sole, so the foot has a top.
-    rect(bx, footBase.y - 2, w + 1, 3, boot.base),
-    rect(bx, footBase.y - 2, w, 1, boot.light),
-    rect(bx, footBase.y, w + 1, 1, boot.shadow),
-    px(bx + w, footBase.y - 1, boot.shadow),
+    rect(bx, bootTop, w + RIG_UNIT, sole - bootTop + 1, boot.base),
+    rect(bx, bootTop, w, 1, boot.light),
+    rect(bx, sole, w + RIG_UNIT, 1, boot.shadow),
+    rect(bx + w, bootTop + 1, RIG_UNIT, sole - bootTop - 1, boot.shadow),
   ];
 }
 
@@ -445,6 +475,9 @@ function armPrims(ctx: GearContext, near: boolean): Prim[] {
   const skin = near ? sh.skin : recessed(sh.skin);
   const w = ctx.build.armW;
   const p = at(hand.dx, hand.up);
+  const hand3 = toPx(3);
+  const hx = Math.round(p.x - hand3 / 2);
+  const hy = Math.round(p.y - hand3 / 2);
   return [
     ...shadedLimb(shoulder, elbow, w + 1, w, cloth),
     ...shadedLimb(elbow, hand, w, w, cloth),
@@ -456,9 +489,9 @@ function armPrims(ctx: GearContext, near: boolean): Prim[] {
       w,
       { ...cloth, base: cloth.line, light: cloth.shadow, shadow: cloth.line },
     ),
-    rect(Math.round(p.x - 1), Math.round(p.y - 1), 3, 3, skin.base),
-    px(Math.round(p.x - 1), Math.round(p.y - 1), skin.light),
-    px(Math.round(p.x + 1), Math.round(p.y + 1), skin.shadow),
+    rect(hx, hy, hand3, hand3, skin.base),
+    rect(hx, hy, RIG_UNIT, 1, skin.light),
+    rect(hx + hand3 - RIG_UNIT, hy + hand3 - 1, RIG_UNIT, 1, skin.shadow),
   ];
 }
 
@@ -518,17 +551,31 @@ function tintTrimPrims(ctx: GearContext): Prim[] {
 
 /**
  * Appendix A.6 geometry, and C.9.2's separation rule as a number: the chest
- * band drops this far below the shoulder line, the pauldron trim sits on it,
- * and the clear rows between them are what keep the mask from reading as one
- * stripe across the whole shoulder span.
+ * band drops this far (in units) below the shoulder line, the pauldron trim
+ * sits on it, and the clear rows between them are what keep the mask from
+ * reading as one stripe across the whole shoulder span.
  */
 export const TINT_BAND_DROP = 6;
 export const TINT_TRIM_DROP = 0;
-/** Clear rows between the two parts of the mask. C.9.2 requires at least 2. */
-export const TINT_MASK_SEPARATION = TINT_BAND_DROP - TINT_TRIM_DROP - 4;
+/**
+ * Clear canvas rows between the two parts of the mask, as they are actually
+ * drawn: the band's top row sits `toPx(TINT_BAND_DROP) - 2` below the shoulder
+ * line, the trim's shadow ends `toPx(TINT_TRIM_DROP) + 4` below it. C.9.2
+ * requires at least 2 rows in between.
+ */
+export const TINT_MASK_SEPARATION =
+  toPx(TINT_BAND_DROP) - 2 - (toPx(TINT_TRIM_DROP) + 4) - 1;
 
-/** Per-row width inset: a tapered crown and jaw keep the head off "box". */
-const HEAD_PROFILE = [-4, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -4] as const;
+/**
+ * Per-row width inset in canvas pixels: a tapered crown and jaw keep the head
+ * off "box". Four rows of taper at each end of the 26-row box.
+ */
+const HEAD_PROFILE = [
+  -8, -6, -4, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -4, -6, -8,
+] as const;
+
+/** Canvas rows from the head joint up to head row 0. */
+const HEAD_TOP_OFFSET = Math.floor((HEAD_HEIGHT - 1) / 2);
 
 export interface HeadRow {
   readonly x: number;
@@ -536,12 +583,12 @@ export interface HeadRow {
   readonly w: number;
 }
 
-/** Canvas span of head row 0..12, honoring the taper. `grow` widens it. */
+/** Canvas span of a head row, honoring the taper. `grow` widens it, in px. */
 export function headRow(ctx: GearContext, row: number, grow = 0): HeadRow {
   const c = at(ctx.joints.head.dx, ctx.joints.head.up);
   const clamped = Math.max(0, Math.min(HEAD_HEIGHT - 1, Math.round(row)));
-  const w = Math.max(2, ctx.build.headW + (HEAD_PROFILE[clamped] ?? 0) + grow * 2);
-  return { x: Math.round(c.x - w / 2), y: c.y - 6 + clamped, w };
+  const w = Math.max(2, toPx(ctx.build.headW) + (HEAD_PROFILE[clamped] ?? 0) + grow * 2);
+  return { x: Math.round(c.x - w / 2), y: c.y - HEAD_TOP_OFFSET + clamped, w };
 }
 
 /** Rows [from, to] of head furniture in one color. */
@@ -561,11 +608,18 @@ export function headBand(
 }
 
 /**
- * Head glyph geometry. Glyphs are 12 wide by 15 tall; column 1 is the left edge
- * of a 10px head and row 2 is head row 0, so `HEAD_GLYPH_ORIGIN` is the offset
- * from the head-joint pixel to the glyph's top-left.
+ * Head glyph geometry, in canvas pixels — glyphs are literal pixel data, so
+ * this is the one part of the rig that does not live in units. Glyphs are 24
+ * wide by 30 tall; column 2 is the left edge of a 20px head and row 4 is head
+ * row 0, so the origin is the offset from the head-joint pixel to the glyph's
+ * top-left.
  */
-export const HEAD_GLYPH = { w: 12, h: 15, originX: 6, originY: 8 } as const;
+export const HEAD_GLYPH = {
+  w: toPx(12),
+  h: HEAD_HEIGHT + toPx(2),
+  originX: toPx(6),
+  originY: HEAD_TOP_OFFSET + toPx(2),
+} as const;
 
 /** Stamp the job's hand-authored head onto the head joint. */
 function headPrims(ctx: GearContext, art: JobArt): Prim[] {
@@ -574,15 +628,17 @@ function headPrims(ctx: GearContext, art: JobArt): Prim[] {
 
 /** Ground contact inside the sub-floor band; never outlined. */
 export function contactPrims(ctx: GearContext): Prim[] {
-  const pad = ctx.build.legW + 1;
-  const left = Math.max(2, Math.round(SPRITE_ANCHOR.x + Math.min(ctx.joints.footNear.dx, ctx.joints.footFar.dx) - pad));
-  const right = Math.min(
-    SPRITE_WIDTH - 3,
-    Math.round(SPRITE_ANCHOR.x + Math.max(ctx.joints.footNear.dx, ctx.joints.footFar.dx) + pad),
-  );
-  const w = Math.max(4, right - left + 1);
+  const pad = toPx(ctx.build.legW + 1);
+  const inner = Math.min(ctx.joints.footNear.dx, ctx.joints.footFar.dx);
+  const outer = Math.max(ctx.joints.footNear.dx, ctx.joints.footFar.dx);
+  const left = Math.max(toPx(2), Math.round(at(inner, 0).x - pad));
+  const right = Math.min(SPRITE_WIDTH - 1 - toPx(2), Math.round(at(outer, 0).x + pad));
+  const w = Math.max(toPx(4), right - left + 1);
   const y = SPRITE_ANCHOR.y;
-  return [rect(left, y, w, 1, SHADOW_INDEX), rect(left + 3, y + 1, Math.max(2, w - 6), 1, SHADOW_INDEX)];
+  return [
+    rect(left, y, w, toPx(1), SHADOW_INDEX),
+    rect(left + toPx(3), y + toPx(1), Math.max(toPx(2), w - toPx(6)), toPx(1), SHADOW_INDEX),
+  ];
 }
 
 /**
@@ -639,7 +695,7 @@ export function renderFigure(art: JobArt, pose: Pose, options: FigureOptions): P
   ];
 
   let body = rasterize({ width: SPRITE_WIDTH, height: SPRITE_HEIGHT, layers });
-  // The figure box is rows 0..43; nothing the rig draws may enter the band.
+  // Nothing the rig draws may enter the sub-floor band.
   for (let y = FIGURE_BOX_BOTTOM + 1; y < SPRITE_HEIGHT; y += 1) {
     for (let x = 0; x < SPRITE_WIDTH; x += 1) body.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
   }

@@ -1,5 +1,5 @@
 // The intake front door. Everything a follow-up agent needs to turn a folder of
-// externally-produced 32x48 PNG masters into playable, animated job sheets:
+// externally-produced 64x96 PNG masters into playable, animated job sheets:
 //
 //   const bytes = readFileSync("enforcer-se.png");
 //   const { master, reports } = importExternalMaster({

@@ -1,24 +1,47 @@
 import type { Facing } from "../data/schemas/common.js";
 import { OUTLINE_COLOR } from "./palette.js";
 
-export const SPRITE_WIDTH = 32;
-export const SPRITE_HEIGHT = 48;
+export const SPRITE_WIDTH = 64;
+export const SPRITE_HEIGHT = 96;
 
-/** Feet-center. x=16 is the seam at the exact center of an even-width canvas. */
-export const SPRITE_ANCHOR = { x: 16, y: 44 } as const;
+/**
+ * Canvas pixels per rig unit. The armature of Appendix A.1 and every pose table
+ * are authored in *units*, so the whole figure re-scales from this one number.
+ * Shading rims stay 1 canvas pixel wide, which is what makes 64x96 a finer
+ * drawing rather than a doubled one.
+ */
+export const RIG_UNIT = 2;
+
+/** Feet-center. x=32 is the seam at the exact center of an even-width canvas. */
+export const SPRITE_ANCHOR = { x: 32, y: 88 } as const;
 
 /** Rows 0..FIGURE_BOX_BOTTOM hold the figure; the rest is the sub-floor band. */
 export const FIGURE_BOX_BOTTOM = SPRITE_ANCHOR.y - 1;
 export const SUB_FLOOR_BAND_HEIGHT = SPRITE_HEIGHT - SPRITE_ANCHOR.y;
 
+/** Terrain's ruler. Tile textures did not get denser; only sprites did. */
 export const TILE_TEXTURE_SIZE = 32;
 export const HEIGHT_STEP_PX = 16;
-export const PIXELS_PER_TILE = TILE_TEXTURE_SIZE;
+export const HEIGHT_STEPS_PER_TILE = TILE_TEXTURE_SIZE / HEIGHT_STEP_PX;
+
+/** The sprite ruler, deliberately split from the tile ruler. */
+export const SPRITE_PIXELS_PER_TILE = 64;
 
 /** Billboard quad size in world units (1 unit = 1 tile edge). */
 export const BILLBOARD_WORLD_SIZE = {
-  width: SPRITE_WIDTH / PIXELS_PER_TILE,
-  height: SPRITE_HEIGHT / PIXELS_PER_TILE,
+  width: SPRITE_WIDTH / SPRITE_PIXELS_PER_TILE,
+  height: SPRITE_HEIGHT / SPRITE_PIXELS_PER_TILE,
+} as const;
+
+/**
+ * Shipped texture density: the sheet is rasterized at this multiple of the
+ * master so a zoomed-in camera has real pixels to show, and the mip chain
+ * below it carries the far zooms without shimmer (see `render/sprites.ts`).
+ */
+export const SPRITE_TEXTURE_SCALE = 2;
+export const SPRITE_TEXTURE_CELL = {
+  width: SPRITE_WIDTH * SPRITE_TEXTURE_SCALE,
+  height: SPRITE_HEIGHT * SPRITE_TEXTURE_SCALE,
 } as const;
 
 export const TICKS_PER_SECOND = 60;

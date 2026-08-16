@@ -1,17 +1,18 @@
-// Sheet assembly: one 256x576 palette-index grid per job/team, laid out in the
+// Sheet assembly: one 512x1152 palette-index grid per job/team, laid out in the
 // 8-column x 12-row (state, view) order frozen in `sprites.ts`. The manifest is
 // derived from that layout, so a frame's address can never drift from the
 // frame tables.
 
 import type { Team } from "../data/schemas/common.js";
 import { jobFrame, type JobId } from "./jobs.js";
-import { blitGrid, createGrid, type PixelGrid } from "./pixel.js";
+import { blitGrid, createGrid, gridToRGBA, type PixelGrid } from "./pixel.js";
 import {
   ANIMATIONS,
   ANIM_STATES,
   DRAWN_VIEWS,
   SHEET_LAYOUT,
   SPRITE_HEIGHT,
+  SPRITE_TEXTURE_SCALE,
   SPRITE_WIDTH,
   sheetRect,
   sheetRowIndex,
@@ -86,6 +87,83 @@ export function buildJobSheet(jobId: JobId, team: Team): PixelGrid {
     blitGrid(sheet, grid, cell.x, cell.y);
   }
   return sheet;
+}
+
+export interface TextureLevel {
+  readonly width: number;
+  readonly height: number;
+  /** RGBA, 4 bytes per pixel, row-major, top-left origin. */
+  readonly data: Uint8ClampedArray;
+}
+
+/** One box-filter halving, averaging color weighted by alpha. */
+function halve(level: TextureLevel): TextureLevel {
+  const width = Math.max(1, level.width >> 1);
+  const height = Math.max(1, level.height >> 1);
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let taps = 0;
+      for (let dy = 0; dy < 2; dy += 1) {
+        for (let dx = 0; dx < 2; dx += 1) {
+          const sx = Math.min(level.width - 1, x * 2 + dx);
+          const sy = Math.min(level.height - 1, y * 2 + dy);
+          const at = (sy * level.width + sx) * 4;
+          const alpha = level.data[at + 3] ?? 0;
+          // Premultiplied: a transparent pixel must not drag the color toward
+          // whatever happened to be stored in its unused RGB.
+          r += (level.data[at] ?? 0) * alpha;
+          g += (level.data[at + 1] ?? 0) * alpha;
+          b += (level.data[at + 2] ?? 0) * alpha;
+          a += alpha;
+          taps += 1;
+        }
+      }
+      const out = (y * width + x) * 4;
+      data[out] = a === 0 ? 0 : r / a;
+      data[out + 1] = a === 0 ? 0 : g / a;
+      data[out + 2] = a === 0 ? 0 : b / a;
+      data[out + 3] = a / taps;
+    }
+  }
+  return { width, height, data };
+}
+
+/**
+ * The shipped texture and its mip chain. Level 0 is the sheet at
+ * `SPRITE_TEXTURE_SCALE` — a nearest enlargement for generated art, and real
+ * detail once an external 256x384 master is ingested at that density — so a
+ * zoomed-in camera has pixels to show. Every level below it is a box filter,
+ * which is what keeps a far zoom from shimmering. The chain runs to 1x1 so the
+ * texture is complete without the GPU generating anything.
+ */
+export function sheetTextureLevels(grid: PixelGrid, scale = SPRITE_TEXTURE_SCALE): TextureLevel[] {
+  const levels: TextureLevel[] = [
+    { width: grid.width * scale, height: grid.height * scale, data: gridToRGBA(grid, scale) },
+  ];
+  for (;;) {
+    const last = levels[levels.length - 1] as TextureLevel;
+    if (last.width === 1 && last.height === 1) return levels;
+    levels.push(halve(last));
+  }
+}
+
+/**
+ * Rows bottom-up. WebGL ignores `UNPACK_FLIP_Y_WEBGL` for buffer uploads, so a
+ * data texture has to arrive already flipped to keep `cellUV`'s bottom-left
+ * origin honest.
+ */
+export function flipRows(level: TextureLevel): TextureLevel {
+  const stride = level.width * 4;
+  const data = new Uint8ClampedArray(level.data.length);
+  for (let y = 0; y < level.height; y += 1) {
+    data.set(level.data.subarray(y * stride, (y + 1) * stride), (level.height - 1 - y) * stride);
+  }
+  return { width: level.width, height: level.height, data };
 }
 
 /** UV window for a cell, in the [0,1] space of the sheet texture. */

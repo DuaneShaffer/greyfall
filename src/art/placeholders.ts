@@ -25,6 +25,7 @@ import {
 import {
   ANIMATIONS,
   ANIM_STATES,
+  RIG_UNIT,
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
   SPRITE_WIDTH,
@@ -72,8 +73,9 @@ export interface PlaceholderClip {
 type ViewTag = "both" | DrawnView;
 
 /**
- * Anchor-relative placement: `dx` from the feet-center seam, `up` from the
- * feet line. Authoring in these terms is what keeps every job on one ruler.
+ * Anchor-relative placement in rig units: `dx` from the feet-center seam, `up`
+ * from the feet line. Authoring in these terms is what keeps every job on one
+ * ruler, and lets the block set follow the canvas when RIG_UNIT changes.
  */
 interface Block {
   readonly dx: number;
@@ -333,10 +335,10 @@ function transformsFor(state: AnimState): readonly FrameTransform[] {
 
 function toShape(b: Block): Shape {
   return {
-    x: SPRITE_ANCHOR.x + b.dx,
-    y: SPRITE_ANCHOR.y - b.up - b.h,
-    w: b.w,
-    h: b.h,
+    x: SPRITE_ANCHOR.x + b.dx * RIG_UNIT,
+    y: SPRITE_ANCHOR.y - (b.up + b.h) * RIG_UNIT,
+    w: b.w * RIG_UNIT,
+    h: b.h * RIG_UNIT,
     color: b.color,
     role: b.role,
   };
@@ -390,19 +392,19 @@ function applyTransform(base: Shape, b: Block, t: FrameTransform): Shape {
   let color = base.color;
 
   if (b.role !== "shadow") {
-    y += t.bob;
+    y += t.bob * RIG_UNIT;
     if (b.role === "body" && b.up === 0) {
-      x += t.legSwing * (b.dx < 0 ? -1 : 1);
+      x += t.legSwing * RIG_UNIT * (b.dx < 0 ? -1 : 1);
     } else {
-      x += t.lean;
+      x += t.lean * RIG_UNIT;
     }
   }
   if (b.role === "weapon" || b.role === "emissive") {
-    x += t.weaponExtend;
-    y -= Math.floor(t.weaponExtend / 2);
+    x += t.weaponExtend * RIG_UNIT;
+    y -= Math.floor((t.weaponExtend * RIG_UNIT) / 2);
   }
   if (b.role === "emissive" && t.emissiveGrow > 0) {
-    const g = t.emissiveGrow;
+    const g = t.emissiveGrow * RIG_UNIT;
     x -= g;
     y -= g;
     w += g * 2;
@@ -418,7 +420,7 @@ function applyTransform(base: Shape, b: Block, t: FrameTransform): Shape {
     const newAbove = Math.round(above * (1 - c));
     h = Math.max(1, Math.round(h * (1 - c * 0.6)));
     y = SPRITE_ANCHOR.y - newAbove - h;
-    x += Math.round(c * 3 * (b.dx < 0 ? -1 : 1));
+    x += Math.round(c * 3 * RIG_UNIT * (b.dx < 0 ? -1 : 1));
   }
   return { x, y, w, h, color, role: base.role };
 }
