@@ -13,6 +13,7 @@ const flatMap = (size = 8): GameMap => ({
   tiles: Array.from({ length: size * size }, () => ({ height: 0, terrain: "plain" as const })),
   objects: [],
   deploymentTiles: [{ x: 0, y: 0 }],
+  grids: [],
 });
 
 const unitView = (team: UnitView["team"], position: TileCoord): UnitView => ({

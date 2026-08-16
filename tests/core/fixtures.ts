@@ -1,23 +1,28 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import type {
+import {
   Ability,
   Encounter,
   GameMap,
   Item,
   Job,
   Status,
-  TileCoord,
   Unit,
+  type TileCoord,
 } from "../../src/data/index.js";
 import { activeUnit, applyCommand, type ContentLibrary, type GameState } from "../../src/core/index.js";
 
 const DATA_DIR = join(import.meta.dirname, "..", "..", "data");
 
-function loadDir<T extends { id: string }>(kind: string): Record<string, T> {
+// Parsed through the schemas rather than cast, the way `src/app` and `src/sim`
+// load: schema defaults (a map's `grids`) are part of what shipped content means.
+function loadDir<T extends { id: string }>(
+  kind: string,
+  schema: { parse: (value: unknown) => T },
+): Record<string, T> {
   const out: Record<string, T> = {};
   for (const file of readdirSync(join(DATA_DIR, kind)).sort()) {
-    const parsed = JSON.parse(readFileSync(join(DATA_DIR, kind, file), "utf8")) as T;
+    const parsed = schema.parse(JSON.parse(readFileSync(join(DATA_DIR, kind, file), "utf8")));
     out[parsed.id] = parsed;
   }
   return out;
@@ -26,18 +31,18 @@ function loadDir<T extends { id: string }>(kind: string): Record<string, T> {
 /** The shipped content in `data/`, loaded straight off disk. */
 export function loadContent(): ContentLibrary {
   return {
-    jobs: loadDir<Job & { id: string }>("jobs"),
-    abilities: loadDir<Ability & { id: string }>("abilities"),
-    items: loadDir<Item & { id: string }>("items"),
-    statuses: loadDir<Status & { id: string }>("statuses"),
-    maps: loadDir<GameMap & { id: string }>("maps"),
-    encounters: loadDir<Encounter & { id: string }>("encounters"),
+    jobs: loadDir("jobs", Job),
+    abilities: loadDir("abilities", Ability),
+    items: loadDir("items", Item),
+    statuses: loadDir("statuses", Status),
+    maps: loadDir("maps", GameMap),
+    encounters: loadDir("encounters", Encounter),
   };
 }
 
 /** Party roster units from `data/units/`, which are not part of ContentLibrary. */
 export function loadUnits(): Record<string, Unit> {
-  return loadDir<Unit & { id: string }>("units");
+  return loadDir("units", Unit);
 }
 
 export function rowen(): Unit {

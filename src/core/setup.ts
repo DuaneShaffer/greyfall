@@ -5,6 +5,7 @@ import { advanceClock } from "./rules/turn.js";
 import { evaluateOutcome } from "./rules/outcome.js";
 import { evaluateTriggers } from "./rules/triggers.js";
 import { coordEq } from "./rules/grid.js";
+import { initialGrids, initializePower } from "./rules/power.js";
 import { createRng } from "./rng/mulberry32.js";
 import type { ContentLibrary } from "./state/content.js";
 import { emit, type Ctx } from "./state/ctx.js";
@@ -84,10 +85,11 @@ export function createBattle(
   }
 
   const state: GameState = {
-    version: 1,
+    version: 2,
     content: battleContent,
     rng: createRng(encounter.rngSeed),
     map: { objects: initialObjects(battleContent) },
+    grids: initialGrids(map),
     units: [],
     satchels: buildSatchels([
       { team: "player", items: carried },
@@ -130,6 +132,10 @@ export function createBattle(
     );
   }
   sortUnits(state.units);
+
+  // A grid authored over its rating starts latched open; nothing announces a
+  // state the battle has not seen change.
+  initializePower(state);
 
   const ctx: Ctx = { state, events: [] };
   emit(ctx, { type: "BattleStarted", encounterId: encounter.id, mapId: map.id });

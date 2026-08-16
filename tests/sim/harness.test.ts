@@ -27,6 +27,7 @@ function splitArena(): GameMap {
     tiles,
     objects: [],
     deploymentTiles: [{ x: 5, y: 9 }],
+    grids: [],
   };
 }
 

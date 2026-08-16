@@ -46,6 +46,7 @@ export function arenaMap(size: number = ARENA_SIZE): GameMap {
     tiles,
     objects: [],
     deploymentTiles: [...band(ARENA_NORTH_Y), ...band(size - 3)],
+    grids: [],
   };
 }
 

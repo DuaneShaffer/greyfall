@@ -183,6 +183,17 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
       return [{ kind: "unitRemoved", unitId: event.unitId }];
     case "PowerChanged":
       return [{ kind: "objectPowerChanged", objectId: event.objectId, powered: event.powered }];
+    // The grid's own events carry no animation yet: the per-object
+    // `PowerChanged` batch beside them is what the renderer plays, and the
+    // register and annunciator that read these are `src/ui`'s job.
+    case "GridChanged":
+    case "GridTripped":
+    case "GridReset":
+    case "LineSevered":
+    case "LineSpliced":
+    case "LoadAttached":
+    case "LoadExpired":
+      return [];
     // `ObjectDamaged` carries no damage type; machinery takes the world's own
     // impact language until core names one.
     case "ObjectDamaged":

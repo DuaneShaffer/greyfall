@@ -13,6 +13,7 @@ import { checkContact, emptyOutcome, spendCharge } from "../rules/effects.js";
 import { canCarryItem, consumableItem, itemAbility, satchelCount, spendItem } from "../rules/items.js";
 import { coordEq, facingToward, manhattan, objectById, unitById } from "../rules/grid.js";
 import { findPath } from "../rules/movement.js";
+import { isEnergized } from "../rules/power.js";
 import { evaluateOutcome } from "../rules/outcome.js";
 import { canAct, canMove } from "../rules/status.js";
 import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
@@ -155,7 +156,7 @@ function validate(state: GameState, cmd: Command, unit: BattleUnit): CommandErro
       if (obj.def.operable === null) return commandError("not-operable", `${cmd.objectId} has no controls`);
       const adjacent = obj.def.tiles.some((t) => manhattan(t, unit.position) <= 1);
       if (!adjacent) return commandError("not-adjacent", `${unit.id} is not beside ${cmd.objectId}`);
-      if (obj.def.operable.requiresPower && obj.powered !== true) {
+      if (obj.def.operable.requiresPower && !isEnergized(state, obj.def.id)) {
         return commandError("object-unpowered", `${cmd.objectId} has no power`);
       }
       return null;

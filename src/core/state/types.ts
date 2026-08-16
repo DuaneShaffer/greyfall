@@ -106,6 +106,38 @@ export interface MapState {
   objects: ObjectRuntime[];
 }
 
+/**
+ * The mutable state of one grid node. The isolator is *not* duplicated here —
+ * it lives on `object.powered`, where everything that writes power already
+ * writes it. Energization is derived from the graph and stored nowhere.
+ */
+export interface GridNodeRuntime {
+  objectId: string;
+  /** A cut span. Reversible by a splice, unlike destruction. */
+  severed: boolean;
+  /** A source whose protection has latched open. Cleared by a reclose. */
+  tripped: boolean;
+}
+
+/** A timed draw hung on a node by an `addLoad` effect. */
+export interface GridLoad {
+  id: string;
+  nodeObjectId: string;
+  /** null when nothing with a turn clock cast it; such a load never expires. */
+  casterUnitId: string | null;
+  amount: number;
+  turnsRemaining: number | null;
+}
+
+/** Live state of one declared grid. Sorted collections; integer arithmetic only. */
+export interface GridRuntime {
+  gridId: string;
+  /** Sorted by object id. */
+  nodes: GridNodeRuntime[];
+  /** Sorted by load id. */
+  loads: GridLoad[];
+}
+
 /** An ability mid-cast, riding its own CT timeline at `castSpeed` per tick. */
 export interface ChargedAction {
   id: string;
@@ -126,10 +158,12 @@ export type BattleResult = "win" | "loss";
 
 /** The whole battle. JSON-serializable; nothing here is a class or a closure. */
 export interface GameState {
-  version: 1;
+  version: 2;
   content: BattleContent;
   rng: RngState;
   map: MapState;
+  /** One per grid the map declares, sorted by grid id. Empty on an ungridded map. */
+  grids: GridRuntime[];
   /** Sorted by unit id — the canonical iteration order for every rule. */
   units: BattleUnit[];
   /** Carry pools by team, sorted by team name. Consumption is permanent. */

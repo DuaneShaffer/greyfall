@@ -29,12 +29,18 @@ const AbilityBase = z.object({
 });
 
 // Battlefield conditions an ability needs beyond flux and HP. `railUnderfoot`
-// and `adjacentPoweredObject` read the actor's tile; `targetPowered` reads what
-// the ability is aimed at.
+// and `adjacentPoweredObject` read the actor's tile; the rest read what the
+// ability is aimed at. `targetEnergized` is the grid-native spelling of
+// `targetPowered`, which is kept so shipped JSON does not churn to say the same
+// thing (`docs/design/FLUX_GRID.md` §1.3).
 export const AbilityRequirement = z.enum([
   "railUnderfoot",
   "adjacentPoweredObject",
   "targetPowered",
+  "targetLine",
+  "targetSource",
+  "targetBreaker",
+  "targetEnergized",
 ]);
 export type AbilityRequirement = z.infer<typeof AbilityRequirement>;
 

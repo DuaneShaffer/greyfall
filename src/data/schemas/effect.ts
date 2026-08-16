@@ -81,6 +81,23 @@ const ModifyStatsEffect = z.object({
   duration: z.int().positive().optional(),
 });
 
+// A timed draw hung on a grid node. Flat and never Attunement-scaled: a player
+// reading `LOAD 11/12` must be able to conclude that +8 trips it without
+// computing the caster's Mag first.
+const AddLoadEffect = z.object({
+  kind: z.literal("addLoad"),
+  amount: z.int().positive(),
+  // The caster's own turns, the clock statuses and `modifyStats` already use.
+  durationTurns: z.int().positive(),
+});
+
+// The reversible cut, and its undo. Destruction is the permanent verb and stays
+// `damageObject`.
+const SeverLineEffect = z.object({
+  kind: z.literal("severLine"),
+  mode: z.enum(["sever", "splice"]),
+});
+
 // Every effect except `spawnObject`. A deployable's payload is drawn from this
 // set so the union stays non-recursive: a mine cannot lay another mine.
 const PAYLOAD_EFFECTS = [
@@ -96,6 +113,8 @@ const PAYLOAD_EFFECTS = [
   ModifyChargeEffect,
   ModifyDispositionEffect,
   ModifyStatsEffect,
+  AddLoadEffect,
+  SeverLineEffect,
 ] as const;
 
 export const PayloadEffect = z.discriminatedUnion("kind", PAYLOAD_EFFECTS);

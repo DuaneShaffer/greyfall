@@ -25,6 +25,7 @@ import {
 } from "./rules/items.js";
 import { areEnemies, attackAngle, coordEq, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
+import { gridNodeOf, isEnergized } from "./rules/power.js";
 import {
   CT_COST_MOVE_AND_ACT,
   MAX_TICKS_PER_ADVANCE,
@@ -158,7 +159,7 @@ export function activatableObjects(state: GameState, unitId: string): readonly O
   if (unit === undefined) return [];
   return state.map.objects.filter((obj) => {
     if (obj.destroyed || obj.def.operable === null) return false;
-    if (obj.def.operable.requiresPower && obj.powered !== true) return false;
+    if (obj.def.operable.requiresPower && !isEnergized(state, obj.def.id)) return false;
     return obj.def.tiles.some((tile) => manhattan(tile, unit.position) <= 1);
   });
 }
@@ -175,9 +176,11 @@ export interface PoweredObject {
 
 /**
  * Electrical machinery whose power is something the battle is fought over: it
- * has controls of its own, or a switch somewhere on the map throws it. Feeder
- * cells and other scenery carry a `powered` flag nobody can move and are left
- * out — the readout is a list of live questions, not an inventory.
+ * has controls of its own, a switch somewhere on the map throws it, or it is a
+ * node of a declared grid. Feeder cells and other scenery carry a `powered`
+ * flag nobody can move and are left out — the readout is a list of live
+ * questions, not an inventory. `powered` here is the derived value the register
+ * lights, not the isolator flag underneath it.
  */
 export function poweredObjects(state: GameState): PoweredObject[] {
   const switched = new Set<string>();
@@ -187,10 +190,20 @@ export function poweredObjects(state: GameState): PoweredObject[] {
   const out: PoweredObject[] = [];
   for (const object of state.map.objects) {
     if (object.destroyed || object.powered === null) continue;
-    if (object.def.operable === null && !switched.has(object.def.id)) continue;
-    out.push({ objectId: object.def.id, name: object.def.name, powered: object.powered });
+    const networked = gridNodeOf(state, object.def.id) !== null;
+    if (object.def.operable === null && !switched.has(object.def.id) && !networked) continue;
+    out.push({
+      objectId: object.def.id,
+      name: object.def.name,
+      powered: isEnergized(state, object.def.id),
+    });
   }
   return out;
+}
+
+/** Whether the grid is currently feeding this object. `powered` is its isolator. */
+export function objectEnergized(state: GameState, objectId: string): boolean {
+  return isEnergized(state, objectId);
 }
 
 /** Stats after statuses and timed modifiers, which is what the rules use. */

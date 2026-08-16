@@ -15,6 +15,7 @@ import {
   allUnits,
   battleClock,
   battleResult,
+  objectEnergized,
   turnNumber,
   unitMaxCharge,
   unitMaxHp,
@@ -227,7 +228,7 @@ class Telemetry {
       if (controls === null || obj.destroyed) continue;
       standing += 1;
       if (!controls.requiresPower) live += 1;
-      else if (obj.powered === true) {
+      else if (objectEnergized(state, obj.def.id)) {
         live += 1;
         lit += 1;
       }

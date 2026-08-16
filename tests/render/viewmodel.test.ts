@@ -52,6 +52,7 @@ const map: GameMap = {
   ],
   objects: [lift, crates],
   deploymentTiles: [{ x: 0, y: 0 }],
+  grids: [],
 };
 
 const unit: Unit = {

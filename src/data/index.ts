@@ -13,7 +13,17 @@ export * from "./schemas/effect.js";
 export { Ability, AbilityRequirement, Targeting } from "./schemas/ability.js";
 export { Campaign, type InventoryEntry } from "./schemas/campaign.js";
 export { Encounter } from "./schemas/encounter.js";
-export { GameMap, MapObject, MapObjectKind, TerrainType, Tile } from "./schemas/map.js";
+export {
+  GameMap,
+  Grid,
+  GridEdge,
+  GridNode,
+  MapObject,
+  MapObjectKind,
+  TerrainType,
+  Tile,
+  type GridRole,
+} from "./schemas/map.js";
 export { Item } from "./schemas/item.js";
 export { Job } from "./schemas/job.js";
 export { Status } from "./schemas/status.js";

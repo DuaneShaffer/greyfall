@@ -13,6 +13,7 @@ import {
   standHeight,
   tileAt,
 } from "./grid.js";
+import { gridNodeOf, isEnergized } from "./power.js";
 
 /** Height a unit's eyes and a tile's blocking silhouette sit above its surface. */
 export const EYE_HEIGHT = 1;
@@ -138,12 +139,24 @@ function requirementMet(
       return state.map.objects.some(
         (o) =>
           !o.destroyed &&
-          o.powered === true &&
+          isEnergized(state, o.def.id) &&
           o.def.tiles.some((t) => manhattan(t, actor.position) <= 1),
       );
+    // Synonyms: `targetEnergized` is the grid-native spelling and `targetPowered`
+    // is kept so shipped JSON does not churn to say the same thing (§1.3).
     case "targetPowered":
+    case "targetEnergized":
       if (target === null) return true;
-      return targetedObjects(state, target).some((o) => !o.destroyed && o.powered === true);
+      return targetedObjects(state, target).some((o) => !o.destroyed && isEnergized(state, o.def.id));
+    case "targetLine":
+    case "targetSource":
+    case "targetBreaker": {
+      if (target === null) return true;
+      const role = requirement === "targetLine" ? "line" : requirement === "targetSource" ? "source" : "breaker";
+      return targetedObjects(state, target).some(
+        (o) => !o.destroyed && gridNodeOf(state, o.def.id)?.node.role === role,
+      );
+    }
   }
 }
 

@@ -18,6 +18,7 @@ const makeMap = (width: number, depth: number, tiles: Tile[]): GameMap => ({
   tiles,
   objects: [],
   deploymentTiles: [{ x: 0, y: 0 }],
+  grids: [],
 });
 
 describe("terrain geometry", () => {

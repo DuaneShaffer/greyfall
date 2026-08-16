@@ -37,6 +37,7 @@ function duelMap(): GameMap {
     tiles: Array.from({ length: 25 }, () => ({ height: 0, terrain: "plain" as const })),
     objects: [],
     deploymentTiles: [ATTACKER_TILE],
+    grids: [],
   };
 }
 

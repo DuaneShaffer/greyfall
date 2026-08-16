@@ -1,5 +1,6 @@
 import type { Facing, GameMap, Team, Tile, TileCoord } from "../../data/index.js";
 import type { BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
+import { isEnergized } from "./power.js";
 
 /** Terrain a unit can never stand on or move through. */
 export const IMPASSABLE_TERRAIN = new Set(["impassable", "void"]);
@@ -59,10 +60,10 @@ export function isObjectActive(obj: ObjectRuntime): boolean {
 }
 
 /** True when the object currently provides a walkable deck (catwalk/lift). */
-export function providesSurface(obj: ObjectRuntime): boolean {
+export function providesSurface(state: GameState, obj: ObjectRuntime): boolean {
   if (!isObjectActive(obj)) return false;
   if (obj.def.surfaceHeight === undefined) return false;
-  return obj.powered === null || obj.powered === true;
+  return obj.powered === null || isEnergized(state, obj.def.id);
 }
 
 /**
@@ -73,7 +74,7 @@ export function standHeight(state: GameState, c: TileCoord): number {
   const tile = tileAt(state.content.map, c);
   let height = tile === undefined ? 0 : tile.height;
   for (const obj of objectsAt(state, c)) {
-    if (!providesSurface(obj)) continue;
+    if (!providesSurface(state, obj)) continue;
     const surface = obj.def.surfaceHeight;
     if (surface !== undefined && surface > height) height = surface;
   }
@@ -84,7 +85,7 @@ export function standHeight(state: GameState, c: TileCoord): number {
 export function objectBlocksMovement(state: GameState, c: TileCoord): boolean {
   for (const obj of objectsAt(state, c)) {
     if (!isObjectActive(obj)) continue;
-    if (providesSurface(obj)) continue;
+    if (providesSurface(state, obj)) continue;
     if (obj.def.blocksMovement) return true;
   }
   return false;
@@ -103,7 +104,7 @@ export function isStandable(state: GameState, c: TileCoord): boolean {
   const tile = tileAt(state.content.map, c);
   if (tile === undefined) return false;
   for (const obj of objectsAt(state, c)) {
-    if (providesSurface(obj)) return true;
+    if (providesSurface(state, obj)) return true;
   }
   if (IMPASSABLE_TERRAIN.has(tile.terrain)) return false;
   return !objectBlocksMovement(state, c);

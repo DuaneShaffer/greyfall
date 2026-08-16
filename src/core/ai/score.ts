@@ -18,6 +18,7 @@ import {
   unitById,
 } from "../rules/grid.js";
 import { consumableItem, itemAbility } from "../rules/items.js";
+import { isEnergized } from "../rules/power.js";
 import { getStatus } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
 import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
@@ -777,7 +778,7 @@ export function actionOptions(ctx: AiContext, view: GameState, at: TileCoord): A
 
   for (const obj of view.map.objects) {
     if (obj.destroyed || obj.def.operable === null) continue;
-    if (obj.def.operable.requiresPower && obj.powered !== true) continue;
+    if (obj.def.operable.requiresPower && !isEnergized(view, obj.def.id)) continue;
     if (!obj.def.tiles.some((tile) => manhattan(tile, at) <= 1)) continue;
     const score = activateValue(ctx, view, obj);
     if (score > ctx.weights.actThreshold) {

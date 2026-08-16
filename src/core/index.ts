@@ -21,7 +21,8 @@ export type {
   CommandKind,
   CommandResult,
 } from "./commands/types.js";
-export type { BattleEvent, BattleEventType } from "./events/types.js";
+export type { BattleEvent, BattleEventType, PowerCause } from "./events/types.js";
+export { solveGrid, type GridSolution } from "./rules/power.js";
 
 export type {
   ActionAbility,
@@ -33,6 +34,9 @@ export type {
   ChargedAction,
   ConsumableItem,
   GameState,
+  GridLoad,
+  GridNodeRuntime,
+  GridRuntime,
   MapState,
   MovementAbility,
   ObjectRuntime,
@@ -71,6 +75,7 @@ export {
   jobInfo,
   legalTargetTiles,
   lineOfSight,
+  objectEnergized,
   poweredObjects,
   reachableTiles,
   statusInfo,

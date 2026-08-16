@@ -5,6 +5,7 @@ import { resolveCharge } from "./abilities.js";
 import { hitChance } from "./damage.js";
 import { applyEffects, damageUnit, emptyOutcome } from "./effects.js";
 import { manhattan, teamsHostile, unitById } from "./grid.js";
+import { ageLoads } from "./power.js";
 import { canAct, canMove, ctPerTick, statusHooks } from "./status.js";
 import { hasLos, inRange } from "./targeting.js";
 
@@ -138,6 +139,8 @@ export function endActiveTurn(ctx: Ctx): void {
     mod.turnsRemaining -= 1;
   }
   unit.tempMods = unit.tempMods.filter((m) => m.turnsRemaining === null || m.turnsRemaining > 0);
+
+  ageLoads(ctx, unit.id);
 }
 
 /**

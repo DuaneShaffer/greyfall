@@ -9,6 +9,13 @@ import type {
 } from "../../data/index.js";
 import type { BattleResult, TargetRef } from "../state/types.js";
 
+/** Why an object's energization moved, so the annunciator can name the verb that answers it. */
+export interface PowerCause {
+  gridId: string;
+  nodeId: string;
+  reason: "isolated" | "cut" | "destroyed" | "tripped" | "restored";
+}
+
 /**
  * Everything that happened, in the order it happened. Serializable facts only —
  * the renderer, UI, audio, logs and tests are all driven from this stream and
@@ -48,7 +55,17 @@ export type BattleEvent =
   | { type: "ObjectSpawned"; objectId: string; kind: MapObjectKind; owner: Team | null; tiles: TileCoord[] }
   | { type: "ObjectTriggered"; objectId: string; unitId: string }
   | { type: "ObjectAttacked"; objectId: string; targetUnitId: string; hit: boolean }
-  | { type: "PowerChanged"; objectId: string; powered: boolean }
+  // Reports *energization*, the value derived from the grid, not the isolator
+  // flag that feeds it. `cause` is present only for objects on a declared grid.
+  | { type: "PowerChanged"; objectId: string; powered: boolean; cause?: PowerCause }
+  // Any recompute that changed something, emitted before its `PowerChanged` batch.
+  | { type: "GridChanged"; gridId: string; capacity: number; load: number; liveNodes: string[]; tripped: boolean }
+  | { type: "GridTripped"; gridId: string; capacity: number; load: number }
+  | { type: "GridReset"; gridId: string; nodeId: string; unitId: string | null }
+  | { type: "LineSevered"; objectId: string; unitId: string | null }
+  | { type: "LineSpliced"; objectId: string; unitId: string | null }
+  | { type: "LoadAttached"; gridId: string; nodeId: string; amount: number; turns: number | null; unitId: string | null }
+  | { type: "LoadExpired"; loadId: string }
   | { type: "StandingAwarded"; unitId: string; amount: number; total: number }
   | { type: "TriggerFired"; triggerId: string }
   | { type: "DialogueRequested"; triggerId: string; lines: DialogueLine[] }

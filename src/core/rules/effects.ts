@@ -28,6 +28,15 @@ import {
   unitAt,
   unitById,
 } from "./grid.js";
+import {
+  attachLoad,
+  dropLoadsOfCaster,
+  gridNodeOf,
+  gridNodeRuntimeOf,
+  powerSnapshot,
+  settlePower,
+  severLine,
+} from "./power.js";
 import { maxCharge, maxHp } from "./status.js";
 
 /** Height delta a shove can carry a unit across. */
@@ -132,6 +141,7 @@ export function downUnit(ctx: Ctx, unit: BattleUnit): void {
     });
   }
   ctx.state.charges = ctx.state.charges.filter((c) => c.actorId !== unit.id);
+  dropLoadsOfCaster(ctx, unit.id);
 }
 
 export function healUnit(ctx: Ctx, unitId: string, amount: number, sourceUnitId: string | null): void {
@@ -295,13 +305,34 @@ export function modifyStats(
   emit(ctx, { type: "StatsModified", unitId, mods, turnsRemaining: duration });
 }
 
-export function setObjectPower(ctx: Ctx, objectId: string, mode: "on" | "off" | "toggle"): void {
+/**
+ * Write a node's isolator. Closing a tripped source's isolator is the reclose —
+ * the only way to clear a latch, and deliberately the cheapest verb on the grid,
+ * because a restore that costs more than the cut ends the argument at the first
+ * cut. The `PowerChanged` this causes is emitted by the recompute, since what
+ * the event reports is energization rather than the flag.
+ */
+export function setObjectPower(
+  ctx: Ctx,
+  objectId: string,
+  mode: "on" | "off" | "toggle",
+  actorId: string | null = null,
+): void {
   const obj = objectById(ctx.state, objectId);
   if (obj === undefined || obj.destroyed || obj.powered === null) return;
   const powered = mode === "toggle" ? !obj.powered : mode === "on";
-  if (powered === obj.powered) return;
+  const found = gridNodeOf(ctx.state, objectId);
+  const node = gridNodeRuntimeOf(ctx.state, objectId);
+  const reclosing = powered && found?.node.role === "source" && node?.tripped === true;
+  if (powered === obj.powered && !reclosing) return;
+
+  const before = powerSnapshot(ctx.state);
   obj.powered = powered;
-  emit(ctx, { type: "PowerChanged", objectId, powered });
+  if (reclosing && node !== undefined && found !== null) {
+    node.tripped = false;
+    emit(ctx, { type: "GridReset", gridId: found.grid.id, nodeId: objectId, unitId: actorId });
+  }
+  settlePower(ctx, before, { nodeObjectId: objectId, reason: powered ? "restored" : "isolated" });
 }
 
 export function damageObject(
@@ -336,12 +367,11 @@ export function repairObject(ctx: Ctx, objectId: string, amount: number): void {
 export function destroyObject(ctx: Ctx, objectId: string, outcome: EffectOutcome): void {
   const obj = objectById(ctx.state, objectId);
   if (obj === undefined || obj.destroyed) return;
+  const before = powerSnapshot(ctx.state);
   obj.destroyed = true;
   obj.hp = 0;
-  if (obj.powered === true) {
-    obj.powered = false;
-    emit(ctx, { type: "PowerChanged", objectId, powered: false });
-  }
+  if (obj.powered === true) obj.powered = false;
+  settlePower(ctx, before, { nodeObjectId: objectId, reason: "destroyed" });
   emit(ctx, { type: "ObjectDestroyed", objectId });
   outcome.destroyedObjectIds.push(objectId);
 
@@ -426,7 +456,8 @@ export function checkContact(ctx: Ctx, unitId: string, outcome: EffectOutcome): 
  * Unit-scoped effects (`damage`, `heal`, `applyStatus`, `removeStatus`,
  * `forceMove`, `modifyCharge`, `modifyDisposition`, `modifyStats`) run on
  * `unitIds`; object-scoped effects (`setPower`, `damageObject`,
- * `repairObject`) run on `objectIds`; `spawnObject` runs on `tiles`;
+ * `repairObject`, `addLoad`, `severLine`) run on `objectIds`;
+ * `spawnObject` runs on `tiles`;
  * `moveSelf` runs once on the acting unit. Effects are applied in content
  * order, targets in id order.
  */
@@ -485,7 +516,15 @@ export function applyEffects(
         }
         break;
       case "setPower":
-        for (const objectId of targets.objectIds) setObjectPower(ctx, objectId, effect.mode);
+        for (const objectId of targets.objectIds) setObjectPower(ctx, objectId, effect.mode, actorId);
+        break;
+      case "addLoad":
+        for (const objectId of targets.objectIds) {
+          attachLoad(ctx, objectId, effect.amount, effect.durationTurns, actorId);
+        }
+        break;
+      case "severLine":
+        for (const objectId of targets.objectIds) severLine(ctx, objectId, effect.mode, actorId);
         break;
       case "damageObject":
         for (const objectId of targets.objectIds) {

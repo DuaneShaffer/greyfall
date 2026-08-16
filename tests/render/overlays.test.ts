@@ -22,6 +22,7 @@ const map: GameMap = {
   tiles: Array.from({ length: 4 }, () => ({ height: 0, terrain: "plain" as const })),
   objects: [],
   deploymentTiles: [{ x: 0, y: 0 }],
+  grids: [],
 };
 
 const stubCanvas2d = (): void => {
