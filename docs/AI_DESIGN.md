@@ -62,6 +62,12 @@ the forecast:
 - Status odds are valued from the status's own hooks — an action lock is worth
   more than a move lock, `ctMultiplierPercent` is priced per point, `tickDamage`
   at its damage — and are dropped entirely when the same blow kills.
+- **A status the target already holds is discounted toward zero.** Re-applying
+  refreshes the clock rather than stacking, so a second cast only buys the turns
+  the first one has burned: at full duration it is worth nothing, one turn from
+  lapsing it is worth most of its value, and an `untilRemoved` hold is worth
+  nothing at all. Without this the search re-bought its own buffs every idle
+  turn — Signal Jump nine times in one battle (`BALANCE_REPORT` G2).
 - Healing counts only up to the target's missing HP. Downed units are never
   targets: the rules forbid healing them.
 - Harm landing on an ally is weighted *up* before it is subtracted, and harm
@@ -79,19 +85,34 @@ the forecast:
   the team spreads its pressure instead of piling onto a corpse. A target
   several allies can already reach is discounted more gently for the same
   reason.
+- **A `moveSelf` effect is priced as the tile it lands on.** The destination is
+  computed the way the engine computes it — the same slide along the same
+  facing, stopping at the same bounds, blockers, occupants and height limit —
+  and the effect is credited `positionValue(destination)` minus
+  `positionValue(here)`, clamped to `repositionCap` in either direction so a
+  lunge can never outbid a body. Priced at zero, an ability whose whole point is
+  the movement could never be chosen *for* the movement
+  (`BALANCE_REPORT` G1). Nothing else about the move is modelled: it does not
+  re-aim the attack that follows it in the same effect list.
 - **Neutrals score zero** in either direction (`COMBAT_RULES` §18): the search
   neither hunts a bystander nor steers around one.
 
-Then the costs: flux per point, HP per point, a chip-damage penalty when flux
-is being spent on a small result, and — for a charged ability — the turn it
+Then the costs: flux, HP per point, and — for a charged ability — the turn it
 forfeits plus a decay for every turn the aimed-at unit gets before the cast
 lands (read from `turnOrderPreview`). A charge aimed at an object or a tile does
 not decay: it lands where it was aimed.
 
-The chip penalty **ramps** rather than cliffs: it is `chipPenalty` scaled by how
-far the gross falls short of `chipThreshold`, reaching zero at the threshold. A
-flat penalty below the bar deleted every cheap utility ability at low level,
-where almost nothing clears 200 points of gross.
+**Flux is priced as opportunity cost, not as a flat rate.** It does not
+regenerate: a battle is one pool, so a point spent now is a point the rest of
+the battle does without, and the price per point rises with the share of the
+pool *still in hand* that the cast eats (`fluxScarcityPercent`). A Conduit's
+five-point Arc out of fifty-three is nearly free; a Machinist's twelve-point
+frame out of eighteen costs nearly double rate. What is left of the old
+chip-damage gate is a nudge — `chipPenalty` scaled by how far the gross falls
+short of `chipThreshold`, both now small — so that buying trivia with flux is
+still worse than doing nothing. The gate used to be the whole story at
+`chipThreshold` 200 and `chipPenalty` 250, which deleted every cheap utility
+ability whatever its merits (`BALANCE_REPORT` G3).
 
 Abilities whose `requires` the battlefield does not satisfy
 (`COMBAT_RULES` §13a) never enter the candidate list at all.
@@ -105,22 +126,45 @@ Objects are scored by what breaking them does, not by their integrity bar:
   aid arithmetic as an ability — plus a small flat credit for removing a
   blocker. This is what makes a Conduit overload a flux cell two hostiles are
   flanking instead of swinging at one of them.
-- Integrity damage that does *not* destroy is credited a fraction of that
-  payload, in proportion to the bite it takes out, so a cell worth blowing up
+- **Plus the detour the blocker imposes.** Against the Dijkstra field already
+  run to the quarry, walking *through* the object costs
+  `distance(actor, tile) + best neighbour distance + 1`; anything the actor's
+  real path costs above that is the detour breaking it would save, capped at
+  `objectPathCap` steps. A blocker the actor is already on the near side of
+  saves it nothing; one that walls the quarry off entirely is worth the whole
+  cap. Measured from the actor's *own* tile once per decision, not from each
+  candidate tile.
+- **Plus what the machine would do in enemy hands.** An `operable` payload is
+  priced against a unit like the actor and tapered twice: by how near our own
+  people stand to the tiles the machine covers, and by how far a hostile has to
+  walk to reach a tile it can be worked from. Destroying the machine collects
+  that; so does cutting its power when the controls are `requiresPower`. Before
+  this, `floor-nine-mains` — an object whose entire purpose is turning a press
+  line off — priced at zero (`BALANCE_REPORT` G5).
+- **Plus what its payload takes with it.** A `damageObject` term in an
+  `onDestroyed` payload that would finish a second object credits
+  `objectChainPercent` of that object's own worth, one level deep.
+- Integrity damage that does *not* destroy is credited a fraction of all of
+  that, in proportion to the bite it takes out, so a cell worth blowing up
   is worth softening and a cell worth nothing is worth nothing.
 - Repairing an object is credited when the object belongs to the actor's team
   **or to nobody** — map-authored machinery carries `owner: null`, and crediting
   only owned objects meant a repair kit could never mend anything on a map it
   had not built itself.
-- Flipping power is scored through the deck it carries: a lift or catwalk that
+- Flipping power is scored through the deck it carries — a lift or catwalk that
   loses power drops the tile to terrain height, which drags a hostile parked
   out of reach back into everyone's range, and strands an ally if the AI is not
-  careful. Operable machines are scored by their payload the same way an
-  ability is.
-- Deploying an object (`COMBAT_RULES` §14) is worth a flat obstacle credit plus
-  its payload measured against the hostile the actor means to fight: an
-  `onContact` charge at `contactPayloadPercent`, because it pays out once, and
-  an `attack` at `autoAttackPercent`, because it keeps firing while it stands.
+  careful — and through the machine denial above.
+- Deploying an object (`COMBAT_RULES` §14) is worth an obstacle credit, and only
+  for a shape that actually blocks movement, plus its payload measured against
+  the nearest hostile *by path from the tile it would stand on*. **A deployable
+  cannot walk**, so the payload is discounted three ways: an `onContact` charge
+  by how near a hostile is to the tile it would have to step on, an `attack` by
+  how far the nearest hostile is outside the range the turret will never leave,
+  by whether anyone on the other side can break machinery at all against its HP,
+  and by one shot lost to the CT clock it starts at zero on. Undiscounted, a
+  Sentry Frame scored ~700 against a basic attack's ~200 and the Machinist built
+  until its flux was gone (`BALANCE_REPORT` G6).
 
 Standing danger is a per-tile field built once per decision: every destructible
 object with an `onDestroyed` payload prices its blast footprint against the
@@ -183,14 +227,20 @@ should still cap commands per battle.
   attacker is invisible to the score.
 - **Forced movement geometry.** `forceMove` is a flat disruption value; shoving
   a unit off a ledge, into a hazard, or out of a heal chain is not computed.
-- **Terrain and LoS the AI could create.** Destroying a wall is credited a flat
-  structural point, not the paths and sight lines it opens.
-- **Charge as a resource across turns.** Flux is priced per point spent now;
-  saving it for a better target next turn is not planned for.
-- **Ability-to-ability sequencing** (debuff then payoff), **spawned object
-  placement quality** — the payload is priced, the tile it goes on is not — and
-  **`setPower` consequences other than decks** (`requiresPower` controls,
-  powered cells).
+- **Sight lines the AI could open.** Paths are modelled (above); line of sight
+  is not. It was built — every `blocksLos` object was credited for the hostiles
+  it screened from the actor — and then cut, because it made a map with a lot of
+  railing read as more worth demolishing than fighting on: on Charterhouse Steps
+  it cost 30–45 points of party win rate and bought no measurable change in
+  which abilities were chosen (`BALANCE_REPORT` §7.6).
+- **Charge as a resource across turns.** Flux is priced against the pool it
+  comes out of, but only for this cast: saving it for a better target next turn
+  is not planned for.
+- **Ability-to-ability sequencing** (debuff then payoff). A deployable's tile is
+  now priced by what it can reach from there, but only that: a chokepoint is
+  worth no more than open ground the same distance from the enemy.
+- **`setPower` consequences other than decks and `requiresPower` controls** —
+  a powered cell that a gated ability needs as its target is not modelled.
 - **A deployable's own threat.** A hostile turret on the board is scored as an
   object to break, not as a source of damage in the exposure field.
 - **Requirements as a reason to move.** A gated ability is dropped where it
@@ -204,8 +254,31 @@ table, `PROFILES` for the archetype temperaments. `chooseCommand` takes a
 weights argument, so a balance sweep can run variants against each other
 without touching the search.
 
-A decision costs about 0.25–0.30 ms on the Marshaling Yard with three to six
-units — roughly 3,500 decisions a second, or a full AI-versus-AI battle in
-about 50 ms. The per-decision work is bounded by the reachable tile count times
-the abilities times the candidate targets, with range checked before line of
-sight and line of sight before any forecast.
+A decision costs about 0.20 ms on the Marshaling Yard with three to six units.
+On Foundry Floor Nine, eleven units on a 16x16 board, one unit's decision costs
+3.2 ms at Move 3 and 5.1 ms at Move 4. The per-decision work is bounded by the
+reachable tile count times the abilities times the candidate targets, with range
+checked before line of sight and line of sight before any forecast.
+
+**Four things are computed once per decision rather than once per candidate**,
+which is what keeps that number roughly linear in the reachable tile count
+rather than growing with it twice over (`BALANCE_REPORT` G9):
+
+- a **terrain grid** — standability, stand height and step cost per tile — so
+  the Dijkstra field run for each hostile reads three arrays instead of walking
+  the object list three times per edge. This was half of all AI time.
+- **`positionValue` by tile index.** Every term in it reads the map, the
+  hostiles, the allies and the distance fields; none reads where the *actor* is
+  standing, so a tile has one value for the whole turn whichever candidate view
+  asks. This is also what makes pricing a `moveSelf` destination nearly free.
+- **the resolved area by ability and target**, for every footprint that does not
+  read the actor's tile. A `radius` walks the whole map to find itself, and a
+  `line` — the one shape that does read the actor's tile — is never cached.
+- **what removing each object would do to the map**, and what each machine would
+  do in enemy hands.
+
+None of these change what is chosen: each is a value the old search recomputed
+identically for every candidate. Candidate-tile *pruning* was considered and
+not done — the numbers above are already inside budget, and any pruning that
+changes which tiles are fully evaluated puts the exact choices the scenario
+suite asserts at risk.

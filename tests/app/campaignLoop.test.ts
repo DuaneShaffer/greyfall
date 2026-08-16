@@ -125,12 +125,15 @@ describe("the chapter loop, end to end", () => {
     runner.beginDeployment();
     runner.confirmDeployment();
 
-    // Battles 2-5 have no encounter files yet: the loop replays battle 1.
+    // Battle 2 is e2 Foundry Floor Nine. Whether the AI-driven party wins it
+    // depends on the search, so the invariant is the bookkeeping: the campaign
+    // banks exactly one completed encounter per battle the party actually won.
     expect(runner.phase).toBe("roster");
     expect(runner.beginDeployment()).toBe(true);
     expect(runner.confirmDeployment()).toBe(true);
     expect(battle.finals).toHaveLength(2);
-    expect(session.state.completedEncounterIds.length).toBeLessThanOrEqual(1);
+    const won = battle.finals.filter((final) => final.result === "win").length;
+    expect(session.state.completedEncounterIds.length).toBe(won);
   });
 
   it("survives a save round trip mid-chapter", () => {

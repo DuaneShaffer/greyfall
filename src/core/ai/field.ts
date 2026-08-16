@@ -42,6 +42,35 @@ function pop(heap: number[]): number {
   return top;
 }
 
+/** Standability, stand height and step cost for every tile, in tile order. */
+export interface TerrainGrid {
+  standable: boolean[];
+  height: number[];
+  cost: number[];
+}
+
+/**
+ * All three of those read only the map, the objects on it and the walking
+ * unit's own movement profile — never who is standing where — so one grid
+ * serves every distance field a decision runs. Building it once turns the
+ * per-hostile Dijkstra from three map queries per edge into three array reads,
+ * which was half of all AI time (`BALANCE_REPORT` G9).
+ */
+export function terrainGrid(state: GameState, profile: MoveProfile): TerrainGrid {
+  const map = state.content.map;
+  const count = map.width * map.depth;
+  const standable = new Array<boolean>(count);
+  const height = new Array<number>(count);
+  const cost = new Array<number>(count);
+  for (let index = 0; index < count; index += 1) {
+    const tile = tileFromIndex(map, index);
+    standable[index] = isStandable(state, tile);
+    height[index] = standHeight(state, tile);
+    cost[index] = stepCost(state, tile, profile);
+  }
+  return { standable, height, cost };
+}
+
 /**
  * Travel cost from `from` to every tile, using the given unit's terrain and
  * jump rules and ignoring who is standing where. This is the AI's "how far is
@@ -51,7 +80,12 @@ function pop(heap: number[]): number {
  * Costs are packed as `cost * tileCount + tileIndex` in one numeric heap, so
  * ties break on tile index and the walk order never varies.
  */
-export function distanceField(state: GameState, profile: MoveProfile, from: TileCoord): number[] {
+export function distanceField(
+  state: GameState,
+  profile: MoveProfile,
+  from: TileCoord,
+  grid: TerrainGrid = terrainGrid(state, profile),
+): number[] {
   const map = state.content.map;
   const count = map.width * map.depth;
   const dist = new Array<number>(count).fill(UNREACHABLE);
@@ -68,13 +102,13 @@ export function distanceField(state: GameState, profile: MoveProfile, from: Tile
     const cost = (packed - index) / count;
     if (cost > (dist[index] ?? UNREACHABLE)) continue;
     const tile = tileFromIndex(map, index);
-    const height = standHeight(state, tile);
+    const height = grid.height[index] ?? 0;
     for (const next of neighbors(tile)) {
       if (!inBounds(map, next)) continue;
-      if (!isStandable(state, next)) continue;
-      if (Math.abs(standHeight(state, next) - height) > profile.jump) continue;
       const nextIndex = tileIndex(map, next);
-      const nextCost = cost + stepCost(state, next, profile);
+      if (grid.standable[nextIndex] !== true) continue;
+      if (Math.abs((grid.height[nextIndex] ?? 0) - height) > profile.jump) continue;
+      const nextCost = cost + (grid.cost[nextIndex] ?? 1);
       if (nextCost >= (dist[nextIndex] ?? UNREACHABLE)) continue;
       dist[nextIndex] = nextCost;
       push(heap, nextCost * count + nextIndex);

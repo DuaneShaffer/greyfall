@@ -23,6 +23,10 @@ findings-queue item 6.
 > read differently once the AI could see the whole kit; §6 records what
 > actually shipped.
 >
+> **§7 is the AI pass (2026-08-15).** G1–G7 and G9 fixed or discharged in
+> `src/core/ai/`; no content, no core rules, no engine. Read §7 for what the
+> search can see now and what it cost; read §6.7 for why each change was made.
+>
 > **`src/sim/variants.ts` was rebased onto the live engine (cleanup pass,
 > 2026-08-15).** `divisorVariant()` used to emulate a fix that is now *in* the
 > engine, so running it double-applied the divisor. It now expresses the
@@ -727,6 +731,275 @@ Content could not reach these; each is reported with the number it costs.
 
 None of G1–G6 is tunable from `weights.ts`; they are all valuation gaps in
 `score.ts`, in the same family as the C3–C5 that landed last pass.
+
+> **Status (AI pass, 2026-08-15). G1–G7 and G9 are discharged**; §7 is the
+> measurement. G7 needed no change — the AI already priced contact payloads
+> caster-less, the way the engine resolves them — and is now asserted rather
+> than assumed. Three findings came out of the pass in their place: G10–G12
+> in §7.8, all three content rather than AI.
+
+---
+
+## 7. Post-AI-pass measurement
+
+The AI pass. G1–G6 and G9 are all fixed in `src/core/ai/`; G7 was checked and
+needed nothing; G8 was already discharged. No content, no core rules, no engine.
+
+**The instrument.** Three sweeps, all built from `src/sim` and all driven
+through `chooseCommand` on both sides:
+
+| sweep | shape | battles |
+|---|---|---|
+| **duels** | `jobRoundRobin`-shaped: 7x7 job pairs, levels 1/3/5, seed 101, `sim-arena` plus Marshaling Yard, `commandCap` 300 | 294 |
+| **map duels** | the same 7x7 pairs at levels 1/3, seed 101, on Foundry Floor Nine and on Refinery Three | 98 each |
+| **encounters** | the campaign roster in join order on the five shipped encounters, 24 seeds (`101 + 37n`), `commandCap` 4000 | 120 |
+
+"Before" in the duel sweeps, the map sweeps, the encounter usage counts and the
+timings is **the pre-pass build**, run from `git stash`. "Before" in the
+encounter win rates (§7.5) is **this build with the new weights neutralised** —
+`repositionCap` 0, `heldStatusFloorPercent` 100, `fluxScarcityPercent` 0,
+`chipThreshold` 200, `chipPenalty` 250, `objectPathPoint` 0,
+`objectChainPercent` 0, `machineDenialPercent` 0, `deployableSetupPercent` 0,
+`deployableReachStep` 0, `deployableReachFloor` 100, `contactPayloadPercent`
+120 — which reproduces the pre-pass search to within the one structural change
+that has no weight: a mine no longer collects an obstacle credit it never
+earned. Doing it that way is what let the 24-seed comparison run both arms of
+each encounter in one process.
+
+The duel sweep is one seed and 294 battles, so a single job's rate carries
+roughly ±6 points; the encounter sweep is 24 seeds, so a single encounter's rate
+carries roughly ±10. Nothing below turns on a difference smaller than that.
+
+### 7.1 What each finding got
+
+| # | fix | before | after |
+|---|---|---|---|
+| **G1** | `moveSelf` is priced as `positionValue(destination) − positionValue(here)`, clamped to `repositionCap` (250) either way. The destination is computed with the engine's own slide rule — same facing, bounds, blockers, occupants, height limit. | Piston Lunge 5% of Augmented actions, Signal Jump 1% of Railrunner actions | Piston Lunge **8%** in duels, **11%** on Floor Nine and **17%** on Refinery Three. Overdrive 40% → **33%** in duels, 63% → **47%** and 59% → **50%** on the two maps |
+| **G2** | `statusValue` is scaled by the turns a re-cast would actually add: full duration buys nothing, one turn from lapsing buys most of it, `untilRemoved` buys nothing. | Signal Jump 9 casts in one battle; no setting where a cheap self-buff was both chosen and non-spammy | the idle loop is gone (§7.3). Signal Jump is 11% of Railrunner actions on Floor Nine, where the rails are |
+| **G3** | flux priced as opportunity cost against the pool still in hand (`fluxScarcityPercent` 120) instead of a flat rate behind a gross-value gate; `chipThreshold` 200 → 60 and `chipPenalty` 250 → 40, which leaves the gate as a nudge against buying trivia | Kettle, Smoke Canister, Coupling Hook effectively unchoosable | **Kettle 4%**, **Smoke Canister 16%**, Coupling Hook 30% → **49%** of their jobs' actions. No chip-spam: `bring-the-house` (9 flux of a 20-point pool) correctly falls 42% → 10%, and Shaped Charge (3 flux) takes the work |
+| **G4** | objects priced by consequence: the detour a blocker imposes on the path to the quarry, and a second object the payload would finish (`objectChainPercent`) | `bring-it-down` never chosen anywhere | **6% of Saboteur actions on Floor Nine**, 23 casts across ten runs of e2 |
+| **G5** | a powered `operable` is priced by what it would do in enemy hands, tapered by how near our people stand to what it covers and how far a hostile is from a tile it can be worked from. Collected by destroying it *and* by cutting its power | `throw-the-breaker` never chosen on any map at any price; `rig-machinery` chosen only because it costs nothing | **32% of Conduit actions on Floor Nine, 7% on Refinery Three**; `rig-machinery` 20% → **25%** |
+| **G6** | a deployable is credited its payload only against a hostile it can reach from the tile it would stand on, discounted again for the shot it forfeits to its own CT clock and for whoever on the other side can break machinery | Sentry Frame 55% of Machinist actions, ~700 points against a basic attack's ~200 | **36%** in duels; **0 of 30** turret builds across ten runs of e2, where nothing is in range on the turn it would be built. The Machinist's board presence survives as mines (§7.3) |
+| **G7** | checked, no change needed | — | `damageBite` already resolves contact payloads caster-less, exactly as `checkContact` does, so a `phys` amount prices at 0 on both sides. Now asserted (`tests/core/ai/scoring.test.ts`) |
+| **G9** | four per-decision memos, no pruning (§7.7) | two-battle campaign run 1.31 s, 1.54 s with `earth-strap` | **0.72 s and 0.74 s** |
+
+### 7.2 Job spread
+
+294 duels, mirrors excluded, 72 battles per job.
+
+| job | before | **after** |
+|---|---|---|
+| chemist | 54.2% | **56.9%** |
+| enforcer | 55.6% | **56.9%** |
+| conduit | 56.9% | **55.6%** |
+| railrunner | 51.4% | **51.4%** |
+| augmented | 50.0% | **47.2%** |
+| saboteur | 45.8% | **41.7%** |
+| machinist | 36.1% | **40.3%** |
+
+Spread **36.1–56.9% → 40.3–56.9%**, comfortably inside the 34–68% band and
+narrower than it was. The three jobs the brief expected to move did:
+**machinist +4.2** (its deployables are priced honestly and it stopped building
+turrets nothing could reach), **enforcer +1.3** (Kettle re-entered the kit),
+**conduit −1.3** (its flux is no longer free). Saboteur −4.1 is the one drop
+worth naming: Bring the House at 9 flux out of a 20-point pool is now correctly
+expensive, and the kit has not yet been re-tuned around that. Mean turns per
+duel 10.7 → 11.6; zero stalemates before and after.
+
+### 7.3 Never-chosen and over-used
+
+**Never chosen, 294 duels: 9 → 8.** That is the weakest headline here and it is
+an artefact of where the sweep runs: **four of the eight are object-keyed and
+the arena has no objects while the yard has four.** On the maps built for them
+the same measurement reads **8 → 4** (Foundry Floor Nine) and **10 → 5**
+(Refinery Three), and the residue there is `rejection`, `field-transfusion`,
+`numbing-fog` and `field-repair` — all four diagnosed as content in §6.2.
+
+The one entry that moved the *wrong* way is `signal-jump`, from one cast in 294
+duels to none: G2 took away the idle re-cast that was its only use on a map with
+one rail lane, and G1 does not give it back there because a three-tile hop along
+the Marshaling Yard's single rail column lands nowhere better. On Foundry Floor
+Nine, which is laid out for it, it is 11% of Railrunner actions.
+
+| over 40% of its job's actions | before | after |
+|---|---|---|
+| conduit \| arc | 89% | 87% |
+| enforcer \| pin | 59% | 53% |
+| railrunner \| coupling-hook | 30% | **49%** |
+| saboteur \| shaped-charge | 16% | **46%** |
+| augmented \| overdrive | 40% | 33% |
+| machinist \| sentry-frame | 55% | 36% |
+| railrunner \| undercut | 43% | 29% |
+| saboteur \| bring-the-house | 42% | 10% |
+
+**Six over-users to four.** Both new entries are the same story from G3: the
+cheap ability in a kit takes the work the expensive one used to. Coupling Hook
+costs 1 flux against Undercut's 2 and does more; Shaped Charge costs 3 against
+Bring the House's 9. Both are content reads, not search defects — and both jobs
+kept or improved their win rate.
+
+Two shares moved a long way and are worth writing down:
+
+- **`machinist | crossfeed` 0% → 21%** in duels, **41%** on both authored maps.
+  This is a **new content finding**, see §7.8.
+- **`machinist | tripwire-charge` 10% → 20%** in duels and **12 → 92 casts**
+  across ten runs of e2, while Sentry Frame goes **30 → 0** there. The Machinist
+  did not stop putting things on the board; it stopped buying the 12-flux
+  deployable that cannot reach anything from where it would stand and started
+  buying the 4-flux one that can.
+
+### 7.4 The two map-usage acceptance runs
+
+98 duels per map, and ten runs of the encounter the map belongs to.
+
+| | map duels, before | map duels, **after** | in the encounter, before → **after** |
+|---|---|---|---|
+| **Foundry Floor Nine** | | | e2, 10 seeds |
+| saboteur \| `rig-machinery` | 27 (20%) | **45 (25%)** | 4 → **21** |
+| saboteur \| `bring-it-down` | 0 | **9 (5%)** | 0 → **23** |
+| conduit \| `throw-the-breaker` | 0 | **36 (32%)** | 0 → **9** |
+| **Refinery Three** | | | e4, 10 seeds |
+| conduit \| `throw-the-breaker` | 0 | **6 (7%)** | 6 → **15** |
+| conduit \| `overload-cell` | 1 | **0** | 0 → **1** |
+| conduit \| `tap-line` | 0 | **2** | 8 → **21** |
+| saboteur \| `bring-it-down` | 0 | **1** | — |
+
+**A Saboteur kit meaningfully uses `bring-it-down` and `rig-machinery` on
+Foundry Floor Nine: accepted.** Together they are 30% of Saboteur actions there
+and 44 casts across ten runs of e2.
+
+**`throw-the-breaker` is chosen on Refinery Three: accepted** — 7% of Conduit
+actions in the duel sweep and 15 casts across ten runs of e4, against zero and
+six before.
+
+**`overload-cell` is the miss.** It is chosen once in ten runs of e4 and not at
+all in the Refinery duel sweep. The reason is not the object valuation: it is
+5 flux **and** a 25-speed cast, so `castTurnCost` plus the flux price puts about
+190 points of gross between it and zero, and a bank cell only clears that when a
+body is standing in its blast. The search will overload a cell two hostiles are
+flanking — that is the case `tests/core/ai/decisions.test.ts` already asserts on
+the yard — but it does not manoeuvre to *create* that case, and Refinery Three's
+charging rack sits where units do not stand. **This is a content note, not an AI
+one:** either the rack moves onto a tile the fight crosses, or `overload-cell`
+loses its cast time.
+
+### 7.5 Encounters
+
+Campaign roster in join order, authored levels, nothing bought, 24 seeds.
+
+| encounter | before | **after** |
+|---|---|---|
+| e1 Marshaling Yard | 100% | **100%** |
+| e2 Foundry Floor Nine | 41.6% | **45.8%** |
+| e3 Tallow Row | 29.1% | **29.1%** |
+| e4 Refinery Three | 83.3% | **62.5%** |
+| e5 Charterhouse Steps | 50.0% | **66.6%** |
+
+Mean 60.8% before, **60.8%** after: the pass is encounter-neutral in aggregate
+and flatter in shape — the 83% outlier and the 50% floor both move toward the
+middle. Four of five are inside the 40–100% band. **e3 Tallow Row reads 29.1%
+before *and* after** — this instrument's 24-seed read of e3 is below the band
+whatever the AI does, against §6.4's ten-seed read of 40%, and the AI pass moves
+it by exactly zero. It is a content number and it belongs to the encounter
+workstream.
+
+**Every encounter number here is both sides improving at once.** A win rate
+falling is not evidence the search plays worse; it is evidence that the side
+with more material converts a better search into more, and e2–e5 all field more
+enemies than the party. The one place that read as a real defect was
+Charterhouse Steps, and it is the subject of the next section.
+
+### 7.6 Measured and cut
+
+**Line-of-sight opening.** Every `blocksLos` object was credited for each
+hostile it screened from the actor — the "what does breaking this open" term the
+brief asked for. Measured on Charterhouse Steps, which is eight balustrades and
+a plinth, it made both sides prefer demolition to fighting:
+
+24 seeds each. The companion per-tile occupancy credit is named in the first
+column too, because the two were cut together.
+
+| `objectLosPoint` / `objectTilePoint` | e2 | e3 | e4 | e5 | mean |
+|---|---|---|---|---|---|
+| 60 per screened hostile / 12 | 54.1% | 29.1% | 58.3% | **20.8%** | 40.6% |
+| 60 capped at one line per object / 4 | 50.0% | 25.0% | 58.3% | **29.1%** | 40.6% |
+| 30 capped / 4 | 45.8% | 25.0% | 62.5% | **37.5%** | 42.7% |
+| **0 / 0 (shipped)** | 45.8% | 29.1% | 62.5% | **66.6%** | **51.0%** |
+
+It bought no measurable change in which abilities were chosen at any setting, so
+it is gone from the code rather than shipped as a weight priced at zero: the
+per-decision sight-line walk it needed is gone with it. The same table killed a
+per-tile "future occupancy" credit, which cost e5 another 12 points at 4 points
+a tile and moved nothing else.
+
+**Candidate-tile pruning.** Not done. The G9 targets are met by memoisation
+alone with a wide margin (§7.7), and every pruning scheme worth having changes
+which tiles get a full evaluation — which is exactly what the scenario suite in
+`tests/core/ai/` asserts. Spending the risk was not worth the milliseconds.
+
+### 7.7 Search cost
+
+Profiled with `node:inspector` over a whole run of e2 — eleven units, 16x16,
+about 200 commands. Before, **53% of all AI time was inside `distanceField`**,
+which ran once per hostile per decision and asked the object list for
+standability, stand height and step cost on every edge it considered. It now
+reads three arrays built once per decision. Total AI time in that profile:
+**2,519 ms → 1,372 ms**, and the largest remaining line is `resolveArea`, which
+is memoised per ability and target for every footprint that does not read the
+actor's tile.
+
+| | before | **after** |
+|---|---|---|
+| e1 + e2 back to back, as `campaignLoop`'s two-battle test runs them | 1.31 s | **0.72 s** |
+| the same with `earth-strap` (Move +1) on Vale | 1.54 s | **0.74 s** |
+| the Move surcharge that bought | +17.1% | **+2.4%** |
+| `chooseCommand` on e1, median | 0.335 ms | **0.203 ms** |
+| `chooseCommand` on e1, p95 | 3.38 ms | 3.09 ms |
+| one Vale decision on e2, Move 3 (16 tiles to stand on) | 9.32 ms | **3.20 ms** |
+| one Vale decision on e2, Move 4 (26 tiles to stand on) | 12.08 ms | **5.13 ms** |
+| marginal cost per extra tile to stand on | 0.275 ms | **0.193 ms** |
+
+**Both acceptance targets are met with room: 0.74 s against the ~1.6 s
+target, and a 0.20 ms median against 1 ms.** The G9 framing is worth one
+correction for the record: the cost was never *superlinear* in Move so much as
+**large and fixed**, with a linear per-tile term on top. The report's 1.42 s →
+2.36 s was the whole test file; the decision itself went 9.3 ms → 12.1 ms for
+that point of Move. Cutting the fixed half is what moved the number, and the
+per-tile term came down 30% as well.
+
+### 7.8 New findings
+
+| # | where | what | cost |
+|---|---|---|---|
+| G10 | `data/abilities/crossfeed.json` | **`crossfeed` is still a self-buff loop.** §6.2 redesigned it to `ally`-only "so it cannot be a self-buff loop", but `isValidTargetKind` counts the caster as an ally (`allowed.includes("self") || allowed.includes("ally")`), and the ability's `range.min` is 0. It is Overclocked for 4 flux, which is strictly better than the Augmented's own Overdrive at 7 flux and 5 HP. It was invisible only because Sentry Frame outscored it; once G6 priced the frame honestly it surfaced. | 21% of Machinist actions in duels, **41% on both authored maps**. The AI is reading it correctly — the loop is real. Fix is one character of content: `range.min` 0 → 1. |
+| G11 | `data/maps/refinery-three.json` or `data/abilities/overload-cell.json` | **`overload-cell` cannot pay for its own cast time.** 5 flux plus a 25-speed cast is ~190 points of gross before it clears zero, and an unmanned cell is not worth that however well the map is priced. Refinery Three's charging rack is four cells on tiles the fight does not cross. | 1 cast in ten runs of e4. See §7.4. |
+| G12 | `data/abilities/bring-the-house.json` | **9 flux out of a 20-point pool is most of a Saboteur's battle.** Now that flux is priced against the pool, the kit's signature is its least affordable ability and Shaped Charge does the work instead. | `bring-the-house` 42% → 10%, `shaped-charge` 16% → 46%, Saboteur win rate 45.8% → 41.7%. |
+
+### 7.9 Regenerated test expectations
+
+Three, all of them AI-choice replays or valuations the pass deliberately
+changed:
+
+1. **`tests/app/campaignLoop.test.ts`, "loops straight back into a playable
+   battle afterwards"** — asserted `completedEncounterIds.length <= 1` behind a
+   stale comment claiming battles 2–5 have no encounter files. e2 exists and the
+   party now wins it often enough to bank it. Regenerated to the invariant the
+   test is actually for: the campaign banks exactly one completed encounter per
+   battle the party won, whichever way the battles go.
+2. **`tests/core/ai/scoring.test.ts`, "caps a self-buff below the value of a
+   kill"** — the bench ability is Overdrive-shaped (6 flux, 8 HP) on an
+   Enforcer's seven-point pool, which G3 now correctly prices below zero. The
+   cap it was written to check is now measured on a free version of the same
+   buff, and the pricing it ran into is a second test of its own ("refuses a
+   self-buff that would eat most of the flux the unit has left").
+3. **`tests/core/ai/scoring.test.ts` gained six cases** rather than changing
+   any: the step forward and the step back (G1), the held status at full and at
+   one turn left (G2), the blocker priced by the detour it imposes (G4), the
+   breaker on a machine the enemy could work (G5), the deployable that cannot
+   reach anything (G6), and the contact payload the engine would zero (G7).
+
+Nothing else moved. `tests/core`, `tests/app`, `tests/sim` and
+`tests/content.test.ts` are green — 244 tests.
 
 ---
 

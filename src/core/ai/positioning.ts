@@ -1,5 +1,5 @@
 import type { Facing, TileCoord } from "../../data/index.js";
-import { attackAngle, facingToward, manhattan, standHeight } from "../rules/grid.js";
+import { attackAngle, facingToward, manhattan, standHeight, tileIndex } from "../rules/grid.js";
 import { maxHp } from "../rules/status.js";
 import { hasLos } from "../rules/targeting.js";
 import type { BattleUnit, GameState } from "../state/types.js";
@@ -79,12 +79,7 @@ function guardValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
   return value;
 }
 
-/**
- * What the tile itself is worth to end a turn on, before any action taken from
- * it: distance to the fight, standing danger, exposure to who can hit back,
- * cover, height, and not bunching up into somebody's area effect.
- */
-export function positionValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
+function computeValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
   return (
     approachValue(ctx, tile) +
     exposureValue(ctx, tile) +
@@ -94,6 +89,26 @@ export function positionValue(ctx: AiContext, view: GameState, tile: TileCoord):
     guardValue(ctx, view, tile) -
     tileHazard(ctx, tile)
   );
+}
+
+/**
+ * What the tile itself is worth to end a turn on, before any action taken from
+ * it: distance to the fight, standing danger, exposure to who can hit back,
+ * cover, height, and not bunching up into somebody's area effect.
+ *
+ * Memoised for the decision. Every term above reads the map, the hostiles, the
+ * allies and the distance fields — none of them reads where the *actor* is
+ * standing — so a tile has one value for the whole turn whichever candidate
+ * view asks for it. That invariant is what makes pricing a `moveSelf`
+ * destination cost nothing.
+ */
+export function positionValue(ctx: AiContext, view: GameState, tile: TileCoord): number {
+  const index = tileIndex(ctx.state.content.map, tile);
+  const cached = ctx.placeMemo.get(index);
+  if (cached !== undefined) return cached;
+  const value = computeValue(ctx, view, tile);
+  ctx.placeMemo.set(index, value);
+  return value;
 }
 
 /**

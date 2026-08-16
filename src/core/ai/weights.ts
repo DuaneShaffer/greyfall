@@ -28,16 +28,30 @@ export interface AiWeights {
   statusTurnCap: number;
 
   forceMovePoint: number;
+  /** Ceiling on the tile swing a `moveSelf` effect may be credited, either way. */
+  repositionCap: number;
+  /** Floor of the taper on a status the target already holds, as a percentage. */
+  heldStatusFloorPercent: number;
+
   spawnObjectPoint: number;
   /** Credit for a deployable's `onContact` payload — it pays out once. */
   contactPayloadPercent: number;
   /** Credit for a deployable's `attack` — it keeps firing while it stands. */
   autoAttackPercent: number;
+  /** Shots a deployable forfeits to its own CT clock before the first one. */
+  deployableSetupPercent: number;
+  /** Percent of the payload lost per step the nearest hostile stands outside reach. */
+  deployableReachStep: number;
+  deployableReachFloor: number;
+  /** Turns a deployable has to survive to be worth its full credit. */
+  deployableLifeTurns: number;
   drainChargePercent: number;
 
   chargePoint: number;
   hpPoint: number;
-  /** Gross value under which spending flux counts as chip damage. */
+  /** Extra price per flux point as the cost eats the pool the unit has left. */
+  fluxScarcityPercent: number;
+  /** Gross value under which spending flux still counts as chip damage. */
   chipThreshold: number;
   chipPenalty: number;
   /** Starting a cast forfeits the rest of the turn. */
@@ -48,6 +62,16 @@ export interface AiWeights {
   /** Credit for integrity damage that does not yet destroy, as a percentage. */
   objectChipPercent: number;
   objectStructurePoint: number;
+  /** Per step of detour the team is spared when a blocker comes down. */
+  objectPathPoint: number;
+  /** Steps of detour one blocker may be credited with. */
+  objectPathCap: number;
+  /** Path distance inside which a machine counts as part of the fight. */
+  objectHorizon: number;
+  /** Value kept for a second object the first one's payload would destroy. */
+  objectChainPercent: number;
+  /** Worth of denying the enemy a powered machine it could work against us. */
+  machineDenialPercent: number;
   /** Worth of putting a catwalk or lift deck under a friend, or out from under a foe. */
   deckPoint: number;
 
@@ -97,20 +121,33 @@ export const WEIGHTS: AiWeights = {
   statusTurnCap: 3,
 
   forceMovePoint: 25,
+  repositionCap: 250,
+  heldStatusFloorPercent: 0,
+
   spawnObjectPoint: 120,
-  contactPayloadPercent: 120,
+  contactPayloadPercent: 100,
   autoAttackPercent: 250,
+  deployableSetupPercent: 100,
+  deployableReachStep: 12,
+  deployableReachFloor: 10,
+  deployableLifeTurns: 3,
   drainChargePercent: 60,
 
   chargePoint: 12,
   hpPoint: 14,
-  chipThreshold: 200,
-  chipPenalty: 250,
+  fluxScarcityPercent: 120,
+  chipThreshold: 60,
+  chipPenalty: 40,
   castTurnCost: 60,
   castEscapePercent: 45,
 
   objectChipPercent: 35,
   objectStructurePoint: 15,
+  objectPathPoint: 35,
+  objectPathCap: 6,
+  objectHorizon: 8,
+  objectChainPercent: 60,
+  machineDenialPercent: 60,
   deckPoint: 200,
 
   moveCost: 25,

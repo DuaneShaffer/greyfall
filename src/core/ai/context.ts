@@ -1,12 +1,12 @@
 import type { Effect, TileCoord } from "../../data/index.js";
-import { resolveAmount, unitAmountTarget } from "../rules/damage.js";
+import { inertAmountTarget, resolveAmount, unitAmountTarget } from "../rules/damage.js";
 import { objectMaxHp } from "../rules/effects.js";
 import { areEnemies, manhattan, tileAt, tileIndex, unitById } from "../rules/grid.js";
 import { moveProfile, type MoveProfile } from "../rules/movement.js";
 import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { resolveArea } from "../rules/abilities.js";
-import { distanceField, UNREACHABLE } from "./field.js";
+import { distanceField, terrainGrid, UNREACHABLE } from "./field.js";
 import { OBJECT_AFFINITY_BONUS, PROFILES, WEIGHTS, type AiWeights, type Archetype } from "./weights.js";
 
 /** What the actor's own kit says about how it wants to fight. */
@@ -32,6 +32,8 @@ export interface ResolvedProfile {
 export interface Threat {
   unit: BattleUnit;
   strike: number;
+  /** Integrity its best `damageObject` ability takes out of a machine in one turn. */
+  objectStrike: number;
   reach: number;
   ranged: boolean;
 }
@@ -55,6 +57,23 @@ export interface AiContext {
   hazard: number[];
   fields: Map<string, number[]>;
   quarry: BattleUnit | null;
+  /** `positionValue` by tile index, filled by the search as it walks candidates. */
+  placeMemo: Map<number, number>;
+  /**
+   * Resolved area by ability and target. A `single` or `radius` footprint is the
+   * same shape wherever the actor stands, and a radius walks the whole map to
+   * find itself, so resolving it once per target instead of once per candidate
+   * tile is most of what `actionOptions` was spending Move on. `line` shapes run
+   * from the actor and are never cached.
+   */
+  areaMemo: Map<string, { tiles: readonly TileCoord[]; objectIds: readonly string[] }>;
+  /**
+   * Memo of what removing each object would do to the map, filled by the search
+   * on first ask. Every term in it is a per-decision invariant — it reads the
+   * live map and the distance fields, never the tile a candidate stands on — so
+   * one entry serves every candidate in the turn.
+   */
+  objectMemo: Map<string, number>;
 }
 
 function actionAbilities(state: GameState, unit: BattleUnit): ActionAbility[] {
@@ -116,6 +135,9 @@ function resolveProfile(kit: Kit): ResolvedProfile {
   };
 }
 
+/** Stand-in maxHp when resolving an amount aimed at machinery rather than flesh. */
+const OBJECT_TARGET_HP = 100;
+
 /** Damage the hostile's best ability would do to `victim` on a clean hit. */
 function strikeEstimate(state: GameState, attacker: BattleUnit, victim: BattleUnit): number {
   let best = 0;
@@ -131,6 +153,21 @@ function strikeEstimate(state: GameState, attacker: BattleUnit, victim: BattleUn
   return best;
 }
 
+/** Integrity the hostile's best object-breaking ability takes out in one turn. */
+function objectStrikeEstimate(state: GameState, attacker: BattleUnit): number {
+  let best = 0;
+  for (const ability of actionAbilities(state, attacker)) {
+    if (attacker.charge < ability.chargeCost) continue;
+    let total = 0;
+    for (const effect of ability.effects) {
+      if (effect.kind !== "damageObject") continue;
+      total += resolveAmount(state, effect.amount, attacker, inertAmountTarget(OBJECT_TARGET_HP));
+    }
+    if (total > best) best = total;
+  }
+  return best;
+}
+
 function threatOf(state: GameState, hostile: BattleUnit, victim: BattleUnit): Threat {
   let range = 1;
   for (const ability of actionAbilities(state, hostile)) {
@@ -140,6 +177,7 @@ function threatOf(state: GameState, hostile: BattleUnit, victim: BattleUnit): Th
   return {
     unit: hostile,
     strike: strikeEstimate(state, hostile, victim),
+    objectStrike: objectStrikeEstimate(state, hostile),
     reach: profile.move + range,
     ranged: range >= 2,
   };
@@ -168,15 +206,27 @@ function pendingDamage(state: GameState): Map<string, number> {
   return pending;
 }
 
+/** Move plus best offensive range: how far a unit can bring an attack to bear. */
+function reachOf(state: GameState, unit: BattleUnit): number {
+  let range = 1;
+  for (const ability of actionAbilities(state, unit)) {
+    if (offensive(ability)) range = Math.max(range, ability.targeting.range.max);
+  }
+  return moveProfile(state, unit).move + range;
+}
+
 /** How many allies could already bring an attack to bear on each hostile. */
 function crowdingMap(state: GameState, actor: BattleUnit, hostiles: readonly BattleUnit[]): Map<string, number> {
+  const reaches: Array<[BattleUnit, number]> = [];
+  for (const ally of state.units) {
+    if (ally.downed || ally.team !== actor.team || ally.id === actor.id) continue;
+    reaches.push([ally, reachOf(state, ally)]);
+  }
   const crowding = new Map<string, number>();
   for (const hostile of hostiles) {
     let count = 0;
-    for (const ally of state.units) {
-      if (ally.downed || ally.team !== actor.team || ally.id === actor.id) continue;
-      const threat = threatOf(state, ally, hostile);
-      if (manhattan(ally.position, hostile.position) <= threat.reach) count += 1;
+    for (const [ally, reach] of reaches) {
+      if (manhattan(ally.position, hostile.position) <= reach) count += 1;
     }
     crowding.set(hostile.id, count);
   }
@@ -280,7 +330,8 @@ export function buildContext(state: GameState, actor: BattleUnit, weights: AiWei
   const kit = readKit(state, actor);
   const move = moveProfile(state, actor);
   const fields = new Map<string, number[]>();
-  for (const hostile of hostiles) fields.set(hostile.id, distanceField(state, move, hostile.position));
+  const grid = terrainGrid(state, move);
+  for (const hostile of hostiles) fields.set(hostile.id, distanceField(state, move, hostile.position, grid));
 
   return {
     state,
@@ -298,6 +349,9 @@ export function buildContext(state: GameState, actor: BattleUnit, weights: AiWei
     hazard: hazardField(state, actor, weights),
     fields,
     quarry: pickQuarry(state, hostiles, fields, actor.position),
+    placeMemo: new Map<number, number>(),
+    areaMemo: new Map(),
+    objectMemo: new Map<string, number>(),
   };
 }
 
