@@ -17,7 +17,14 @@ import { bestFacing, positionValue } from "./positioning.js";
 import { actionOptions, type ActionOption } from "./score.js";
 import { WEIGHTS, type AiWeights } from "./weights.js";
 
-export { WEIGHTS, PROFILES, OBJECT_AFFINITY_BONUS, type AiWeights, type Archetype } from "./weights.js";
+export {
+  WEIGHTS,
+  PROFILES,
+  GRID_AFFINITY_BONUS,
+  OBJECT_AFFINITY_BONUS,
+  type AiWeights,
+  type Archetype,
+} from "./weights.js";
 export { buildContext, type AiContext, type Kit, type Threat } from "./context.js";
 
 /** The actor standing somewhere else, with everything else shared by reference. */

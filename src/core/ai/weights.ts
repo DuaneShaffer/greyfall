@@ -77,6 +77,40 @@ export interface AiWeights {
   /** Worth of putting a catwalk or lift deck under a friend, or out from under a foe. */
   deckPoint: number;
 
+  /**
+   * Worth of a machine *we* can work — `machineDenialPercent` with its two
+   * tapers swapped. This is the whole of `gridRestore`: without it a reclose, a
+   * splice and a tie-close price at zero, the AI can cut and never put anything
+   * back, and `FLUX_GRID` §3's tug-of-war only ever runs one way.
+   */
+  gridRestorePercent: number;
+  /**
+   * Tempo credit for latching a component's sources open, over and above what
+   * goes dark. The trip is total and it latches, so the reset costs whoever
+   * wants the bus back a whole action (`FLUX_GRID` §1.5).
+   */
+  gridTripPoint: number;
+  /**
+   * Tempo credit for clearing a latch. Above `gridTripPoint` deliberately: if
+   * the restore is worth less than the cut, the first cut ends the argument and
+   * the sim's `grid-never-restored` finding fires (`FLUX_GRID` §3).
+   */
+  gridResetPoint: number;
+  /**
+   * Extra weight on grid consequences that land on our own side — a deck
+   * blacked out under our squad, a machine of ours de-energized. The mirror of
+   * `friendlyHarmPercent`, and the AI's half of §4.5's flagged risk: a cut with
+   * six machines behind it is still allowed to be enormous, it just may not be
+   * free.
+   */
+  gridSelfHarmPercent: number;
+  /**
+   * Path distance inside which a grid consequence counts as part of the fight.
+   * Its own number rather than `objectHorizon`, which G5 tuned against a
+   * blocker the actor walks past; a component reaches across the whole map.
+   */
+  gridHorizon: number;
+
   /** Premium for a turn that both moves and acts (100 CT versus 80). */
   moveCost: number;
   actThreshold: number;
@@ -159,6 +193,12 @@ export const WEIGHTS: AiWeights = {
   machineDenialPercent: 60,
   deckPoint: 200,
 
+  gridRestorePercent: 60,
+  gridTripPoint: 120,
+  gridResetPoint: 160,
+  gridSelfHarmPercent: 150,
+  gridHorizon: 8,
+
   moveCost: 25,
   actThreshold: 0,
 
@@ -231,3 +271,11 @@ export const PROFILES: Readonly<Record<Archetype, ArchetypeProfile>> = {
 
 /** Added to `objectPercent` when the kit can damage, power, or build objects. */
 export const OBJECT_AFFINITY_BONUS = 45;
+
+/**
+ * Scales every grid term when the kit carries a grid verb — a cut, a splice, an
+ * overdraw, or a `setPower` gated on a breaker or a source. Derived from the
+ * kit exactly as the object affinity above is, never authored, and worth
+ * nothing on a map with no declared grid because every grid term is zero there.
+ */
+export const GRID_AFFINITY_BONUS = 45;

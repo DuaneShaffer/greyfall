@@ -1,4 +1,4 @@
-import type { Effect, TileCoord } from "../../data/index.js";
+import type { Effect, Grid, TileCoord } from "../../data/index.js";
 import { resolveArea } from "../rules/abilities.js";
 import { inertAmountTarget, resolveAmount, unitAmountTarget } from "../rules/damage.js";
 import { FORCED_MOVE_HEIGHT_LIMIT, objectMaxHp, SPAWNED_OBJECT_SHAPES } from "../rules/effects.js";
@@ -18,13 +18,13 @@ import {
   unitById,
 } from "../rules/grid.js";
 import { consumableItem, itemAbility } from "../rules/items.js";
-import { isEnergized } from "../rules/power.js";
+import { gridNodeOf, gridNodeRuntimeOf, isEnergized, solveGrid } from "../rules/power.js";
 import { getStatus } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
 import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
 import { forecast, turnOrderPreview, usableItems, type ForecastEntry } from "../selectors.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
-import { damageBite, effectiveHp, fieldDistance, type AiContext } from "./context.js";
+import { damageBite, effectiveHp, fieldDistance, type AiContext, type GridBase, type GridSwing } from "./context.js";
 import { UNREACHABLE } from "./field.js";
 import { positionValue } from "./positioning.js";
 import type { AiWeights } from "./weights.js";
@@ -248,11 +248,12 @@ const structureOf = (ctx: AiContext, obj: ObjectRuntime): number =>
   memo(ctx, `structure:${obj.def.id}`, () => structuralValue(ctx, obj));
 
 /** Share of a consequence left once it is `distance` steps away from the fight. */
-function horizonPercent(w: AiWeights, distance: number): number {
-  const horizon = w.objectHorizon;
+function taperPercent(horizon: number, distance: number): number {
   if (distance >= UNREACHABLE) return 0;
   return Math.floor((100 * (horizon - Math.min(distance, horizon) + 1)) / (horizon + 1));
 }
+
+const horizonPercent = (w: AiWeights, distance: number): number => taperPercent(w.objectHorizon, distance);
 
 /**
  * What a machine would do to us in enemy hands. `floor-nine-mains` exists to
@@ -296,6 +297,219 @@ function machineDenial(ctx: AiContext, state: GameState, obj: ObjectRuntime): nu
   });
 }
 
+/**
+ * The mirror of `machineDenial`: what a machine is worth in *our* hands. Same
+ * payload, both tapers swapped — how near a hostile stands to what the machine
+ * covers, and how far our own people have to walk to reach a tile it can be
+ * worked from.
+ *
+ * This is the whole of `gridRestore` (`FLUX_GRID` §4.5): without it a reclose, a
+ * splice and a tie-close all price at zero, the AI can cut and can never put
+ * anything back, and §3's tug-of-war never happens on the enemy side. It is
+ * asked only about nodes of a declared grid, which is what keeps it exactly
+ * zero on the five slice maps.
+ */
+function machineUtility(ctx: AiContext, state: GameState, obj: ObjectRuntime): number {
+  return memo(ctx, `utility:${obj.def.id}`, () => {
+    const operable = obj.def.operable;
+    const victim = ctx.quarry;
+    if (operable === null || obj.destroyed || victim === null) return 0;
+    const w = ctx.weights;
+
+    let harm = damageBite(state, operable.effects, victim) * w.damagePerHp;
+    for (const effect of operable.effects) {
+      if (effect.kind !== "applyStatus") continue;
+      harm += Math.floor((statusValue(ctx, state, effect.statusId) * effect.chance) / 100);
+    }
+    if (harm <= 0) return 0;
+
+    let ourReach = UNREACHABLE;
+    for (const friend of [ctx.actor, ...ctx.allies]) {
+      for (const tile of obj.def.tiles) {
+        for (const stand of [tile, ...neighbors(tile)]) {
+          ourReach = Math.min(ourReach, manhattan(friend.position, stand));
+        }
+      }
+    }
+    let enemyExposed = UNREACHABLE;
+    for (const hostile of ctx.hostiles) {
+      for (const tile of operable.targetTiles) {
+        enemyExposed = Math.min(enemyExposed, fieldDistance(ctx, hostile.id, tile));
+      }
+    }
+    const exposed = operable.targetTiles.length === 0 ? 100 : taperPercent(w.gridHorizon, enemyExposed);
+    const reach = taperPercent(w.gridHorizon, ourReach);
+    return Math.floor((harm * w.gridRestorePercent * reach * exposed) / 1000000);
+  });
+}
+
+/**
+ * Denial and utility answer for a machine whose controls are dead without
+ * power. A machine that works either way is denied nothing by a switch, which
+ * is the gate `powerSwingValue` has always applied.
+ */
+function poweredMachine(
+  ctx: AiContext,
+  state: GameState,
+  obj: ObjectRuntime,
+): { denial: number; utility: number } {
+  if (obj.def.operable?.requiresPower !== true) return { denial: 0, utility: 0 };
+  return { denial: machineDenial(ctx, state, obj), utility: machineUtility(ctx, state, obj) };
+}
+
+// --- the grid -------------------------------------------------------------
+
+/** One node-state override, in exactly the terms `solveGrid` reads them. */
+interface GridEdit {
+  objectId: string;
+  powered?: boolean;
+  severed?: boolean;
+  destroyed?: boolean;
+  load?: number;
+}
+
+/**
+ * A hypothetical world for the recompute to run on. `solveGrid` reads the grid
+ * runtime and each node object's `powered` and `destroyed` flags and nothing
+ * else, so those are all that is cloned — and it is the *real* solver that runs
+ * on it, never a second heuristic model of the graph, which is the only way the
+ * search and the rules can be guaranteed to agree about what a move does
+ * (`FLUX_GRID` §4.5).
+ */
+function hypothetical(view: GameState, grid: Grid, edits: readonly GridEdit[]): GameState {
+  const runtime = view.grids.find((g) => g.gridId === grid.id);
+  if (runtime === undefined) return view;
+  const nodes = runtime.nodes.map((node) => ({ ...node }));
+  const loads = runtime.loads.map((load) => ({ ...load }));
+  const roles = new Map(grid.nodes.map((node) => [node.objectId, node.role] as const));
+  const swapped = new Map<string, ObjectRuntime>();
+
+  for (const edit of edits) {
+    const obj = swapped.get(edit.objectId) ?? objectById(view, edit.objectId);
+    if (obj !== undefined) {
+      let next = obj;
+      if (edit.powered !== undefined) next = { ...next, powered: edit.powered };
+      if (edit.destroyed === true) next = { ...next, destroyed: true, hp: 0 };
+      if (next !== obj) swapped.set(edit.objectId, next);
+    }
+    const node = nodes.find((n) => n.objectId === edit.objectId);
+    if (node !== undefined) {
+      if (edit.severed !== undefined) node.severed = edit.severed;
+      // Closing a tripped source's isolator is the reclose, the one verb that
+      // clears a latch (`rules/effects.ts`, `setObjectPower`).
+      if (edit.powered === true && roles.get(edit.objectId) === "source") node.tripped = false;
+    }
+    if (edit.load !== undefined && edit.load > 0) {
+      loads.push({
+        id: `hypothetical-${edit.objectId}`,
+        nodeObjectId: edit.objectId,
+        casterUnitId: null,
+        amount: edit.load,
+        turnsRemaining: null,
+      });
+    }
+  }
+
+  loads.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const objects =
+    swapped.size === 0 ? view.map.objects : view.map.objects.map((o) => swapped.get(o.def.id) ?? o);
+  const grids = view.grids.map((g) => (g.gridId === grid.id ? { gridId: g.gridId, nodes, loads } : g));
+  return { ...view, map: { ...view.map, objects }, grids };
+}
+
+/**
+ * What a move does to energization, answered by the real recompute on both
+ * sides of it. Memoised per (verb, target node) rather than per candidate tile:
+ * every input is a per-decision invariant, since `viewAt` replaces only the
+ * unit list (`FLUX_GRID` §5.2).
+ */
+function gridSwing(
+  ctx: AiContext,
+  view: GameState,
+  grid: Grid,
+  verb: string,
+  edits: readonly GridEdit[],
+): GridSwing {
+  const key = `${grid.id}|${verb}`;
+  const cached = ctx.gridMemo.get(key);
+  if (cached !== undefined) return cached;
+
+  let before: GridBase | undefined = ctx.gridBase.get(grid.id);
+  if (before === undefined) {
+    const solved = solveGrid(view, grid);
+    before = { live: solved.live, tripped: solved.tripped };
+    ctx.gridBase.set(grid.id, before);
+  }
+  const after = solveGrid(hypothetical(view, grid, edits), grid);
+  const wasLive = new Set(before.live);
+  const nowLive = new Set(after.live);
+  const wasTripped = new Set(before.tripped);
+  const nowTripped = new Set(after.tripped);
+  const swing: GridSwing = {
+    dark: before.live.filter((id) => !nowLive.has(id)),
+    lit: after.live.filter((id) => !wasLive.has(id)),
+    trips: after.tripped.filter((id) => !wasTripped.has(id)).length,
+    resets: before.tripped.filter((id) => !nowTripped.has(id)).length,
+  };
+  ctx.gridMemo.set(key, swing);
+  return swing;
+}
+
+/** A deck that gains or loses its power, priced against whoever is standing on it. */
+function deckSwingValue(ctx: AiContext, view: GameState, obj: ObjectRuntime, gain: 1 | -1): number {
+  if (obj.def.surfaceHeight === undefined) return 0;
+  let value = 0;
+  for (const tile of obj.def.tiles) {
+    const occupant = unitAt(view, tile);
+    if (occupant === undefined) continue;
+    const side = occupant.team === ctx.actor.team ? 1 : -1;
+    value += gain * side * ctx.weights.deckPoint;
+  }
+  return value;
+}
+
+/**
+ * What a change in energization is worth, over however many objects it moves:
+ * every deck that rises or drops, and every machine that arms or goes quiet.
+ *
+ * On a map with no declared grid the set is the one object the order names and
+ * this is exactly the arithmetic G5 shipped. On a grid it is the same sum over
+ * the whole component, plus the latch's tempo, plus `gridSelfHarmPercent` on
+ * whatever half of it lands on us — and the whole of it scaled by the kit's
+ * grid affinity.
+ */
+function energizationValue(ctx: AiContext, view: GameState, swing: GridSwing, onGrid: boolean): number {
+  const w = ctx.weights;
+  let credit = 0;
+  let debit = 0;
+  const bank = (value: number): void => {
+    if (value >= 0) credit += value;
+    else debit -= value;
+  };
+
+  for (const objectId of swing.dark) {
+    const obj = objectById(view, objectId);
+    if (obj === undefined) continue;
+    const machine = poweredMachine(ctx, view, obj);
+    bank(deckSwingValue(ctx, view, obj, -1));
+    bank(machine.denial);
+    if (onGrid) bank(-machine.utility);
+  }
+  for (const objectId of swing.lit) {
+    const obj = objectById(view, objectId);
+    if (obj === undefined) continue;
+    const machine = poweredMachine(ctx, view, obj);
+    bank(deckSwingValue(ctx, view, obj, 1));
+    bank(-machine.denial);
+    if (onGrid) bank(machine.utility);
+  }
+  if (!onGrid) return credit - debit;
+
+  credit += swing.trips * w.gridTripPoint + swing.resets * w.gridResetPoint;
+  const total = credit - Math.floor((debit * w.gridSelfHarmPercent) / 100);
+  return Math.floor((total * ctx.profile.gridPercent) / 100);
+}
+
 /** Objects the destroyed object's own payload would take out with it. */
 function chainValue(
   ctx: AiContext,
@@ -334,6 +548,7 @@ export function destroyValue(ctx: AiContext, state: GameState, obj: ObjectRuntim
     value += chainValue(ctx, state, obj, payload);
   }
   if (obj.def.blocksMovement || obj.def.blocksLos) value += ctx.weights.objectStructurePoint;
+  value += gridDestroyValue(ctx, state, obj);
   return Math.floor((value * ctx.profile.objectPercent) / 100);
 }
 
@@ -343,27 +558,82 @@ export function destroyValue(ctx: AiContext, state: GameState, obj: ObjectRuntim
  * pulling a unit parked out of reach back into everyone's range and stranding
  * an ally if the AI is careless — and the machine itself, which only works
  * while it is live.
+ *
+ * Under a grid the switch is a topology edit rather than a flag flip, so the set
+ * of objects it moves comes out of the recompute: opening the mains drops every
+ * sink downstream of it in one action, and closing a tie can bring a whole dead
+ * branch back. Off a grid the set is the one object, and the arithmetic is
+ * identical to what it has always been.
  */
 function powerSwingValue(ctx: AiContext, state: GameState, obj: ObjectRuntime, mode: "on" | "off" | "toggle"): number {
   if (obj.destroyed || obj.powered === null) return 0;
   const next = mode === "toggle" ? !obj.powered : mode === "on";
-  if (next === obj.powered) return 0;
+  const found = gridNodeOf(state, obj.def.id);
+  // Closing an already-closed isolator on a latched source is the reclose, and
+  // it is the one power order that does something while changing no flag.
+  const reclose =
+    next && found?.node.role === "source" && gridNodeRuntimeOf(state, obj.def.id)?.tripped === true;
+  if (next === obj.powered && reclose !== true) return 0;
 
-  let value = 0;
-  if (obj.def.surfaceHeight !== undefined) {
-    for (const tile of obj.def.tiles) {
-      const occupant = unitAt(state, tile);
-      if (occupant === undefined) continue;
-      const gain = next ? 1 : -1;
-      const side = occupant.team === ctx.actor.team ? 1 : -1;
-      value += gain * side * ctx.weights.deckPoint;
-    }
-  }
-  if (obj.def.operable?.requiresPower === true) {
-    const denial = machineDenial(ctx, state, obj);
-    value += next ? -denial : denial;
-  }
-  return Math.floor((value * ctx.profile.objectPercent) / 100);
+  const id = obj.def.id;
+  const swing: GridSwing =
+    found === null
+      ? { dark: next ? [] : [id], lit: next ? [id] : [], trips: 0, resets: 0 }
+      : gridSwing(ctx, state, found.grid, `power:${next ? "on" : "off"}:${id}`, [
+          { objectId: id, powered: next },
+        ]);
+  return Math.floor((energizationValue(ctx, state, swing, found !== null) * ctx.profile.objectPercent) / 100);
+}
+
+/**
+ * Worth of cutting a span or splicing one back, priced entirely through what
+ * actually goes dark. A cut the tie or the second main already covers moves
+ * nothing and scores zero, which is the whole reason `lineCut` is not a flat
+ * value (`FLUX_GRID` §4.5).
+ */
+function severSwingValue(ctx: AiContext, view: GameState, objectId: string, mode: "sever" | "splice"): number {
+  const found = gridNodeOf(view, objectId);
+  if (found === null || found.node.role !== "line") return 0;
+  const obj = objectById(view, objectId);
+  if (obj === undefined || obj.destroyed) return 0;
+  const severed = mode === "sever";
+  if (gridNodeRuntimeOf(view, objectId)?.severed === severed) return 0;
+  const swing = gridSwing(ctx, view, found.grid, `${mode}:${objectId}`, [{ objectId, severed }]);
+  return Math.floor((energizationValue(ctx, view, swing, true) * ctx.profile.objectPercent) / 100);
+}
+
+/**
+ * Worth of hanging a timed draw on a node. Whether it trips is not estimated
+ * from headroom: the same recompute runs on the same node-state vector with the
+ * load attached, so the search's answer and the rules' answer are one answer.
+ */
+function loadSwingValue(ctx: AiContext, view: GameState, objectId: string, amount: number): number {
+  const found = gridNodeOf(view, objectId);
+  if (found === null) return 0;
+  const obj = objectById(view, objectId);
+  if (obj === undefined || obj.destroyed) return 0;
+  const swing = gridSwing(ctx, view, found.grid, `load:${amount}:${objectId}`, [{ objectId, load: amount }]);
+  return Math.floor((energizationValue(ctx, view, swing, true) * ctx.profile.objectPercent) / 100);
+}
+
+/**
+ * What killing a node takes off the network with it. The object's own machine
+ * value is already collected by `destroyValue`, so only the rest of the
+ * component is counted here — which is what makes destroying a redundant source
+ * score near nothing and destroying the only feed score everything behind it.
+ */
+function gridDestroyValue(ctx: AiContext, view: GameState, obj: ObjectRuntime): number {
+  const found = gridNodeOf(view, obj.def.id);
+  if (found === null) return 0;
+  const swing = gridSwing(ctx, view, found.grid, `destroy:${obj.def.id}`, [
+    { objectId: obj.def.id, destroyed: true },
+  ]);
+  const rest: GridSwing = {
+    ...swing,
+    dark: swing.dark.filter((id) => id !== obj.def.id),
+    lit: swing.lit.filter((id) => id !== obj.def.id),
+  };
+  return energizationValue(ctx, view, rest, true);
 }
 
 function objectHitValue(ctx: AiContext, state: GameState, objectId: string, damage: number, heal: number): number {
@@ -602,6 +872,20 @@ export function abilityValue(
         }
         break;
       }
+      case "severLine": {
+        shaped ??= shapedArea(ctx, view, actor, ability, target);
+        for (const objectId of shaped.objectIds) {
+          gross += severSwingValue(ctx, view, objectId, effect.mode);
+        }
+        break;
+      }
+      case "addLoad": {
+        shaped ??= shapedArea(ctx, view, actor, ability, target);
+        for (const objectId of shaped.objectIds) {
+          gross += loadSwingValue(ctx, view, objectId, effect.amount);
+        }
+        break;
+      }
       case "moveSelf":
         gross += repositionValue(ctx, view, actor, effect, target);
         break;
@@ -654,6 +938,8 @@ export function activateValue(ctx: AiContext, view: GameState, obj: ObjectRuntim
     let damage = 0;
     for (const effect of operable.effects) {
       if (effect.kind === "setPower") value += powerSwingValue(ctx, view, other, effect.mode);
+      if (effect.kind === "severLine") value += severSwingValue(ctx, view, objectId, effect.mode);
+      if (effect.kind === "addLoad") value += loadSwingValue(ctx, view, objectId, effect.amount);
       if (effect.kind !== "damageObject") continue;
       damage += resolveAmount(view, effect.amount, null, inertAmountTarget(objectMaxHp(other)));
     }

@@ -8,7 +8,14 @@ import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { resolveArea } from "../rules/abilities.js";
 import { distanceField, terrainGrid, UNREACHABLE } from "./field.js";
-import { OBJECT_AFFINITY_BONUS, PROFILES, WEIGHTS, type AiWeights, type Archetype } from "./weights.js";
+import {
+  GRID_AFFINITY_BONUS,
+  OBJECT_AFFINITY_BONUS,
+  PROFILES,
+  WEIGHTS,
+  type AiWeights,
+  type Archetype,
+} from "./weights.js";
 
 /** What the actor's own kit says about how it wants to fight. */
 export interface Kit {
@@ -17,6 +24,7 @@ export interface Kit {
   bestRange: number;
   healsAllies: boolean;
   touchesObjects: boolean;
+  touchesGrid: boolean;
 }
 
 export interface ResolvedProfile {
@@ -27,6 +35,30 @@ export interface ResolvedProfile {
   heightPercent: number;
   allyAidPercent: number;
   objectPercent: number;
+  gridPercent: number;
+}
+
+/**
+ * What one hypothetical grid move does to energization: every object it puts
+ * out and every object it brings back, plus the latches it throws and clears.
+ * A pure function of the graph and the node states, so it is the same for every
+ * candidate tile in the decision and is memoised per (verb, target node).
+ */
+export interface GridSwing {
+  /** Object ids that lose energization, ascending. */
+  dark: readonly string[];
+  /** Object ids that gain it, ascending. */
+  lit: readonly string[];
+  /** Sources the move latches open. */
+  trips: number;
+  /** Sources whose latch the move clears. */
+  resets: number;
+}
+
+/** A solved grid, reduced to the two lists a swing is measured against. */
+export interface GridBase {
+  live: readonly string[];
+  tripped: readonly string[];
 }
 
 /** A hostile as the actor models it: how hard it hits and how far it gets. */
@@ -87,6 +119,16 @@ export interface AiContext {
    * one entry serves every candidate in the turn.
    */
   objectMemo: Map<string, number>;
+  /**
+   * Hypothetical recomputes by (verb, target node). The exact answer to "does
+   * this cut darken anything" and "does this load actually trip it" is one
+   * `solveGrid` on a hypothetical node-state vector — there is no second model
+   * of the graph anywhere — and `FLUX_GRID` §5.2 hoists it out of the candidate
+   * loop beside the four things already hoisted.
+   */
+  gridMemo: Map<string, GridSwing>;
+  /** Each grid as it stands, solved once — the other half of every swing. */
+  gridBase: Map<string, GridBase>;
 }
 
 function actionAbilities(state: GameState, unit: BattleUnit): ActionAbility[] {
@@ -109,6 +151,22 @@ function touchesObjects(ability: ActionAbility): boolean {
   );
 }
 
+/**
+ * A grid verb: a cut, a splice, an overdraw, or the one `setPower` an ability
+ * aims at a breaker or a source rather than at a machine. `setPower` alone is
+ * not enough — every shipped switch ability carries one, and none of them is
+ * reasoning about a network.
+ */
+function touchesGrid(ability: ActionAbility): boolean {
+  const requires = ability.requires ?? [];
+  return ability.effects.some(
+    (e) =>
+      e.kind === "severLine" ||
+      e.kind === "addLoad" ||
+      (e.kind === "setPower" && requires.some((r) => r === "targetBreaker" || r === "targetSource")),
+  );
+}
+
 /** Anything the unit can point at a hostile or at the machinery around one. */
 function offensive(ability: ActionAbility): boolean {
   return ability.effects.some(
@@ -126,13 +184,15 @@ function readKit(state: GameState, unit: BattleUnit): Kit {
   let bestRange = 1;
   let heals = false;
   let objects = false;
+  let grid = false;
   for (const ability of abilities) {
     if (offensive(ability)) bestRange = Math.max(bestRange, ability.targeting.range.max);
     if (healsAllies(ability)) heals = true;
     if (touchesObjects(ability)) objects = true;
+    if (touchesGrid(ability)) grid = true;
   }
   const archetype: Archetype = heals ? "support" : bestRange >= 3 ? "artillery" : "melee";
-  return { archetype, abilities, bestRange, healsAllies: heals, touchesObjects: objects };
+  return { archetype, abilities, bestRange, healsAllies: heals, touchesObjects: objects, touchesGrid: grid };
 }
 
 function resolveProfile(kit: Kit): ResolvedProfile {
@@ -145,6 +205,7 @@ function resolveProfile(kit: Kit): ResolvedProfile {
     heightPercent: base.heightPercent,
     allyAidPercent: base.allyAidPercent,
     objectPercent: base.objectPercent + (kit.touchesObjects ? OBJECT_AFFINITY_BONUS : 0),
+    gridPercent: 100 + (kit.touchesGrid ? GRID_AFFINITY_BONUS : 0),
   };
 }
 
@@ -419,6 +480,8 @@ export function buildContext(state: GameState, actor: BattleUnit, weights: AiWei
     placeMemo: new Map<number, number>(),
     areaMemo: new Map(),
     objectMemo: new Map<string, number>(),
+    gridMemo: new Map<string, GridSwing>(),
+    gridBase: new Map<string, GridBase>(),
   };
 }
 
