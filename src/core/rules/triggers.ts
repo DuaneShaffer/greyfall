@@ -40,8 +40,9 @@ export function isConditionMet(state: GameState, when: TriggerCondition): boolea
           when.tiles.some((t) => coordEq(t, u.position)),
       );
     case "unitHpBelowPercent": {
-      const unit = unitById(state, when.unitId);
-      if (unit === undefined || unit.downed) return false;
+      // A downed unit reads 0% and so is below every authorable threshold, which
+      // is how an overkill blow still fires the beats it skipped past — in
+      // author order, ahead of the `unitDowned` trigger. ENCOUNTER_NOTES §e5.
       const percent = hpPercent(state, when.unitId);
       return percent !== null && percent < when.percent;
     }
@@ -51,7 +52,9 @@ export function isConditionMet(state: GameState, when: TriggerCondition): boolea
 /**
  * Scripted repositioning. Move, Jump and path length are ignored — this is
  * authoring, not a walk — but the destination must be standable and free, so a
- * script can never park two units on one tile.
+ * script can never park two units on one tile. A downed unit does not move: when
+ * the killing blow opens a withdrawal beat, the dialogue lands and the walk
+ * does not.
  */
 function moveUnit(ctx: Ctx, unitId: string, to: TileCoord): void {
   const unit = unitById(ctx.state, unitId);

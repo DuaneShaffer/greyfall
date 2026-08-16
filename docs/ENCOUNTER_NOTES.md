@@ -377,6 +377,27 @@ The closing dialogue depends on `settle()` running `evaluateTriggers` before
 win" in the slice; it is documented in `COMBAT_RULES` §15 and asserted by
 `tests/core/conditions.test.ts` since the engine pass.
 
+**Overkill ruling (binding).** A blow that downs a unit outright used to skip
+every `unitHpBelowPercent` beat it leapt past — one-shotting Aldric played only
+`the-record-closes`, and the chapter's whole argument went unheard. The rule now
+is:
+
+- **A downed unit reads 0%**, so it is below every authorable threshold (the
+  schema constrains `percent` to 1..99). `unitHpBelowPercent` no longer excludes
+  downed units. A unit *removed* from the field has no HP to read and is below
+  nothing.
+- **Author order is the play order.** Threshold beats are listed above the
+  `unitDowned` beat in every encounter that has both (e3 `wick`, e5 `aldric`),
+  so a single pass of `evaluateTriggers` fires them in the order they were
+  written and the death beat lands last. Authors must keep that order.
+- **The words land; the body does not move.** `moveUnit` no-ops on a downed
+  unit, so `aldric-to-the-court` speaks the withdrawal over a corpse without
+  walking it up the steps. Every other payload runs as authored: the reserve
+  `spawnUnits` brings up still arrive, and the win condition resolves in the
+  same `settle()` regardless.
+
+Asserted by `tests/core/triggerOrder.test.ts`.
+
 **Difficulty.** Party at its authored levels, seven deployed, six enemies —
 **80%** win at 3.6 of 7 lost — the whole company on the field is what makes it
 winnable, and it is still the only fight in the slice where a single unit's

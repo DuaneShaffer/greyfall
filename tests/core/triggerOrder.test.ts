@@ -92,6 +92,42 @@ describe("trigger ordering", () => {
     ).toBe(false);
   });
 
+  it("plays every threshold beat the killing blow skipped past, then the record", () => {
+    // Overkill: Aldric goes from untouched to down in one command, so the 90%
+    // and 55% gates and the downed gate all open in the same batch.
+    const state = charterhouse();
+    const overkilled: GameState = {
+      ...state,
+      units: state.units.map((unit) =>
+        unit.id === "aldric" ? { ...unit, hp: 0, downed: true, ct: 0 } : unit,
+      ),
+    };
+    const result = pass(overkilled);
+
+    expect(result.error).toBeNull();
+    expect(dialogueOrder(result.events)).toEqual([
+      "terrace-two-the-proof",
+      "aldric-to-the-court",
+      "the-record-closes",
+    ]);
+  });
+
+  it("speaks the withdrawal without walking the corpse anywhere", () => {
+    const state = charterhouse();
+    const before = state.units.find((unit) => unit.id === "aldric")!.position;
+    const overkilled: GameState = {
+      ...state,
+      units: state.units.map((unit) =>
+        unit.id === "aldric" ? { ...unit, hp: 0, downed: true, ct: 0 } : unit,
+      ),
+    };
+    const result = pass(overkilled);
+
+    expect(result.events.some((e) => e.type === "UnitForcedMove")).toBe(false);
+    expect(result.state.units.find((unit) => unit.id === "aldric")?.position).toEqual(before);
+    expect(result.state.result).toBe("win");
+  });
+
   it("does not replay the confession once it has been heard", () => {
     const first = pass(aldricAt(charterhouse(), 80));
     const second = pass(aldricAt(first.state, 60));
