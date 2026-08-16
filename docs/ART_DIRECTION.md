@@ -490,3 +490,88 @@ canonical names as follows, and should be replaced rather than reconciled:
 Side-face colors are **derived**, not authored: `shade(TERRAIN_COLOR[t].side,
 FACE_SHADE.sideNorthSouth | .sideEastWest)`. A hand-picked second table for
 side faces will drift from the top faces and is not permitted.
+
+---
+
+## Appendix A — pipeline addenda (unit sprites)
+
+Added by the unit-sprite pipeline (workstream 14). Nothing above is amended;
+these record decisions the spec deliberately left to implementation, so the
+generator in `src/art/{pixel,rig,jobs,sheet,player}.ts` and this document stay
+in agreement. Everything here is **binding on the generator**, suggestive
+elsewhere.
+
+### A.1 Rig proportions
+
+Authoring is in rig space: `dx` from the centerline seam, `up` from the ground
+line at `SPRITE_ANCHOR.y`. Landmarks, in `up`:
+
+| Landmark | up | Rows (canvas) |
+|---|---|---|
+| feet / boot | 1–3 | 41–43 |
+| knees | ~8 | ~36 |
+| hips | 15 | 29 |
+| shoulders | 27 | 17 |
+| head box | 28–40 (13 rows) | 4–16 |
+
+40 rows of figure with a 13px head is §3's "3 heads tall, top-heavy". Rows 0–3
+stay free for helmets, hoods, and the idle bob.
+
+### A.2 The 1px outline ring
+
+The outer 1px ring of the canvas (column 0, column 31, row 0) is reserved for
+the silhouette outline: the rig clears any body pixel that lands there. Held
+props clamp to `PROP_REACH` (|dx| ≤ 11, up ∈ [1, 41]), head centers to |dx| ≤ 8,
+and shoulder joints to |dx| ≤ 11 — so the closed outline of §3 is structurally
+guaranteed rather than checked by eye.
+
+### A.3 Sub-floor band contents
+
+Rows 44–45 carry a 2-row `soot-900` contact shadow sized to the foot spread;
+rows 46–47 are unused for now (reserved for slope offset and kicked dust). No
+outline is drawn below the ground line — a standing figure meets the tile, and
+an outline under the feet would read as a float.
+
+### A.4 Hurt frame 0 is a silhouette flash
+
+`hurt` frame 0 replaces every interior color — team tint included — with
+`soot-100`, keeping only the outline and any emissive element. One frame, 4
+ticks. It is the only frame in the pipeline without visible team tint.
+
+### A.5 Cast hold loop pulses
+
+§4 fixes frames 2–3 of `cast` as the hold loop. The two frames differ by a 1px
+torso bob and one step of emissive growth, so a charged action waiting on the
+CT timeline reads as a pulse, not a freeze. Emissive growth is capped at +2px
+of radius; with that cap the worst frame in the roster spends 50 of 1536 pixels
+on the amber ramp (3.3%), inside the ~5% budget of §2.
+
+### A.6 Team tint mask, in two parts
+
+The 5–12% tint mask is split so job gear can never bury allegiance:
+
+- a **chest band** (`shoulderW - 4` wide, 2 rows of base + 1 of shadow) drawn
+  with the torso, under whatever the job wears;
+- **pauldron trim** (3×2 base + 3×1 shadow at each shoulder) drawn last, over
+  all gear.
+
+Measured across the roster this lands at 6–8% of body pixels.
+
+### A.7 Facing indicator
+
+The wedge stays. Two of the four apparent views differ from the other two only
+by mirroring, and at 32px that difference is real but not fast enough to base a
+targeting decision on. The wedge is the tactical readout; the art carries the
+character. Revisit when facing gains a mechanical cost.
+
+### A.8 Preview
+
+`src/art/preview.html` (vite input `spritePreview`, dev URL
+`/src/art/preview.html`) renders every job × state × view × frame, the assembled
+sheets, and live playback with the real tick tables. Dev-only; the game does not
+import it.
+
+### A.9 Still outstanding
+
+Portraits remain the open character-art workstream: §4 commits them to painted,
+which this pipeline cannot express. The placeholder blocks stand.

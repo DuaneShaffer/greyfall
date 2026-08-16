@@ -1,4 +1,5 @@
 import type { Team } from "../data/schemas/common.js";
+import type { JobId } from "./jobs.js";
 import {
   AMBER_500,
   AMBER_GLOW,
@@ -31,17 +32,7 @@ import {
   type DrawnView,
 } from "./sprites.js";
 
-export const JOB_IDS = [
-  "enforcer",
-  "machinist",
-  "conduit",
-  "saboteur",
-  "chemist",
-  "augmented",
-  "railrunner",
-] as const;
-
-export type JobId = (typeof JOB_IDS)[number];
+export { JOB_IDS, type JobId } from "./jobs.js";
 
 export type ShapeRole =
   | "shadow"

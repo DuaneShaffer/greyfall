@@ -232,6 +232,7 @@ export class BattleRenderer {
     this.rig.update(deltaSeconds);
     this.queue.update(deltaSeconds);
     for (const object of this.objects.values()) object.update(this.clock);
+    for (const unit of this.units.values()) unit.update(deltaSeconds);
     this.updateBillboards();
     this.renderer.render(this.scene, this.rig.camera);
   }
@@ -315,6 +316,7 @@ export class BattleRenderer {
           const end = points[points.length - 1] as THREE.Vector3;
           visual.setWorldPosition(end.x, end.y, end.z);
           visual.setFacing(event.facing);
+          visual.rest();
           view.position = { ...destination };
           view.elevation = standingHeight(map, destination);
           view.facing = event.facing;
@@ -322,6 +324,7 @@ export class BattleRenderer {
         return {
           duration: legs * STEP_SECONDS,
           update: (elapsed) => {
+            visual.playWalk();
             const progress = Math.min(1, elapsed / (legs * STEP_SECONDS));
             const scaled = progress * legs;
             const leg = Math.min(legs - 1, Math.floor(scaled));
@@ -355,6 +358,11 @@ export class BattleRenderer {
         const view = findUnitView(viewModel, event.unitId);
         if (!visual || !view) return null;
         const start = visual.currentView.hpFraction;
+        // A negative amount is a heal reusing this event, and does not recoil.
+        // The acting unit is not named by `unitHit`, so the attacker's swing is
+        // not triggered here; call `UnitVisual.playAttack()` from wherever the
+        // actor is known (see the hook on UnitVisual).
+        if (event.amount > 0) visual.playHurt();
         return {
           duration: HIT_SECONDS,
           update: (elapsed) => {

@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         battle: resolve(root, "index.html"),
         harness: resolve(root, "ui-harness.html"),
+        spritePreview: resolve(root, "src/art/preview.html"),
       },
     },
   },

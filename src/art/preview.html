@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Greyfall — unit sprite preview</title>
+    <link rel="icon" href="data:," />
+    <style>
+      body {
+        margin: 0;
+        padding: 12px 16px 48px;
+        background: #171c22;
+        color: #b3bcc5;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      h2 {
+        font-size: 12px;
+        font-weight: 600;
+        color: #f3b94a;
+        margin: 20px 0 6px;
+        border-bottom: 1px solid #2b333d;
+        padding-bottom: 4px;
+      }
+      .controls {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 6px 0;
+        background: #171c22;
+        border-bottom: 1px solid #2b333d;
+      }
+      button {
+        font: inherit;
+        color: #b3bcc5;
+        background: #2b333d;
+        border: 1px solid #78828e;
+        padding: 3px 8px;
+        cursor: pointer;
+      }
+      button:hover {
+        color: #f3b94a;
+      }
+      .row {
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+      }
+      .rowlabel {
+        width: 130px;
+        color: #78828e;
+      }
+      .cell {
+        text-align: center;
+      }
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+        background: #0b0d10;
+        border: 1px solid #2b333d;
+      }
+      .label {
+        color: #78828e;
+        font-size: 10px;
+        padding-top: 2px;
+      }
+      .liveroot .cell {
+        min-width: 130px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./preview.ts"></script>
+  </body>
+</html>

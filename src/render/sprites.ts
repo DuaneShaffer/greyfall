@@ -1,26 +1,24 @@
-// Placeholder unit art, painted from `src/art/placeholders.ts` shape data onto
-// a small canvas and sampled with NearestFilter so it stays crisp and pixel-y.
-// Geometry comes from the frozen sprite spec (`src/art/sprites.ts`): a 32x48
-// canvas, feet anchor at (16, 44), 32 px per world tile edge, so the billboard
-// is exactly 1.0 x 1.5 world units.
+// Unit sheet textures. One 256x576 sheet per job/team is generated once from
+// `src/art` (pure palette-index grids), painted to a canvas via ImageData, and
+// sampled with NearestFilter so it stays crisp. Frame selection is a UV window
+// into that sheet — see `cellUV` — so playback costs nothing per frame and a
+// mirrored view is a negative horizontal repeat.
 //
-// TODO(art): swap `unitTexture` for a sheet loader + frame picker when real
-// sheets land; the billboard code in `units.ts` should not change.
+// Geometry comes from the frozen sprite spec (`src/art/sprites.ts`): a 32x48
+// cell, feet anchor at (16, 44), 32 px per world tile edge, so the billboard is
+// exactly 1.0 x 1.5 world units.
 
 import * as THREE from "three";
+import { isJobId, type JobId } from "../art/jobs.js";
+import { writeGridToImageData } from "../art/pixel.js";
+import { buildJobSheet, cellUV, sheetCell, sheetKey } from "../art/sheet.js";
 import {
-  JOB_IDS,
-  buildPlaceholder,
-  drawToCanvas,
-  type Canvas2DLike,
-  type JobId,
-} from "../art/placeholders.js";
-import {
-  ANIMATIONS,
   PIXELS_PER_TILE,
+  SHEET_LAYOUT,
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
   SPRITE_WIDTH,
+  type AnimState,
   type DrawnView,
 } from "../art/sprites.js";
 import type { Team } from "../data/schemas/common.js";
@@ -32,53 +30,76 @@ export const SPRITE_PIXELS_PER_TILE = PIXELS_PER_TILE;
 export const SPRITE_ANCHOR_Y = SPRITE_ANCHOR.y;
 
 const DEFAULT_JOB: JobId = "enforcer";
-const DEFAULT_VIEW: DrawnView = "se";
 
-const cache = new Map<string, THREE.Texture>();
+const sheets = new Map<string, THREE.Texture>();
+const clones = new Set<THREE.Texture>();
 
-/** Sprite ids follow job ids while art is placeholder; unknown ids fall back. */
+/** Sprite ids follow job ids; unknown ids fall back to the melee baseline. */
 export const jobForSprite = (spriteId: string): JobId =>
-  (JOB_IDS as readonly string[]).includes(spriteId) ? (spriteId as JobId) : DEFAULT_JOB;
+  isJobId(spriteId) ? spriteId : DEFAULT_JOB;
 
-export const unitTexture = (spriteId: string, team: Team, downed: boolean): THREE.Texture => {
-  const jobId = jobForSprite(spriteId);
-  const key = `${jobId}:${team}:${downed ? "downed" : "idle"}`;
-  const cached = cache.get(key);
-  if (cached) return cached;
-
-  const canvas = document.createElement("canvas");
-  canvas.width = SPRITE_PIXELS_X;
-  canvas.height = SPRITE_PIXELS_Y;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("2d canvas context unavailable for unit sprite");
-  ctx.clearRect(0, 0, SPRITE_PIXELS_X, SPRITE_PIXELS_Y);
-
-  // `Canvas2DLike` narrows fillStyle to string; forward through a shim rather
-  // than widening the art-side contract.
-  const painter: Canvas2DLike = {
-    get fillStyle(): string {
-      return String(ctx.fillStyle);
-    },
-    set fillStyle(value: string) {
-      ctx.fillStyle = value;
-    },
-    fillRect: (x, y, w, h) => ctx.fillRect(x, y, w, h),
-  };
-
-  const state = downed ? "downed" : "idle";
-  const clip = buildPlaceholder(jobId, team, state, DEFAULT_VIEW);
-  drawToCanvas(painter, clip, downed ? ANIMATIONS.downed.frames - 1 : 0);
-
-  const texture = new THREE.CanvasTexture(canvas);
+const configure = (texture: THREE.Texture): THREE.Texture => {
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
   texture.colorSpace = THREE.SRGBColorSpace;
-  cache.set(key, texture);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
   return texture;
 };
 
+/** The shared sheet for a job/team. Built once, cached for the session. */
+export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
+  const jobId = jobForSprite(spriteId);
+  const key = sheetKey(jobId, team);
+  const cached = sheets.get(key);
+  if (cached) return cached;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = SHEET_LAYOUT.width;
+  canvas.height = SHEET_LAYOUT.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("2d canvas context unavailable for unit sheet");
+  const image = ctx.createImageData(SHEET_LAYOUT.width, SHEET_LAYOUT.height);
+  writeGridToImageData(image, buildJobSheet(jobId, team));
+  ctx.putImageData(image, 0, 0);
+
+  const texture = configure(new THREE.CanvasTexture(canvas));
+  sheets.set(key, texture);
+  return texture;
+};
+
+/**
+ * A per-unit view onto a shared sheet. Clones carry their own UV window, which
+ * is what lets two units of the same job play different frames.
+ */
+export const unitSheetView = (spriteId: string, team: Team): THREE.Texture => {
+  const view = unitSheet(spriteId, team).clone();
+  configure(view);
+  view.needsUpdate = true;
+  clones.add(view);
+  return view;
+};
+
+export const applyCellUV = (
+  texture: THREE.Texture,
+  state: AnimState,
+  view: DrawnView,
+  frame: number,
+  mirrored: boolean,
+): void => {
+  const uv = cellUV(sheetCell(state, view, frame), mirrored);
+  texture.offset.set(uv.offsetX, uv.offsetY);
+  texture.repeat.set(uv.repeatX, uv.repeatY);
+};
+
+export const releaseSheetView = (texture: THREE.Texture): void => {
+  if (clones.delete(texture)) texture.dispose();
+};
+
 export const disposeSpriteCache = (): void => {
-  for (const texture of cache.values()) texture.dispose();
-  cache.clear();
+  for (const texture of clones) texture.dispose();
+  clones.clear();
+  for (const texture of sheets.values()) texture.dispose();
+  sheets.clear();
 };
