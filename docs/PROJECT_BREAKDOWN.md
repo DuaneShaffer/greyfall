@@ -135,8 +135,11 @@ steps, post-processing (bloom, tilt-shift DoF) layered on later.
     (sprites, portraits, tile textures) is produced EXTERNALLY by the owner
     from generator briefs; agents do direction, briefs, evaluation, and the
     intake pipeline (`src/art` ingest) only. Code-generated sprite art was
-    tried and rejected. Briefs live in `art-src/GENERATOR_BRIEFS.md`;
-    masters land in `art-src/`.**
+    tried and rejected. Briefs live in `art-src/GENERATOR_BRIEFS.md` (field
+    sprites), `art-src/TERRAIN_BRIEFS.md` (the nine tile faces) and
+    `art-src/OBJECT_BRIEFS.md` (the grid objects: flux main, cable trough,
+    charge hoist, and the trough's severed state — all flat-lit face masters
+    at 4×, none of them billboards); masters land in `art-src/`.**
 15. **Environment/tile art & map geometry** — terrain textures, height-mapped
     battle maps, terrain types that interact with mechanics (water, lava).
 16. **VFX & UI art** — spell effects, damage popups, menu chrome, icons.
