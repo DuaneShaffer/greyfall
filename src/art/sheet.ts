@@ -4,6 +4,7 @@
 // frame tables.
 
 import type { Team } from "../data/schemas/common.js";
+import { externalJobSheet } from "./external.js";
 import { jobFrame, type JobId } from "./jobs.js";
 import { blitGrid, createGrid, gridToRGBA, type PixelGrid } from "./pixel.js";
 import {
@@ -79,8 +80,14 @@ export function cellAtPixel(x: number, y: number): SheetCell | null {
 
 export const sheetKey = (jobId: JobId, team: Team): string => `${jobId}:${team}`;
 
-/** The whole sheet as one palette-index grid. Deterministic. */
+/**
+ * The whole sheet as one palette-index grid. Deterministic. A job with a
+ * delivered external master gets it derived from that instead of composited —
+ * the compositor output is a placeholder and loses to real art on sight.
+ */
 export function buildJobSheet(jobId: JobId, team: Team): PixelGrid {
+  const external = externalJobSheet(jobId, team);
+  if (external) return external;
   const sheet = createGrid(SHEET_LAYOUT.width, SHEET_LAYOUT.height);
   for (const cell of SHEET_MANIFEST) {
     const grid = jobFrame({ jobId, team, state: cell.state, view: cell.view, frame: cell.frame });

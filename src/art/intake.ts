@@ -32,6 +32,7 @@ import {
   defaultRegionMap,
   type ExternalMaster,
   type FramePatch,
+  type Landmarks,
   type RegionMap,
   type Segment,
 } from "./segments.js";
@@ -54,6 +55,11 @@ export interface ImportRequest {
   /** Same per-job pose adjustment the generated art uses, if any. */
   readonly posePass?: JobArt["posePass"];
   readonly patches?: readonly FramePatch[];
+  /**
+   * Where the master's own shoulder and hip lines sit, if they are not the
+   * rig's. A master drawn to the briefs' 5-head proportions needs these.
+   */
+  readonly landmarks?: Landmarks;
   readonly quantize?: QuantizeOptions;
   /** Which team's tint the masters were painted in. Defaults to player. */
   readonly sourceTeam?: Team;
@@ -93,6 +99,7 @@ export function importExternalMaster(request: ImportRequest): ImportResult {
       rest,
       request.prop?.[view] ?? [],
       request.posePass,
+      request.landmarks ?? {},
     );
   }
 

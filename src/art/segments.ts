@@ -136,6 +136,20 @@ const inRect = (r: SegmentRect, x: number, y: number): boolean =>
   x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
 
 /**
+ * Where a master's own anatomy sits, when it is not the rig's. Appendix A.1
+ * fixes 3-heads proportions, and the generator briefs ask for 5 to 5.5 — a
+ * master drawn to the brief has its shoulder and hip lines further down the
+ * canvas than the armature does. The cut has to follow the *art*, or the head
+ * region takes half the chest with it; the joint *deltas* that move each region
+ * are still the rig's, and those are small enough to stay honest across the
+ * proportion gap. Measure these off the master.
+ */
+export interface Landmarks {
+  readonly shoulderRow?: number;
+  readonly hipRow?: number;
+}
+
+/**
  * Build the standard six-region partition from the rig itself: head above the
  * shoulder line, the shoulder-to-hip band split into far arm / torso / near
  * arm by column, and everything below the hips split into two legs. The rects
@@ -150,11 +164,12 @@ export function defaultRegionMap(
   rest: { state: AnimState; frame: number },
   extra: readonly Segment[] = [],
   posePass?: JobArt["posePass"],
+  landmarks: Landmarks = {},
 ): RegionMap {
   const pose = poseFor({ posePass } as JobArt, rest.state, rest.frame);
   const j = jointsFor(build, pose);
-  const shoulderRow = Math.round(canvasOf(j.shoulder).y);
-  const hipRow = Math.round(canvasOf(j.hip).y);
+  const shoulderRow = landmarks.shoulderRow ?? Math.round(canvasOf(j.shoulder).y);
+  const hipRow = landmarks.hipRow ?? Math.round(canvasOf(j.hip).y);
   const bandTop = Math.max(0, shoulderRow - toPx(1));
   const bandBottom = Math.min(FIGURE_BOX_BOTTOM + 1, hipRow + toPx(3));
   const centerX = Math.round(canvasOf(j.shoulder).x);

@@ -13,8 +13,11 @@ import {
   AMBER_BUDGET,
   MAX_FRAME_COLORS,
   auditGrid,
+  contentBounds,
+  fitMasterToCanvas,
   formatReport,
   quantizeToPalette,
+  resampleRGBA,
   retint,
 } from "../../src/art/ingest.js";
 import { importExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
@@ -160,6 +163,81 @@ describe("png codec", () => {
     }
     const decoded = decodePNG(bytes);
     expect(Array.from(decoded.data)).toEqual(Array.from(source.data));
+  });
+});
+
+describe("fitting a delivered master", () => {
+  /** A 4x-scale delivery: a figure block with a foot, on a wide transparent field. */
+  const delivery = (() => {
+    const width = 400;
+    const height = 600;
+    const data = new Uint8ClampedArray(width * height * 4);
+    const put = (x: number, y: number, r: number, g: number, b: number) => {
+      const at = (y * width + x) * 4;
+      data[at] = r;
+      data[at + 1] = g;
+      data[at + 2] = b;
+      data[at + 3] = 255;
+    };
+    for (let y = 100; y < 500; y += 1) {
+      for (let x = 150; x < 250; x += 1) put(x, y, 120, 90, 60);
+    }
+    // A four-pixel-tall sole at the very bottom, the thing a bad reduction eats.
+    for (let y = 496; y < 500; y += 1) {
+      for (let x = 140; x < 260; x += 1) put(x, y, 20, 20, 24);
+    }
+    return { width, height, data };
+  })();
+
+  it("measures the figure rather than trusting the canvas", () => {
+    const bounds = contentBounds(delivery, { x: 0, y: 0, w: 400, h: 600 }, 127);
+    expect(bounds).toEqual({ x: 140, y: 100, w: 120, h: 400 });
+  });
+
+  it("stands the figure on the anchor, centered on the seam", () => {
+    const fitted = fitMasterToCanvas(delivery);
+    expect(fitted.width).toBe(SPRITE_WIDTH);
+    expect(fitted.height).toBe(SPRITE_HEIGHT);
+    const alpha = (x: number, y: number) => fitted.data[(y * SPRITE_WIDTH + x) * 4 + 3] ?? 0;
+    let bottom = -1;
+    let left = SPRITE_WIDTH;
+    let right = -1;
+    for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
+      for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+        if (alpha(x, y) === 0) continue;
+        bottom = Math.max(bottom, y);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+    expect(bottom).toBe(SPRITE_ANCHOR.y - 1);
+    expect(Math.abs((left + right) / 2 - (SPRITE_ANCHOR.x - 0.5))).toBeLessThanOrEqual(1);
+    // Alpha is binary: §3 has no partial coverage.
+    for (let i = 3; i < fitted.data.length; i += 4) {
+      expect(fitted.data[i] === 0 || fitted.data[i] === 255).toBe(true);
+    }
+  });
+
+  it("keeps thin detail through the reduction instead of averaging it away", () => {
+    const fitted = fitMasterToCanvas(delivery);
+    // The dark sole is 1% of the figure's height; it must still be there.
+    let dark = 0;
+    for (let i = 0; i < SPRITE_WIDTH * SPRITE_HEIGHT; i += 1) {
+      if ((fitted.data[i * 4 + 3] ?? 0) === 0) continue;
+      if ((fitted.data[i * 4] ?? 0) < 60) dark += 1;
+    }
+    expect(dark).toBeGreaterThan(0);
+  });
+
+  it("resamples with alpha weighting, so transparency cannot tint a neighbour", () => {
+    const source = {
+      width: 2,
+      height: 1,
+      data: new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 0]),
+    };
+    const out = resampleRGBA(source, 1, 1);
+    expect(Array.from(out.data.slice(0, 3))).toEqual([255, 0, 0]);
+    expect(out.data[3]).toBe(128);
   });
 });
 
