@@ -1,24 +1,35 @@
-import { Component, el, portrait, replaceChildren } from "../dom.js";
+import { Component, el, plate, portrait, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import type { TurnOrderEntryView, TurnOrderView } from "../state.js";
 
-/** Upcoming turns, charging casts included, soonest first. */
+/**
+ * Upcoming turns, charging casts included, soonest first — the order the engine
+ * will actually resolve them in.
+ *
+ * Several units are routinely tied at the CT threshold, and calling all of them
+ * "Now" told the player nothing. The queue is numbered instead: one Now, then
+ * Next for everything else already at the line, then the tick countdown.
+ */
 export class TurnOrderStrip implements Component<TurnOrderView> {
   readonly el: HTMLElement;
   private readonly intents: UiIntents;
   private readonly list: HTMLElement;
+  private readonly plateEl: HTMLElement;
 
   constructor(options: { intents?: Partial<UiIntents> } = {}) {
     this.intents = withIntents(options.intents);
     this.list = el("ol", { class: "gf-turn-list" });
+    this.plateEl = plate("Turn Order", "");
     this.el = el("section", {
-      class: "gf-panel gf-turn-order",
+      class: "gf-panel is-quiet gf-turn-order",
       attrs: { "aria-label": "Turn order" },
-      children: [el("h2", { class: "gf-panel-title", text: "Turn Order" }), this.list],
+      children: [this.plateEl, this.list],
     });
   }
 
   update(view: TurnOrderView): void {
+    const stamp = this.plateEl.querySelector(".gf-plate-stamp");
+    if (stamp) stamp.textContent = `${view.entries.length}`;
     replaceChildren(
       this.list,
       view.entries.map((entry, index) => this.renderEntry(entry, index)),
@@ -30,11 +41,28 @@ export class TurnOrderStrip implements Component<TurnOrderView> {
   }
 
   private renderEntry(entry: TurnOrderEntryView, index: number): HTMLElement {
+    const now = index === 0;
+    // Ties at the threshold resolve in the order the preview lists them.
+    const next = !now && entry.ticksUntil === 0;
+    const classes = [
+      "gf-turn-entry",
+      `is-${entry.team}`,
+      entry.kind === "cast" ? "is-cast" : "",
+      now ? "is-now" : "",
+      next ? "is-next" : "",
+    ]
+      .filter((name) => name !== "")
+      .join(" ");
     const node = el("li", {
-      class: `gf-turn-entry is-${entry.team}${entry.kind === "cast" ? " is-cast" : ""}${index === 0 ? " is-now" : ""}`,
+      class: classes,
       data: { unit: entry.unitId, kind: entry.kind },
       children: [
-        portrait(entry.portraitId, entry.name),
+        el("span", { class: "gf-turn-index", text: String(index + 1).padStart(2, "0") }),
+        portrait(entry.portraitId, entry.name, {
+          size: "small",
+          team: entry.team,
+          jobName: entry.jobName,
+        }),
         el("div", {
           class: "gf-turn-labels",
           children: [
@@ -47,7 +75,7 @@ export class TurnOrderStrip implements Component<TurnOrderView> {
         }),
         el("span", {
           class: "gf-turn-ticks",
-          text: entry.ticksUntil === 0 ? "Now" : `+${entry.ticksUntil}`,
+          text: now ? "Now" : next ? "Next" : `+${entry.ticksUntil}`,
         }),
       ],
     });

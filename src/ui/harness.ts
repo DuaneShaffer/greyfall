@@ -104,6 +104,8 @@ function previewFor(abilityId: string) {
 }
 
 hud.update(battleView);
+hud.setMode("orders", battleView.action.unit.name);
+hud.notify("Yard Switch shut down.", "machine");
 
 // --- between-battle screens --------------------------------------------------
 
@@ -206,7 +208,7 @@ const screens: Record<ScreenId, Screen> = {
       }
       if (hud.actionMenu.menus.handleKey(event)) event.preventDefault();
     },
-    tick: (delta) => hud.dialogue.tick(delta),
+    tick: (delta) => hud.tick(delta),
   },
   roster: { label: "Roster", el: roster.el, handleKey: (event) => void roster.menus.handleKey(event) },
   sheet: { label: "Unit Sheet", el: sheet.el },

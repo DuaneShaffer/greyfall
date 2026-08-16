@@ -148,6 +148,61 @@ describe("MenuStack", () => {
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
+  it("moves the cursor on hover without rebuilding the entry nodes", () => {
+    stack.push(baseMenu());
+    const before = [...stack.el.querySelectorAll(".gf-menu-entry")];
+    const act = before[1] as HTMLElement;
+
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(stack.cursorEntry?.id).toBe("act");
+    // Rebuilding here is what used to swallow every click: the node under the
+    // pointer was replaced before mousedown could land on it.
+    expect([...stack.el.querySelectorAll(".gf-menu-entry")]).toEqual(before);
+    expect(act.classList.contains("is-selected")).toBe(true);
+
+    // A pointer resting on an entry re-fires mouseenter; it must settle.
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    expect([...stack.el.querySelectorAll(".gf-menu-entry")]).toEqual(before);
+  });
+
+  it("does not re-fire onCursor when the cursor has not moved", () => {
+    const onCursor = vi.fn();
+    stack.push(baseMenu({ onCursor }));
+    const act = stack.el.querySelectorAll<HTMLElement>(".gf-menu-entry")[1]!;
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    onCursor.mockClear();
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    act.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(onCursor).not.toHaveBeenCalled();
+  });
+
+  it("selects on click, including an entry the cursor was not on", () => {
+    const onSelect = vi.fn();
+    stack.push(baseMenu({ onSelect }));
+    stack.el.querySelectorAll<HTMLElement>(".gf-menu-entry")[3]?.click();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect.mock.calls[0]![0]).toMatchObject({ id: "wait" });
+    expect(stack.cursorEntry?.id).toBe("wait");
+  });
+
+  it("keeps clicking alive after a refresh that changed nothing", () => {
+    const onSelect = vi.fn();
+    stack.push(baseMenu({ onSelect }));
+    stack.refresh(baseMenu({ onSelect }));
+    stack.el.querySelectorAll<HTMLElement>(".gf-menu-entry")[1]?.click();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect.mock.calls[0]![0]).toMatchObject({ id: "act" });
+  });
+
+  it("refuses a clicked disabled entry instead of selecting it", () => {
+    const onSelect = vi.fn();
+    stack.push(baseMenu({ onSelect }));
+    stack.el.querySelector<HTMLElement>(".gf-menu-entry.is-disabled")?.click();
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(stack.el.classList.contains("is-refused")).toBe(true);
+  });
+
   it("refreshes entries in place without losing the cursor", () => {
     stack.push(baseMenu());
     stack.handleKey(key("ArrowDown"));

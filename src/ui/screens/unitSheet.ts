@@ -1,4 +1,4 @@
-import { Component, el, labelledValue, meter, portrait, replaceChildren } from "../dom.js";
+import { Component, el, labelledValue, meter, panel, portrait, replaceChildren } from "../dom.js";
 import { EQUIP_SLOT_LABELS, UnitSheetView, formatSigned, formatStanding } from "../state.js";
 
 const PASSIVE_LABELS: Record<"reaction" | "support" | "movement", string> = {
@@ -21,8 +21,13 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
       el("header", {
         class: "gf-screen-head",
         children: [
-          portrait(unit.portraitId, unit.name),
+          portrait(unit.portraitId, unit.name, {
+            size: "large",
+            team: unit.team,
+            jobName: unit.jobName,
+          }),
           el("div", {
+            class: "gf-screen-head-text",
             children: [
               el("h1", { class: "gf-screen-title", text: unit.name }),
               el("p", { class: "gf-screen-note", text: `${unit.jobName} · Level ${unit.level}` }),
@@ -34,20 +39,18 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
       el("div", {
         class: "gf-sheet-cols",
         children: [
-          el("div", {
-            class: "gf-panel",
+          panel({
+            title: "Condition",
             children: [
-              el("h2", { class: "gf-panel-title", text: "Condition" }),
               this.bar("HP", `${unit.hp} / ${unit.maxHp}`, meter("is-hp", unit.hp, unit.maxHp)),
               this.bar("Charge", `${unit.charge} / ${unit.maxCharge}`, meter("is-charge", unit.charge, unit.maxCharge)),
               labelledValue("Resolve", String(unit.disposition.resolve)),
               labelledValue("Attunement", String(unit.disposition.attunement)),
             ],
           }),
-          el("div", {
-            class: "gf-panel",
+          panel({
+            title: "Attributes",
             children: [
-              el("h2", { class: "gf-panel-title", text: "Attributes" }),
               ...view.stats.map((stat) =>
                 labelledValue(
                   stat.label,
@@ -62,23 +65,21 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
               labelledValue("Evade", `${view.evade}%`),
             ],
           }),
-          el("div", {
-            class: "gf-panel",
+          panel({
+            title: "Equipment",
             children: [
-              el("h2", { class: "gf-panel-title", text: "Equipment" }),
               ...view.equipment.map((slot) =>
                 labelledValue(EQUIP_SLOT_LABELS[slot.slot], slot.itemName ?? "Empty", "gf-equip-line"),
               ),
-              el("h2", { class: "gf-panel-title", text: "Slots" }),
+              el("h3", { class: "gf-panel-subtitle", text: "Slots" }),
               ...view.passives.map((passive) =>
                 labelledValue(PASSIVE_LABELS[passive.slot], passive.abilityName ?? "Unassigned"),
               ),
             ],
           }),
-          el("div", {
-            class: "gf-panel",
+          panel({
+            title: "Abilities",
             children: [
-              el("h2", { class: "gf-panel-title", text: "Abilities" }),
               el("ul", {
                 class: "gf-ability-list",
                 children:

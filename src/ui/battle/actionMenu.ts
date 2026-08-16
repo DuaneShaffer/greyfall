@@ -50,7 +50,6 @@ export class ActionMenu implements Component<ActionMenuView> {
       {
         id: "move",
         label: "Move",
-        detail: `${view.unit.jobName}`,
         disabled: !view.canMove,
         ...(view.canMove ? {} : { disabledReason: view.moveBlockedReason ?? "Move already spent" }),
       },
@@ -74,12 +73,20 @@ export class ActionMenu implements Component<ActionMenuView> {
     }
     const operables = view.operables ?? [];
     if (operables.length > 0) {
-      entries.push({ id: "operate", label: "Operate", detail: `${operables.length}` });
+      const only = operables.length === 1 ? operables[0]?.name : undefined;
+      entries.push({
+        id: "operate",
+        label: "Operate",
+        detail: `${operables.length}`,
+        ...(only === undefined ? {} : { note: only }),
+      });
     }
-    entries.push({ id: "wait", label: "Wait" });
+    entries.push({ id: "wait", label: "Wait", note: "Ends the turn" });
     return {
       id: ROOT_ID,
-      title: view.unit.name,
+      // The unit is named on the panel directly above; repeating it here is
+      // noise. This menu answers "what may they do", not "who are they".
+      title: "Orders",
       cancellable: false,
       entries,
       onSelect: (entry) => this.onRootSelect(entry),

@@ -31,14 +31,21 @@ const KEY_CONFIRM = new Set(["Enter", " "]);
 const KEY_CANCEL = new Set(["Escape", "Backspace"]);
 
 /**
- * The spine of every menu in the game: a stack of keyboard-driven lists with
- * wraparound, skipped-but-visible disabled entries, and a cursor position
- * remembered per menu id (FFT re-opens Act on the ability you last looked at).
+ * The spine of every menu in the game: a stack of lists with wraparound,
+ * skipped-but-visible disabled entries, and a cursor position remembered per
+ * menu id (FFT re-opens Act on the ability you last looked at).
+ *
+ * Keyboard and mouse are equals. Hovering moves the cursor and clicking
+ * confirms it, which only works because the cursor never rebuilds the list:
+ * `setCursor` is a no-op when the index has not changed, and `refresh` patches
+ * in place unless the entries themselves changed.
  */
 export class MenuStack implements Component<void> {
   readonly el: HTMLElement;
   private readonly stack: MenuDef[] = [];
   private readonly cursors = new Map<string, number>();
+  /** Live entry nodes per menu id, so the cursor can move without a rebuild. */
+  private readonly nodes = new Map<string, { list: HTMLElement; entries: HTMLElement[] }>();
   private keyTarget: EventTarget | null = null;
   private readonly onKeyDown = (event: Event): void => {
     if (this.handleKey(event as KeyboardEvent)) event.preventDefault();
@@ -46,6 +53,12 @@ export class MenuStack implements Component<void> {
 
   constructor() {
     this.el = focusable(el("div", { class: "gf-menu-stack", attrs: { role: "presentation" } }));
+    // Right-click is the mouse's Escape. Without it a player who never touches
+    // the keyboard can open a submenu and has no way back out of it.
+    this.el.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      this.cancel();
+    });
     this.render();
   }
 
@@ -114,8 +127,16 @@ export class MenuStack implements Component<void> {
   refresh(menu: MenuDef): void {
     const index = this.stack.findIndex((m) => m.id === menu.id);
     if (index === -1) return;
+    const previous = this.stack[index];
     this.stack[index] = menu;
     this.setCursor(menu, this.cursors.get(menu.id) ?? 0, { silent: true });
+    // Rebuilding entry nodes under a resting pointer costs the player their
+    // mouse (the node that would receive mousedown is replaced first), so a
+    // refresh that changes nothing visible must not touch the DOM at all.
+    if (previous !== undefined && sameEntries(previous.entries, menu.entries)) {
+      this.syncSelection();
+      return;
+    }
     this.render();
   }
 
@@ -179,11 +200,34 @@ export class MenuStack implements Component<void> {
 
   private setCursor(menu: MenuDef, index: number, options: { silent?: boolean } = {}): void {
     const resolved = this.findSelectable(menu, index, 1);
-    this.cursors.set(menu.id, resolved === -1 ? Math.max(0, Math.min(index, menu.entries.length - 1)) : resolved);
-    if (!options.silent) {
-      this.render();
-      this.notifyCursor();
-    }
+    const next =
+      resolved === -1 ? Math.max(0, Math.min(index, menu.entries.length - 1)) : resolved;
+    const previous = this.cursors.get(menu.id);
+    this.cursors.set(menu.id, next);
+    if (options.silent) return;
+    // A cursor that did not move is not an event. Re-rendering (and re-firing
+    // onCursor) here is what used to put a resting pointer into a permanent
+    // rebuild loop and swallow every click.
+    if (previous === next) return;
+    this.syncSelection();
+    this.notifyCursor();
+  }
+
+  /** Move the highlight over the nodes already on screen; never rebuild them. */
+  private syncSelection(): void {
+    const top = this.stack.length - 1;
+    this.stack.forEach((menu, level) => {
+      const nodes = this.nodes.get(menu.id);
+      if (nodes === undefined) return;
+      const cursor = this.cursors.get(menu.id) ?? 0;
+      const active = level === top;
+      nodes.list.setAttribute("aria-activedescendant", active ? `${menu.id}-${cursor}` : "");
+      nodes.entries.forEach((node, index) => {
+        node.classList.toggle("is-selected", active && index === cursor);
+        const caret = node.querySelector(".gf-menu-cursor");
+        if (caret) caret.textContent = active && index === cursor ? "▸" : " ";
+      });
+    });
   }
 
   /** Nearest selectable entry from `start`, wrapping in `step`'s direction. */
@@ -212,6 +256,7 @@ export class MenuStack implements Component<void> {
   }
 
   private render(): void {
+    this.nodes.clear();
     replaceChildren(
       this.el,
       this.stack.map((menu, level) => this.renderMenu(menu, level === this.stack.length - 1)),
@@ -229,10 +274,14 @@ export class MenuStack implements Component<void> {
       },
       children: items,
     });
+    this.nodes.set(menu.id, { list, entries: items });
     return el("div", {
       class: `gf-menu${active ? " is-active" : ""}`,
       data: { menu: menu.id },
-      children: [menu.title !== undefined && el("h2", { class: "gf-menu-title", text: menu.title }), list],
+      children: [
+        menu.title !== undefined && el("h2", { class: "gf-menu-title", text: menu.title }),
+        list,
+      ],
     });
   }
 
@@ -259,15 +308,46 @@ export class MenuStack implements Component<void> {
           el("span", { class: "gf-menu-reason", text: entry.disabledReason }),
       ],
     });
+    // Handlers match the menu by id, not by identity: a `refresh` that changed
+    // nothing keeps these nodes but hands the stack a fresh MenuDef, and an
+    // identity check would quietly make every surviving node inert.
+    const liveEntry = (): MenuEntry | null => {
+      const active = this.active;
+      if (active === null || active.id !== menu.id) return null;
+      return active.entries[index] ?? null;
+    };
     node.addEventListener("mouseenter", () => {
-      if (this.active !== menu || entry.disabled) return;
+      const current = liveEntry();
+      if (current === null || current.disabled === true) return;
       this.setCursor(menu, index);
     });
     node.addEventListener("click", () => {
-      if (this.active !== menu) return;
+      const current = liveEntry();
+      if (current === null) return;
+      if (current.disabled === true) {
+        this.flash();
+        return;
+      }
       this.setCursor(menu, index);
       this.confirm();
     });
     return node;
   }
+}
+
+/** True when two entry lists would draw identically. */
+function sameEntries(a: readonly MenuEntry[], b: readonly MenuEntry[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((entry, index) => {
+    const other = b[index];
+    return (
+      other !== undefined &&
+      entry.id === other.id &&
+      entry.label === other.label &&
+      entry.detail === other.detail &&
+      entry.note === other.note &&
+      (entry.disabled ?? false) === (other.disabled ?? false) &&
+      entry.disabledReason === other.disabledReason
+    );
+  });
 }

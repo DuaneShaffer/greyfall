@@ -22,6 +22,8 @@ export class DialogueBox implements Component<DialogueLine[]> {
   private readonly speakerEl: HTMLElement;
   private readonly textEl: HTMLElement;
   private readonly promptEl: HTMLElement;
+  private readonly advanceEl: HTMLElement;
+  private readonly countEl: HTMLElement;
   private readonly portraitSlot: HTMLElement;
   private lines: DialogueLine[] = [];
   private index = 0;
@@ -40,19 +42,35 @@ export class DialogueBox implements Component<DialogueLine[]> {
     this.intents = withIntents(options.intents);
     this.speakerEl = el("div", { class: "gf-dialogue-speaker" });
     this.textEl = el("p", { class: "gf-dialogue-text" });
-    this.promptEl = el("span", { class: "gf-dialogue-prompt", text: "▾" });
+    this.promptEl = el("span", { class: "gf-dialogue-prompt", text: "▼" });
+    this.countEl = el("span", { class: "gf-dialogue-count" });
+    this.advanceEl = el("div", {
+      class: "gf-dialogue-advance",
+      children: [
+        el("span", { class: "gf-dialogue-hint", text: "Click or press Enter" }),
+        this.promptEl,
+      ],
+    });
     this.portraitSlot = el("div", { class: "gf-dialogue-portrait" });
     this.el = el("section", {
       class: "gf-dialogue is-hidden",
-      attrs: { "aria-live": "polite", "aria-label": "Dialogue" },
+      attrs: {
+        "aria-live": "polite",
+        "aria-label": "Dialogue — click to continue",
+        role: "button",
+        tabindex: 0,
+      },
       children: [
         this.portraitSlot,
         el("div", {
           class: "gf-dialogue-body",
-          children: [this.speakerEl, this.textEl, this.promptEl],
+          children: [this.speakerEl, this.countEl, this.textEl, this.advanceEl],
         }),
       ],
     });
+    // The line is a click target in its own right: keyboard-only advancement is
+    // where a player gets stuck with nothing on screen telling them why.
+    this.el.addEventListener("click", () => this.advance());
   }
 
   get lineIndex(): number {
@@ -148,12 +166,17 @@ export class DialogueBox implements Component<DialogueLine[]> {
     if (!line) {
       this.textEl.textContent = "";
       this.speakerEl.textContent = "";
+      this.countEl.textContent = "";
       this.portraitSlot.replaceChildren();
       return;
     }
     this.speakerEl.textContent = line.speaker;
     this.textEl.textContent = line.text.slice(0, this.revealed);
-    this.promptEl.classList.toggle("is-ready", !this.isRevealing);
-    this.portraitSlot.replaceChildren(portrait(line.portraitId, line.speaker));
+    this.countEl.textContent =
+      this.lines.length > 1 ? `${this.index + 1} / ${this.lines.length}` : "";
+    this.advanceEl.classList.toggle("is-ready", !this.isRevealing);
+    this.portraitSlot.replaceChildren(
+      portrait(line.portraitId, line.speaker, { size: "large" }),
+    );
   }
 }

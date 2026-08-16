@@ -65,6 +65,8 @@ export interface ProgressionIntents {
   beginDeployment(): void;
   /** Put a unit on the next free deployment tile, or pull it back off. */
   toggleDeployment(unitId: string): void;
+  /** Put a unit on a named deployment tile, swapping with whoever holds it. */
+  assignDeployment(unitId: string, tileIndex: number): void;
   /** Formation locked in; the battle starts. */
   confirmDeployment(): void;
   closeScreen(): void;
@@ -107,6 +109,7 @@ export function noopIntents(): UiIntents {
     setSecondaryJob: sink,
     beginDeployment: sink,
     toggleDeployment: sink,
+    assignDeployment: sink,
     confirmDeployment: sink,
     closeScreen: sink,
   };

@@ -1,4 +1,4 @@
-import { Component, el, replaceChildren } from "../dom.js";
+import { Component, el, plate, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
 import { LearnableView, LearningView, formatStanding } from "../state.js";
@@ -24,7 +24,15 @@ export class LearningScreen implements Component<LearningView> {
       children: [
         el("header", {
           class: "gf-screen-head",
-          children: [el("h1", { class: "gf-screen-title", text: "Abilities" }), this.standingEl],
+          children: [
+            el("div", {
+              class: "gf-screen-head-text",
+              children: [
+                el("h1", { class: "gf-screen-title", text: "Abilities" }),
+                this.standingEl,
+              ],
+            }),
+          ],
         }),
         el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
       ],
@@ -97,21 +105,30 @@ export class LearningScreen implements Component<LearningView> {
 
   private renderDetail(entry: LearnableView | null, standing: number): void {
     if (!entry) {
-      replaceChildren(this.detail, [el("p", { class: "gf-empty-note", text: "No ability selected." })]);
+      replaceChildren(this.detail, [
+        plate("Ability"),
+        el("p", { class: "gf-empty-note", text: "No ability selected." }),
+      ]);
       return;
     }
     replaceChildren(this.detail, [
-      el("h2", { class: "gf-detail-title", text: entry.name }),
-      el("p", { class: "gf-detail-sub", text: `${entry.slot} · Charge ${entry.chargeCost}` }),
-      el("p", { class: "gf-detail-text", text: entry.description }),
-      el("p", { class: "gf-detail-cost", text: formatStanding(entry.standingCost) }),
-      el("p", {
-        class: "gf-detail-note",
-        text: entry.learned
-          ? "Already learned"
-          : entry.standingCost > standing
-            ? `Insufficient Standing — ${entry.standingCost - standing} short`
-            : `Standing after: ${standing - entry.standingCost}`,
+      plate("Ability", entry.learned ? "LEARNED" : entry.slot.toUpperCase()),
+      el("div", {
+        class: "gf-detail-body",
+        children: [
+          el("h2", { class: "gf-detail-title", text: entry.name }),
+          el("p", { class: "gf-detail-sub", text: `${entry.slot} · Charge ${entry.chargeCost}` }),
+          el("p", { class: "gf-detail-text", text: entry.description }),
+          el("p", { class: "gf-detail-cost", text: formatStanding(entry.standingCost) }),
+          el("p", {
+            class: "gf-detail-note",
+            text: entry.learned
+              ? "Already learned"
+              : entry.standingCost > standing
+                ? `Insufficient Standing — ${entry.standingCost - standing} short`
+                : `Standing after: ${standing - entry.standingCost}`,
+          }),
+        ],
       }),
     ]);
   }

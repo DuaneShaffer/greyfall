@@ -134,7 +134,9 @@ export function campaignPartyView(
       hp: stats.hp,
       maxHp: stats.hp,
       standing: jobProgress(state, unit.id, unit.jobId).balance,
-      note: `${jobName(content, unit.jobId)} job level ${level}`,
+      // The row already prints the job beside the name; the job *level* is the
+      // fact it does not carry, and it belongs to the record pane.
+      jobLevel: level,
     });
   }
   return { members, deployedLimit };

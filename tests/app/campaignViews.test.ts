@@ -20,14 +20,15 @@ const TILES = [
 ];
 
 describe("campaignPartyView", () => {
-  it("lists the roster with spendable Standing and the job level note", () => {
+  it("lists the roster with spendable Standing and the job level", () => {
     const view = campaignPartyView(benchState(), BENCH, 4);
     expect(view.deployedLimit).toBe(4);
     expect(view.members.map((m) => m.unitId)).toEqual(["rowen", "vale"]);
     const rowen = view.members[0]!;
     expect(rowen.standing).toBe(300);
     expect(rowen.hp).toBe(rowen.maxHp);
-    expect(rowen.note).toContain("job level 3");
+    expect(rowen.jobLevel).toBe(3);
+    expect(rowen.note).toBeUndefined();
   });
 });
 

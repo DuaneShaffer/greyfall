@@ -1,7 +1,7 @@
-import { Component, el, meter, portrait, replaceChildren } from "../dom.js";
+import { Component, el, meter, plate, portrait, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
-import { PartyView, RosterEntryView, formatStanding } from "../state.js";
+import { PartyView, RosterEntryView } from "../state.js";
 
 const ROSTER_ID = "roster";
 
@@ -23,8 +23,13 @@ export class RosterScreen implements Component<PartyView> {
         el("header", {
           class: "gf-screen-head",
           children: [
-            el("h1", { class: "gf-screen-title", text: "Party Roster" }),
-            el("p", { class: "gf-screen-note" }),
+            el("div", {
+              class: "gf-screen-head-text",
+              children: [
+                el("h1", { class: "gf-screen-title", text: "Party Roster" }),
+                el("p", { class: "gf-screen-note" }),
+              ],
+            }),
           ],
         }),
         el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
@@ -56,10 +61,13 @@ export class RosterScreen implements Component<PartyView> {
       id: ROSTER_ID,
       title: "Roster",
       cancellable: false,
+      // One fact per column: who, what they are, and what shape they are in.
+      // The job used to be printed twice per row, once as a level and once as a
+      // sentence; the job level now lives in the record beside the list.
       entries: view.members.map((member) => ({
         id: member.unitId,
         label: member.name,
-        detail: `${member.jobName} · ${member.level}`,
+        detail: `${member.jobName} ${member.level}`,
         ...(member.note === undefined ? {} : { note: member.note }),
         disabled: member.hp === 0,
         disabledReason: "Downed — unavailable until the next engagement",
@@ -92,25 +100,60 @@ export class RosterScreen implements Component<PartyView> {
     };
   }
 
+  /** The record beside the list: everything the row deliberately leaves out. */
   private renderDetail(member: RosterEntryView | null): void {
     if (!member) {
-      replaceChildren(this.detail, [el("p", { class: "gf-empty-note", text: "No unit selected." })]);
+      replaceChildren(this.detail, [
+        plate("Record"),
+        el("p", { class: "gf-empty-note", text: "No unit selected." }),
+      ]);
       return;
     }
     replaceChildren(this.detail, [
-      portrait(member.portraitId, member.name),
-      el("h2", { class: "gf-detail-title", text: member.name }),
-      el("p", { class: "gf-detail-sub", text: `${member.jobName} · Level ${member.level}` }),
+      plate("Record", member.note ?? "ON ROSTER"),
       el("div", {
-        class: "gf-unit-bar",
+        class: "gf-detail-head",
         children: [
-          el("span", { class: "gf-field-label", text: "HP" }),
-          el("span", { class: "gf-field-value", text: `${member.hp} / ${member.maxHp}` }),
-          meter("is-hp", member.hp, member.maxHp),
+          portrait(member.portraitId, member.name, {
+            size: "large",
+            team: "player",
+            jobName: member.jobName,
+          }),
+          el("div", {
+            children: [
+              el("h2", { class: "gf-detail-title", text: member.name }),
+              el("p", { class: "gf-detail-sub", text: `${member.jobName} · Level ${member.level}` }),
+            ],
+          }),
         ],
       }),
-      el("p", { class: "gf-detail-standing", text: formatStanding(member.standing) }),
-      member.note !== undefined && el("p", { class: "gf-detail-note", text: member.note }),
+      el("div", {
+        class: "gf-detail-body",
+        children: [
+          el("div", {
+            class: "gf-unit-bar",
+            children: [
+              el("span", { class: "gf-field-label", text: "HP" }),
+              el("span", { class: "gf-field-value", text: `${member.hp} / ${member.maxHp}` }),
+              meter("is-hp", member.hp, member.maxHp),
+            ],
+          }),
+          el("dl", {
+            class: "gf-ledger",
+            children: [
+              el("dt", { text: "Standing" }),
+              el("dd", { class: "gf-detail-standing", text: String(member.standing) }),
+              ...(member.jobLevel === undefined
+                ? []
+                : [
+                    el("dt", { text: `${member.jobName} level` }),
+                    el("dd", { text: String(member.jobLevel) }),
+                  ]),
+            ],
+          }),
+          el("p", { class: "gf-hint", text: "Enter opens the unit's record, kit, and jobs." }),
+        ],
+      }),
     ]);
   }
 }

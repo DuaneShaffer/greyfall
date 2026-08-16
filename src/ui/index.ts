@@ -8,6 +8,8 @@ export { DialogueBox } from "./battle/dialogue.js";
 export { ForecastPanel } from "./battle/forecast.js";
 export { TurnOrderStrip } from "./battle/turnOrder.js";
 export { UnitStatusPanel } from "./battle/unitStatus.js";
+export { ModeBar } from "./battle/modeBar.js";
+export { NoticeStrip, type NoticeTone } from "./battle/notice.js";
 export { DeploymentScreen } from "./screens/deployment.js";
 export { EquipmentScreen } from "./screens/equipment.js";
 export { JobScreen } from "./screens/jobs.js";

@@ -250,6 +250,23 @@ export class CampaignSession {
     return true;
   }
 
+  /**
+   * Put a unit on a named tile. Whoever was standing there takes the mover's
+   * old tile if it had one, so dragging a unit around a filled formation swaps
+   * rather than silently benching somebody.
+   */
+  assignDeployment(unitId: string, tileIndex: number): boolean {
+    if (this.pending === null) return false;
+    if (rosterUnit(this.campaignState, unitId) === null) return false;
+    const assignments = this.pending.assignments;
+    if (tileIndex < 0 || tileIndex >= assignments.length) return false;
+    const from = assignments.indexOf(unitId);
+    const occupant = assignments[tileIndex] ?? null;
+    assignments[tileIndex] = unitId;
+    if (from !== -1 && from !== tileIndex) assignments[from] = occupant;
+    return true;
+  }
+
   /** The staged formation as core `Deployment`s, in tile order. */
   deploymentPlacements(): Deployment[] {
     if (this.pending === null) return [];
@@ -322,5 +339,6 @@ export function progressionIntents(
     changeJob: (unitId, jobId) => void session.changeJob(unitId, jobId),
     setSecondaryJob: (unitId, jobId) => void session.setSecondaryJob(unitId, jobId),
     toggleDeployment: (unitId) => void session.toggleDeployment(unitId),
+    assignDeployment: (unitId, tileIndex) => void session.assignDeployment(unitId, tileIndex),
   };
 }

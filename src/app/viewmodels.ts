@@ -38,10 +38,11 @@ import {
   type GameState,
   type TargetRef,
 } from "../core/index.js";
-import type { DamageType, DialogueLine } from "../data/index.js";
+import type { DamageType, DialogueLine, StatKey } from "../data/index.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
+  formatSigned,
   type AbilityView,
   type ActionMenuView,
   type BattleHudView,
@@ -54,6 +55,7 @@ import {
   type RosterEntryView,
   type SkillsetView,
   type StatLineView,
+  type StatModView,
   type StatusView,
   type TurnOrderEntryView,
   type TurnOrderView,
@@ -76,6 +78,30 @@ const statusViews = (state: GameState, unit: BattleUnit): StatusView[] =>
     };
   });
 
+/**
+ * Timed stat changes, named by what they actually did. A `modifyStats` effect
+ * carries no status and no icon, so without this the number simply moved and
+ * the player had nothing to read it against.
+ */
+const modifierViews = (unit: BattleUnit): StatModView[] => {
+  const out: StatModView[] = [];
+  for (const mod of unit.tempMods) {
+    const parts = Object.entries(mod.mods).filter(
+      (entry): entry is [StatKey, number] => typeof entry[1] === "number" && entry[1] !== 0,
+    );
+    if (parts.length === 0) continue;
+    const gains = parts.filter(([, value]) => value > 0).length;
+    const losses = parts.length - gains;
+    out.push({
+      id: mod.id,
+      label: parts.map(([key, value]) => `${STAT_LABELS[key]} ${formatSigned(value)}`).join(" · "),
+      remainingTurns: mod.turnsRemaining,
+      direction: losses === 0 ? "gain" : gains === 0 ? "loss" : "mixed",
+    });
+  }
+  return out;
+};
+
 export function unitView(state: GameState, unitId: string): UnitView | null {
   const unit = getUnit(state, unitId);
   if (unit === null) return null;
@@ -94,6 +120,7 @@ export function unitView(state: GameState, unitId: string): UnitView | null {
     ct: unit.ct,
     facing: unit.facing,
     statuses: statusViews(state, unit),
+    modifiers: modifierViews(unit),
     disposition: unit.unit.disposition,
     downed: unit.downed,
   };
@@ -330,6 +357,12 @@ export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT
 export interface HudInputs {
   /** Unit under the cursor; falls back to the acting unit. */
   inspectedUnitId?: string | null;
+  /**
+   * Who the HUD is about when nobody is acting — the closing frame of a battle.
+   * The panels still have to report final numbers; they just cannot offer
+   * anything to do with them.
+   */
+  subjectUnitId?: string | null;
   forecast?: ForecastView | null;
   dialogue?: DialogueLine[];
   turnOrderCount?: number;
@@ -337,10 +370,11 @@ export interface HudInputs {
 
 export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleHudView | null {
   const acting = activeUnit(state);
-  if (acting === null) return null;
-  const action = actionMenuView(state, acting.id);
+  const subjectId = acting?.id ?? inputs.subjectUnitId ?? null;
+  if (subjectId === null) return null;
+  const action = actionMenuView(state, subjectId);
   if (action === null) return null;
-  const inspectedId = inputs.inspectedUnitId ?? acting.id;
+  const inspectedId = inputs.inspectedUnitId ?? subjectId;
   return {
     action,
     inspected: inspectedId === null ? null : unitView(state, inspectedId),

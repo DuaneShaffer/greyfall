@@ -283,6 +283,9 @@ export function mockEnemyView(overrides: Partial<UnitView> = {}): UnitView {
     ct: 62,
     facing: "south",
     statuses: [{ id: "stunned", name: "Stunned", category: "debuff", remainingTurns: 1 }],
+    modifiers: [
+      { id: "mod-1", label: "Phys -3", remainingTurns: 2, direction: "loss" as const },
+    ],
     disposition: { resolve: 55, attunement: 45 },
     ...overrides,
   });

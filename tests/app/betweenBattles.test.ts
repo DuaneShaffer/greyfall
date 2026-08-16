@@ -127,7 +127,7 @@ describe("BetweenBattleScreens", () => {
     expect(h.screens.current).toBe("formation");
     const slots = h.screens.formation.el.querySelectorAll(".gf-deploy-slot");
     expect(slots.length).toBe(h.session.deployment!.assignments.length);
-    expect(h.screens.formation.el.textContent).toContain("deployed");
+    expect(h.screens.formation.el.textContent).toContain("tiles filled");
   });
 
   it("offers the engagements already won, and nothing before one is", () => {
@@ -149,7 +149,7 @@ describe("BetweenBattleScreens", () => {
     expect(h.replayRequests).toEqual(["e1-marshaling-yard"]);
   });
 
-  it("toggles a unit off the field from the formation list", () => {
+  it("picks a fielded unit up for re-placement, and withdraws it on demand", () => {
     h.session.beginDeployment("e1-marshaling-yard");
     h.screens.showFormation();
     const first = h.session.state.roster[0]!.id;
@@ -158,8 +158,30 @@ describe("BetweenBattleScreens", () => {
     );
     expect(entry).toBeDefined();
     entry!.click();
+    expect(h.screens.formation.placingUnitId).toBe(first);
+    expect(h.screens.formation.el.textContent).toContain("Pick a tile on the field");
+
+    const withdraw = h.screens.formation.el.querySelector<HTMLElement>(
+      '.gf-menu-entry[data-entry="__withdraw"]',
+    );
+    expect(withdraw).not.toBeNull();
+    withdraw!.click();
     expect(h.session.deployment!.assignments).not.toContain(first);
     expect(h.screens.formation.el.textContent).toContain("Reserve");
+  });
+
+  it("places a held unit on a tile clicked out on the field", () => {
+    h.session.beginDeployment("e1-marshaling-yard");
+    h.screens.showFormation();
+    const roster = h.session.state.roster;
+    const first = roster[0]!.id;
+    const entry = h.screens.formation.el.querySelector<HTMLElement>(
+      `.gf-menu-entry[data-entry="${first}"]`,
+    );
+    entry!.click();
+    expect(h.screens.formation.pickTile(2)).toBe(true);
+    expect(h.session.deployment!.assignments[2]).toBe(first);
+    expect(h.screens.formation.placingUnitId).toBeNull();
   });
 
   it("reports the confirm through the handler", () => {

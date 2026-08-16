@@ -27,6 +27,7 @@ import {
   applyCommand,
   battleMap,
   battleResult,
+  getObject,
   getUnit,
   itemAbilityId,
   itemIdFromAbilityId,
@@ -45,7 +46,13 @@ import { toRenderEventList, viewModelFromGameState } from "../render/adapter.js"
 import { palette } from "../render/palette.js";
 import type { RenderEvent } from "../render/presentation.js";
 import type { BattleViewModel } from "../render/viewmodel.js";
-import type { BattleHudView, TargetRef as UiTargetRef, UiIntents } from "../ui/index.js";
+import type {
+  BattleHudView,
+  HudMode,
+  NoticeTone,
+  TargetRef as UiTargetRef,
+  UiIntents,
+} from "../ui/index.js";
 import { battleHudView, forecastView } from "./viewmodels.js";
 
 export type ControllerPhase = "presenting" | "dialogue" | "player" | "ai" | "ended";
@@ -75,6 +82,18 @@ export interface RendererPort {
 export interface UiPort {
   /** Draw a fresh set of view models. Must not restart an open dialogue. */
   render(view: BattleHudView): void;
+  /**
+   * What the game is asking for now. The HUD announces it and styles itself
+   * around it; nothing else in the overlay has to infer the phase.
+   */
+  setMode(mode: HudMode, detail?: string | null): void;
+  /**
+   * The staged action is away. The forecast keeps its numbers as the record of
+   * what was ordered but must stop offering to send it again.
+   */
+  lockForecast(): void;
+  /** The field is closed: clear every live affordance and settle on the truth. */
+  showFinalState(view: BattleHudView | null, result: BattleResult | null): void;
   showDialogue(lines: DialogueLine[]): void;
   hideDialogue(): void;
   showResult(result: BattleResult): void;
@@ -88,7 +107,8 @@ export interface UiPort {
    * click can never land against a HUD that is one animation out of date.
    */
   setBusy(busy: boolean): void;
-  notify?(message: string): void;
+  /** Brief, non-modal feedback. `tone` separates a refusal from a report. */
+  notify?(message: string, tone?: NoticeTone): void;
 }
 
 type Selection =
@@ -244,7 +264,10 @@ export class BattleController {
         return;
       }
       case "move": {
-        if (!this.moveTargets.some((candidate) => sameTile(candidate, tile))) return;
+        if (!this.moveTargets.some((candidate) => sameTile(candidate, tile))) {
+          this.refuse("No path there");
+          return;
+        }
         if (this.selection.pending !== null && sameTile(this.selection.pending, tile)) {
           this.intents.confirmMove(acting.id, tile);
           return;
@@ -258,10 +281,16 @@ export class BattleController {
         return;
       }
       case "target": {
-        if (!this.aimTargets.some((candidate) => sameTile(candidate, tile))) return;
+        if (!this.aimTargets.some((candidate) => sameTile(candidate, tile))) {
+          this.refuse("Out of reach");
+          return;
+        }
         const abilityId = this.selection.abilityId;
         const target = this.targetRefAt(acting, abilityId, tile);
-        if (target === null) return;
+        if (target === null) {
+          this.refuse("Nothing to target there");
+          return;
+        }
         if (this.selection.pending !== null && sameTarget(this.selection.pending, target)) {
           this.commitAct(acting.id, abilityId, target);
           return;
@@ -301,8 +330,7 @@ export class BattleController {
         const abilityId = itemAbilityId(itemId);
         this.commitAct(unitId, abilityId, this.resolveUiTarget(unitId, abilityId, target));
       },
-      activateObject: (unitId, objectId) =>
-        this.dispatch({ kind: "activateObject", unitId, objectId }),
+      activateObject: (unitId, objectId) => this.operate(unitId, objectId),
       cancelSelection: () => {
         this.clearSelection();
         this.refresh();
@@ -328,6 +356,7 @@ export class BattleController {
       setSecondaryJob: noop,
       beginDeployment: noop,
       toggleDeployment: noop,
+      assignDeployment: noop,
       confirmDeployment: noop,
       closeScreen: noop,
     };
@@ -385,6 +414,28 @@ export class BattleController {
     this.dispatch({ kind: "wait", unitId, facing });
   }
 
+  /**
+   * Operating machinery is the one player action whose whole result is a state
+   * change on a map object. The renderer flashes the seams; the HUD says which
+   * machine answered and what it did, or the player is left guessing whether
+   * the click landed.
+   */
+  private operate(unitId: string, objectId: string): void {
+    const before = getObject(this.gameState, objectId);
+    const name = before?.def.name ?? "Machinery";
+    const poweredBefore = before?.powered ?? null;
+    if (!this.dispatch({ kind: "activateObject", unitId, objectId })) return;
+    const after = getObject(this.gameState, objectId);
+    const poweredAfter = after?.powered ?? null;
+    const changed =
+      poweredAfter === null || poweredBefore === poweredAfter
+        ? "operated"
+        : poweredAfter
+          ? "powered up"
+          : "shut down";
+    this.ui.notify?.(`${name} ${changed}.`, "machine");
+  }
+
   private commitAct(unitId: string, abilityId: string, target: TargetRef | null): void {
     if (target === null) return;
     const itemId = itemIdFromAbilityId(abilityId);
@@ -427,13 +478,17 @@ export class BattleController {
     const result = applyCommand(this.gameState, command);
     if (result.error !== null) {
       this.lastCommandError = result.error;
-      this.ui.notify?.(result.error.message);
+      this.ui.notify?.(result.error.message, "refusal");
       this.refresh();
       return false;
     }
     this.lastCommandError = null;
     this.gameState = result.state;
     this.clearSelection();
+    // The forecast stays up through the presentation as the record of what was
+    // ordered, but it is describing an action already in flight: kill the stamp
+    // now rather than when the queue finally drains.
+    this.ui.lockForecast();
     this.ui.resetMenus();
     this.consume(result.events, result.state);
     // No refresh here: the HUD must not jump ahead of the animation it is
@@ -478,6 +533,11 @@ export class BattleController {
     if (result !== null) {
       this.setPhase("ended");
       this.clearSelection();
+      // The banner used to land over a HUD frozen at the killing blow: a turn
+      // order listing the dead, stale hp, and a forecast still offering to
+      // commit. Hand the final state over with the result so the overlay can
+      // settle before the banner covers it.
+      this.ui.showFinalState(this.finalView(), result);
       this.ui.showResult(result);
       return;
     }
@@ -485,6 +545,7 @@ export class BattleController {
     const acting = activeUnit(this.gameState);
     if (acting === null) {
       this.setPhase("ended");
+      this.ui.showFinalState(this.finalView(), null);
       return;
     }
     this.inspectedUnitId = acting.id;
@@ -502,6 +563,47 @@ export class BattleController {
   private setPhase(phase: ControllerPhase): void {
     this.currentPhase = phase;
     this.ui.setBusy(phase !== "player");
+    this.announceMode();
+  }
+
+  /** Say what the game is waiting for. Phase alone is too coarse: inside the
+   *  player's turn, picking a tile and picking a target are different jobs. */
+  private announceMode(): void {
+    const acting = activeUnit(this.gameState);
+    const name = acting?.unit.name ?? null;
+    if (this.currentPhase === "presenting") return this.ui.setMode("presenting", null);
+    if (this.currentPhase === "dialogue") return this.ui.setMode("dialogue", null);
+    if (this.currentPhase === "ai") return this.ui.setMode("ai", name);
+    if (this.currentPhase === "ended") return this.ui.setMode("ended", null);
+    if (this.selection.mode === "move") return this.ui.setMode("move", name);
+    if (this.selection.mode === "facing") return this.ui.setMode("facing", name);
+    if (this.selection.mode === "target" && acting !== null) {
+      const ability = abilityInfo(this.gameState, acting.id, this.selection.abilityId);
+      return this.ui.setMode("target", ability?.name ?? name);
+    }
+    this.ui.setMode("orders", name);
+  }
+
+  /** A refused click. Non-modal, and it never costs the player their staging. */
+  private refuse(message: string): void {
+    this.ui.notify?.(message, "refusal");
+  }
+
+  /** The battle's closing frame: fresh numbers, nothing still offering input. */
+  private finalView(): BattleHudView | null {
+    const survivor =
+      allUnits(this.gameState).find((unit) => unit.team === "player" && !unit.downed) ?? null;
+    const view = battleHudView(this.gameState, {
+      inspectedUnitId: this.inspectedUnitId,
+      subjectUnitId: survivor?.id ?? allUnits(this.gameState)[0]?.id ?? null,
+      forecast: null,
+      dialogue: [],
+      turnOrderCount: this.turnOrderCount,
+    });
+    if (view === null) return null;
+    // Nobody is queued once the field is closed. Listing the next few turns —
+    // the dead among them — was the HUD's biggest lie.
+    return { ...view, turnOrder: { entries: [] } };
   }
 
   private stepAi(): void {
@@ -524,6 +626,7 @@ export class BattleController {
       turnOrderCount: this.turnOrderCount,
     });
     if (view !== null) this.ui.render(view);
+    this.announceMode();
   }
 
   private pendingForecast(): ReturnType<typeof forecastView> {

@@ -29,13 +29,30 @@ export interface BetweenBattleHandlers {
   confirmDeployment(): void;
   /** Player chose an engagement already won and wants it again. */
   replayEncounter?(encounterId: string): void;
+  /**
+   * The staged formation changed, or a unit is waiting for a tile. The app
+   * redraws the battlefield preview and lights the deployment tiles.
+   */
+  onFormationChanged?(placingUnitId: string | null): void;
+  /** The formation screen is no longer up; drop the preview highlights. */
+  onFormationClosed?(): void;
   save?(): void;
   load?(): void;
 }
 
 const REPLAY_MENU_ID = "replay-engagements";
 
-const TOAST_TICKS = 4;
+/** What each screen is for, said once, at the foot of the page. */
+const SCREEN_HINT: Record<BetweenScreenId, string> = {
+  roster: "Confirm a name to open their record, kit and jobs. Move out when the party is ready.",
+  sheet: "Read-only record. Escape returns to the roster.",
+  learning: "Confirm an ability to spend Standing on it.",
+  equipment: "Confirm a slot to see what the job can carry in it.",
+  jobs: "Confirm a job to take it as primary or borrow its skillset.",
+  formation: "Confirm a unit, then click a deployment tile on the field. Move out when the formation is set.",
+};
+
+const TOAST_MS = 3200;
 
 export class BetweenBattleScreens implements CampaignScreenPort {
   readonly el: HTMLElement;
@@ -49,14 +66,17 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   private readonly session: CampaignSession;
   private readonly stage: HTMLElement;
   private readonly toast: HTMLElement;
+  private readonly hint: HTMLElement;
   private readonly bar: HTMLElement;
   private screen: BetweenScreenId = "roster";
   private selectedUnitId: string | null = null;
   private keyTarget: EventTarget | null = null;
-  private toastTicks = 0;
+  private toastMs = 0;
+  private readonly handlers: BetweenBattleHandlers;
 
   constructor(session: CampaignSession, handlers: BetweenBattleHandlers) {
     this.session = session;
+    this.handlers = handlers;
 
     const navigation: Pick<
       ProgressionIntents,
@@ -97,14 +117,22 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.learning = new LearningScreen({ intents });
     this.equipment = new EquipmentScreen({ intents });
     this.jobs = new JobScreen({ intents });
-    this.formation = new DeploymentScreen({ intents });
+    this.formation = new DeploymentScreen({
+      intents,
+      onPlacing: (unitId) => handlers.onFormationChanged?.(unitId),
+    });
 
     this.toast = el("p", { class: "gf-toast is-hidden", attrs: { role: "status" } });
+    this.hint = el("p", { class: "gf-hint gf-between-hint" });
     this.stage = el("div", { class: "gf-between-stage" });
     this.bar = el("div", { class: "gf-between-bar" });
     this.el = el("section", {
       class: "gf-between gf-root",
-      children: [this.bar, this.stage, this.toast],
+      children: [
+        this.bar,
+        this.stage,
+        el("footer", { class: "gf-between-foot", children: [this.hint, this.toast] }),
+      ],
     });
 
     this.buildBar(handlers);
@@ -123,6 +151,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   hide(): void {
     this.detachAll();
     this.el.classList.add("is-hidden");
+    if (this.screen === "formation") this.handlers.onFormationClosed?.();
   }
 
   refresh(): void {
@@ -132,14 +161,14 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   notify(message: string): void {
     this.toast.textContent = message;
     this.toast.classList.remove("is-hidden");
-    this.toastTicks = TOAST_TICKS;
+    this.toastMs = TOAST_MS;
   }
 
-  /** Call once a second-ish; retires the toast without a wall clock in the app. */
-  tick(): void {
-    if (this.toastTicks === 0) return;
-    this.toastTicks -= 1;
-    if (this.toastTicks === 0) this.toast.classList.add("is-hidden");
+  /** Frame pump; retires the toast without a wall clock in the shell. */
+  tick(deltaMs = 1000): void {
+    if (this.toastMs <= 0) return;
+    this.toastMs -= deltaMs;
+    if (this.toastMs <= 0) this.toast.classList.add("is-hidden");
   }
 
   // --- plumbing -------------------------------------------------------------
@@ -184,15 +213,21 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   }
 
   private show(screen: BetweenScreenId): void {
+    const leavingFormation = this.screen === "formation" && screen !== "formation";
     this.screen = screen;
     this.el.classList.remove("is-hidden");
+    // Formation runs as a rail over the live battlefield; every other screen is
+    // a full page of chrome.
+    this.el.classList.toggle("is-field", screen === "formation");
     this.render();
     this.attachCurrent();
+    if (leavingFormation) this.handlers.onFormationClosed?.();
   }
 
   private render(): void {
     const unitId = this.selectedUnitId ?? this.session.state.roster[0]?.id ?? null;
     this.selectedUnitId = unitId;
+    this.hint.textContent = SCREEN_HINT[this.screen];
 
     switch (this.screen) {
       case "roster":
@@ -232,6 +267,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
         if (view === null) return this.show("roster");
         this.formation.update(view);
         replaceChildren(this.stage, [this.formation.el]);
+        this.handlers.onFormationChanged?.(this.formation.placingUnitId);
         break;
       }
     }
@@ -264,20 +300,26 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   }
 
   private buildBar(handlers: BetweenBattleHandlers): void {
-    const button = (label: string, onClick: () => void): HTMLElement => {
-      const node = el("button", { class: "gf-button", text: label, attrs: { type: "button" } });
+    // Exactly one loud button on the bar: the thing the chapter is waiting for.
+    // The rest are utilities and are styled as such.
+    const button = (label: string, onClick: () => void, primary = false): HTMLElement => {
+      const node = el("button", {
+        class: `gf-button${primary ? "" : " is-quiet"}`,
+        text: label,
+        attrs: { type: "button" },
+      });
       node.addEventListener("click", onClick);
       return node;
     };
     const children: HTMLElement[] = [
       el("span", { class: "gf-between-brand", text: this.session.campaign.name }),
       button("Roster", () => this.showRoster()),
-      button("Move out", () => handlers.beginDeployment()),
     ];
     const replay = handlers.replayEncounter;
     if (replay) children.push(button("Return to…", () => this.openReplayMenu(replay)));
     if (handlers.save) children.push(button("Save", handlers.save));
     if (handlers.load) children.push(button("Load", handlers.load));
+    children.push(button("Move out", () => handlers.beginDeployment(), true));
     replaceChildren(this.bar, children);
   }
 }

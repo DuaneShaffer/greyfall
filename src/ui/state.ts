@@ -43,6 +43,21 @@ export interface StatusView {
   remainingTurns: number | null;
 }
 
+/**
+ * A timed stat change from a `modifyStats` effect. Statuses have names; these
+ * do not, so the UI reports them as what they are: the stat, the delta, and how
+ * long it lasts.
+ */
+export interface StatModView {
+  id: string;
+  /** "Phys +4 · Speed -1" — already formatted; the UI does layout, not math. */
+  label: string;
+  /** null = until removed. */
+  remainingTurns: number | null;
+  /** Net direction, for the chip's tone. */
+  direction: "gain" | "loss" | "mixed";
+}
+
 export interface UnitView {
   id: string;
   name: string;
@@ -59,6 +74,8 @@ export interface UnitView {
   ct: number;
   facing: Facing;
   statuses: StatusView[];
+  /** Timed stat changes in force; empty for a unit carrying none. */
+  modifiers?: StatModView[];
   disposition: Disposition;
   downed: boolean;
 }
@@ -158,6 +175,22 @@ export interface TurnOrderView {
   entries: TurnOrderEntryView[];
 }
 
+/**
+ * What the game is asking the player for, right now. The HUD announces it in
+ * one place and styles the panels around it, so "which of these things is live"
+ * is never a guess.
+ */
+export type HudMode =
+  | "orders"
+  | "move"
+  | "target"
+  | "facing"
+  | "dialogue"
+  | "presenting"
+  | "ai"
+  | "deploy"
+  | "ended";
+
 /** Everything the battle overlay draws for one moment of one battle. */
 export interface BattleHudView {
   action: ActionMenuView;
@@ -177,6 +210,8 @@ export interface RosterEntryView {
   hp: number;
   maxHp: number;
   standing: number;
+  /** Job level in the unit's current job; 1–8. */
+  jobLevel?: number;
   /** Roster-level notes: "Deployed", "Reserve", "Downed". */
   note?: string;
 }

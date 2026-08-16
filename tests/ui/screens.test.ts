@@ -41,6 +41,31 @@ describe("UnitStatusPanel", () => {
     expect(panel.el.querySelector(".gf-unit-status.is-debuff")?.textContent).toBe("Stunned (1)");
   });
 
+  it("surfaces timed stat modifiers, which carry no status of their own", () => {
+    const panel = new UnitStatusPanel();
+    panel.update(
+      mockUnitView({
+        modifiers: [
+          { id: "mod-1", label: "Phys +4 · Speed -1", remainingTurns: 2, direction: "mixed" },
+        ],
+      }),
+    );
+    const chip = panel.el.querySelector(".gf-unit-modifier");
+    expect(chip?.textContent).toBe("Phys +4 · Speed -1 (2)");
+  });
+
+  it("names its role so the acting unit and a hovered one never look alike", () => {
+    const acting = new UnitStatusPanel({ role: "acting" });
+    acting.update(mockUnitView());
+    expect(acting.el.querySelector(".gf-plate")?.textContent).toContain("Acting");
+    expect(acting.el.classList.contains("is-live")).toBe(true);
+
+    const inspect = new UnitStatusPanel({ role: "inspect" });
+    inspect.update(mockEnemyView());
+    expect(inspect.el.querySelector(".gf-plate")?.textContent).toContain("Inspecting");
+    expect(inspect.el.classList.contains("is-quiet")).toBe(true);
+  });
+
   it("falls back to an empty state", () => {
     const panel = new UnitStatusPanel();
     panel.update(null);
@@ -60,6 +85,25 @@ describe("TurnOrderStrip", () => {
     const cast = strip.el.querySelector<HTMLElement>('.gf-turn-entry[data-kind="cast"]');
     expect(cast?.textContent).toContain("Charging · Overload Cell");
   });
+
+  it("names one Now and orders the rest of the units tied at the threshold", () => {
+    const strip = new TurnOrderStrip();
+    const tied = mockTurnOrderView();
+    strip.update({
+      entries: tied.entries.map((entry, index) => ({ ...entry, ticksUntil: index < 3 ? 0 : 20 })),
+    });
+    const ticks = [...strip.el.querySelectorAll(".gf-turn-ticks")].map((n) => n.textContent);
+    expect(ticks.slice(0, 4)).toEqual(["Now", "Next", "Next", "+20"]);
+    expect(strip.el.querySelectorAll(".gf-turn-entry.is-now")).toHaveLength(1);
+    expect([...strip.el.querySelectorAll(".gf-turn-index")].map((n) => n.textContent)).toEqual([
+      "01",
+      "02",
+      "03",
+      "04",
+      "05",
+      "06",
+    ]);
+  });
 });
 
 describe("RosterScreen", () => {
@@ -69,7 +113,9 @@ describe("RosterScreen", () => {
     expect(screen.el.querySelectorAll(".gf-menu-entry")).toHaveLength(4);
     const downed = screen.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="mott-tarr"]');
     expect(downed?.classList.contains("is-disabled")).toBe(true);
-    expect(screen.el.querySelector(".gf-roster-detail")?.textContent).toContain("Standing: 320");
+    const detail = screen.el.querySelector(".gf-roster-detail")?.textContent ?? "";
+    expect(detail).toContain("Standing");
+    expect(detail).toContain("320");
   });
 
   it("opens the per-unit actions and emits the screen intent", () => {

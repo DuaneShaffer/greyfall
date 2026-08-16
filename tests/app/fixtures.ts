@@ -8,7 +8,7 @@ import type { DialogueLine, Facing, ItemStack, TileCoord, Unit } from "../../src
 import type { HighlightStyle, RendererPort, UiPort } from "../../src/app/controller.js";
 import type { RenderEvent } from "../../src/render/presentation.js";
 import type { BattleViewModel } from "../../src/render/viewmodel.js";
-import type { BattleHudView } from "../../src/ui/index.js";
+import type { BattleHudView, HudMode } from "../../src/ui/index.js";
 import { loadContent, rowen, YARD_ENCOUNTER_ID } from "../core/fixtures.js";
 
 /** A Conduit who can overload the yard cell from a deployment tile. */
@@ -95,6 +95,10 @@ export interface FakeUi {
   dialogueOpen: boolean;
   result: BattleResult | null;
   notices: string[];
+  noticeTones: (string | undefined)[];
+  modes: HudMode[];
+  forecastLocks: number;
+  finalViews: (BattleHudView | null)[];
   facingPrompt: { onPick: (facing: Facing) => void; onCancel: () => void } | null;
   menuResets: number;
   busy: boolean;
@@ -109,6 +113,10 @@ export function fakeUi(): FakeUi {
     dialogueOpen: false,
     result: null,
     notices: [],
+    noticeTones: [],
+    modes: [],
+    forecastLocks: 0,
+    finalViews: [],
     facingPrompt: null,
     menuResets: 0,
     busy: false,
@@ -117,6 +125,15 @@ export function fakeUi(): FakeUi {
   fake.port = {
     render: (view) => {
       fake.renders.push(view);
+    },
+    setMode: (mode) => {
+      fake.modes.push(mode);
+    },
+    lockForecast: () => {
+      fake.forecastLocks += 1;
+    },
+    showFinalState: (view) => {
+      fake.finalViews.push(view);
     },
     showDialogue: (lines) => {
       fake.dialogues.push(lines);
@@ -140,8 +157,9 @@ export function fakeUi(): FakeUi {
     setBusy: (busy) => {
       fake.busy = busy;
     },
-    notify: (message) => {
+    notify: (message, tone) => {
       fake.notices.push(message);
+      fake.noticeTones.push(tone);
     },
   };
   return fake;

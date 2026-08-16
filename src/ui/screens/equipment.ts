@@ -1,4 +1,4 @@
-import { Component, el, replaceChildren } from "../dom.js";
+import { Component, el, plate, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuEntry, MenuStack } from "../menu.js";
 import {
@@ -34,9 +34,14 @@ export class EquipmentScreen implements Component<EquipmentView> {
         el("header", {
           class: "gf-screen-head",
           children: [
-            el("h1", { class: "gf-screen-title", text: "Equipment" }),
-            this.headerEl,
-            this.satchelEl,
+            el("div", {
+              class: "gf-screen-head-text",
+              children: [
+                el("h1", { class: "gf-screen-title", text: "Equipment" }),
+                this.headerEl,
+                this.satchelEl,
+              ],
+            }),
           ],
         }),
         el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
@@ -115,42 +120,66 @@ export class EquipmentScreen implements Component<EquipmentView> {
   private renderSlotDetail(view: EquipmentView, slot: EquipSlot | null): void {
     const current = slot === null ? undefined : view.slots.find((s) => s.slot === slot);
     if (!current) {
-      replaceChildren(this.detail, [el("p", { class: "gf-empty-note", text: "No slot selected." })]);
+      replaceChildren(this.detail, [
+        plate("Slot"),
+        el("p", { class: "gf-empty-note", text: "No slot selected." }),
+      ]);
       return;
     }
     replaceChildren(this.detail, [
-      el("h2", { class: "gf-detail-title", text: EQUIP_SLOT_LABELS[current.slot] }),
-      el("p", { class: "gf-detail-sub", text: current.itemName ?? "Empty" }),
-      el("p", { class: "gf-detail-text", text: current.summary }),
+      plate("Slot", EQUIP_SLOT_LABELS[current.slot].toUpperCase()),
+      el("div", {
+        class: "gf-detail-body",
+        children: [
+          el("h2", { class: "gf-detail-title", text: current.itemName ?? "Empty" }),
+          el("p", { class: "gf-detail-sub", text: EQUIP_SLOT_LABELS[current.slot] }),
+          el("p", { class: "gf-detail-text", text: current.summary }),
+        ],
+      }),
     ]);
   }
 
   private renderOptionDetail(option: ItemOptionView | null, slot: EquipSlot): void {
     if (!option) {
       replaceChildren(this.detail, [
-        el("h2", { class: "gf-detail-title", text: EQUIP_SLOT_LABELS[slot] }),
-        el("p", { class: "gf-detail-text", text: "Removing leaves the slot empty." }),
+        plate("Kit", EQUIP_SLOT_LABELS[slot].toUpperCase()),
+        el("div", {
+          class: "gf-detail-body",
+          children: [
+            el("h2", { class: "gf-detail-title", text: EQUIP_SLOT_LABELS[slot] }),
+            el("p", { class: "gf-detail-text", text: "Removing leaves the slot empty." }),
+          ],
+        }),
       ]);
       return;
     }
     replaceChildren(this.detail, [
-      el("h2", { class: "gf-detail-title", text: option.name }),
-      el("p", { class: "gf-detail-sub", text: `${option.summary} · ${option.equipTags.join(", ")}` }),
-      el("p", { class: "gf-detail-text", text: option.description }),
-      el("ul", {
-        class: "gf-delta-list",
-        children:
-          option.deltas.length === 0
-            ? [el("li", { class: "gf-delta is-flat", text: "No stat change" })]
-            : option.deltas.map((delta) =>
-                el("li", {
-                  class: `gf-delta ${delta.delta > 0 ? "is-gain" : delta.delta < 0 ? "is-loss" : "is-flat"}`,
-                  text: `${delta.label} ${formatSigned(delta.delta)}`,
-                }),
-              ),
+      plate("Kit", EQUIP_SLOT_LABELS[slot].toUpperCase()),
+      el("div", {
+        class: "gf-detail-body",
+        children: [
+          el("h2", { class: "gf-detail-title", text: option.name }),
+          el("p", {
+            class: "gf-detail-sub",
+            text: `${option.summary} · ${option.equipTags.join(", ")}`,
+          }),
+          el("p", { class: "gf-detail-text", text: option.description }),
+          el("ul", {
+            class: "gf-delta-list",
+            children:
+              option.deltas.length === 0
+                ? [el("li", { class: "gf-delta is-flat", text: "No stat change" })]
+                : option.deltas.map((delta) =>
+                    el("li", {
+                      class: `gf-delta ${delta.delta > 0 ? "is-gain" : delta.delta < 0 ? "is-loss" : "is-flat"}`,
+                      text: `${delta.label} ${formatSigned(delta.delta)}`,
+                    }),
+                  ),
+          }),
+          option.unavailableReason !== undefined &&
+            el("p", { class: "gf-detail-note is-refused", text: option.unavailableReason }),
+        ],
       }),
-      option.unavailableReason !== undefined &&
-        el("p", { class: "gf-detail-note is-refused", text: option.unavailableReason }),
     ]);
   }
 }

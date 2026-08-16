@@ -137,11 +137,40 @@ describe("intent to command translation", () => {
     expect(h.renderer.events.some((event) => event.kind === "unitMoved")).toBe(true);
   });
 
-  it("ignores clicks on tiles outside the move range", () => {
+  it("ignores clicks on tiles outside the move range, but says so", () => {
     h.controller.intents.beginMove("rowen");
     h.controller.onTileClick({ x: 5, y: 0 });
     expect(h.renderer.highlights.has("move-pick")).toBe(false);
     expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 0, y: 4 });
+    expect(h.ui.notices.at(-1)).toBe("No path there");
+    expect(h.ui.noticeTones.at(-1)).toBe("refusal");
+  });
+
+  it("announces the mode it is in, so the player is never guessing", () => {
+    expect(h.ui.modes.at(-1)).toBe("orders");
+    h.controller.intents.beginMove("rowen");
+    expect(h.ui.modes.at(-1)).toBe("move");
+    h.controller.intents.cancelSelection("rowen");
+    expect(h.ui.modes.at(-1)).toBe("orders");
+    h.controller.intents.selectAbility("rowen", "basic-attack");
+    expect(h.ui.modes.at(-1)).toBe("target");
+  });
+
+  it("locks the forecast the moment the action is away", () => {
+    h.controller.intents.beginMove("rowen");
+    const before = h.ui.forecastLocks;
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    expect(h.ui.forecastLocks).toBe(before + 1);
+  });
+
+  it("reports what operating the machinery actually did", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 2, y: 4 });
+    h.controller.intents.activateObject("rowen", "yard-switch");
+    expect(h.controller.lastError).toBeNull();
+    const notice = h.ui.notices.at(-1) ?? "";
+    expect(notice).toMatch(/powered up|shut down|operated/);
+    expect(h.ui.noticeTones.at(-1)).toBe("machine");
   });
 
   it("operates adjacent machinery and plays its power change", () => {
@@ -221,6 +250,13 @@ describe("a whole battle", () => {
     expect(h.controller.state.result).toBe("win");
     expect(h.renderer.events.some((event) => event.kind === "unitDowned")).toBe(true);
     expect(h.renderer.events.some((event) => event.kind === "unitHit")).toBe(true);
+
+    // The banner used to land over a HUD frozen at the killing blow.
+    expect(h.ui.modes.at(-1)).toBe("ended");
+    expect(h.ui.finalViews).toHaveLength(1);
+    const final = h.ui.finalViews[0];
+    expect(final?.forecast).toBeNull();
+    expect(final?.turnOrder.entries.some((entry) => entry.unitId === "provocateur-a")).toBe(false);
   });
 });
 

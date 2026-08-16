@@ -15,7 +15,17 @@ import {
 } from "../core/index.js";
 import type { DialogueLine, Encounter, Facing, TileCoord, Unit } from "../data/index.js";
 import { BattleRenderer, attachControls, palette } from "../render/index.js";
-import { BattleHud, el, noopIntents, type BattleHudView, type MenuDef, type UiIntents } from "../ui/index.js";
+import { viewModelFromGameState } from "../render/adapter.js";
+import {
+  BattleHud,
+  el,
+  noopIntents,
+  type BattleHudView,
+  type HudMode,
+  type MenuDef,
+  type NoticeTone,
+  type UiIntents,
+} from "../ui/index.js";
 import { BetweenBattleScreens } from "./betweenBattles.js";
 import { CampaignSession } from "./campaign.js";
 import { CampaignRunner, type BattlePort } from "./campaignRunner.js";
@@ -28,11 +38,6 @@ const canvas = document.getElementById("battle-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error("#battle-canvas missing");
 const overlayHost = document.getElementById("ui-root");
 if (!(overlayHost instanceof HTMLElement)) throw new Error("#ui-root missing");
-const status = document.getElementById("debug-status");
-
-const setStatus = (text: string): void => {
-  if (status) status.textContent = text;
-};
 
 // --- chapter ----------------------------------------------------------------
 
@@ -59,7 +64,7 @@ const session = new CampaignSession({
 const renderer = new BattleRenderer({
   canvas,
   onTileHover: (tile) => controller?.onTileHover(tile),
-  onTileSelect: (tile) => controller?.onTileClick(tile),
+  onTileSelect: (tile) => onTileSelected(tile),
 });
 
 let controller: BattleController | null = null;
@@ -125,11 +130,17 @@ let currentEncounter: Encounter | null = null;
 const uiPort: UiPort = {
   // Deliberately not `hud.update`: that would restart an open dialogue's reveal
   // on every refresh. Dialogue is driven through showDialogue instead.
-  render: (view: BattleHudView) => {
-    hud.actionMenu.update(view.action);
-    hud.status.update(view.inspected);
-    hud.turnOrder.update(view.turnOrder);
-    hud.forecast.update(view.forecast);
+  render: (view: BattleHudView) => hud.render(view),
+  setMode: (mode: HudMode, detail?: string | null) => hud.setMode(mode, detail),
+  lockForecast: () => hud.forecast.lock(),
+  showFinalState: (view: BattleHudView | null, _result: BattleResult | null) => {
+    if (view !== null) hud.render(view);
+    // Nothing on the field is live any more: no pending action, no orders, and
+    // nothing to inspect that the closing panel does not already say.
+    hud.forecast.update(null);
+    hud.status.update(null);
+    hud.setMode("ended", null);
+    hud.actionMenu.menus.detach();
   },
   showDialogue: (lines: DialogueLine[]) => {
     hud.dialogue.update(lines);
@@ -146,7 +157,7 @@ const uiPort: UiPort = {
       authored ?? (result === "win" ? "The field is yours." : "The line did not hold.");
     banner.classList.toggle("is-loss", result === "loss");
     banner.classList.remove("is-hidden");
-    setStatus(`battle over — ${result}`);
+    bannerContinue.focus();
   },
   promptFacing: (current, onPick, onCancel) => {
     const menu: MenuDef = {
@@ -169,11 +180,10 @@ const uiPort: UiPort = {
     while (hud.actionMenu.menus.depth > 1) hud.actionMenu.menus.pop();
   },
   setBusy: (busy) => {
-    hud.actionMenu.el.classList.toggle("is-busy", busy);
     if (busy) hud.actionMenu.menus.detach();
     else if (!hud.dialogue.isOpen) hud.actionMenu.attach(document);
   },
-  notify: (message) => setStatus(message),
+  notify: (message, tone?: NoticeTone) => hud.notify(message, tone ?? "info"),
 };
 
 /**
@@ -213,6 +223,7 @@ const battlePort: BattlePort = {
     onBattleEnd = onEnd;
     currentEncounter = encounter;
     banner.classList.add("is-hidden");
+    clearFieldPreview();
 
     const next = new BattleController({
       state: battle.state,
@@ -239,12 +250,83 @@ const battlePort: BattlePort = {
   },
 };
 
+// --- formation on the field --------------------------------------------------
+// The formation screen drives the real renderer: the map is built from the
+// staged formation, the deployment tiles are lit, and a click out there places
+// the held unit. Picking tiles from a list of coordinates was never a formation.
+
+let previewSignature = "";
+let placingUnitId: string | null = null;
+
+function clearFieldPreview(): void {
+  previewSignature = "";
+  placingUnitId = null;
+  renderer.clearHighlight("deploy-open");
+  renderer.clearHighlight("deploy-taken");
+}
+
+/** Rebuild the preview battle only when the staged formation actually moved. */
+function showFieldPreview(): void {
+  const pending = session.deployment;
+  const view = session.deploymentView();
+  if (pending === null || view === null) return;
+  const placements = session.deploymentPlacements();
+  const signature = `${pending.encounterId}|${pending.assignments.join(",")}`;
+  if (signature !== previewSignature) {
+    previewSignature = signature;
+    deploymentTiles = pending.map.deploymentTiles;
+    try {
+      const preview = createBattle(
+        CONTENT,
+        pending.encounterId,
+        session.deployedParty(),
+        placements,
+        session.carriedItems(),
+      );
+      renderer.buildScene(viewModelFromGameState(preview.state));
+    } catch (error) {
+      console.warn("[greyfall] formation preview unavailable", error);
+      return;
+    }
+  }
+  const taken = view.slots.filter((slot) => slot.unitId !== null).map((slot) => slot.tile);
+  const open = view.slots.filter((slot) => slot.unitId === null).map((slot) => slot.tile);
+  renderer.setHighlight("deploy-taken", taken, palette.highlightMove, { opacity: 0.22 });
+  renderer.setHighlight(
+    "deploy-open",
+    open,
+    placingUnitId === null ? palette.highlightDeployment : palette.highlightPath,
+    { opacity: placingUnitId === null ? 0.2 : 0.42, yOffset: 0.04 },
+  );
+}
+
+/** Canvas clicks belong to the battle, or to the formation when one is staged. */
+function onTileSelected(tile: TileCoord | null): void {
+  if (controller !== null) {
+    controller.onTileClick(tile);
+    return;
+  }
+  if (tile === null || screens.current !== "formation") return;
+  const view = session.deploymentView();
+  const index = view?.slots.findIndex((slot) => slot.tile.x === tile.x && slot.tile.y === tile.y);
+  if (index === undefined || index === -1) {
+    screens.notify("Not a deployment tile.");
+    return;
+  }
+  screens.formation.pickTile(index);
+}
+
 // --- between-battle layer ---------------------------------------------------
 
 const screens: BetweenBattleScreens = new BetweenBattleScreens(session, {
   beginDeployment: () => void runner.beginDeployment(),
   confirmDeployment: () => void runner.confirmDeployment(),
   replayEncounter: (encounterId) => void runner.replayEncounter(encounterId),
+  onFormationChanged: (placing) => {
+    placingUnitId = placing;
+    showFieldPreview();
+  },
+  onFormationClosed: () => clearFieldPreview(),
   save: () => {
     saveCampaign(session.state);
     screens.notify("Chapter saved.");
@@ -275,23 +357,26 @@ overlayHost.append(hud.el, banner, screens.el);
 hud.el.classList.add("is-hidden");
 screens.attach(document);
 
-attachControls(renderer, canvas, { panKeysEnabled: () => !(controller?.menuOpen ?? false) });
+/**
+ * Camera keys are the player's whenever nothing on screen is listening for
+ * them. A dialogue box, an open menu, or a between-battle screen all own the
+ * keyboard; arrow keys panning the map out from under an open dialogue is the
+ * overlay leaking input it never took.
+ */
+const uiOwnsKeyboard = (): boolean => {
+  if (hud.dialogue.isOpen) return true;
+  if (!banner.classList.contains("is-hidden")) return true;
+  if (!screens.el.classList.contains("is-hidden")) return true;
+  return controller?.phase === "player";
+};
+
+attachControls(renderer, canvas, { panKeysEnabled: () => !uiOwnsKeyboard() });
 renderer.start();
 
-const tileLabel = (tile: TileCoord | null): string => (tile ? `${tile.x},${tile.y}` : "—");
-
-let toastClock = 0;
 renderer.addFrameHook((delta) => {
   controller?.tick(delta);
-  hud.dialogue.tick(delta * 1000);
-  toastClock += delta;
-  if (toastClock >= 1) {
-    toastClock = 0;
-    screens.tick();
-  }
-  if (controller !== null && controller.phase !== "ended") {
-    setStatus(`${controller.phase} · cursor ${tileLabel(renderer.hoveredTile)}`);
-  }
+  hud.tick(delta * 1000);
+  screens.tick(delta * 1000);
 });
 
 window.addEventListener("keydown", (event) => {

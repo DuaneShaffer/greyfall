@@ -45,19 +45,33 @@ export class TacticsCamera {
     this.applyProjection();
   }
 
+  /**
+   * Re-measure the board without touching the view. A scene rebuild (a spawn,
+   * mid-battle) goes through here: the player's orbit, zoom and pan are theirs,
+   * and throwing them away because a turret appeared is not a camera decision.
+   */
+  setMapBounds(map: GameMap): void {
+    const tallest = map.tiles.reduce((best, tile) => Math.max(best, tile.height), 0);
+    const top = tallest * HEIGHT_STEP;
+    const bottom = baseY(map);
+    this.panLimit = Math.max(map.width, map.depth) * TILE_SIZE * 0.75;
+    // Widest screen-space span of the board: the diagonal, at 45° yaw.
+    this.fitExtent = ((map.width + map.depth) * TILE_SIZE) / Math.SQRT2;
+    this.fitHeight = top - bottom;
+    this.clampTarget();
+    if (this.autoZoom) this.fitZoom();
+    this.applyProjection();
+    this.applyTransform();
+  }
+
+  /** Measure the board and centre on it. New board only. */
   frameMap(map: GameMap): void {
     const tallest = map.tiles.reduce((best, tile) => Math.max(best, tile.height), 0);
     const top = tallest * HEIGHT_STEP;
     const bottom = baseY(map);
     this.target.set(0, (top + bottom) / 2, 0);
-    this.panLimit = Math.max(map.width, map.depth) * TILE_SIZE * 0.75;
-    // Widest screen-space span of the board: the diagonal, at 45° yaw.
-    this.fitExtent = ((map.width + map.depth) * TILE_SIZE) / Math.SQRT2;
-    this.fitHeight = top - bottom;
     this.autoZoom = true;
-    this.fitZoom();
-    this.applyProjection();
-    this.applyTransform();
+    this.setMapBounds(map);
   }
 
   /** direction: +1 clockwise, -1 counter-clockwise. Tweened over ~0.3s. */

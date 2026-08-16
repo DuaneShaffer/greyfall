@@ -69,6 +69,21 @@ describe("DialogueBox", () => {
     dialogue.destroy();
   });
 
+  it("advances on a click, and shows the affordance once the line is out", () => {
+    const dialogue = box();
+    dialogue.update(LINES);
+    const advance = dialogue.el.querySelector(".gf-dialogue-advance");
+    expect(advance?.classList.contains("is-ready")).toBe(false);
+
+    dialogue.el.click();
+    expect(dialogue.visibleText).toBe(LINES[0]!.text);
+    expect(advance?.classList.contains("is-ready")).toBe(true);
+
+    dialogue.el.click();
+    expect(dialogue.lineIndex).toBe(1);
+    expect(dialogue.el.querySelector(".gf-dialogue-count")?.textContent).toBe("2 / 2");
+  });
+
   it("stays hidden with no lines", () => {
     const dialogue = box();
     dialogue.update([]);

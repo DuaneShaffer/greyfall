@@ -86,8 +86,9 @@ export function focusable(node: HTMLElement): HTMLElement {
 /** Horizontal meter used for hp / charge / CT readouts. */
 export function meter(className: string, value: number, max: number): HTMLElement {
   const ratio = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  const state = className.includes("is-hp") && ratio <= 0.33 ? " is-low" : ratio >= 1 ? " is-ready" : "";
   return el("div", {
-    class: `gf-meter ${className}`,
+    class: `gf-meter ${className}${state}`,
     attrs: {
       role: "meter",
       "aria-valuenow": value,
@@ -96,6 +97,51 @@ export function meter(className: string, value: number, max: number): HTMLElemen
     },
     children: [
       el("div", { class: "gf-meter-fill", attrs: { style: `width: ${(ratio * 100).toFixed(1)}%` } }),
+    ],
+  });
+}
+
+/**
+ * The plate header every panel wears: a stamped title on the left and an
+ * optional readout stamped on the right (`CT 100`, `4 ENTRIES`, a team tag).
+ */
+export function plate(title: string, stamp?: string): HTMLElement {
+  return el("h2", {
+    class: "gf-plate gf-panel-title",
+    children: [
+      el("span", { class: "gf-plate-title", text: title }),
+      stamp === undefined ? null : el("span", { class: "gf-plate-stamp", text: stamp }),
+    ],
+  });
+}
+
+/** A panel: plate header, body, hairline border. `variant` sets its weight. */
+export function panel(options: {
+  className?: string;
+  title: string;
+  stamp?: string;
+  variant?: "live" | "quiet";
+  children?: Child[];
+  attrs?: ElOptions["attrs"];
+}): HTMLElement {
+  const variant = options.variant === undefined ? "" : ` is-${options.variant}`;
+  return el("section", {
+    class: `gf-panel${variant}${options.className === undefined ? "" : ` ${options.className}`}`,
+    ...(options.attrs === undefined ? {} : { attrs: options.attrs }),
+    children: [
+      plate(options.title, options.stamp),
+      el("div", { class: "gf-panel-body", children: options.children ?? [] }),
+    ],
+  });
+}
+
+/** One status / modifier chip. `tone` maps to the status category colors. */
+export function chip(label: string, tone: string, note?: string): HTMLElement {
+  return el("li", {
+    class: `gf-chip is-${tone}`,
+    children: [
+      el("span", { class: "gf-chip-label", text: label }),
+      note === undefined ? null : el("span", { class: "gf-chip-turns", text: note }),
     ],
   });
 }
@@ -110,18 +156,39 @@ export function labelledValue(label: string, value: string, className = ""): HTM
   });
 }
 
-/** Placeholder portrait block until art lands; keyed by portraitId for colour. */
-export function portrait(portraitId: string | undefined, name: string): HTMLElement {
+export interface PortraitOptions {
+  /** Job name; its initial is stamped on the card's tab. */
+  jobName?: string | undefined;
+  team?: string | undefined;
+  size?: "small" | "large" | undefined;
+}
+
+/**
+ * Painted portraits are the open art workstream (ART_DIRECTION §4, A.9). Until
+ * they land every portrait slot draws the same designed stand-in: a monogram
+ * record card with a job tab and a team-tint rim.
+ */
+export function portrait(
+  portraitId: string | undefined,
+  name: string,
+  options: PortraitOptions = {},
+): HTMLElement {
   const initials = name
     .split(/\s+/)
     .map((part) => part[0] ?? "")
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const sizeClass = options.size === undefined ? "" : ` is-${options.size}`;
   return el("div", {
-    class: "gf-portrait",
-    data: { portrait: portraitId ?? "unknown" },
-    attrs: { "aria-label": name },
-    children: [el("span", { class: "gf-portrait-initials", text: initials })],
+    class: `gf-portrait${sizeClass}`,
+    data: { portrait: portraitId ?? "unknown", ...(options.team === undefined ? {} : { team: options.team }) },
+    attrs: { "aria-label": name, role: "img" },
+    children: [
+      el("span", { class: "gf-portrait-initials", text: initials }),
+      options.jobName === undefined || options.jobName === ""
+        ? null
+        : el("span", { class: "gf-portrait-job", text: options.jobName.slice(0, 1).toUpperCase() }),
+    ],
   });
 }

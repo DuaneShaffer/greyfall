@@ -1,4 +1,4 @@
-import { Component, el, replaceChildren } from "../dom.js";
+import { Component, el, plate, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
 import { JobOptionView, JobsView, formatStanding } from "../state.js";
@@ -23,7 +23,12 @@ export class JobScreen implements Component<JobsView> {
       children: [
         el("header", {
           class: "gf-screen-head",
-          children: [el("h1", { class: "gf-screen-title", text: "Jobs" }), this.headerEl],
+          children: [
+            el("div", {
+              class: "gf-screen-head-text",
+              children: [el("h1", { class: "gf-screen-title", text: "Jobs" }), this.headerEl],
+            }),
+          ],
         }),
         el("div", { class: "gf-screen-cols", children: [this.menus.el, this.detail] }),
       ],
@@ -107,16 +112,28 @@ export class JobScreen implements Component<JobsView> {
 
   private renderDetail(option: JobOptionView | null): void {
     if (!option) {
-      replaceChildren(this.detail, [el("p", { class: "gf-empty-note", text: "No job selected." })]);
+      replaceChildren(this.detail, [
+        plate("Job"),
+        el("p", { class: "gf-empty-note", text: "No job selected." }),
+      ]);
       return;
     }
     replaceChildren(this.detail, [
-      el("h2", { class: "gf-detail-title", text: option.name }),
-      el("p", { class: "gf-detail-sub", text: `Job level ${option.jobLevel}` }),
-      el("p", { class: "gf-detail-text", text: option.description }),
-      el("p", { class: "gf-detail-cost", text: formatStanding(option.standing) }),
-      option.lockedReason !== undefined &&
-        el("p", { class: "gf-detail-note is-refused", text: option.lockedReason }),
+      plate(
+        "Job",
+        option.isPrimary ? "PRIMARY" : option.isSecondary ? "SECONDARY" : `LV ${option.jobLevel}`,
+      ),
+      el("div", {
+        class: "gf-detail-body",
+        children: [
+          el("h2", { class: "gf-detail-title", text: option.name }),
+          el("p", { class: "gf-detail-sub", text: `Job level ${option.jobLevel}` }),
+          el("p", { class: "gf-detail-text", text: option.description }),
+          el("p", { class: "gf-detail-cost", text: formatStanding(option.standing) }),
+          option.lockedReason !== undefined &&
+            el("p", { class: "gf-detail-note is-refused", text: option.lockedReason }),
+        ],
+      }),
     ]);
   }
 }

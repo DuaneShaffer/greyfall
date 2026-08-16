@@ -209,6 +209,7 @@ export class BattleRenderer {
   /** Full rebuild from a snapshot. Safe to call at any time. */
   buildScene(viewModel: BattleViewModel): void {
     this.queue.reset();
+    const previousMap = this.viewModel?.map ?? null;
     this.disposeSceneContents();
     this.viewModel = cloneViewModel(viewModel);
     const map = this.viewModel.map;
@@ -243,7 +244,15 @@ export class BattleRenderer {
       this.unitGroup.add(visual.group);
     }
 
-    this.rig.frameMap(map);
+    // A rebuild on the same board is a spawn, not a new engagement: re-measure
+    // it, but leave the player's orbit, zoom and pan exactly where they put it.
+    const sameBoard =
+      previousMap !== null &&
+      previousMap.id === map.id &&
+      previousMap.width === map.width &&
+      previousMap.depth === map.depth;
+    if (sameBoard) this.rig.setMapBounds(map);
+    else this.rig.frameMap(map);
     this.hovered = null;
     this.selected = null;
     this.updateBillboards();
