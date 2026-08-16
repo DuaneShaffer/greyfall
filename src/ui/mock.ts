@@ -14,6 +14,7 @@ import type {
   JobsView,
   LearningView,
   PartyView,
+  PowerLedgerView,
   SkillsetView,
   StatLineView,
   TurnOrderView,
@@ -84,7 +85,11 @@ export const conduitJob: Job = {
     "tap-line",
     "throw-the-breaker",
     "overload-cell",
+    "reclose",
+    "backfeed",
+    "cross-tie",
     "ground",
+    "overdraw",
     "flare",
     "licensed-draw",
     "earth-strap",
@@ -391,6 +396,60 @@ export function mockTurnOrderView(): TurnOrderView {
       { unitId: "provocateur-b", name: "Provocateur", jobName: "Enforcer", team: "enemy", kind: "turn", ticksUntil: 37 },
       { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", team: "player", kind: "turn", ticksUntil: 45 },
     ],
+  };
+}
+
+/**
+ * The register as §2.5(a)'s mock draws it: one gridded section carrying more
+ * than it is rated for, a second sitting on its rating, a third at rest, and
+ * the loose machinery underneath — the three load colours on one screen.
+ */
+export function mockPowerRegisterView(): PowerLedgerView {
+  return {
+    networks: [
+      {
+        gridId: "refinery-three-grid",
+        name: "Refinery Three Grid",
+        load: 14,
+        capacity: 12,
+        level: "over",
+        tripped: true,
+        nodes: [
+          { objectId: "west-main", name: "west main", state: "open" },
+          { objectId: "east-main", name: "east main", state: "tripped" },
+          { objectId: "gallery-tie", name: "tie, gallery", state: "tie-open" },
+          { objectId: "north-bus", name: "north bus", state: "cut" },
+          { objectId: "charge-hoist-west", name: "charge hoist west", state: "dead" },
+          { objectId: "charge-hoist-east", name: "charge hoist east", state: "live" },
+        ],
+      },
+      {
+        gridId: "gallery-grid",
+        name: "Gallery Grid",
+        load: 9,
+        capacity: 10,
+        level: "rated",
+        tripped: false,
+        nodes: [
+          { objectId: "gallery-main", name: "gallery main", state: "live" },
+          { objectId: "gallery-board", name: "board, gallery", state: "tie-closed" },
+          { objectId: "gallery-lamps", name: "lamp standards", state: "live" },
+        ],
+      },
+      {
+        gridId: "yard-grid",
+        name: "Yard Grid",
+        load: 4,
+        capacity: 10,
+        level: "rest",
+        tripped: false,
+        nodes: [
+          { objectId: "yard-main", name: "yard main", state: "live" },
+          { objectId: "yard-hoist", name: "yard hoist", state: "live" },
+        ],
+      },
+    ],
+    entries: [{ objectId: "service-lift", name: "Service Lift", powered: true }],
   };
 }
 

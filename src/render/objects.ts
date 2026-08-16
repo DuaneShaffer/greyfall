@@ -5,6 +5,9 @@ import { markBloomEligible } from "./layers.js";
 import { objectColor, palette } from "./palette.js";
 import type { MapObjectView } from "./viewmodel.js";
 
+/** How far a cut span drops: enough to read as broken, well short of rubble. */
+const SEVERED_SAG = 0.3;
+
 interface Footprint {
   center: THREE.Vector3;
   /** Top of the terrain the object rests on. */
@@ -54,6 +57,7 @@ export class ObjectVisual {
   private glowPhase: number;
   private collapse = 0;
   private overload = 0;
+  private severed = false;
 
   constructor(map: GameMap, view: MapObjectView) {
     this.objectId = view.id;
@@ -133,6 +137,18 @@ export class ObjectVisual {
       material.emissive.setHex(objectColor.overloading);
       material.emissiveIntensity = 0.6 + 1.4 * this.overload;
     }
+  }
+
+  /**
+   * A cut span sags off its run and a splice stands it back up. The cut is the
+   * reversible verb, so it borrows the collapse ramp rather than the destroyed
+   * state — a wreck and a cut must not read the same.
+   */
+  setSevered(severed: boolean): void {
+    if (this.severed === severed) return;
+    this.severed = severed;
+    if (this.view.destroyed) return;
+    this.setCollapse(severed ? SEVERED_SAG : 0);
   }
 
   /** Used when a deployable goes off: the object is simply not there any more. */

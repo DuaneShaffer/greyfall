@@ -90,6 +90,24 @@ const hitEvent = (
   return [{ kind: "unitHit", unitId, amount, hpFractionAfter: fraction, damageType, sourceUnitId }];
 };
 
+/** Every node of a grid, in object-id order, so an event carries its own scope. */
+const gridNodeIds = (state: GameState, gridId: string): string[] => {
+  const grid = battleMap(state).grids.find((candidate) => candidate.id === gridId);
+  return grid === undefined ? [] : grid.nodes.map((node) => node.objectId).sort();
+};
+
+/**
+ * How hard the bus is being worked, on the register's own three steps: at rest,
+ * at its rating from 90%, and past it. Integer arithmetic, because the grid
+ * never touches the `Amount` pipeline and the seams must not drift off the
+ * LOAD line the player is reading.
+ */
+const strainOf = (load: number, capacity: number): number => {
+  if (capacity <= 0) return load > 0 ? 1 : 0;
+  if (load > capacity) return 1;
+  return load * 10 >= capacity * 9 ? 0.6 : 0;
+};
+
 /**
  * Charged abilities announce themselves with `AbilityCharging`, so an
  * `AbilityUsed` naming one is the release, not the wind-up. An item is applied
@@ -183,15 +201,41 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
       return [{ kind: "unitRemoved", unitId: event.unitId }];
     case "PowerChanged":
       return [{ kind: "objectPowerChanged", objectId: event.objectId, powered: event.powered }];
-    // The grid's own events carry no animation yet: the per-object
-    // `PowerChanged` batch beside them is what the renderer plays, and the
-    // register and annunciator that read these are `src/ui`'s job.
+    // The network-level half of §5.4's pair. The per-object `PowerChanged`
+    // batch answers "what do I animate"; these answer "what happened to the
+    // bus", and they never re-animate the per-object lights.
     case "GridChanged":
+      return [
+        {
+          kind: "gridChanged",
+          gridId: event.gridId,
+          nodeIds: gridNodeIds(stateAfter, event.gridId),
+          strain: strainOf(event.load, event.capacity),
+        },
+      ];
     case "GridTripped":
+      return [
+        {
+          kind: "gridTripped",
+          gridId: event.gridId,
+          nodeIds: gridNodeIds(stateAfter, event.gridId),
+          capacity: event.capacity,
+          load: event.load,
+        },
+      ];
     case "GridReset":
+      return [{ kind: "gridReset", gridId: event.gridId, nodeId: event.nodeId }];
     case "LineSevered":
+      return [{ kind: "lineSevered", objectId: event.objectId }];
     case "LineSpliced":
+      return [{ kind: "lineSpliced", objectId: event.objectId }];
     case "LoadAttached":
+      return [
+        { kind: "loadAttached", gridId: event.gridId, nodeId: event.nodeId, amount: event.amount },
+      ];
+    // Nothing to place: the load is already off the runtime by the time this is
+    // emitted, so its node is unknowable here, and the `GridChanged` beside it
+    // carries the network relaxing back off the rating.
     case "LoadExpired":
       return [];
     // `ObjectDamaged` carries no damage type; machinery takes the world's own

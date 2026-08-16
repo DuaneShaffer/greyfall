@@ -939,6 +939,93 @@
   border-bottom: 1px solid currentColor;
 }
 
+/* A cut span is not a thrown switch: it is dim like the rest of what is out,
+   and it keeps the struck-through rule so the row that needs a splice reads
+   apart from the row that needs a lever. */
+.gf-power-entry.is-cut {
+  color: var(--gf-off);
+}
+
+.gf-power-entry.is-cut .gf-power-state {
+  border-bottom: 1px solid currentColor;
+}
+
+/* The latch that blew is flux-borne state, so it takes the flux colour rather
+   than a danger colour — blood-300 is spent once, on the load line that caused
+   it (UI_DESIGN §5). */
+.gf-power-entry.is-tripped {
+  color: var(--gf-flux);
+}
+
+/* --- power register: the load line -------------------------------------- */
+/* The single most important line in the register: what the bus is carrying
+   against what it is rated for, so the trip is a decision the player can plan
+   instead of a surprise they absorb (FLUX_GRID §2.5a). */
+
+.gf-power-network {
+  padding: var(--gf-s-1) 0;
+}
+
+.gf-power-network + .gf-power-network,
+.gf-power-network + .gf-power-entry {
+  border-top: 1px solid var(--gf-rule);
+}
+
+.gf-power-network-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gf-s-2);
+  padding: 2px var(--gf-s-2);
+  font-size: var(--gf-t-100);
+  color: var(--gf-dim);
+}
+
+.gf-power-network-head .gf-power-name {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex: 1 1 auto;
+}
+
+.gf-power-load {
+  font-family: var(--gf-face-ledger);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: none;
+}
+
+/* Copper at rest — the bus is machinery like any other. */
+.gf-power-load.is-rest {
+  color: var(--gf-operable-lit);
+}
+
+/* At 90% of the rating: a bus at its rating is flux-borne state. */
+.gf-power-load.is-rated {
+  color: var(--gf-flux);
+}
+
+/* Past the rating: the one place in the register a danger colour is earned. */
+.gf-power-load.is-over {
+  color: var(--gf-enemy);
+}
+
+.gf-power-flag {
+  font-family: var(--gf-face-ledger);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: none;
+  color: var(--gf-flux);
+}
+
+.gf-power-nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-power-nodes .gf-power-entry {
+  padding-left: var(--gf-s-3);
+}
+
 /* --- forecast: the consequence, and the one stamp that commits it -------- */
 
 .gf-forecast {

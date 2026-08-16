@@ -45,6 +45,18 @@ export type RenderEvent =
   /** Taken off the field without being downed: walks out and is gone. */
   | { kind: "unitRemoved"; unitId: string }
   | { kind: "objectPowerChanged"; objectId: string; powered: boolean }
+  /**
+   * Network-level state, one step behind the per-object batch beside it: the
+   * per-object events say what to light, these say what the bus is doing.
+   * `strain` is the whole terminal state — 0 at rest, up as the load closes on
+   * the rating, 1 past it — so a skip lands on the right seams.
+   */
+  | { kind: "gridChanged"; gridId: string; nodeIds: string[]; strain: number }
+  | { kind: "gridTripped"; gridId: string; nodeIds: string[]; capacity: number; load: number }
+  | { kind: "gridReset"; gridId: string; nodeId: string }
+  | { kind: "lineSevered"; objectId: string }
+  | { kind: "lineSpliced"; objectId: string }
+  | { kind: "loadAttached"; gridId: string; nodeId: string; amount: number }
   | { kind: "objectHit"; objectId: string; amount: number; damageType: DamageType }
   | { kind: "objectDestroyed"; objectId: string }
   /** A deployable set off by contact: bursts and is gone. */

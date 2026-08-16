@@ -254,13 +254,12 @@ describe("beats that used to be scene rebuilds", () => {
   });
 });
 
-// Phase A ships the grid's events without their presentation: the per-object
-// `PowerChanged` batch beside them is what the renderer plays, and the register
-// and annunciator that read the rest belong to `src/ui`.
+// The network-level half of §5.4's pair: what happened to the bus, never a
+// second pass over the per-object lights the `PowerChanged` batch owns.
 describe("the grid's own events", () => {
   const state = battle();
 
-  it("passes through without an animation and without throwing", () => {
+  it("carries every one of them to the renderer's own vocabulary", () => {
     const events: BattleEvent[] = [
       { type: "GridChanged", gridId: "g", capacity: 12, load: 14, liveNodes: ["a"], tripped: true },
       { type: "GridTripped", gridId: "g", capacity: 12, load: 14 },
@@ -268,9 +267,35 @@ describe("the grid's own events", () => {
       { type: "LineSevered", objectId: "bus", unitId: "rowen" },
       { type: "LineSpliced", objectId: "bus", unitId: "rowen" },
       { type: "LoadAttached", gridId: "g", nodeId: "bus", amount: 8, turns: 3, unitId: "rowen" },
-      { type: "LoadExpired", loadId: "load-1" },
     ];
-    expect(toRenderEventList(events, state)).toEqual([]);
+    expect(toRenderEventList(events, state).map((event) => event.kind)).toEqual([
+      "gridChanged",
+      "gridTripped",
+      "gridReset",
+      "lineSevered",
+      "lineSpliced",
+      "loadAttached",
+    ]);
+  });
+
+  // The load is off the runtime before the event is emitted, so its node is
+  // unknowable here; the `GridChanged` beside it carries the bus relaxing.
+  it("leaves a load expiring to the GridChanged beside it", () => {
+    expect(toRenderEvents({ type: "LoadExpired", loadId: "load-1" }, state)).toEqual([]);
+  });
+
+  it("reads the load against the rating in the register's own three steps", () => {
+    const strain = (load: number, capacity: number): number => {
+      const [event] = toRenderEvents(
+        { type: "GridChanged", gridId: "g", capacity, load, liveNodes: [], tripped: false },
+        state,
+      );
+      return event !== undefined && event.kind === "gridChanged" ? event.strain : -1;
+    };
+    expect(strain(10, 12)).toBe(0);
+    expect(strain(11, 12)).toBeGreaterThan(0);
+    expect(strain(12, 12)).toBeGreaterThan(0);
+    expect(strain(13, 12)).toBe(1);
   });
 
   it("still animates the power flip a cause is attached to", () => {

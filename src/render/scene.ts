@@ -63,6 +63,11 @@ const CAST_RELEASE_SECONDS = frameEndTick("cast", 4) / TICKS_PER_SECOND - frameE
 /** Volatile machinery flashes overload-100 before the silhouette goes. */
 const OVERLOAD_FLASH_SECONDS = 0.3;
 const TRIGGER_SECONDS = 0.42;
+/** The seams settling onto a new headroom; the register's LOAD line in 3D. */
+const GRID_STRAIN_SECONDS = 0.18;
+/** A component blowing: every node in it flares once and goes out together. */
+const GRID_TRIP_SECONDS = 0.4;
+const GRID_SPAN_SECONDS = 0.3;
 const MACHINE_SHOT_SECONDS = 0.24;
 const EXIT_TILES = 3;
 const EXIT_VANISH_SECONDS = 0.3;
@@ -142,6 +147,77 @@ export function walkAnimation(
       visual.setFacing(facingBetween(path[leg] as TileCoord, path[leg + 1] as TileCoord));
     },
     finish: settle,
+  };
+}
+
+/** The part of an object's visual the network-level events drive. */
+export interface GridNodeVisual {
+  setOverload(amount: number): void;
+}
+
+/**
+ * Settle a network's nodes onto new headroom. `strain` is the whole terminal
+ * state — the register's three steps, read off the LOAD line — so a skip lands
+ * on the right seams and applying it twice changes nothing.
+ */
+export function gridStrainAnimation(
+  visuals: readonly GridNodeVisual[],
+  strain: number,
+): Animation {
+  const settle = (): void => {
+    for (const visual of visuals) visual.setOverload(strain);
+  };
+  return {
+    duration: GRID_STRAIN_SECONDS,
+    update: (elapsed) => {
+      const t = Math.min(1, elapsed / GRID_STRAIN_SECONDS);
+      for (const visual of visuals) visual.setOverload(strain * t);
+    },
+    finish: settle,
+  };
+}
+
+/**
+ * A component blowing: every node in it flares once and goes out together. The
+ * trip is total, so there is nothing to leave straining afterwards.
+ */
+export function gridTripAnimation(visuals: readonly GridNodeVisual[]): Animation {
+  return {
+    duration: GRID_TRIP_SECONDS,
+    update: (elapsed) => {
+      const flare = Math.sin(Math.PI * Math.min(1, elapsed / GRID_TRIP_SECONDS));
+      for (const visual of visuals) visual.setOverload(flare);
+    },
+    finish: () => {
+      for (const visual of visuals) visual.setOverload(0);
+    },
+  };
+}
+
+/** The part of an object's visual a cut and its splice drive. */
+export interface SpanVisual {
+  setSevered(severed: boolean): void;
+}
+
+/**
+ * The reversible verb: the span sparks where it parts, or glows where it is
+ * made good, and settles into the state the event names. `play` fires once
+ * however the animation is driven.
+ */
+export function spanAnimation(visual: SpanVisual, severed: boolean, play: () => void): Animation {
+  let played = false;
+  const once = (): void => {
+    if (played) return;
+    played = true;
+    play();
+  };
+  return {
+    duration: GRID_SPAN_SECONDS,
+    update: once,
+    finish: () => {
+      once();
+      visual.setSevered(severed);
+    },
   };
 }
 
@@ -450,6 +526,16 @@ export class BattleRenderer {
     return { x: position.x, y: position.y + height, z: position.z };
   }
 
+  /** The standing visuals of a grid's nodes. A wreck is off the network. */
+  private gridVisuals(nodeIds: readonly string[]): ObjectVisual[] {
+    const out: ObjectVisual[] = [];
+    for (const nodeId of nodeIds) {
+      const visual = this.objects.get(nodeId);
+      if (visual && !visual.currentView.destroyed) out.push(visual);
+    }
+    return out;
+  }
+
   private objectPoint(objectId: string, height: number): Vec3 | null {
     const visual = this.objects.get(objectId);
     if (!visual) return null;
@@ -632,6 +718,56 @@ export class BattleRenderer {
             view.powered = event.powered;
           },
         };
+      }
+      // --- the network level ------------------------------------------------
+      // These carry what happened to the bus, never a second pass over the
+      // per-object lights the `objectPowerChanged` batch beside them owns.
+      case "gridChanged": {
+        const visuals = this.gridVisuals(event.nodeIds);
+        return visuals.length === 0 ? null : gridStrainAnimation(visuals, event.strain);
+      }
+      case "gridTripped": {
+        const visuals = this.gridVisuals(event.nodeIds);
+        return visuals.length === 0 ? null : gridTripAnimation(visuals);
+      }
+      case "gridReset": {
+        const visual = this.objects.get(event.nodeId);
+        if (!visual) return null;
+        const anchor = this.objectPoint(event.nodeId, 0.5);
+        let struck = false;
+        const reclose = (): void => {
+          if (!struck && anchor) this.vfx.muzzleGlow(anchor);
+          struck = true;
+          visual.setOverload(0);
+        };
+        return { duration: MACHINE_SHOT_SECONDS, update: reclose, finish: reclose };
+      }
+      case "lineSevered":
+      case "lineSpliced": {
+        const visual = this.objects.get(event.objectId);
+        const view = findObjectView(viewModel, event.objectId);
+        if (!visual || !view) return null;
+        const severed = event.kind === "lineSevered";
+        const contact = this.objectPoint(event.objectId, IMPACT_HEIGHT);
+        const base = this.objectPoint(event.objectId, 0);
+        return spanAnimation(visual, severed, () => {
+          if (!contact || !base) return;
+          if (severed) this.vfx.arcJag(contact, base, view.tiles[0] ?? null);
+          else this.vfx.healMotes(contact);
+        });
+      }
+      case "loadAttached": {
+        const shunt = this.objectPoint(event.nodeId, POPUP_HEAD_HEIGHT);
+        const contact = this.objectPoint(event.nodeId, IMPACT_HEIGHT);
+        const view = findObjectView(viewModel, event.nodeId);
+        if (!shunt || !contact) return null;
+        let hung = false;
+        const hang = (): void => {
+          if (hung) return;
+          hung = true;
+          this.vfx.arcJag(shunt, contact, view?.tiles[0] ?? null);
+        };
+        return { duration: GRID_SPAN_SECONDS, update: hang, finish: hang };
       }
       case "objectHit": {
         const view = findObjectView(viewModel, event.objectId);

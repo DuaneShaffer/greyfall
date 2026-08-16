@@ -193,8 +193,44 @@ export interface PowerEntryView {
   powered: boolean;
 }
 
+/** The one word a node's right column prints. Nothing else is a legal state. */
+export type PowerNodeState =
+  | "live"
+  | "dead"
+  | "open"
+  | "cut"
+  | "tripped"
+  | "tie-open"
+  | "tie-closed";
+
+export interface PowerNodeView {
+  objectId: string;
+  name: string;
+  state: PowerNodeState;
+}
+
+/**
+ * How hard the bus is being worked, and the only thing that colours the LOAD
+ * line: copper at rest, `overload-500` from 90% of the rating, `blood-300` past
+ * it. Amber stays in its three places (UI_DESIGN §5) and copper stays machinery.
+ */
+export type PowerLoadLevel = "rest" | "rated" | "over";
+
+export interface PowerNetworkView {
+  gridId: string;
+  name: string;
+  load: number;
+  capacity: number;
+  level: PowerLoadLevel;
+  tripped: boolean;
+  nodes: PowerNodeView[];
+}
+
 export interface PowerLedgerView {
+  /** Machinery on no declared grid; drawn under the network sections. */
   entries: PowerEntryView[];
+  /** One section per declared grid, in grid-id order. */
+  networks?: PowerNetworkView[];
 }
 
 /**

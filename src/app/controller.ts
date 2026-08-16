@@ -29,7 +29,10 @@ import {
   battleMap,
   battleResult,
   getObject,
+  gridFlipPreview,
+  gridRestoringTies,
   objectEnergized,
+  powerRegister,
   getUnit,
   itemAbilityId,
   itemIdFromAbilityId,
@@ -42,6 +45,7 @@ import {
   type Command,
   type CommandError,
   type GameState,
+  type PowerCause,
   type TargetRef,
 } from "../core/index.js";
 import type { DialogueLine, Facing, TileCoord } from "../data/index.js";
@@ -136,6 +140,13 @@ const LAYER_MOVE_PICK = "move-pick";
 const LAYER_TARGET = "target-range";
 const LAYER_TARGET_REACH = "target-reach";
 const LAYER_AFFECTED = "affected";
+/**
+ * The component a staged grid order would flip. Three of the aim layers are
+ * already BLOOD_300 separated only by opacity, so this takes OVERLOAD_500: it
+ * is the flux colour, there was no flux colour in the tile overlays at all, and
+ * a bus about to change state is exactly flux-borne (FLUX_GRID §2.5c).
+ */
+const LAYER_GRID_FLIP = "grid-flip";
 
 /**
  * Seconds between AI commands, so enemy turns are watchable. The animations
@@ -200,6 +211,71 @@ function switchFor(state: GameState, objectIds: readonly string[]): string | nul
   return null;
 }
 
+/** The object's name, or its id when the map has lost track of it. */
+const objectName = (state: GameState, objectId: string): string =>
+  getObject(state, objectId)?.def.name ?? objectId;
+
+/** The tie that would answer this, named — asked of core, never guessed. */
+function tieClause(state: GameState, gridId: string): string | null {
+  const tie = gridRestoringTies(state, gridId)[0];
+  return tie === undefined ? null : objectName(state, tie);
+}
+
+/**
+ * The grid's own annunciator. The register tells the player the state; this
+ * tells them the verb that answers it, because a mechanic whose counterplay has
+ * to be inferred is a mechanic that measures well and plays badly
+ * (FLUX_GRID §2.5b, and the e2 lesson it operationalises).
+ *
+ * One line, always: the notice strip is single-slot with no queue, so three
+ * lines that overwrite each other are worse than one dense one.
+ */
+function gridNotice(state: GameState, events: readonly BattleEvent[]): string | null {
+  const trip = events.find(
+    (event): event is Extract<BattleEvent, { type: "GridTripped" }> =>
+      event.type === "GridTripped",
+  );
+  if (trip !== undefined) {
+    const section = powerRegister(state).grids.find((entry) => entry.gridId === trip.gridId);
+    const name = section?.nodes.find((node) => node.state === "tripped")?.name ?? section?.name;
+    return `${name ?? "The main"} tripped — ${trip.load} against a rating of ${trip.capacity}. Someone has to reclose it.`;
+  }
+
+  const lost: string[] = [];
+  const gained: string[] = [];
+  // What went dark names the line; what came back names it only if nothing did.
+  let darkCause: PowerCause | null = null;
+  let anyCause: PowerCause | null = null;
+  for (const event of events) {
+    if (event.type !== "PowerChanged" || event.cause === undefined) continue;
+    (event.powered ? gained : lost).push(objectName(state, event.objectId));
+    anyCause ??= event.cause;
+    if (!event.powered) darkCause ??= event.cause;
+  }
+  const cause = darkCause ?? anyCause;
+  if (cause === null) return null;
+
+  const node = objectName(state, cause.nodeId);
+  const tie = tieClause(state, cause.gridId);
+  if (lost.length === 0) {
+    const back = `${machineList(gained)} came back up.`;
+    if (events.some((event) => event.type === "LineSpliced")) return `${node} spliced. ${back}`;
+    if (events.some((event) => event.type === "GridReset")) return `${node} reclosed. ${back}`;
+    return `${node} closed. ${back}`;
+  }
+  const dark = `${machineList(lost)} dark.`;
+  switch (cause.reason) {
+    case "cut":
+      return `${node} cut. ${dark} Splice it${tie === null ? "" : ` or take the ${tie}`}.`;
+    case "destroyed":
+      return tie === null
+        ? `${node} destroyed. ${dark} Nothing on this grid feeds them now.`
+        : `${node} destroyed. ${dark} Take the ${tie} — a wreck does not splice.`;
+    default:
+      return `${node} opened. ${dark} Throw it back${tie === null ? "" : `, or take the ${tie}`}.`;
+  }
+}
+
 /**
  * Power that went out without the player throwing anything. The enemy cutting
  * the mains on Floor Nine used to be invisible — the presses simply stopped
@@ -208,6 +284,8 @@ function switchFor(state: GameState, objectIds: readonly string[]): string | nul
  * position to be fought over, not a fact of the map.
  */
 function powerChangeNotice(state: GameState, events: readonly BattleEvent[]): string | null {
+  const gridded = gridNotice(state, events);
+  if (gridded !== null) return gridded;
   const lost: string[] = [];
   const gained: string[] = [];
   const lostIds: string[] = [];
@@ -383,6 +461,7 @@ export class BattleController {
           palette.highlightTarget,
           { opacity: 0.5, yOffset: 0.045 },
         );
+        this.markGridFlip(acting.id, abilityId, target);
         this.refresh();
         return;
       }
@@ -476,9 +555,31 @@ export class BattleController {
     // Self-only abilities have nothing to aim: stage the caster straight away.
     const targets = ability.targeting.validTargets;
     if (targets.length === 1 && targets[0] === "self") {
-      this.selection = { mode: "target", abilityId, pending: { kind: "unit", unitId } };
+      const staged: TargetRef = { kind: "unit", unitId };
+      this.selection = { mode: "target", abilityId, pending: staged };
+      this.markGridFlip(unitId, abilityId, staged);
     }
     this.refresh();
+  }
+
+  /**
+   * Mark every node the staged order would flip, in the same overlay the area
+   * highlight uses. Core answers the hypothetical off the recompute the rules
+   * run, so there is no second model of the graph on this side of the seam.
+   */
+  private markGridFlip(unitId: string, abilityId: string, target: TargetRef): void {
+    const flipped = gridFlipPreview(this.gameState, unitId, abilityId, target);
+    if (flipped.length === 0) {
+      this.renderer.clearHighlight(LAYER_GRID_FLIP);
+      return;
+    }
+    const tiles = flipped.flatMap(
+      (objectId) => getObject(this.gameState, objectId)?.def.tiles.map((tile) => ({ ...tile })) ?? [],
+    );
+    this.renderer.setHighlight(LAYER_GRID_FLIP, tiles, palette.overloadViolet, {
+      opacity: 0.42,
+      yOffset: 0.05,
+    });
   }
 
   private beginWait(unitId: string, facing: Facing): void {
@@ -739,6 +840,7 @@ export class BattleController {
     this.renderer.clearHighlight(LAYER_TARGET);
     this.renderer.clearHighlight(LAYER_TARGET_REACH);
     this.renderer.clearHighlight(LAYER_AFFECTED);
+    this.renderer.clearHighlight(LAYER_GRID_FLIP);
   }
 
   private unitAt(tile: TileCoord): BattleUnit | null {

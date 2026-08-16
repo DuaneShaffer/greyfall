@@ -11,6 +11,7 @@ import {
   mockJobsView,
   mockLearningView,
   mockPartyView,
+  mockPowerRegisterView,
   mockTurnOrderView,
   mockUnitSheetView,
   mockUnitView,
@@ -62,14 +63,7 @@ const battleView: BattleHudView = {
   turnOrder: mockTurnOrderView(),
   forecast: null,
   dialogue: mockDialogue,
-  power: {
-    entries: [
-      { objectId: "floor-nine-mains", name: "Floor Nine Mains", powered: true },
-      { objectId: "press-line-north", name: "Blanking Press, Number One", powered: true },
-      { objectId: "press-line-mid", name: "Blanking Press, Number Two", powered: false },
-      { objectId: "charge-lift", name: "Charging Lift", powered: false },
-    ],
-  },
+  power: mockPowerRegisterView(),
 };
 
 const hud = new BattleHud({
@@ -115,7 +109,7 @@ function previewFor(abilityId: string) {
 
 hud.update(battleView);
 hud.setMode("orders", battleView.action.unit.name);
-hud.notify("Yard Switch shut down.", "machine");
+hud.notify("North Bus cut. 4 machines dark. Splice it or take the tie, gallery.", "machine");
 
 // --- between-battle screens --------------------------------------------------
 

@@ -3,6 +3,9 @@ import type {
   Effect,
   Encounter,
   GameMap,
+  Grid,
+  GridNode,
+  GridRole,
   Item,
   ItemStack,
   Job,
@@ -14,7 +17,7 @@ import type {
 import type { DerivedStats } from "./progression/stats.js";
 import { resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
-import { objectMaxHp } from "./rules/effects.js";
+import { objectMaxHp, setObjectPower } from "./rules/effects.js";
 import {
   canCarryItem,
   carriedItemIds,
@@ -25,7 +28,16 @@ import {
 } from "./rules/items.js";
 import { areEnemies, attackAngle, coordEq, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
-import { gridNodeOf, isEnergized } from "./rules/power.js";
+import {
+  attachLoad,
+  gridNodeOf,
+  gridNodeRuntimeOf,
+  gridOf,
+  isEnergized,
+  powerSnapshot,
+  severLine,
+  solveGrid,
+} from "./rules/power.js";
 import {
   CT_COST_MOVE_AND_ACT,
   MAX_TICKS_PER_ADVANCE,
@@ -40,7 +52,7 @@ import {
   unmetRequirement,
 } from "./rules/targeting.js";
 import { getAbility, getItem, getJob, getStatus, knownActionAbilityIds } from "./state/content.js";
-import { cloneState } from "./state/ctx.js";
+import { cloneState, type Ctx } from "./state/ctx.js";
 import type {
   ActiveTurn,
   BattleResult,
@@ -204,6 +216,232 @@ export function poweredObjects(state: GameState): PoweredObject[] {
 /** Whether the grid is currently feeding this object. `powered` is its isolator. */
 export function objectEnergized(state: GameState, objectId: string): boolean {
   return isEnergized(state, objectId);
+}
+
+// --- the power register ---------------------------------------------------
+
+/** The one word the register's right column prints for a node. */
+export type GridNodeState =
+  | "live"
+  | "dead"
+  | "open"
+  | "cut"
+  | "tripped"
+  | "tie-open"
+  | "tie-closed";
+
+export interface GridRegisterNode {
+  objectId: string;
+  name: string;
+  role: GridRole;
+  state: GridNodeState;
+}
+
+export interface GridRegisterSection {
+  gridId: string;
+  name: string;
+  /** Rating and draw ignoring the trip latch: a blown bus still reads 14/12. */
+  capacity: number;
+  load: number;
+  tripped: boolean;
+  nodes: GridRegisterNode[];
+}
+
+export interface PowerRegister {
+  grids: GridRegisterSection[];
+  ungridded: PoweredObject[];
+}
+
+const byId = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** Sources, then breakers and ties, then lines, then sinks (FLUX_GRID §2.5a). */
+const ROLE_ORDER: Record<GridRole, number> = { source: 0, breaker: 1, line: 2, sink: 3 };
+
+function gridEdgeDegree(grid: Grid, objectId: string): number {
+  return grid.edges.filter((edge) => edge.a === objectId || edge.b === objectId).length;
+}
+
+/** Whether pulling `objectId` out of the authored graph strands one source from another. */
+function splitsSources(grid: Grid, objectId: string, sources: readonly string[]): boolean {
+  const adjacency = new Map<string, string[]>();
+  for (const node of grid.nodes) adjacency.set(node.objectId, []);
+  for (const edge of grid.edges) {
+    if (edge.a === objectId || edge.b === objectId) continue;
+    adjacency.get(edge.a)?.push(edge.b);
+    adjacency.get(edge.b)?.push(edge.a);
+  }
+  const start = sources[0];
+  if (start === undefined) return false;
+  const seen = new Set([start]);
+  const queue = [start];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const neighbour of adjacency.get(current) ?? []) {
+      if (seen.has(neighbour)) continue;
+      seen.add(neighbour);
+      queue.push(neighbour);
+    }
+  }
+  return sources.some((source) => !seen.has(source));
+}
+
+/**
+ * The breakers that are ties: exactly two edges, and removing the node leaves
+ * two sources in different components — "a two-ended switch between two feeds",
+ * which is the shape §1.7 makes every grid carry.
+ *
+ * Read off the authored topology alone and never off runtime state, so a tie
+ * cannot stop being one mid-battle. The schema has no `tie` role today; the day
+ * one is authored this function becomes a field read.
+ */
+function tieNodes(grid: Grid): Set<string> {
+  const out = new Set<string>();
+  const sources = grid.nodes
+    .filter((node) => node.role === "source")
+    .map((node) => node.objectId)
+    .sort(byId);
+  if (sources.length < 2) return out;
+  for (const node of grid.nodes) {
+    if (node.role !== "breaker" || gridEdgeDegree(grid, node.objectId) !== 2) continue;
+    if (splitsSources(grid, node.objectId, sources)) out.add(node.objectId);
+  }
+  return out;
+}
+
+interface NodeContext {
+  live: Set<string>;
+  tripped: Set<string>;
+  ties: Set<string>;
+}
+
+function nodeState(state: GameState, node: GridNode, ctx: NodeContext): GridNodeState {
+  const object = objectById(state, node.objectId);
+  if (object === undefined || object.destroyed) return "dead";
+  const fed = ctx.live.has(node.objectId);
+  const open = object.powered !== true;
+  switch (node.role) {
+    case "source":
+      if (ctx.tripped.has(node.objectId)) return "tripped";
+      return open ? "open" : fed ? "live" : "dead";
+    case "line":
+      if (gridNodeRuntimeOf(state, node.objectId)?.severed === true) return "cut";
+      return fed ? "live" : open ? "open" : "dead";
+    case "breaker":
+      if (ctx.ties.has(node.objectId)) return open ? "tie-open" : "tie-closed";
+      return fed ? "live" : open ? "open" : "dead";
+    case "sink":
+      return fed ? "live" : open ? "open" : "dead";
+  }
+}
+
+/**
+ * The floor's power as one readable ledger: a section per declared grid with
+ * its rating and its draw, then the loose machinery on no grid at all.
+ *
+ * Ordering is binding (FLUX_GRID §2.5a, COMBAT_RULES §17): sections in grid-id
+ * order, nodes by role then object id. The register must never reshuffle under
+ * the player's eye.
+ */
+export function powerRegister(state: GameState): PowerRegister {
+  const grids: GridRegisterSection[] = [];
+  for (const grid of [...state.content.map.grids].sort((a, b) => byId(a.id, b.id))) {
+    const solution = solveGrid(state, grid);
+    const ctx: NodeContext = {
+      live: new Set(solution.live),
+      tripped: new Set(solution.tripped),
+      ties: tieNodes(grid),
+    };
+    const nodes = [...grid.nodes]
+      .sort(
+        (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || byId(a.objectId, b.objectId),
+      )
+      .map((node) => ({
+        objectId: node.objectId,
+        name: objectById(state, node.objectId)?.def.name ?? node.objectId,
+        role: node.role,
+        state: nodeState(state, node, ctx),
+      }));
+    grids.push({
+      gridId: grid.id,
+      name: grid.name,
+      capacity: solution.capacity,
+      load: solution.load,
+      tripped: solution.tripped.length > 0,
+      nodes,
+    });
+  }
+  const ungridded = poweredObjects(state).filter(
+    (entry) => gridOf(state, entry.objectId) === null,
+  );
+  return { grids, ungridded };
+}
+
+/** Objects the effect touches, without asking the dice or the damage pipeline. */
+const GRID_EFFECT_KINDS = new Set(["setPower", "severLine", "addLoad"]);
+
+/**
+ * Which nodes an order would flip, asked of the same recompute the rules run:
+ * the grid-mutating effects are replayed against a throwaway clone and the
+ * energization is diffed. There is no second model of the graph here, and the
+ * hypothetical consumes no RNG and mutates nothing the caller can see.
+ */
+export function gridFlipPreview(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+  target: TargetRef,
+): string[] {
+  if (state.content.map.grids.length === 0) return [];
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return [];
+  const ability = getAbility(state, unit, abilityId);
+  if (ability === undefined || ability.slot !== "action") return [];
+  if (!ability.effects.some((effect) => GRID_EFFECT_KINDS.has(effect.kind))) return [];
+  if (unmetRequirement(state, unit, ability, target) !== null) return [];
+
+  const before = powerSnapshot(state).energized;
+  const sim = cloneState(state);
+  const actor = unitById(sim, unitId);
+  if (actor === undefined) return [];
+  const ctx: Ctx = { state: sim, events: [] };
+  const area = resolveArea(sim, actor, ability, target);
+  for (const effect of ability.effects) {
+    for (const objectId of area.objectIds) {
+      if (effect.kind === "setPower") setObjectPower(ctx, objectId, effect.mode, unitId);
+      else if (effect.kind === "severLine") severLine(ctx, objectId, effect.mode, unitId);
+      else if (effect.kind === "addLoad") {
+        attachLoad(ctx, objectId, effect.amount, effect.durationTurns, unitId);
+      }
+    }
+  }
+  const after = powerSnapshot(sim).energized;
+  return [...before.keys()].filter((id) => before.get(id) !== after.get(id)).sort(byId);
+}
+
+/**
+ * Open ties on this grid that would bring something dark back up if they were
+ * closed. The annunciator names the verb that answers a cut, and it may only
+ * name one that actually works — so it asks rather than guesses.
+ */
+export function gridRestoringTies(state: GameState, gridId: string): string[] {
+  const grid = state.content.map.grids.find((candidate) => candidate.id === gridId);
+  if (grid === undefined) return [];
+  const before = powerSnapshot(state).energized;
+  const out: string[] = [];
+  for (const objectId of [...tieNodes(grid)].sort(byId)) {
+    const object = objectById(state, objectId);
+    if (object === undefined || object.destroyed || object.powered === true) continue;
+    const sim = cloneState(state);
+    setObjectPower({ state: sim, events: [] }, objectId, "on", null);
+    const after = powerSnapshot(sim).energized;
+    // The tie lighting up is not relief: closing it always feeds the tie. What
+    // makes it an answer is something else coming back with it.
+    const relieves = [...before.keys()].some(
+      (id) => id !== objectId && before.get(id) === false && after.get(id) === true,
+    );
+    if (relieves) out.push(objectId);
+  }
+  return out;
 }
 
 /** Stats after statuses and timed modifiers, which is what the rules use. */

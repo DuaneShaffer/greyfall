@@ -25,7 +25,7 @@ import {
   itemIdFromAbilityId,
   itemInfo,
   jobInfo,
-  poweredObjects,
+  powerRegister,
   standHeight,
   statusInfo,
   turnOrderPreview,
@@ -56,6 +56,8 @@ import {
   type ItemEntryView,
   type PartyView,
   type PowerLedgerView,
+  type PowerLoadLevel,
+  type PowerNetworkView,
   type RosterEntryView,
   type SkillsetView,
   type StatLineView,
@@ -391,10 +393,40 @@ function itemRemaining(state: GameState, unitId: string, itemId: string): number
   return Math.max(0, (entry?.count ?? 0) - 1);
 }
 
+/**
+ * Where the LOAD line takes its colour. Integer arithmetic throughout: nothing
+ * in the grid touches the `Amount` pipeline, so nothing in the readout can
+ * drift off a rounding step (FLUX_GRID §5.3).
+ */
+export function powerLoadLevel(load: number, capacity: number): PowerLoadLevel {
+  if (capacity <= 0) return load > 0 ? "over" : "rest";
+  if (load > capacity) return "over";
+  return load * 10 >= capacity * 9 ? "rated" : "rest";
+}
+
 /** The floor's power register, or undefined on a map that switches nothing. */
 export function powerLedgerView(state: GameState): PowerLedgerView | undefined {
-  const entries = poweredObjects(state);
-  return entries.length === 0 ? undefined : { entries };
+  const register = powerRegister(state);
+  const entries = register.ungridded.map((entry) => ({
+    objectId: entry.objectId,
+    name: entry.name,
+    powered: entry.powered,
+  }));
+  const networks: PowerNetworkView[] = register.grids.map((section) => ({
+    gridId: section.gridId,
+    name: section.name,
+    load: section.load,
+    capacity: section.capacity,
+    level: powerLoadLevel(section.load, section.capacity),
+    tripped: section.tripped,
+    nodes: section.nodes.map((node) => ({
+      objectId: node.objectId,
+      name: node.name,
+      state: node.state,
+    })),
+  }));
+  if (entries.length === 0 && networks.length === 0) return undefined;
+  return networks.length === 0 ? { entries } : { entries, networks };
 }
 
 export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT): TurnOrderView {
