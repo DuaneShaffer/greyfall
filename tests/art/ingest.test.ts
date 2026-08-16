@@ -184,6 +184,22 @@ describe("quantization", () => {
     expect(report.colorCount).toBeLessThanOrEqual(MAX_FRAME_COLORS);
   });
 
+  it("has a warm-neutral step for flesh, so faces stop landing on metal or grey", () => {
+    // The tones an outside master paints skin with, from the generator briefs.
+    const flesh = ["#cbb097", "#b79a7c", "#8d7358", "#e0cbad"];
+    for (const hex of flesh) {
+      const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)) as [
+        number,
+        number,
+        number,
+      ];
+      const source = { width: 1, height: 1, data: new Uint8ClampedArray([r, g, b, 255]) };
+      const { grid } = quantizeToPalette(source);
+      const landed = INDEXED_PALETTE[grid.data[0] ?? 0];
+      expect(RAMPS.bone as readonly string[], `${hex} -> ${landed}`).toContain(landed);
+    }
+  });
+
   it("reports violations instead of repairing them", () => {
     // A master with a hole punched in the torso: the outline is now open.
     const holed: PixelGrid = { ...master, data: Uint8Array.from(master.data) };
