@@ -97,7 +97,10 @@ great vein-glass seam, layered vertically like its economy:
   spire. Clean light, metered air.
 - **The Works** — foundries, rail yards, refineries. The middle city, where
   the slice takes place. Ash-fall greys the sky year-round; the city's name
-  is a weather report.
+  is a weather report. Officially. The older register underneath (§5.5
+  applies even to the city's own name): *the grey fall* — the
+  famine-and-plague winter that filled the pits the first great seam later
+  formed in. Almost nobody remembers; the Assay's Archive does.
 - **The Underveins** — tenements and black markets threaded through exhausted
   mine galleries. Unlicensed grafts, unmetered taps, the Ledger's territory.
 
@@ -111,6 +114,13 @@ great vein-glass seam, layered vertically like its economy:
   every cell, licenses every Conduit, examines every graft. Publicly a
   technical institution, quietly the Compact's most patient accumulator of
   power. (The FFT-church analog; its deeper agenda is a campaign matter, §12.)
+  Internal structure (binding — the doctrine's operational shape must not
+  drift): five offices under the **Master of Standards** and the **Table of
+  Measures** — the **Meter** (metering and rates), the **Survey** (seams and
+  claims), the **Licence** (attunement and grafts), the **Archive** (the
+  filed record), and the **Clean Grounds Office** (interment law under a
+  hygiene rubric — the quiet arm; see the story bible for why). Field agents
+  are **wardens**.
 - **The Combine of Trades** — the unions. Foundrymen, railrunners, refinery
   hands. Striking, in the slice, for graft-safety standards and brightblood
   compensation.
@@ -289,18 +299,33 @@ aligned.)
 | Standing | JP-analog progression currency |
 | The Watch | A Chartered House's private militia |
 
-## 12. Campaign-scale seeds (beyond the slice; non-binding)
+## 12. Campaign canon (accepted 2026-08-15; developed in docs/STORY_BIBLE.md)
 
-Recorded so slice decisions don't foreclose them:
+The former seeds are promoted to canon: `docs/STORY_BIBLE.md` Layers 0–1 are
+binding — the thesis, the five-chapter spine, the ending (truth **filed, not
+published**; Rowen erased-but-alive as the counter-record's author), and the
+three engines:
 
 - **The Assay's secret:** vein-glass is not geology. The richest seams form
   where great numbers died — battlefields, plague pits, collapsed mines. The
   Assay knows, and its purity doctrine exists to control who else learns it.
   Refinement is, at the bottom of the supply chain, rendering the dead.
-  (The Lucavi-stone analog: the setting's engine of horror, discovered late.)
+  (The Lucavi-stone analog; turns from secret to engine in Chapter 4.)
 - **Jory Slate's rise:** the Delita arc — from foundry hand to the Compact's
-  celebrated reformer, built partly on Rowen's erasure.
-- **The archivist frame:** the annotating historian who reconstructs Rowen's
-  record is a named character with a stake, revealed late.
-- The Compact's other city-states, the war the charter was written to end,
-  and where the Ledger's money actually goes.
+  celebrated reformer, built partly on Rowen's erasure. Engine in Chapter 3.
+- **The archivist frame:** the annotating historian is **Tam Ash**, son of
+  Perren Ash ("Log the name." / "We log numbers, ma'am."). Revealed in the
+  Chapter 5 epilogue.
+
+The wider Compact, canon per the story bible: city-states **Saltmere**,
+**Coldelve**, **Wanefield**; founding houses **Bracken**, **Coll**, **Marle**
+(House **Cander** extinguished); the **Claim Wars** the charter ended; the
+winter rout at **the Sedge**; the charter's **sealed annex**.
+
+Canon rulings (encounter and code agents inherit these from here):
+
+1. The shipped win paths are the canonical outcomes of battles 1–5.
+2. Downed ≠ dead for named characters; permadeath narration applies to the
+   unnamed. (Rules of magic §5.4 is untouched — nothing recalls the dead.)
+3. The Watch Sergeant of battles 1–5 is one man: **Dray**.
+4. Jory Slate is she/her.
