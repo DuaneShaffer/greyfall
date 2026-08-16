@@ -131,6 +131,12 @@ steps, post-processing (bloom, tilt-shift DoF) layered on later.
     diverge.
 14. **Unit sprites & animation** — walk/attack/cast/hurt cycles × facing
     directions × jobs × genders. The single biggest asset pipeline.
+    **Production model (decided 2026-08-16): ALL representational art
+    (sprites, portraits, tile textures) is produced EXTERNALLY by the owner
+    from generator briefs; agents do direction, briefs, evaluation, and the
+    intake pipeline (`src/art` ingest) only. Code-generated sprite art was
+    tried and rejected. Briefs live in `art-src/GENERATOR_BRIEFS.md`;
+    masters land in `art-src/`.**
 15. **Environment/tile art & map geometry** — terrain textures, height-mapped
     battle maps, terrain types that interact with mechanics (water, lava).
 16. **VFX & UI art** — spell effects, damage popups, menu chrome, icons.
