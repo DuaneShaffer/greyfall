@@ -1,0 +1,915 @@
+{
+  "encounterId": "e1-marshaling-yard",
+  "mapId": "marshaling-yard",
+  "seed": 202,
+  "outcome": "win",
+  "winner": "player",
+  "turns": 11,
+  "clock": 30,
+  "commands": 26,
+  "capped": false,
+  "rejectedCommands": 0,
+  "objectsDestroyed": [
+    "yard-cell"
+  ],
+  "events": [
+    {
+      "type": "BattleStarted",
+      "encounterId": "e1-marshaling-yard",
+      "mapId": "marshaling-yard"
+    },
+    {
+      "type": "TriggerFired",
+      "triggerId": "opening-words"
+    },
+    {
+      "type": "DialogueRequested",
+      "triggerId": "opening-words",
+      "lines": [
+        {
+          "speaker": "Maren Voss",
+          "text": "Nobody on this line raised a hand until your people showed up, officer. Ask yourself who fired first."
+        },
+        {
+          "speaker": "Watch Sergeant",
+          "text": "Clear the yard gate. You are standing in breach of the charter's carriage terms."
+        },
+        {
+          "speaker": "Rowen Corvane",
+          "text": "Batons down until I say otherwise. Nobody on that line is armed."
+        }
+      ]
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 10
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "ivo-brace",
+      "turn": 1,
+      "clock": 10
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "ivo-brace",
+      "from": {
+        "x": 1,
+        "y": 5
+      },
+      "to": {
+        "x": 2,
+        "y": 3
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 3
+        },
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "ivo-brace",
+      "facing": "east"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "ivo-brace",
+      "delta": -12,
+      "charge": 29
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "ivo-brace",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "ivo-brace",
+      "abilityId": "sentry-frame",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 2,
+          "y": 2
+        }
+      },
+      "tiles": [
+        {
+          "x": 2,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "ObjectSpawned",
+      "objectId": "spawned-turret-1",
+      "kind": "turret",
+      "owner": "player",
+      "tiles": [
+        {
+          "x": 2,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "ivo-brace",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "ivo-brace",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 17
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 2,
+      "clock": 17
+    },
+    {
+      "type": "TriggerFired",
+      "triggerId": "the-first-maul"
+    },
+    {
+      "type": "UnitSpawned",
+      "unitId": "provocateur-b",
+      "team": "enemy",
+      "position": {
+        "x": 1,
+        "y": 0
+      }
+    },
+    {
+      "type": "UnitSpawned",
+      "unitId": "maren-voss",
+      "team": "neutral",
+      "position": {
+        "x": 2,
+        "y": 3
+      }
+    },
+    {
+      "type": "DialogueRequested",
+      "triggerId": "the-first-maul",
+      "lines": [
+        {
+          "speaker": "Maren Voss",
+          "text": "That came from behind us! Behind our own line — look at the coat and look at the maul!"
+        },
+        {
+          "speaker": "Rowen Corvane",
+          "text": "Watch issue. Foundry coat. Two of them, and neither is on our roll."
+        },
+        {
+          "speaker": "Watch Sergeant",
+          "text": "Ma'am, the line is resisting. That is the finding I have to write."
+        },
+        {
+          "speaker": "Rowen Corvane",
+          "text": "Write what happened. Take the two with the mauls; the line stands where it is."
+        }
+      ]
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "jory-slate",
+      "delta": -3,
+      "charge": 11
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "jory-slate",
+      "abilityId": "bracer-shot",
+      "target": {
+        "kind": "unit",
+        "unitId": "rowen"
+      },
+      "tiles": [
+        {
+          "x": 0,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "type": "StatsModified",
+      "unitId": "rowen",
+      "mods": {
+        "phys": 5,
+        "mag": 5,
+        "evade": 5
+      },
+      "turnsRemaining": 3
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "jory-slate",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "provocateur-a",
+      "turn": 3,
+      "clock": 17
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "provocateur-a",
+      "from": {
+        "x": 4,
+        "y": 0
+      },
+      "to": {
+        "x": 3,
+        "y": 2
+      },
+      "path": [
+        {
+          "x": 4,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 1
+        },
+        {
+          "x": 3,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "provocateur-a",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "provocateur-a",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "rowen",
+      "turn": 4,
+      "clock": 17
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "rowen",
+      "from": {
+        "x": 0,
+        "y": 4
+      },
+      "to": {
+        "x": 3,
+        "y": 4
+      },
+      "path": [
+        {
+          "x": 0,
+          "y": 4
+        },
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 2,
+          "y": 4
+        },
+        {
+          "x": 3,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "rowen",
+      "facing": "east"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "rowen",
+      "facing": "north"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "rowen",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "vale",
+      "turn": 5,
+      "clock": 17
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 1,
+        "y": 4
+      },
+      "to": {
+        "x": 0,
+        "y": 4
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 4
+        },
+        {
+          "x": 0,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "west"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": -5,
+      "charge": 25
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "vale",
+      "abilityId": "overload-cell",
+      "target": {
+        "kind": "object",
+        "objectId": "yard-cell"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "yard-cell",
+      "sourceUnitId": "vale",
+      "amount": 70,
+      "hpRemaining": 0
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "yard-cell",
+      "powered": false
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "yard-cell"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "provocateur-b",
+      "sourceUnitId": null,
+      "amount": 24,
+      "damageType": "thermal",
+      "hpRemaining": 50
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "vale",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "TriggerFired",
+      "triggerId": "cell-goes-up"
+    },
+    {
+      "type": "DialogueRequested",
+      "triggerId": "cell-goes-up",
+      "lines": [
+        {
+          "speaker": "Watch Sergeant",
+          "text": "There goes the cell! Mind the flare!"
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "vale",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 20
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "ivo-brace",
+      "turn": 6,
+      "clock": 20
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "ivo-brace",
+      "delta": -12,
+      "charge": 17
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "ivo-brace",
+      "abilityId": "sentry-frame",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 2,
+          "y": 0
+        }
+      },
+      "tiles": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "type": "ObjectSpawned",
+      "objectId": "spawned-turret-3",
+      "kind": "turret",
+      "owner": "player",
+      "tiles": [
+        {
+          "x": 2,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "ivo-brace",
+      "amount": 10,
+      "total": 20
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "ivo-brace",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 27
+    },
+    {
+      "type": "ObjectAttacked",
+      "objectId": "spawned-turret-1",
+      "targetUnitId": "provocateur-a",
+      "hit": true
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "provocateur-a",
+      "sourceUnitId": "ivo-brace",
+      "amount": 33,
+      "damageType": "kinetic",
+      "hpRemaining": 28
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "provocateur-b",
+      "turn": 7,
+      "clock": 27
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "provocateur-b",
+      "from": {
+        "x": 1,
+        "y": 0
+      },
+      "to": {
+        "x": 1,
+        "y": 3
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "provocateur-b",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "provocateur-b",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "ivo-brace"
+      },
+      "tiles": [
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "provocateur-b",
+      "amount": 19,
+      "damageType": "kinetic",
+      "hpRemaining": 53
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "maren-voss",
+      "sourceUnitId": "provocateur-b",
+      "amount": 19,
+      "damageType": "kinetic",
+      "hpRemaining": 34
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "ivo-brace",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "maren-voss",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "provocateur-b",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "provocateur-b",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 28
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "ivo-brace",
+      "turn": 8,
+      "clock": 28
+    },
+    {
+      "type": "TriggerFired",
+      "triggerId": "over-the-wall"
+    },
+    {
+      "type": "DialogueRequested",
+      "triggerId": "over-the-wall",
+      "lines": [
+        {
+          "speaker": "Maren Voss",
+          "text": "The other one's away over the wall. Straight over, like he knew the yard."
+        },
+        {
+          "speaker": "Rowen Corvane",
+          "text": "He knew where the gate was before he swung. Sergeant, that goes in the record ahead of the arrests."
+        },
+        {
+          "speaker": "Watch Sergeant",
+          "text": "It goes in as an unidentified party leaving the scene, ma'am. That is the wording we have."
+        }
+      ]
+    },
+    {
+      "type": "UnitRemoved",
+      "unitId": "provocateur-b"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "ivo-brace",
+      "delta": -12,
+      "charge": 5
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "ivo-brace",
+      "abilityId": "sentry-frame",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 3,
+          "y": 1
+        }
+      },
+      "tiles": [
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "type": "ObjectSpawned",
+      "objectId": "spawned-turret-4",
+      "kind": "turret",
+      "owner": "player",
+      "tiles": [
+        {
+          "x": 3,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "ivo-brace",
+      "amount": 10,
+      "total": 30
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "ivo-brace",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 30
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 9,
+      "clock": 30
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "jory-slate",
+      "from": {
+        "x": 0,
+        "y": 5
+      },
+      "to": {
+        "x": 1,
+        "y": 5
+      },
+      "path": [
+        {
+          "x": 0,
+          "y": 5
+        },
+        {
+          "x": 1,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "east"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "jory-slate",
+      "delta": -3,
+      "charge": 8
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "jory-slate",
+      "abilityId": "coagulant-jet",
+      "target": {
+        "kind": "unit",
+        "unitId": "ivo-brace"
+      },
+      "tiles": [
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "Healed",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "jory-slate",
+      "amount": 19,
+      "hpRemaining": 72
+    },
+    {
+      "type": "Healed",
+      "unitId": "maren-voss",
+      "sourceUnitId": "jory-slate",
+      "amount": 19,
+      "hpRemaining": 53
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "jory-slate",
+      "amount": 10,
+      "total": 20
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "provocateur-a",
+      "turn": 10,
+      "clock": 30
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "provocateur-a",
+      "from": {
+        "x": 3,
+        "y": 2
+      },
+      "to": {
+        "x": 3,
+        "y": 3
+      },
+      "path": [
+        {
+          "x": 3,
+          "y": 2
+        },
+        {
+          "x": 3,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "provocateur-a",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "provocateur-a",
+      "facing": "west"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "provocateur-a",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "ivo-brace"
+      },
+      "tiles": [
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "provocateur-a",
+      "amount": 16,
+      "damageType": "kinetic",
+      "hpRemaining": 56
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "maren-voss",
+      "sourceUnitId": "provocateur-a",
+      "amount": 16,
+      "damageType": "kinetic",
+      "hpRemaining": 37
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "ivo-brace",
+      "statusId": "stunned",
+      "turnsRemaining": 1
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "maren-voss",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "provocateur-a",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "provocateur-a",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "rowen",
+      "turn": 11,
+      "clock": 30
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "rowen",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "provocateur-a"
+      },
+      "tiles": [
+        {
+          "x": 3,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "provocateur-a",
+      "sourceUnitId": "rowen",
+      "amount": 31,
+      "damageType": "kinetic",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "provocateur-a"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "rowen",
+      "amount": 10,
+      "total": 10
+    },
+    {
+      "type": "BattleEnded",
+      "result": "win"
+    }
+  ]
+}
