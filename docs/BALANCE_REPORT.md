@@ -27,6 +27,14 @@ findings-queue item 6.
 > `src/core/ai/`; no content, no core rules, no engine. Read §7 for what the
 > search can see now and what it cost; read §6.7 for why each change was made.
 >
+> **§7.8.4–§7.8.6 are the instrumentation pass (2026-08-16).** §7.8.3's
+> throwaway counters are folded into `src/sim/analysis.ts` and the
+> two-disjoint-seed-set discipline into `src/sim/sweeps.ts`. e4 is re-read
+> under the objective-aware AI (§7.8.4), e2 and e5 re-validated under the
+> current trigger engine (§7.8.5), and the ability-usage denominator corrected
+> (§7.8.6, which supersedes one number in §7.8.1). Instrument and measurement
+> only: no content, no core rules, no AI weights, and nothing retuned.
+>
 > **`src/sim/variants.ts` was rebased onto the live engine (cleanup pass,
 > 2026-08-15).** `divisorVariant()` used to emulate a fix that is now *in* the
 > engine, so running it double-applied the divisor. It now expresses the
@@ -75,6 +83,14 @@ roster))` on `orderedDeployTiles(map)` at the units' authored levels; run
 ten seeds; and accumulate `unit.standingEarned` per unit so `jobLevelFor` can be
 read at each step. Ten seeds matters: at five, a single configuration of e5 read
 anywhere from 0% to 100%.
+
+**The §7.8.x encounter runs are one call now** (instrumentation pass,
+2026-08-16). `encounterRuns(content, ids, seeds, { commandCap: 4000 })` in
+`src/sim/sweeps.ts` builds exactly that party — campaign roster in join order,
+authored levels, the map's own deployment tiles — and `PRIMARY_ENCOUNTER_SEEDS`
+(`101 + 37n`) and `ALT_ENCOUNTER_SEEDS` (`103 + 41n`) are the two disjoint
+24-seed sets every landing in §7.8.x is confirmed on. `encounterReports` turns
+the result into win rates with the battlefield counters beside them (§7.8.6).
 
 The second command writes the complete measurement dump — every table quoted
 below, plus the full 7x7 pair matrix, the full ability-usage table, and the
@@ -1027,6 +1043,13 @@ times it was built before**, out of 376 Machinist actions instead of 431. The
 114) and the rest to the weapon. G6 brought the frame 55% → 36% by pricing it
 honestly and nothing about that pricing changed. Worth a watch, not a finding.
 
+> **Corrected by §7.8.6 (2026-08-16): the frame is 40.0%, and there are three
+> over-users, not four.** This note had hold of the right half of the reason —
+> and the denominator was also *wrong*. `totalActionsByJob` counted only `act`
+> commands, but a Machinist spends the same turn's action working machinery.
+> 154 of **385**, not 154 of 380. Sentry Frame is exactly on the 40% line and
+> does not cross it.
+
 #### Never chosen
 
 | sweep | before | **after** | what moved |
@@ -1485,6 +1508,303 @@ to count them, and the counters used here (`pwr`, `pAct`, `pDest`, `box`,
 per-unit turns-taken) are worth folding into `analysis.ts` as standing
 findings rather than being rebuilt by hand the next time a playthrough
 disagrees with a sweep.
+
+### 7.8.4 Addendum — e4 under the objective-aware AI
+
+§7.8.1 landed e4 at **83.3%** and named it the pass's own cost: Overload Cell
+going from four casts to twenty-seven "takes Refinery Three from 62.5% to
+83.3%… the encounter was authored against an ability that did not work."
+§7.8.3 did not re-measure it, and in between `a0cbaa6` taught the search to
+score escape and reach conditions — *"AI objective awareness: escape/reach
+conditions scored (Wick takes the stair); e4 probe 4/6 → 5/6 noted for the
+next balance sweep."* This is that sweep, and e4 is the encounter it has to
+matter to: its win list is `reachTiles` **or** `defeatUnit(nessa-kiln)`, so it
+is the one shipped fight with a second way to win.
+
+**The instrument is §7.8.2's**, now *in* `src/sim` rather than beside it:
+campaign roster in join order, authored levels, nothing bought, `commandCap`
+4000, on the primary seed set (`101 + 37n`) and the disjoint alt set
+(`103 + 41n`), 24 seeds each. One call —
+`encounterRuns(content, ["e4-refinery-three"], PRIMARY_ENCOUNTER_SEEDS, { commandCap: 4000 })`.
+
+| e4 Refinery Three | §7.8.1 | **primary** | **alt** | **pooled 48** |
+|---|---|---|---|---|
+| win | 83.3% | **91.7%** | **79.2%** | **85.4%** |
+| mean turns | — | 91.6 | 93.3 | |
+| party lost, of 6 | — | 2.79 | 2.92 | |
+| surviving party hp% | — | 39.1 | 38.9 | |
+| stalemates | — | 0 | 0 | |
+
+**The movement is the second win route, and it is measurable directly.**
+Splitting the wins by how they were won: Nessa is put down in **16 of 24 runs
+on both sets, to the digit**, and every remaining win is the party standing on
+the switchboard tiles with her still up — **6 primary, 3 alt**. The kill route
+is a fixed point across two disjoint seed sets at 66.7%; everything above it is
+the reach condition now being scored. §7.8.1's 83.3% was 20 of 24 on this same
+primary set, so the objective-aware search is worth roughly two runs in
+twenty-four here.
+
+| e4 counters, 24 runs each | primary | alt |
+|---|---|---|
+| machines worked — party / hostile / bystander | 9 / 0 / **25** | 1 / 0 / **32** |
+| — `switchboard-main` | 25 | 32 |
+| — `condenser-bank-east` | 8 | 1 |
+| — `feed-switch-east` | 1 | 0 |
+| power flips per run | 10.75 | 11.46 |
+| powered-machine turns | 98% | 100% |
+| objects broken per run | 7.46 | 8.13 |
+| `the-licence-does-not-carry-her` (Nessa < 40%) | 18 / 24 | 18 / 24 |
+| `on-the-ring` | 3 / 24 | 3 / 24 |
+| `at-the-switchboard` | 2 / 24 | 0 / 24 |
+
+Two things fall out of the counters that no win rate was going to show.
+
+- **The bystander does the machinery.** Quill — the map's one neutral — works
+  `switchboard-main` 25 times on the primary set and 32 on the alt, against
+  nine party activations of everything else and **zero** from the hostile
+  force. `COMBAT_RULES` §18 scores neutrals at zero in either direction, so
+  nobody stops her and nobody helps her, and she is the only unit on the field
+  whose turns go into the encounter's own machine. Not a defect — but it means
+  any future read of "does the party use the refinery" has to subtract her
+  first, which is why `machineryOperated` is split by side rather than totalled.
+- **The party wins on the switchboard without ever standing where the beat is
+  written.** `at-the-switchboard` covers `(6,2) (7,2) (8,2) (9,2)`; the win
+  tiles are `(6,1) (7,0) (7,1) (7,2)`, and `switchboard-main` itself sits on
+  `(7,1)`. They share exactly one tile, so six reach wins on the primary set
+  produced two firings of the line written for arriving there. `on-the-ring`
+  is 3 of 24 for the same reason: the fight is over before the ground it is
+  written on gets walked.
+
+**Where that leaves the band.** 91.7% is 8.4 points over the 83% ceiling,
+79.2% is 3.8 under it, and pooled over 48 runs e4 reads **85.4% — over by
+2.4**. Two disjoint sets straddling a band edge by less than the ±10 a
+24-seed encounter read carries is not a landing in either direction, but the
+pooled number is the one the discipline says to believe, and it is out. A
+proposal is therefore owed; a change is not made here.
+
+**Proposed, not applied.** This pass is verification and instrumentation, and
+an e4 landing needs a ladder on both sets (§7.8.2) — that is a balance pass and
+it belongs to the encounter workstream. The numbers point at the **win
+condition's tile set**, not at any kit, level or body count: the kill route is
+a stable 66.7% on both sets, so nothing about the fight is out of band. Two
+candidates, cheapest first:
+
+1. **Gate the reach win on a unit.** `reachTiles` already takes an optional
+   `unitId`. The licence is one character's errand; requiring that the party
+   member who owns it be the one to reach the switchboard costs the AI the
+   "any body will do" shortcut without touching a single stat. Expected: most
+   of the nine reach wins across the two sets, pooled toward the high 60s or
+   low 70s.
+2. **Align `at-the-switchboard` with the win tiles**, or move the win tiles
+   onto its row. This does not move the win rate on its own; it is the fix for
+   the *second* finding above, and it should be measured with (1) rather than
+   against it.
+
+What would confirm either: the same call on both seed sets, target 62–80%
+pooled, with **the kill route held at 16 of 24 as the control** — a change that
+moves that number is changing the fight rather than the objective and is the
+wrong change.
+
+### 7.8.5 Addendum — e2 and e5 re-validated under the current engine
+
+Two engine commits landed after these encounters were last measured. `5c7d875`
+made an HP-threshold beat fire when the downing blow overkills straight past it
+(and `moveUnit` no-op on a downed unit); `05fc36f` moved ability-targeting
+legality into the controller, leaving `applyCommand` untouched. Neither is a
+content change, both can move a sim number, and one of them is aimed squarely
+at e5.
+
+**The legality change is inert here, and that is measured rather than
+assumed.** e2, e4 and e5 run at **0.00 rejected commands per battle across all
+144 runs**: the search was already proposing only legal targets, so `05fc36f`
+fixed the aim overlay and nothing the sim can see.
+
+#### e2 Foundry Floor Nine
+
+The standing record for e2 is §7.8.3's **75.0% on both sets** — §7.8.2's 45.8%
+was superseded by the machinery fix in the same section. It reproduces:
+
+| e2 | §7.8.3 | **primary** | **alt** |
+|---|---|---|---|
+| win | 75.0% / 75.0% | **75.0%** | **75.0%** |
+| mean turns | 84 / 81 | 83.5 | 80.9 |
+| party lost, of 6 | 3.21 / 3.42 | 3.21 | 3.42 |
+| press activations, party | 19 / 15 | **19** | **15** |
+| press activations, hostile | 0 / 1 | **0** | **1** |
+| stalemates | 0 | 0 | 0 |
+
+Every line reproduces to the digit on both sets, including the two counters
+§7.8.3 rolled by hand. The trigger engine changed underneath it and e2 did not
+move, which is the answer this re-check was asked for.
+
+**The press-fire rate, asked for directly.** §7.8.3's finding came from a
+person who lost e2 six times running and never once fired a press; the question
+is how often the sim's AI does.
+
+| e2 press fire, 24 runs each | primary | alt |
+|---|---|---|
+| party press activations | 19 | 15 |
+| **runs with at least one party press** | **18 / 24 (75%)** | **14 / 24 (58%)** |
+| hostile press activations | 0 | 1 |
+| runs with any press fired | 18 / 24 | 15 / 24 |
+| party press activations per run | 0.79 | 0.63 |
+
+**It is not ~0, and the design observation runs the other way.** The sim's
+party fires a press in **32 of 48 runs**, and almost never twice in the same
+run: 19 activations across 18 runs. So the press window is not sim-invisible.
+It is **sim-visible and player-invisible** — the search reads the press's
+`operable` payload against whoever is standing in its bed the instant they
+stand there, which is knowledge a first-time player cannot get off the board.
+That makes the gap the acceptance playthrough found a **presentation** problem
+rather than a balance one, and nothing is retuned for it here: the encounter is
+mid-band on both sets and its thesis metric is healthy.
+
+**The mains is still most of the machinery in the level.**
+
+| e2 machinery, 24 runs each | primary | alt |
+|---|---|---|
+| party machine operations | 106 | 106 |
+| — of which `floor-nine-mains` | 86 (81%) | 91 (86%) |
+| — of which the press line | 19 | 15 |
+| hostile machine operations | 22 | 16 |
+| — of which `floor-nine-mains` | 22 (100%) | 15 (94%) |
+| power flips per run | **32.9** | **31.7** |
+| powered-machine turns | 42% | 38% |
+| `aisle-mouth` | 4 / 24 | 3 / 24 |
+
+The flip count is §7.8.3's tug-of-war doing exactly what it was built to do:
+one mains activation moves four objects, so 128 activations across a set is
+about 430 flips, against about 340 the five `mains-hold-*` triggers put back.
+The powered-machine share reads 42%/38% against §7.8.3's hand-rolled `pwr` of
+39%/35% for what is demonstrably the same runs, and the three-point gap is a
+definition rather than a disagreement: the folded-in counter counts every
+power-gated operable, which on Floor Nine is the three presses **and**
+`pour-ladle-tap`. `aisle-mouth` firing in 4 and 3 runs of 24 is recorded, not
+acted on.
+
+#### e5 Charterhouse Steps
+
+e5 is where `5c7d875` bites. `aldric-to-the-court` is gated on Aldric below
+55% and it does not only speak: it moves him and **spawns the court
+reinforcement**. Before the fix, a blow that took him from above 55% to nothing
+skipped a body onto the board as well as a line.
+
+| e5 | §7.8.1 / §7.8.2 | **primary** | **alt** |
+|---|---|---|---|
+| win | 66.6% / 66.7% | **66.7%** | **58.3%** |
+| mean turns | — | 74.4 | 81.3 |
+| party lost, of 7 | — | 3.46 | 3.67 |
+| stalemates, capped runs, errors | — | 0 | 0 |
+| `terrace-two-the-proof` (Aldric < 90%) | — | 22 / 24 | 23 / 24 |
+| `aldric-to-the-court` (< 55%) | — | 20 / 24 | 20 / 24 |
+| `the-record-closes` (Aldric downed) | — | 16 / 24 | 14 / 24 |
+| court reinforcements spawned | — | 20 | 20 |
+
+**The sim completes e5 without errors and the win rate did not move
+materially.** 66.7% on the primary set is the same 16 of 24 that §7.8.1 and
+§7.8.2 recorded as 66.6/66.7. The alt set reads 58.3%, 8.4 points down, inside
+the ±10 a 24-seed encounter read carries; pooled over 48 runs e5 is **62.5%**,
+mid-band. `the-record-closes` fires 16 and 14 times — exactly the win counts on
+each set — so no run downs Aldric without the closing beat, which is the
+ordering the overkill fix was made for.
+
+**Two things the new flags caught on their first outing.**
+
+- **`the-top-step` never fires, in 48 of 48 runs.** It is gated
+  `afterTriggerId: aldric-to-the-court`, and that gate is not the reason: the
+  withdrawal fires in 20 of 24 runs on both sets. The party simply wins on the
+  terraces and never walks the `y = 4` row the beat is written on. Same shape
+  as e4's `at-the-switchboard`, and the same call — recorded for the encounter
+  workstream, not acted on here.
+- **e5's one operable machine is never worked, in 48 of 48 runs.**
+  `lift-cutout` is a `requiresPower: false` switch whose job is cutting the
+  service lift, and `the-steps-are-closed` already cuts the lift's power at
+  battle start — the single power flip in the whole encounter (1.00 per run,
+  all of it scripted). The switch's work is done before anyone can reach it.
+  **A design observation, not a retune:** Charterhouse Steps is a terrain
+  encounter with a vestigial machine on it, which is a defensible thing for the
+  chapter's finale to be. The flag fires because the counter cannot know that,
+  and it is better that it fires.
+
+### 7.8.6 Addendum — the sentry-frame denominator, and the counters that now stand
+
+§7.8.3 closed by recommending that its four throwaway counters be folded into
+`src/sim/analysis.ts` "as standing findings rather than being rebuilt by hand
+the next time a playthrough disagrees with a sweep." They are, and folding them
+in turned up the denominator §7.8.1 had half-diagnosed.
+
+#### The counter surface
+
+`BattleCounters` rides on every `BattleRecord`, so a sweep and a one-off
+re-check see the same numbers. `analysis.ts` aggregates them:
+
+| counter | what it counts |
+|---|---|
+| `machineryOperated` | `ObjectActivated`, split player / enemy / neutral, plus `operatedByObject` with the same split per machine |
+| `powerOn`, `powerOff` | `PowerChanged`, split by direction and by whether the actor or a trigger caused it |
+| `objectsBroken` | `ObjectDestroyed`, attributed to whoever last damaged it; `scripted` for a payload with no caster |
+| `triggersFired` | `TriggerFired` by trigger id — which beats happen, and how often |
+| `unitsSpawned`, `unitsRemoved` | reinforcements and scripted exits |
+| `turnsWithMachine` / `turnsWithLiveMachine` / `turnsWithPoweredMachine` | unit turns that began with an operable machine standing, workable, and — the number a level built on cutting power lives by — lit |
+| `UnitRecord.turnsTaken` (already there) | rolled up as `idleUnits`: who stood on the field and never reached 100 CT |
+
+Over a set of runs, `objectiveCounters(battles)` totals all of it and
+`encounterReports(battles)` puts it beside the win rate, losses, turns and
+surviving HP, one row per encounter — which is what "reported alongside win
+rates" has to mean for the §7.8.3 failure not to recur. `objectiveFindings`
+raises the three flags a win rate structurally cannot: `machinery-never-operated`,
+`trigger-never-fired`, `unit-never-acts`. All three fired on their first
+outing (§7.8.5), and none of them is a bug — which is the point: they are
+questions the instrument was not asking at all.
+
+The seed discipline is code now too: `seedSet`, `PRIMARY_ENCOUNTER_SEEDS`
+(`101 + 37n`), `ALT_ENCOUNTER_SEEDS` (`103 + 41n`) and `encounterRuns` in
+`src/sim/sweeps.ts`. Every number in §7.8.4 and §7.8.5 is one call each.
+
+#### The denominator
+
+**A turn's action is spent three ways.** `act`, `useItem` and `activateObject`
+all set `turn.acted`, and all three come out of the same candidate list — the
+search prices `activateObject` against every ability the unit could cast
+instead. `abilityUsage`'s `totalActionsByJob` counted only `act`, so every
+share it has ever reported is **over-stated on any map with machinery on it**,
+in proportion to how much machinery the job works.
+
+The §7 duel sweep re-run on the current build — 7×7 job pairs, levels 1/3/5,
+seed 101, `sim-arena` plus the Marshaling Yard, 294 battles — reproduces
+§7.8.1's usage table exactly and then corrects it:
+
+| job | ability actions | machinery worked | items | **denominator** |
+|---|---|---|---|---|
+| augmented | 253 | 0 | 0 | 253 |
+| chemist | 632 | 1 | 0 | 633 |
+| conduit | 254 | 0 | 0 | 254 |
+| enforcer | 445 | 0 | 0 | 445 |
+| machinist | 380 | **5** | 0 | **385** |
+| railrunner | 555 | **7** | 0 | 562 |
+| saboteur | 362 | **6** | 0 | 368 |
+
+| over 40% of its job's actions | §7.8.1 | **corrected** |
+|---|---|---|
+| conduit \| arc | 88% | 88.2% (224 / 254) |
+| enforcer \| pin | 51% | 51.2% (228 / 445) |
+| railrunner \| coupling-hook | 49% | 48.2% (271 / 562) |
+| machinist \| sentry-frame | **41%** | **40.0% (154 / 385)** |
+
+**Four over-users to three.** Sentry Frame is 154 of 385, which is 40.0% to
+three places and does not clear `THRESHOLDS.abilityDominance` — the frame sits
+exactly on the line rather than one point over it. §7.8.1's instinct was
+right ("it is a denominator") and its arithmetic was working from a
+denominator that was itself wrong. Nothing about the frame's pricing changed
+and nothing about the Machinist's kit is retuned: the ability is where G6 left
+it, and the number that moved was the instrument's.
+
+The other three rows move by fractions of a point or not at all, because the
+Conduit and the Enforcer never touch a machine in 84 unit-battles each. The
+correction bites where the pillar is — a job that works the board is reported
+as spending less of its turn on abilities than it looked like, which is exactly
+the direction that matters when the question is "is this ability dominating
+this kit."
 
 ### 7.9 Regenerated test expectations
 
