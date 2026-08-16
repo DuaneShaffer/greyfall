@@ -8,7 +8,7 @@
  * every headline number in `docs/BALANCE_REPORT.md` names the sweep it came from.
  */
 
-import type { ContentLibrary } from "../core/index.js";
+import type { ContentLibrary, Deployment } from "../core/index.js";
 import { WEIGHTS, type AiWeights } from "../core/ai/index.js";
 import type { GameMap, Unit } from "../data/index.js";
 import { runBattle, type BattleRecord, type RunOptions } from "./harness.js";
@@ -222,6 +222,78 @@ export function compSweep(content: SimContent, cfg: SweepConfig): SweepBattle[] 
 // (c) shipped encounters
 // ---------------------------------------------------------------------------
 
+/** `count` seeds walking `start` by `step`. */
+export function seedSet(start: number, step: number, count: number): number[] {
+  return Array.from({ length: count }, (_, i) => start + step * i);
+}
+
+/**
+ * The two seed sets every encounter landing in `docs/BALANCE_REPORT.md` is
+ * confirmed on. They are disjoint by construction (`37` and `41` are coprime
+ * to each other and the offsets differ), and the discipline is that nothing is
+ * tuned and validated on the same one: a single 24-seed read of an encounter is
+ * not a landing (§7.8.2).
+ */
+export const PRIMARY_ENCOUNTER_SEEDS = seedSet(101, 37, 24);
+export const ALT_ENCOUNTER_SEEDS = seedSet(103, 41, 24);
+
+/** The party an encounter deploys: campaign roster in join order, authored levels. */
+export function authoredDeployment(
+  content: SimContent,
+  encounterId: string,
+): { party: Unit[]; deployment: Deployment[] } | null {
+  const encounter = content.library.encounters[encounterId];
+  const map = encounter === undefined ? undefined : content.library.maps[encounter.mapId];
+  if (encounter === undefined || map === undefined) return null;
+  const roster = rosterIds(content);
+  const tiles = orderedDeployTiles(map);
+  const size = Math.min(encounter.maxDeployedUnits, tiles.length, roster.length);
+  const party = partyFor(content, roster.slice(0, size), null);
+  if (party.length === 0) return null;
+  return {
+    party,
+    deployment: party.map((unit, i) => ({ unitId: unit.id, position: { ...tiles[i]! } })),
+  };
+}
+
+/**
+ * Named encounters over an explicit seed set — the shape every §7.8.x addendum
+ * is measured with, so a re-check is a call rather than a rebuild.
+ */
+export function encounterRuns(
+  content: SimContent,
+  encounterIds: readonly string[],
+  seeds: readonly number[],
+  opts: RunOptions = {},
+): SweepBattle[] {
+  const out: SweepBattle[] = [];
+  for (const encounterId of encounterIds) {
+    const deployed = authoredDeployment(content, encounterId);
+    if (deployed === null) continue;
+    const encounter = content.library.encounters[encounterId]!;
+    for (const seed of seeds) {
+      out.push({
+        tags: {
+          sweep: "encounter-authored",
+          variant: "baseline",
+          weights: "shipped",
+          map: encounter.mapId,
+          level: Math.max(...deployed.party.map((u) => u.level)),
+          player: "party-authored",
+          enemy: encounterId,
+        },
+        record: runBattle(
+          content.library,
+          { kind: "encounter", encounterId, party: deployed.party, deployment: deployed.deployment },
+          seed,
+          opts,
+        ),
+      });
+    }
+  }
+  return out;
+}
+
 function rosterIds(content: SimContent): string[] {
   const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id]!)[0];
   if (campaign !== undefined) return [...campaign.startingRosterUnitIds];
@@ -246,7 +318,6 @@ function partyFor(content: SimContent, ids: readonly string[], level: number | n
  */
 export function encounterSweep(content: SimContent, cfg: SweepConfig): SweepBattle[] {
   const out: SweepBattle[] = [];
-  const roster = rosterIds(content);
   const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id]!)[0];
   const order = campaign?.encounterIds ?? [];
 
@@ -256,18 +327,17 @@ export function encounterSweep(content: SimContent, cfg: SweepConfig): SweepBatt
     const map: GameMap | undefined = content.library.maps[encounter.mapId];
     if (map === undefined) continue;
     const chapterIndex = order.indexOf(encounterId);
-    const tiles = orderedDeployTiles(map);
-    const size = Math.min(encounter.maxDeployedUnits, tiles.length, roster.length);
-    const partyIds = roster.slice(0, size);
+    const deployed = authoredDeployment(content, encounterId);
+    if (deployed === null) continue;
+    const partyIds = deployed.party.map((unit) => unit.id);
 
     const modes: Array<{ mode: "authored" | "chapter"; level: number | null }> = [
       { mode: "authored", level: null },
       { mode: "chapter", level: Math.min(5, Math.max(1, chapterIndex + 1)) },
     ];
     for (const { mode, level } of modes) {
-      const party = partyFor(content, partyIds, level);
+      const party = level === null ? deployed.party : partyFor(content, partyIds, level);
       if (party.length === 0) continue;
-      const deployment = party.map((unit, i) => ({ unitId: unit.id, position: { ...tiles[i]! } }));
       for (const seed of cfg.encounterSeeds) {
         out.push({
           tags: {
@@ -281,7 +351,7 @@ export function encounterSweep(content: SimContent, cfg: SweepConfig): SweepBatt
           },
           record: runBattle(
             content.library,
-            { kind: "encounter", encounterId, party, deployment },
+            { kind: "encounter", encounterId, party, deployment: deployed.deployment },
             seed,
             teamOptions(cfg),
           ),

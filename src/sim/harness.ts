@@ -59,6 +59,8 @@ export interface UnitRecord {
   abilityUses: Record<string, number>;
   /** Actions that actually resolved on the field (a charge lands here, not above). */
   abilityResolutions: Record<string, number>;
+  /** `useItem` commands chosen. An item spends the turn's action the way an ability does. */
+  itemsUsed: number;
   reactionsTriggered: number;
   attacksLanded: number;
   attacksMissed: number;
@@ -75,6 +77,66 @@ export interface UnitRecord {
   fluxSpent: number;
   downed: boolean;
   downedAtTurn: number | null;
+}
+
+/** A tally split by the side that caused it. */
+export interface SideTally {
+  player: number;
+  enemy: number;
+  neutral: number;
+  /** Nobody's action: an encounter trigger, or the battle's own opening batch. */
+  scripted: number;
+}
+
+function blankTally(): SideTally {
+  return { player: 0, enemy: 0, neutral: 0, scripted: 0 };
+}
+
+/**
+ * What the battlefield did, as against who won it. A win rate cannot see whether
+ * an encounter's premise ever occurred: e2 read 45.8% for a build that never
+ * once fired a press (`docs/BALANCE_REPORT.md` §7.8.3), so every run carries
+ * these beside its outcome.
+ */
+export interface BattleCounters {
+  /** `ObjectActivated` — a side spending an action working machinery. */
+  machineryOperated: SideTally;
+  /** The same, by object id, so one machine's share of the traffic is readable. */
+  operatedByObject: Record<string, SideTally>;
+  powerOn: SideTally;
+  powerOff: SideTally;
+  /** `ObjectDestroyed`, attributed to whoever last damaged it. */
+  objectsBroken: SideTally;
+  /** `TriggerFired` by trigger id: the encounter's scripted beats, and which never fired. */
+  triggersFired: Record<string, number>;
+  unitsSpawned: number;
+  unitsRemoved: number;
+  /** Unit turns that began with at least one operable machine still on the board. */
+  turnsWithMachine: number;
+  /** Of those, the ones where at least one was workable — powered if its controls need it. */
+  turnsWithLiveMachine: number;
+  /**
+   * Of those, the ones where a *power-gated* machine was standing and lit. This
+   * is the number a level built around denying power lives or dies by: Floor
+   * Nine's press line is three of them and its mains switch is not.
+   */
+  turnsWithPoweredMachine: number;
+}
+
+function blankCounters(): BattleCounters {
+  return {
+    machineryOperated: blankTally(),
+    operatedByObject: {},
+    powerOn: blankTally(),
+    powerOff: blankTally(),
+    objectsBroken: blankTally(),
+    triggersFired: {},
+    unitsSpawned: 0,
+    unitsRemoved: 0,
+    turnsWithMachine: 0,
+    turnsWithLiveMachine: 0,
+    turnsWithPoweredMachine: 0,
+  };
 }
 
 export interface BattleRecord {
@@ -94,6 +156,7 @@ export interface BattleRecord {
   objectsDestroyed: string[];
   rejectedCommands: number;
   elapsedMs: number;
+  counters: BattleCounters;
   units: UnitRecord[];
   events: BattleEvent[] | null;
 }
@@ -114,6 +177,7 @@ function blankUnit(state: GameState, unitId: string): UnitRecord {
     objectsOperated: 0,
     abilityUses: {},
     abilityResolutions: {},
+    itemsUsed: 0,
     reactionsTriggered: 0,
     attacksLanded: 0,
     attacksMissed: 0,
@@ -139,9 +203,39 @@ function bump(counter: Record<string, number>, key: string): void {
 class Telemetry {
   readonly units = new Map<string, UnitRecord>();
   readonly objectsDestroyed: string[] = [];
+  readonly counters = blankCounters();
   firstDownTurn: number | null = null;
   private readonly lastAttacker = new Map<string, string>();
   private readonly lastObjectDamager = new Map<string, string>();
+
+  private tally(into: SideTally, team: Team | null): void {
+    if (team === null) into.scripted += 1;
+    else into[team] += 1;
+  }
+
+  private teamOf(unitId: string | null | undefined): Team | null {
+    return unitId === null || unitId === undefined ? null : (this.units.get(unitId)?.team ?? null);
+  }
+
+  /** Operable machines still standing when this turn began, and how many are workable. */
+  private censusMachines(state: GameState): void {
+    let standing = 0;
+    let live = 0;
+    let lit = 0;
+    for (const obj of state.map.objects) {
+      const controls = obj.def.operable;
+      if (controls === null || obj.destroyed) continue;
+      standing += 1;
+      if (!controls.requiresPower) live += 1;
+      else if (obj.powered === true) {
+        live += 1;
+        lit += 1;
+      }
+    }
+    if (standing > 0) this.counters.turnsWithMachine += 1;
+    if (live > 0) this.counters.turnsWithLiveMachine += 1;
+    if (lit > 0) this.counters.turnsWithPoweredMachine += 1;
+  }
 
   constructor(state: GameState) {
     for (const unit of allUnits(state)) this.units.set(unit.id, blankUnit(state, unit.id));
@@ -167,18 +261,45 @@ class Telemetry {
       if (actor !== undefined) {
         actor.commands += 1;
         if (chosen.kind === "act") bump(actor.abilityUses, chosen.abilityId);
+        if (chosen.kind === "useItem") actor.itemsUsed += 1;
         if (chosen.kind === "activateObject") actor.objectsOperated += 1;
       }
     }
+    const actorTeam = chosen === null ? null : this.teamOf(chosen.unitId);
+    // Triggers settle after the action inside the same batch, so everything past
+    // the first `TriggerFired` is the encounter's doing rather than the actor's.
+    let scripted = chosen === null;
     for (const event of events) {
       switch (event.type) {
         case "TurnStarted": {
           const rec = this.ensure(state, event.unitId);
           if (rec !== undefined) rec.turnsTaken += 1;
+          this.censusMachines(state);
           break;
         }
+        case "TriggerFired":
+          bump(this.counters.triggersFired, event.triggerId);
+          scripted = true;
+          break;
+        case "ObjectActivated": {
+          const team = this.teamOf(event.unitId);
+          this.tally(this.counters.machineryOperated, team);
+          const perObject = (this.counters.operatedByObject[event.objectId] ??= blankTally());
+          this.tally(perObject, team);
+          break;
+        }
+        case "PowerChanged":
+          this.tally(
+            event.powered ? this.counters.powerOn : this.counters.powerOff,
+            scripted ? null : actorTeam,
+          );
+          break;
         case "UnitSpawned":
+          this.counters.unitsSpawned += 1;
           this.ensure(state, event.unitId);
+          break;
+        case "UnitRemoved":
+          this.counters.unitsRemoved += 1;
           break;
         case "DamageDealt": {
           const victim = this.ensure(state, event.unitId);
@@ -235,6 +356,7 @@ class Telemetry {
         case "ObjectDestroyed": {
           this.objectsDestroyed.push(event.objectId);
           const breaker = this.lastObjectDamager.get(event.objectId);
+          this.tally(this.counters.objectsBroken, this.teamOf(breaker));
           if (breaker !== undefined) {
             const rec = this.of(breaker);
             if (rec !== undefined) rec.objectsDestroyed += 1;
@@ -389,6 +511,7 @@ export function runBattle(
     objectsDestroyed: telemetry.objectsDestroyed,
     rejectedCommands: rejected,
     elapsedMs: performance.now() - started,
+    counters: telemetry.counters,
     units,
     events: opts.keepEvents === true ? events : null,
   };

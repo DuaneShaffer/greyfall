@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { STANDING_PER_ACTION } from "../../src/core/index.js";
+import { abilityUsage, objectiveCounters, objectiveFindings } from "../../src/sim/analysis.js";
 import { simContent } from "../../src/sim/content.js";
 import { runBattle } from "../../src/sim/harness.js";
 import { arenaMatchup, jobUnit } from "../../src/sim/matchup.js";
+import { encounterRuns } from "../../src/sim/sweeps.js";
 import { scriptedDuel, ttkCell } from "../../src/sim/ttk.js";
 
 const { library } = simContent();
@@ -84,6 +86,64 @@ describe("sim telemetry", () => {
       const chosen = Object.values(unit.abilityUses).reduce((n, v) => n + v, 0);
       expect(chosen, `${unit.unitId} chosen actions`).toBe(started);
     }
+  });
+
+  it("the battlefield counters agree with the event stream they were built from", () => {
+    const battles = encounterRuns(simContent(), ["e2-foundry-floor-nine"], [101], {
+      commandCap: 4000,
+      keepEvents: true,
+    });
+    expect(battles.length).toBe(1);
+    const record = battles[0]!.record;
+    const events = record.events!;
+    const counters = record.counters;
+    const count = (type: string) => events.filter((e) => e.type === type).length;
+    const total = (t: { player: number; enemy: number; neutral: number; scripted: number }) =>
+      t.player + t.enemy + t.neutral + t.scripted;
+
+    expect(total(counters.machineryOperated)).toBe(count("ObjectActivated"));
+    expect(
+      Object.values(counters.operatedByObject).reduce((n, t) => n + total(t), 0),
+    ).toBe(count("ObjectActivated"));
+    expect(counters.machineryOperated.player).toBeGreaterThan(0);
+
+    const powered = events.filter((e) => e.type === "PowerChanged");
+    expect(total(counters.powerOn)).toBe(powered.filter((e) => e.type === "PowerChanged" && e.powered).length);
+    expect(total(counters.powerOff)).toBe(powered.filter((e) => e.type === "PowerChanged" && !e.powered).length);
+
+    expect(total(counters.objectsBroken)).toBe(count("ObjectDestroyed"));
+    expect(Object.values(counters.triggersFired).reduce((n, v) => n + v, 0)).toBe(count("TriggerFired"));
+    expect(counters.unitsSpawned).toBe(count("UnitSpawned"));
+    expect(counters.unitsRemoved).toBe(count("UnitRemoved"));
+
+    const turns = count("TurnStarted");
+    expect(counters.turnsWithMachine).toBeLessThanOrEqual(turns);
+    expect(counters.turnsWithLiveMachine).toBeLessThanOrEqual(counters.turnsWithMachine);
+    expect(counters.turnsWithPoweredMachine).toBeLessThanOrEqual(counters.turnsWithLiveMachine);
+    expect(counters.turnsWithPoweredMachine).toBeGreaterThan(0);
+
+    const report = objectiveCounters(battles);
+    expect(report.battles).toBe(1);
+    expect(report.unitTurns).toBe(turns);
+    expect(report.runsWithoutOperation).toBe(0);
+    expect(objectiveFindings(library, battles).map((f) => f.code)).not.toContain("machinery-never-operated");
+  });
+
+  it("every way a turn's action can be spent is in the usage denominator", () => {
+    const battles = encounterRuns(simContent(), ["e2-foundry-floor-nine"], [101], { commandCap: 4000 });
+    const jobIds = [...new Set(battles[0]!.record.units.map((u) => u.jobId))].sort();
+    const usage = abilityUsage(library, battles, jobIds);
+
+    for (const jobId of jobIds) {
+      const units = battles[0]!.record.units.filter((u) => u.jobId === jobId);
+      const acts = units.reduce((n, u) => n + Object.values(u.abilityUses).reduce((s, v) => s + v, 0), 0);
+      const operated = units.reduce((n, u) => n + u.objectsOperated, 0);
+      const items = units.reduce((n, u) => n + u.itemsUsed, 0);
+      expect(usage.totalActionsByJob[jobId] ?? 0, `${jobId} denominator`).toBe(acts + operated + items);
+      expect(usage.operateActionsByJob[jobId] ?? 0, `${jobId} machinery`).toBe(operated);
+      expect(usage.itemActionsByJob[jobId] ?? 0, `${jobId} items`).toBe(items);
+    }
+    expect(Object.values(usage.operateActionsByJob).reduce((n, v) => n + v, 0)).toBeGreaterThan(0);
   });
 
   it("reproduces the level-1 basic attack table in docs/CONTENT_NOTES.md §6", () => {

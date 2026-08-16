@@ -17,14 +17,15 @@ import {
   abilityUsage,
   decisiveness,
   deploymentSideBias,
+  encounterReports,
   findings,
   fluxEconomy,
   jobWinRates,
+  objectiveFindings,
   pairTable,
   stalemateMatchups,
 } from "./analysis.js";
 import { simContent, type SimContent } from "./content.js";
-import type { BattleRecord } from "./harness.js";
 import {
   CI_CONFIG,
   FULL_CONFIG,
@@ -91,25 +92,6 @@ function table(header: readonly string[], rows: readonly (readonly (string | num
   const rule = `|${header.map(() => "---").join("|")}|`;
   const body = rows.map((row) => `| ${row.join(" | ")} |`);
   return [head, rule, ...body].join("\n");
-}
-
-function outcomeCounts(battles: readonly SweepBattle[]) {
-  let win = 0;
-  let loss = 0;
-  let stale = 0;
-  for (const battle of battles) {
-    if (battle.record.outcome === "win") win += 1;
-    else if (battle.record.outcome === "loss") loss += 1;
-    else stale += 1;
-  }
-  return { win, loss, stale };
-}
-
-function survivorMargin(record: BattleRecord, team: "player" | "enemy"): number {
-  const side = record.units.filter((u) => (u.team === "player") === (team === "player"));
-  const hp = side.reduce((n, u) => n + u.hp, 0);
-  const max = side.reduce((n, u) => n + u.maxHp, 0);
-  return max === 0 ? 0 : (100 * hp) / max;
 }
 
 function ttkSection(cells: readonly TtkCell[], jobs: readonly string[], levels: readonly number[]): string {
@@ -293,10 +275,17 @@ export function renderReport(bundle: SweepBundle, variants: readonly Variant[]):
   const usage = abilityUsage(library, duels, jobs);
   out.push(
     table(
-      ["job", "actions chosen", "distinct abilities used", "abilities offered"],
+      ["job", "actions chosen", "of those, machinery worked", "of those, items used", "distinct abilities used", "abilities offered"],
       jobs.map((job) => {
         const rows = usage.rows.filter((r) => r.jobId === job);
-        return [job, usage.totalActionsByJob[job] ?? 0, rows.filter((r) => r.uses > 0).length, rows.length];
+        return [
+          job,
+          usage.totalActionsByJob[job] ?? 0,
+          usage.operateActionsByJob[job] ?? 0,
+          usage.itemActionsByJob[job] ?? 0,
+          rows.filter((r) => r.uses > 0).length,
+          rows.length,
+        ];
       }),
     ),
   );
@@ -377,27 +366,34 @@ export function renderReport(bundle: SweepBundle, variants: readonly Variant[]):
   out.push("## 6. Shipped encounters");
   out.push("");
   const encRows: (string | number)[][] = [];
+  const counterRows: (string | number)[][] = [];
   for (const sweep of ["encounter-authored", "encounter-chapter"]) {
-    for (const encounterId of [...new Set(encounters.map((b) => b.tags.enemy))].sort()) {
-      const slice = encounters.filter((b) => b.tags.sweep === sweep && b.tags.enemy === encounterId);
-      if (slice.length === 0) continue;
-      const counts = outcomeCounts(slice);
-      const margin = slice.reduce((s, b) => s + survivorMargin(b.record, "player"), 0) / slice.length;
-      const turns = slice.reduce((s, b) => s + b.record.turns, 0) / slice.length;
-      const losses = slice.reduce(
-        (s, b) => s + b.record.units.filter((u) => u.team === "player" && u.downed).length,
-        0,
-      ) / slice.length;
+    const mode = sweep.replace("encounter-", "");
+    const modeSlice = encounters.filter((b) => b.tags.sweep === sweep);
+    for (const row of encounterReports(modeSlice)) {
+      const level = modeSlice.find((b) => b.record.encounterId === row.encounterId)!.tags.level;
       encRows.push([
-        encounterId,
-        sweep.replace("encounter-", ""),
-        slice[0]!.tags.level,
-        slice.length,
-        pct(counts.win / slice.length),
-        counts.stale,
-        num(margin),
-        num(losses, 2),
-        num(turns),
+        row.encounterId,
+        mode,
+        level,
+        row.battles,
+        pct(row.winRate),
+        row.stalemates,
+        num(row.meanSurvivingHpPercent),
+        num(row.meanPartyLosses, 2),
+        num(row.meanTurns),
+      ]);
+      const c = row.counters;
+      counterRows.push([
+        row.encounterId,
+        mode,
+        pct(c.liveMachineTurnShare),
+        pct(c.poweredMachineTurnShare),
+        `${c.machineryOperated.player} / ${c.machineryOperated.enemy}`,
+        `${c.powerOn.total} / ${c.powerOff.total}`,
+        `${c.objectsBroken.player} / ${c.objectsBroken.enemy}`,
+        Object.values(c.triggersFired).reduce((n, v) => n + v, 0),
+        c.idleUnits.filter((u) => u.idleRuns === u.runs).length,
       ]);
     }
   }
@@ -410,6 +406,17 @@ export function renderReport(bundle: SweepBundle, variants: readonly Variant[]):
         ),
   );
   out.push("");
+  if (counterRows.length > 0) {
+    out.push("### Battlefield counters");
+    out.push("");
+    out.push(
+      table(
+        ["encounter", "levels", "workable-machine turns", "powered-machine turns", "machines worked p/e", "power on/off", "objects broken p/e", "triggers fired", "units that never acted"],
+        counterRows,
+      ),
+    );
+    out.push("");
+  }
 
   // --- TTK ---
   out.push("## 7. TTK matrix (scripted weapon duels, no abilities, no armor, no passives)");
@@ -547,7 +554,7 @@ export function renderReport(bundle: SweepBundle, variants: readonly Variant[]):
   // --- flags ---
   out.push("## 10. Mechanical flags");
   out.push("");
-  const flags = findings(library, duels, jobs);
+  const flags = [...findings(library, duels, jobs), ...objectiveFindings(library, encounters)];
   out.push(
     flags.length === 0
       ? "None."

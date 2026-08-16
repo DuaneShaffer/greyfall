@@ -6,7 +6,8 @@
 
 import type { ContentLibrary } from "../core/index.js";
 import { BASIC_ATTACK_ID } from "../core/index.js";
-import type { BattleRecord, UnitRecord } from "./harness.js";
+import type { Team } from "../data/index.js";
+import type { BattleRecord, SideTally, UnitRecord } from "./harness.js";
 import type { SweepBattle } from "./sweeps.js";
 
 export const THRESHOLDS = {
@@ -160,7 +161,15 @@ export interface AbilityUsage {
 
 export interface UsageReport {
   rows: AbilityUsage[];
+  /**
+   * Every action this job's units chose. A turn's action is spent three ways —
+   * `act`, `useItem`, `activateObject` — and all three compete in the same
+   * candidate list, so all three are in the denominator of `share`.
+   */
   totalActionsByJob: Record<string, number>;
+  /** The share of that denominator that is not an ability, per job. */
+  operateActionsByJob: Record<string, number>;
+  itemActionsByJob: Record<string, number>;
   /** Action abilities a unit was holding across the whole sweep and never once chose. */
   neverUsed: AbilityUsage[];
   /** Abilities taking more than `THRESHOLDS.abilityDominance` of their job's actions. */
@@ -186,6 +195,8 @@ export function abilityUsage(
   const resolutions = new Map<string, number>();
   const offered = new Map<string, number>();
   const totalByJob: Record<string, number> = {};
+  const operateByJob: Record<string, number> = {};
+  const itemByJob: Record<string, number> = {};
 
   const key = (job: string, ability: string) => `${job}|${ability}`;
 
@@ -195,6 +206,9 @@ export function abilityUsage(
       for (const ability of offeredAbilities(library, job)) {
         offered.set(key(job, ability), (offered.get(key(job, ability)) ?? 0) + 1);
       }
+      operateByJob[job] = (operateByJob[job] ?? 0) + unit.objectsOperated;
+      itemByJob[job] = (itemByJob[job] ?? 0) + unit.itemsUsed;
+      totalByJob[job] = (totalByJob[job] ?? 0) + unit.objectsOperated + unit.itemsUsed;
       for (const [ability, count] of Object.entries(unit.abilityUses)) {
         uses.set(key(job, ability), (uses.get(key(job, ability)) ?? 0) + count);
         totalByJob[job] = (totalByJob[job] ?? 0) + count;
@@ -224,9 +238,189 @@ export function abilityUsage(
   return {
     rows,
     totalActionsByJob: totalByJob,
+    operateActionsByJob: operateByJob,
+    itemActionsByJob: itemByJob,
     neverUsed: rows.filter((row) => row.uses === 0 && row.offered > 0),
     dominating: rows.filter((row) => row.share > THRESHOLDS.abilityDominance),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Battlefield thesis counters
+// ---------------------------------------------------------------------------
+
+export interface SideTotals extends SideTally {
+  total: number;
+}
+
+function sumTallies(tallies: readonly SideTally[]): SideTotals {
+  const out: SideTotals = { player: 0, enemy: 0, neutral: 0, scripted: 0, total: 0 };
+  for (const t of tallies) {
+    out.player += t.player;
+    out.enemy += t.enemy;
+    out.neutral += t.neutral;
+    out.scripted += t.scripted;
+    out.total += t.player + t.enemy + t.neutral + t.scripted;
+  }
+  return out;
+}
+
+function mergeCounts(into: Record<string, number>, from: Record<string, number>): void {
+  for (const [key, n] of Object.entries(from)) into[key] = (into[key] ?? 0) + n;
+}
+
+function mergeTallies(into: Record<string, SideTotals>, from: Record<string, SideTally>): void {
+  for (const [key, tally] of Object.entries(from)) {
+    into[key] = sumTallies(into[key] === undefined ? [tally] : [into[key], tally]);
+  }
+}
+
+/** A unit that stood on the field for a whole run without ever reaching 100 CT. */
+export interface IdleUnit {
+  unitId: string;
+  team: Team;
+  /** Runs the unit was on the field for. */
+  runs: number;
+  /** Of those, the runs in which it never took a turn. */
+  idleRuns: number;
+}
+
+/**
+ * What the battlefield did, summed over a set of runs. Win rate answers "does
+ * the party win"; this answers "did the level's premise ever happen" and "did
+ * this character ever do anything" — the two questions a human playthrough
+ * caught `docs/BALANCE_REPORT.md` §7.8.3 answering wrong at 45.8%.
+ *
+ * Everything here is a total across `battles` runs unless it says otherwise.
+ */
+export interface ObjectiveReport {
+  battles: number;
+  unitTurns: number;
+  machineryOperated: SideTotals;
+  operatedByObject: Record<string, SideTotals>;
+  powerOn: SideTotals;
+  powerOff: SideTotals;
+  objectsBroken: SideTotals;
+  triggersFired: Record<string, number>;
+  unitsSpawned: number;
+  unitsRemoved: number;
+  /** Share of unit turns that began with an operable machine still standing. */
+  machineTurnShare: number;
+  /** Share that began with one that was workable — powered if its controls need it. */
+  liveMachineTurnShare: number;
+  /** Share that began with a power-gated machine standing and lit. */
+  poweredMachineTurnShare: number;
+  /** Runs in which a machine was workable at some point and nobody ever worked one. */
+  runsWithoutOperation: number;
+  runsWithLiveMachine: number;
+  idleUnits: IdleUnit[];
+}
+
+export function objectiveCounters(battles: readonly SweepBattle[]): ObjectiveReport {
+  const operatedByObject: Record<string, SideTotals> = {};
+  const triggersFired: Record<string, number> = {};
+  const presence = new Map<string, IdleUnit>();
+  let unitTurns = 0;
+  let turnsWithMachine = 0;
+  let turnsWithLiveMachine = 0;
+  let turnsWithPoweredMachine = 0;
+  let runsWithLiveMachine = 0;
+  let runsWithoutOperation = 0;
+  let unitsSpawned = 0;
+  let unitsRemoved = 0;
+
+  for (const battle of battles) {
+    const c = battle.record.counters;
+    mergeTallies(operatedByObject, c.operatedByObject);
+    mergeCounts(triggersFired, c.triggersFired);
+    unitTurns += battle.record.units.reduce((n, u) => n + u.turnsTaken, 0);
+    turnsWithMachine += c.turnsWithMachine;
+    turnsWithLiveMachine += c.turnsWithLiveMachine;
+    turnsWithPoweredMachine += c.turnsWithPoweredMachine;
+    unitsSpawned += c.unitsSpawned;
+    unitsRemoved += c.unitsRemoved;
+    if (c.turnsWithLiveMachine > 0) {
+      runsWithLiveMachine += 1;
+      const worked = c.machineryOperated;
+      if (worked.player + worked.enemy + worked.neutral + worked.scripted === 0) runsWithoutOperation += 1;
+    }
+    for (const unit of battle.record.units) {
+      let row = presence.get(unit.unitId);
+      if (row === undefined) {
+        row = { unitId: unit.unitId, team: unit.team, runs: 0, idleRuns: 0 };
+        presence.set(unit.unitId, row);
+      }
+      row.runs += 1;
+      if (unit.turnsTaken === 0) row.idleRuns += 1;
+    }
+  }
+
+  const turnsSeen = Math.max(1, unitTurns);
+  return {
+    battles: battles.length,
+    unitTurns,
+    machineryOperated: sumTallies(battles.map((b) => b.record.counters.machineryOperated)),
+    operatedByObject,
+    powerOn: sumTallies(battles.map((b) => b.record.counters.powerOn)),
+    powerOff: sumTallies(battles.map((b) => b.record.counters.powerOff)),
+    objectsBroken: sumTallies(battles.map((b) => b.record.counters.objectsBroken)),
+    triggersFired,
+    unitsSpawned,
+    unitsRemoved,
+    machineTurnShare: turnsWithMachine / turnsSeen,
+    liveMachineTurnShare: turnsWithLiveMachine / turnsSeen,
+    poweredMachineTurnShare: turnsWithPoweredMachine / turnsSeen,
+    runsWithoutOperation,
+    runsWithLiveMachine,
+    idleUnits: [...presence.values()].filter((u) => u.idleRuns > 0).sort((a, b) => b.idleRuns - a.idleRuns || (a.unitId < b.unitId ? -1 : 1)),
+  };
+}
+
+export interface EncounterReport {
+  encounterId: string;
+  mapId: string;
+  battles: number;
+  wins: number;
+  winRate: number;
+  stalemates: number;
+  meanTurns: number;
+  meanPartyLosses: number;
+  meanSurvivingHpPercent: number;
+  counters: ObjectiveReport;
+}
+
+/** Encounter win rates with the thesis counters beside them, one row per encounter. */
+export function encounterReports(battles: readonly SweepBattle[]): EncounterReport[] {
+  const groups = new Map<string, SweepBattle[]>();
+  for (const battle of battles) {
+    const id = battle.record.encounterId;
+    const group = groups.get(id);
+    if (group === undefined) groups.set(id, [battle]);
+    else group.push(battle);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([encounterId, group]) => {
+      const n = group.length;
+      const party = (battle: SweepBattle) => battle.record.units.filter((u) => u.team === "player");
+      const hp = group.reduce((s, b) => {
+        const side = party(b);
+        const max = side.reduce((t, u) => t + u.maxHp, 0);
+        return s + (max === 0 ? 0 : (100 * side.reduce((t, u) => t + u.hp, 0)) / max);
+      }, 0);
+      return {
+        encounterId,
+        mapId: group[0]!.record.mapId,
+        battles: n,
+        wins: group.filter((b) => b.record.outcome === "win").length,
+        winRate: group.filter((b) => b.record.outcome === "win").length / Math.max(1, n),
+        stalemates: group.filter((b) => b.record.outcome === "stalemate").length,
+        meanTurns: group.reduce((s, b) => s + b.record.turns, 0) / Math.max(1, n),
+        meanPartyLosses: group.reduce((s, b) => s + party(b).filter((u) => u.downed).length, 0) / Math.max(1, n),
+        meanSurvivingHpPercent: hp / Math.max(1, n),
+        counters: objectiveCounters(group),
+      };
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -441,5 +635,46 @@ export function findings(
     }
   }
 
+  return out.sort((a, b) => a.severity - b.severity || (a.code < b.code ? -1 : 1));
+}
+
+/**
+ * The flags a win rate cannot raise: an encounter whose machinery is never
+ * touched, a scripted beat that never fires, a placed unit that never acts.
+ * All three were found by a person before they were found here (§7.8.3).
+ */
+export function objectiveFindings(
+  library: ContentLibrary,
+  encounters: readonly SweepBattle[],
+): Finding[] {
+  const out: Finding[] = [];
+  for (const row of encounterReports(encounters)) {
+    const c = row.counters;
+    if (c.runsWithLiveMachine > 0 && c.machineryOperated.total === 0) {
+      out.push({
+        severity: 2,
+        code: "machinery-never-operated",
+        detail: `${row.encounterId}: a machine was workable in ${c.runsWithLiveMachine} of ${row.battles} runs and neither side ever worked one`,
+      });
+    }
+    const authored = library.encounters[row.encounterId]?.triggers ?? [];
+    for (const trigger of authored) {
+      if ((c.triggersFired[trigger.id] ?? 0) === 0) {
+        out.push({
+          severity: 3,
+          code: "trigger-never-fired",
+          detail: `${row.encounterId}/${trigger.id} never fired in ${row.battles} runs`,
+        });
+      }
+    }
+    for (const unit of c.idleUnits) {
+      if (unit.idleRuns < unit.runs) continue;
+      out.push({
+        severity: 2,
+        code: "unit-never-acts",
+        detail: `${row.encounterId}/${unit.unitId} stood on the field in ${unit.runs} runs and took a turn in none of them`,
+      });
+    }
+  }
   return out.sort((a, b) => a.severity - b.severity || (a.code < b.code ? -1 : 1));
 }
