@@ -122,11 +122,31 @@ describe("sim telemetry", () => {
     expect(counters.turnsWithPoweredMachine).toBeLessThanOrEqual(counters.turnsWithLiveMachine);
     expect(counters.turnsWithPoweredMachine).toBeGreaterThan(0);
 
+    // Floor Nine declares no grid, so every grid counter reads the empty stream
+    // it was built from and `turnsWithEnergizedMachine` is zero beside a
+    // `turnsWithPoweredMachine` that is not (`docs/design/FLUX_GRID.md` §1.6).
+    expect(total(counters.gridTrips)).toBe(count("GridTripped"));
+    expect(total(counters.gridResets)).toBe(count("GridReset"));
+    expect(total(counters.linesCut)).toBe(count("LineSevered"));
+    expect(total(counters.linesSpliced)).toBe(count("LineSpliced"));
+    expect(total(counters.tiesThrown)).toBe(0);
+    expect(total(counters.gridPowerChanges)).toBe(
+      events.filter((e) => e.type === "PowerChanged" && e.cause !== undefined).length,
+    );
+    expect(counters.turnsWithEnergizedMachine).toBe(0);
+    expect(counters.gridIds).toEqual([]);
+    expect(counters.turnsDark).toBe(0);
+
     const report = objectiveCounters(battles);
     expect(report.battles).toBe(1);
     expect(report.unitTurns).toBe(turns);
     expect(report.runsWithoutOperation).toBe(0);
-    expect(objectiveFindings(library, battles).map((f) => f.code)).not.toContain("machinery-never-operated");
+    expect(report.meanHeadroomPercent).toEqual({});
+    const codes = objectiveFindings(library, battles).map((f) => f.code);
+    expect(codes).not.toContain("machinery-never-operated");
+    for (const grid of ["grid-never-contested", "grid-dark-by-turn-N", "grid-never-restored"]) {
+      expect(codes).not.toContain(grid);
+    }
   });
 
   it("every way a turn's action can be spent is in the usage denominator", () => {

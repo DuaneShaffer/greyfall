@@ -16,6 +16,7 @@ import {
   battleClock,
   battleResult,
   objectEnergized,
+  solveGrid,
   turnNumber,
   unitMaxCharge,
   unitMaxHp,
@@ -26,7 +27,7 @@ import {
   type GameState,
 } from "../core/index.js";
 import { chooseCommand, WEIGHTS, type AiWeights } from "../core/ai/index.js";
-import type { Encounter, GameMap, Team, Unit } from "../data/index.js";
+import type { Encounter, GameMap, Grid, Team, Unit } from "../data/index.js";
 import { withContent } from "./content.js";
 import type { Matchup } from "./matchup.js";
 
@@ -42,6 +43,12 @@ export interface RunOptions {
   weights?: AiWeights;
   /** Keep the full event stream on the record. Off by default: sweeps run thousands of battles. */
   keepEvents?: boolean;
+  /**
+   * Drives the run in place of the search. Returning null hands the turn back to
+   * `chooseCommand`, so a script can cover the verbs the value function cannot
+   * yet price and let the AI play the rest.
+   */
+  chooser?: (state: GameState) => Command | null;
 }
 
 export interface UnitRecord {
@@ -122,6 +129,31 @@ export interface BattleCounters {
    * Nine's press line is three of them and its mains switch is not.
    */
   turnsWithPoweredMachine: number;
+  /**
+   * Beside it, the networked reading: a machine that is a node of a declared
+   * grid was standing and being fed. A map that declares no grid scores zero
+   * here however many machines it lights, which is the point of carrying both.
+   */
+  turnsWithEnergizedMachine: number;
+  /** `GridTripped` — a component drawing past its rating latching its sources open. */
+  gridTrips: SideTally;
+  /** `GridReset` — a latch cleared, credited to the unit the event names. */
+  gridResets: SideTally;
+  /** `LineSevered` / `LineSpliced`: the reversible cut and its undo. */
+  linesCut: SideTally;
+  linesSpliced: SideTally;
+  /** A breaker node's isolator changing state — the tie thrown, open or closed. */
+  tiesThrown: SideTally;
+  /** `PowerChanged` on a node of a declared grid: energization the graph moved. */
+  gridPowerChanges: SideTally;
+  /** Grid ids the map declares, ascending. Empty on an ungridded map. */
+  gridIds: string[];
+  /** One integer-percent headroom sample per declared grid per unit turn. */
+  headroomByGrid: Record<string, { samples: number; totalPercent: number }>;
+  /** The turn on which every node of some declared grid was first feeding nothing. */
+  firstDarkTurn: number | null;
+  /** Unit turns that began with a declared grid feeding nothing. */
+  turnsDark: number;
 }
 
 function blankCounters(): BattleCounters {
@@ -137,7 +169,28 @@ function blankCounters(): BattleCounters {
     turnsWithMachine: 0,
     turnsWithLiveMachine: 0,
     turnsWithPoweredMachine: 0,
+    turnsWithEnergizedMachine: 0,
+    gridTrips: blankTally(),
+    gridResets: blankTally(),
+    linesCut: blankTally(),
+    linesSpliced: blankTally(),
+    tiesThrown: blankTally(),
+    gridPowerChanges: blankTally(),
+    gridIds: [],
+    headroomByGrid: {},
+    firstDarkTurn: null,
+    turnsDark: 0,
   };
+}
+
+/** Grids the map declares, by ascending grid id — the canonical order. */
+function declaredGrids(state: GameState): Grid[] {
+  return [...state.content.map.grids].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** A node's own isolator flag, which is what `MapObject.powered` means on a grid. */
+function isolatorClosed(state: GameState, objectId: string): boolean {
+  return state.map.objects.find((o) => o.def.id === objectId)?.powered === true;
 }
 
 export interface BattleRecord {
@@ -208,6 +261,9 @@ class Telemetry {
   firstDownTurn: number | null = null;
   private readonly lastAttacker = new Map<string, string>();
   private readonly lastObjectDamager = new Map<string, string>();
+  private readonly gridNodeIds = new Set<string>();
+  /** Breaker nodes by object id, holding the isolator state last seen. */
+  private readonly breakerIsolators = new Map<string, boolean>();
 
   private tally(into: SideTally, team: Team | null): void {
     if (team === null) into.scripted += 1;
@@ -218,28 +274,83 @@ class Telemetry {
     return unitId === null || unitId === undefined ? null : (this.units.get(unitId)?.team ?? null);
   }
 
+  /** The event's own actor where it names one, falling back to the chosen command's. */
+  private tallyActor(into: SideTally, unitId: string | null, fallback: Team | null): void {
+    this.tally(into, unitId === null ? fallback : this.teamOf(unitId));
+  }
+
   /** Operable machines still standing when this turn began, and how many are workable. */
-  private censusMachines(state: GameState): void {
+  private censusMachines(state: GameState, turn: number): void {
     let standing = 0;
     let live = 0;
     let lit = 0;
+    let fed = 0;
     for (const obj of state.map.objects) {
       const controls = obj.def.operable;
       if (controls === null || obj.destroyed) continue;
       standing += 1;
+      const networked = this.gridNodeIds.has(obj.def.id);
+      const energized = networked || controls.requiresPower ? objectEnergized(state, obj.def.id) : false;
       if (!controls.requiresPower) live += 1;
-      else if (objectEnergized(state, obj.def.id)) {
+      else if (energized) {
         live += 1;
         lit += 1;
       }
+      if (networked && energized) fed += 1;
     }
     if (standing > 0) this.counters.turnsWithMachine += 1;
     if (live > 0) this.counters.turnsWithLiveMachine += 1;
     if (lit > 0) this.counters.turnsWithPoweredMachine += 1;
+    if (fed > 0) this.counters.turnsWithEnergizedMachine += 1;
+    this.censusGrids(state, turn);
+  }
+
+  /** Headroom against the rating, and whether any declared network is feeding nothing. */
+  private censusGrids(state: GameState, turn: number): void {
+    let dark = false;
+    for (const grid of declaredGrids(state)) {
+      const solution = solveGrid(state, grid);
+      // A tripped or capacity-less network contributes 0: it is not running
+      // under its rating, it is not running.
+      const percent =
+        solution.tripped.length > 0 || solution.capacity === 0
+          ? 0
+          : Math.max(0, Math.floor((100 * (solution.capacity - solution.load)) / solution.capacity));
+      const acc = (this.counters.headroomByGrid[grid.id] ??= { samples: 0, totalPercent: 0 });
+      acc.samples += 1;
+      acc.totalPercent += percent;
+      if (solution.live.length === 0) dark = true;
+    }
+    if (!dark) return;
+    this.counters.turnsDark += 1;
+    if (this.counters.firstDarkTurn === null) this.counters.firstDarkTurn = turn;
+  }
+
+  /**
+   * A tie throw is a breaker node's isolator changing state, censused rather
+   * than read off `PowerChanged`: a throw with no downstream consequence emits
+   * no `PowerChanged` at all and is still a throw.
+   */
+  private censusTies(state: GameState, team: Team | null): void {
+    if (this.breakerIsolators.size === 0) return;
+    for (const objectId of [...this.breakerIsolators.keys()].sort()) {
+      const now = isolatorClosed(state, objectId);
+      if (now === this.breakerIsolators.get(objectId)) continue;
+      this.breakerIsolators.set(objectId, now);
+      this.tally(this.counters.tiesThrown, team);
+    }
   }
 
   constructor(state: GameState) {
     for (const unit of allUnits(state)) this.units.set(unit.id, blankUnit(state, unit.id));
+    for (const grid of declaredGrids(state)) {
+      this.counters.gridIds.push(grid.id);
+      const nodes = [...grid.nodes].sort((a, b) => (a.objectId < b.objectId ? -1 : 1));
+      for (const node of nodes) {
+        this.gridNodeIds.add(node.objectId);
+        if (node.role === "breaker") this.breakerIsolators.set(node.objectId, isolatorClosed(state, node.objectId));
+      }
+    }
   }
 
   private of(unitId: string): UnitRecord | undefined {
@@ -275,7 +386,7 @@ class Telemetry {
         case "TurnStarted": {
           const rec = this.ensure(state, event.unitId);
           if (rec !== undefined) rec.turnsTaken += 1;
-          this.censusMachines(state);
+          this.censusMachines(state, event.turn);
           break;
         }
         case "TriggerFired":
@@ -289,11 +400,24 @@ class Telemetry {
           this.tally(perObject, team);
           break;
         }
-        case "PowerChanged":
-          this.tally(
-            event.powered ? this.counters.powerOn : this.counters.powerOff,
-            scripted ? null : actorTeam,
-          );
+        case "PowerChanged": {
+          const team = scripted ? null : actorTeam;
+          this.tally(event.powered ? this.counters.powerOn : this.counters.powerOff, team);
+          // `cause` is set only where the object is a node of a declared grid.
+          if (event.cause !== undefined) this.tally(this.counters.gridPowerChanges, team);
+          break;
+        }
+        case "GridTripped":
+          this.tally(this.counters.gridTrips, scripted ? null : actorTeam);
+          break;
+        case "GridReset":
+          this.tallyActor(this.counters.gridResets, event.unitId, scripted ? null : actorTeam);
+          break;
+        case "LineSevered":
+          this.tallyActor(this.counters.linesCut, event.unitId, scripted ? null : actorTeam);
+          break;
+        case "LineSpliced":
+          this.tallyActor(this.counters.linesSpliced, event.unitId, scripted ? null : actorTeam);
           break;
         case "UnitSpawned":
           this.counters.unitsSpawned += 1;
@@ -382,6 +506,7 @@ class Telemetry {
           break;
       }
     }
+    this.censusTies(state, scripted ? null : actorTeam);
   }
 
   finish(state: GameState): UnitRecord[] {
@@ -472,7 +597,7 @@ export function runBattle(
     }
     const turn = activeTurnState(state);
     if (turn === null) break;
-    const command = chooseCommand(state, weights);
+    const command = opts.chooser?.(state) ?? chooseCommand(state, weights);
     const result = applyCommand(state, command);
     commands += 1;
     if (result.error !== null) {

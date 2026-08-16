@@ -20,6 +20,17 @@ export const THRESHOLDS = {
   sideBias: 0.65,
   /** A unit that never drops below this share of its flux pool never felt the cost. */
   fluxUnbound: 0.75,
+  /**
+   * Share of a run's unit turns a declared grid may feed nothing before that run
+   * reads dark. A grid is a tug-of-war, so time spent down is expected; a bare
+   * majority is not evidence. Past 60% the network is not being fought over, it
+   * is off.
+   */
+  gridDarkShare: 0.6,
+  /** Share of runs that must read dark before it is the encounter's shape and not a seed's. */
+  gridDarkRunShare: 0.5,
+  /** Runs below which the dark flag stays quiet: one seed is not a shape. */
+  gridDarkMinRuns: 3,
 } as const;
 
 function playerWon(record: BattleRecord): boolean | null {
@@ -310,6 +321,24 @@ export interface ObjectiveReport {
   liveMachineTurnShare: number;
   /** Share that began with a power-gated machine standing and lit. */
   poweredMachineTurnShare: number;
+  /** Share that began with a networked machine standing and being fed. Zero without a grid. */
+  energizedMachineTurnShare: number;
+  gridTrips: SideTotals;
+  gridResets: SideTotals;
+  linesCut: SideTotals;
+  linesSpliced: SideTotals;
+  tiesThrown: SideTotals;
+  gridPowerChanges: SideTotals;
+  /** Grid ids declared by the maps in this set, ascending. */
+  gridIds: string[];
+  /** Runs played on a map that declares a grid. */
+  runsWithGrid: number;
+  /** Mean headroom against the rating, by grid id, over every sample in the set. */
+  meanHeadroomPercent: Record<string, number>;
+  /** Runs a declared grid spent dark for more than `THRESHOLDS.gridDarkShare` of their turns. */
+  runsGridDark: number;
+  /** The turn by which the grid had gone dark in every one of those runs, or null. */
+  darkByTurn: number | null;
   /** Runs in which a machine was workable at some point and nobody ever worked one. */
   runsWithoutOperation: number;
   runsWithLiveMachine: number;
@@ -324,21 +353,44 @@ export function objectiveCounters(battles: readonly SweepBattle[]): ObjectiveRep
   let turnsWithMachine = 0;
   let turnsWithLiveMachine = 0;
   let turnsWithPoweredMachine = 0;
+  let turnsWithEnergizedMachine = 0;
   let runsWithLiveMachine = 0;
   let runsWithoutOperation = 0;
   let unitsSpawned = 0;
   let unitsRemoved = 0;
+  const gridIds = new Set<string>();
+  const headroom = new Map<string, { samples: number; totalPercent: number }>();
+  let runsWithGrid = 0;
+  let runsGridDark = 0;
+  let darkByTurn: number | null = null;
 
   for (const battle of battles) {
     const c = battle.record.counters;
     mergeTallies(operatedByObject, c.operatedByObject);
     mergeCounts(triggersFired, c.triggersFired);
-    unitTurns += battle.record.units.reduce((n, u) => n + u.turnsTaken, 0);
+    const runTurns = battle.record.units.reduce((n, u) => n + u.turnsTaken, 0);
+    unitTurns += runTurns;
     turnsWithMachine += c.turnsWithMachine;
     turnsWithLiveMachine += c.turnsWithLiveMachine;
     turnsWithPoweredMachine += c.turnsWithPoweredMachine;
+    turnsWithEnergizedMachine += c.turnsWithEnergizedMachine;
     unitsSpawned += c.unitsSpawned;
     unitsRemoved += c.unitsRemoved;
+    for (const id of c.gridIds) gridIds.add(id);
+    for (const id of Object.keys(c.headroomByGrid).sort()) {
+      const sample = c.headroomByGrid[id]!;
+      const acc = headroom.get(id) ?? { samples: 0, totalPercent: 0 };
+      acc.samples += sample.samples;
+      acc.totalPercent += sample.totalPercent;
+      headroom.set(id, acc);
+    }
+    if (c.gridIds.length > 0) {
+      runsWithGrid += 1;
+      if (runTurns > 0 && c.turnsDark > runTurns * THRESHOLDS.gridDarkShare) {
+        runsGridDark += 1;
+        if (c.firstDarkTurn !== null) darkByTurn = Math.max(darkByTurn ?? 0, c.firstDarkTurn);
+      }
+    }
     if (c.turnsWithLiveMachine > 0) {
       runsWithLiveMachine += 1;
       const worked = c.machineryOperated;
@@ -356,6 +408,11 @@ export function objectiveCounters(battles: readonly SweepBattle[]): ObjectiveRep
   }
 
   const turnsSeen = Math.max(1, unitTurns);
+  const meanHeadroomPercent: Record<string, number> = {};
+  for (const id of [...headroom.keys()].sort()) {
+    const acc = headroom.get(id)!;
+    meanHeadroomPercent[id] = acc.samples === 0 ? 0 : acc.totalPercent / acc.samples;
+  }
   return {
     battles: battles.length,
     unitTurns,
@@ -370,6 +427,18 @@ export function objectiveCounters(battles: readonly SweepBattle[]): ObjectiveRep
     machineTurnShare: turnsWithMachine / turnsSeen,
     liveMachineTurnShare: turnsWithLiveMachine / turnsSeen,
     poweredMachineTurnShare: turnsWithPoweredMachine / turnsSeen,
+    energizedMachineTurnShare: turnsWithEnergizedMachine / turnsSeen,
+    gridTrips: sumTallies(battles.map((b) => b.record.counters.gridTrips)),
+    gridResets: sumTallies(battles.map((b) => b.record.counters.gridResets)),
+    linesCut: sumTallies(battles.map((b) => b.record.counters.linesCut)),
+    linesSpliced: sumTallies(battles.map((b) => b.record.counters.linesSpliced)),
+    tiesThrown: sumTallies(battles.map((b) => b.record.counters.tiesThrown)),
+    gridPowerChanges: sumTallies(battles.map((b) => b.record.counters.gridPowerChanges)),
+    gridIds: [...gridIds].sort(),
+    runsWithGrid,
+    meanHeadroomPercent,
+    runsGridDark,
+    darkByTurn,
     runsWithoutOperation,
     runsWithLiveMachine,
     idleUnits: [...presence.values()].filter((u) => u.idleRuns > 0).sort((a, b) => b.idleRuns - a.idleRuns || (a.unitId < b.unitId ? -1 : 1)),
@@ -640,16 +709,53 @@ export function findings(
 
 /**
  * The flags a win rate cannot raise: an encounter whose machinery is never
- * touched, a scripted beat that never fires, a placed unit that never acts.
- * All three were found by a person before they were found here (§7.8.3).
+ * touched, a scripted beat that never fires, a placed unit that never acts, and
+ * the three grid flags beside them. All of the first three were found by a
+ * person before they were found here (§7.8.3); the grid flags exist so that the
+ * same failure on a networked map is found here first.
  */
 export function objectiveFindings(
   library: ContentLibrary,
   encounters: readonly SweepBattle[],
 ): Finding[] {
   const out: Finding[] = [];
+  const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
   for (const row of encounterReports(encounters)) {
     const c = row.counters;
+    if (c.gridIds.length > 0) {
+      const moved =
+        c.gridTrips.total +
+        c.gridResets.total +
+        c.linesCut.total +
+        c.linesSpliced.total +
+        c.tiesThrown.total +
+        c.gridPowerChanges.total;
+      if (moved === 0) {
+        out.push({
+          severity: 2,
+          code: "grid-never-contested",
+          detail: `${row.encounterId}: the map declares a grid and neither side ever changed it in ${row.battles} runs`,
+        });
+      }
+      if (c.linesCut.total + c.gridTrips.total > 0 && c.linesSpliced.total + c.gridResets.total === 0) {
+        out.push({
+          severity: 2,
+          code: "grid-never-restored",
+          detail: `${row.encounterId}: ${c.linesCut.total} cuts and ${c.gridTrips.total} trips over ${row.battles} runs and not one splice or reclose — the tug-of-war is one-way and the restore verb is mispriced`,
+        });
+      }
+      if (
+        row.battles >= THRESHOLDS.gridDarkMinRuns &&
+        c.runsGridDark > row.battles * THRESHOLDS.gridDarkRunShare &&
+        c.darkByTurn !== null
+      ) {
+        out.push({
+          severity: 1,
+          code: "grid-dark-by-turn-N",
+          detail: `${row.encounterId}: a declared grid was feeding nothing by turn ${c.darkByTurn} and stayed dark for over ${pct(THRESHOLDS.gridDarkShare)} of the unit turns in ${c.runsGridDark} of ${row.battles} runs`,
+        });
+      }
+    }
     if (c.runsWithLiveMachine > 0 && c.machineryOperated.total === 0) {
       out.push({
         severity: 2,
