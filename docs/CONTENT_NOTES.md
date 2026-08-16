@@ -7,7 +7,7 @@ vocabulary could not say what the creative bible asked for.
 Governing docs: `docs/CREATIVE_BIBLE.md` (§5 rules of magic, §6 job fantasies,
 §9 naming) and `docs/COMBAT_RULES.md` (every formula quoted below).
 
-Counts: **7 jobs · 56 abilities · 11 statuses · 35 items · 17 units**.
+Counts: **7 jobs · 63 abilities · 11 statuses · 35 items · 17 units**.
 
 ---
 
@@ -98,7 +98,7 @@ towards the Enforcer's because the Enforcer's ×120 is asserted by
 | Job | L1 pool | Signature | Uses per battle at L1 |
 |---|---|---|---|
 | Enforcer | 7 | Kettle 3 | two Kettles, then it is a maul job again — correct, the Watch does not run on flux |
-| Conduit | 22 (+8 with Licensed Draw) | Flare 9 | one Flare, or two Grounds, or four Arcs |
+| Conduit | 22 (+8 with Licensed Draw) | Flare 9 | one Flare, or two Grounds, or three Overdraws, or four Arcs — and Backfeed buys another 20 back for 3 hp |
 | Chemist | 14 | Field Transfusion 6 | one big heal or four small ones |
 | Machinist | 18 (+4 with Bench Eye) | Sentry Frame 12 | one frame and a drone, or a frame and a Crossfeed |
 | Saboteur | 12 | Bring the House **7** | one, and a Shaped Charge after it; Rig Machinery costs 0 on purpose |
@@ -129,7 +129,11 @@ mid-tier 300–550, signature 700–950, capstone 1000–1100.
 | Tap Line | action | 200 / 0, requires `adjacentPoweredObject` | ally/self charge +10 — the answer to "where does the power come from" |
 | Throw the Breaker | action | 250 / 1 | object setPower toggle, range 5 |
 | Overload Cell | action | 250 / 5, **instant**, requires `targetPowered` | object mag 20 |
+| Reclose | action | 250 / 2, requires `targetSource` | object setPower on, range 4 — clears a latched trip |
+| Backfeed | action | 350 / 0 / **3 hp**, requires `adjacentPoweredObject` | self, radius 1: charge +20 to units in it + addLoad 6 for 2 turns to objects in it |
+| Cross-Tie | action | 400 / 2, **no line of sight**, requires `targetBreaker` | object setPower toggle, range 7 |
 | Ground | action | 550 / 5, cast 60 | Grounded 80% + charge −10 siphoned to the caster + setPower off |
+| Overdraw | action | 700 / 6, **instant**, requires `targetEnergized` | addLoad 8 for 3 of her turns, range 4 |
 | Flare | action | 950 / 9, cast 20 | radius 2, mag 14 arc + Flux Burn 60% + object mag 8 |
 | Licensed Draw | support | 450 | charge +8 |
 | Earth Strap | movement | 350 | ignoresHazardTiles, move +1 |
@@ -146,6 +150,61 @@ against an unmanned machine. It is now what the fiction always said it was: a
 shove past the rated draw, done in the time it takes to do it. The `targetPowered`
 requirement is what keeps it honest — it only answers a machine somebody is
 still running.
+
+**Four abilities in this kit got deeper without a byte of JSON changing**
+(`docs/design/FLUX_GRID.md` §3, proved in `tests/core/gridAbilities.test.ts`).
+Throw the Breaker is now three abilities: opening a source's isolator drops its
+whole branch, opening a sink's sheds that draw so an overloaded bus fits under
+its rating again, and it throws a normally-open tie closed at range 5. Ground's
+`setPower off` opens the target's isolator, and on a source that is the branch.
+Overload Cell's `targetPowered` gate reads energization, so it refuses a main
+the grid has stopped feeding — the ability that kills a source permanently
+cannot be used on one somebody already blacked out. And Tap Line's
+`adjacentPoweredObject` now means *adjacent to something the grid is still
+feeding*, which makes blacking out the floor a way to fight a Conduit rather
+than only a way to fight machines. Bible §5.2 as an objective for both sides.
+
+**Overdraw is the signature and it is priced as one** (700 standing, 6 of a
+22-flux pool). It creates nothing — it holds somebody else's main open past its
+rating and lets the main's own protection do the work — which is bible §5.1
+stated as a mechanic. The load is flat and never Attunement-scaled, because a
+player reading `LOAD 11/12` has to be able to conclude that +8 trips it without
+computing anyone's Mag first. Instant for the same reason Overload Cell is: a
+bus does not walk out of the blast. One consequence worth writing down, since it
+reads as a bug and is not: **the load expiring does not un-trip the bus.** The
+trip latches (FLUX_GRID §1.5), so three turns later the draw is gone, the
+readout is back under capacity, and the branch is still dark until somebody
+spends an action on a Reclose. That is what makes Overdraw a tempo attack rather
+than a debuff.
+
+**Reclose is deliberately the cheapest thing in the kit** — 250 standing and 2
+flux, below Overdraw's 700/6 and below the Saboteur's cut. ENCOUNTER_NOTES §2's
+finding from e2 is that a power switch has to be a tug-of-war rather than a
+switch: if the restore costs more than the cut, the first cut ends the argument
+and everything after it is bookkeeping. It is gated `targetSource` and refuses a
+line, a sink or a breaker, so it stays the one verb that clears a latch and
+never doubles as a general-purpose switch.
+
+**Cross-Tie is Throw the Breaker's long-range twin, and the difference is the
+sight line.** Both are `setPower toggle` on a breaker; Throw the Breaker reaches
+5 tiles and needs to see the switch, Cross-Tie reaches 7 and **needs no line of
+sight at all**, at 400 standing and 2 flux against 250 and 1. She is not
+throwing a switch she can see — she is reading the bus and finding the tie by
+where the load is going, which is the one thing an Assay licence actually buys
+and the one thing the Machinist's Reroute cannot do. On a map with a gallery
+between the caster and the switchboard that is the whole ability.
+
+**Backfeed is the greedy Tap Line, and its footprint is an honest cost rather
+than a hidden one.** It is authored self-aimed with a radius-1 area because that
+is the only shape the effect vocabulary can use to say "charge to me, load onto
+the node I am drawing from": `modifyCharge` routes to the units in the area and
+`addLoad` to the objects in it (COMBAT_RULES §13). The consequence is that the
+shunt is open on the tile — **anyone else standing within 1 of her takes the
++20 as well, ally or enemy** — and that is documented rather than hidden,
+because it is the interesting half of the ability. The 3 HP is bible §5.3
+literally (flux corrupts flesh) and it is also what keeps Backfeed from being a
+strictly better Tap Line on a map with no grid, where the `addLoad` half is
+inert and only the price is real.
 
 ### Chemist — the portable lab
 | Ability | Slot | Standing / Charge | Effect |
@@ -170,7 +229,9 @@ Conduit-only signature.
 |---|---|---|---|
 | Tripwire Charge | action | 250 / 4 | mine, hp 8, `onContact` fixed 20 kinetic + Stunned 45%, destroys itself |
 | Field Repair | action | 200 / 3 | repairObject fixed 20 — machines only, per bible |
+| Field Splice | action | 250 / 3, requires `targetLine` | severLine splice, range 3 — Field Repair for the grid |
 | Skitter Drone | action | 400 / 6 | drone, hp 12, `attack` mag 5 unscaled, range 1–2, speed 5, no LoS needed |
+| Reroute | action | 400 / 2, requires `targetBreaker` | object setPower toggle, range 3 |
 | Sentry Frame | action | 500 / 12 | turret, hp 24, `attack` mag 9 unscaled, range 1–4 vertical 2, speed 6 |
 | Crossfeed | action | 700 / 4, range **1–2** | **ally only**: Overclocked + charge +10 |
 | Feedback Shunt | reaction (damaged) | 550 | arc fixed 12 + Seized 25% |
@@ -183,6 +244,24 @@ flux — strictly better than the Augmented's own Overdrive at 7 flux and 5 HP,
 and 41% of everything a Machinist did on an authored map. A jumper needs two
 rigs; it cannot be run off the cells it is drawing from.
 
+**Field Splice is Field Repair's grid analogue and is priced beside it** (250/3
+against 200/3). Bible §6 gives the Machinist the verb that heals machines and
+not people; a severed span is the grid's version of a damaged machine, so the
+same hands answer it. It is the *undo* half of the reversible cut — the direct
+counter to the Saboteur's Cut the Feed, and the reason a cut buys turns instead
+of ending the argument. Gated `targetLine`, so it cannot be pointed at a sink or
+a breaker and quietly do nothing.
+
+**Reroute is the short-range, sight-bound twin of the Conduit's Cross-Tie**
+(400/2 for range 3 with line of sight, against 400/2 for range 7 without). Same
+effect, same standing, and the whole difference is that he has to walk to the
+switchboard and she does not. Closing an authored tie feeds a dead branch off a
+second main; opening a closed one splits the bus and strands whichever half has
+no source. **It does not draw new cable** (FLUX_GRID §2.3): the redundancy is
+designed into the map and the job is finding it, which is what keeps topology
+something a player can read off the map file rather than something that changes
+under them.
+
 See §7.1 — deployables are currently inert obstacles, which is the single
 biggest gap between this kit and its bible fantasy.
 
@@ -190,6 +269,7 @@ biggest gap between this kit and its bible fantasy.
 | Ability | Slot | Standing / Charge | Effect |
 |---|---|---|---|
 | Smoke Canister | action | 300 / 1 | radius 2, Smoked 85% |
+| Cut the Feed | action | 350 / 1, requires `targetLine` | severLine sever, range 3 — **no damage at all** |
 | Rig Machinery | action | 350 / **0** | adjacent object: setPower off + phys 12 |
 | Shaped Charge | action | 400 / 3, cast 35 | radius 1, phys 7 to units + phys 8 to objects |
 | Gas Line Tap | action | 500 / 4 | line 3 at range 2, thermal phys 4 + Scalded 70% + object phys 5, instant |
@@ -206,6 +286,19 @@ the Conduit is (correctly) weak.
 Rig Machinery costs 0 charge on purpose: it is a wrench, not a license, and
 it gives the Saboteur an answer to a powered map that does not compete with
 the Conduit's.
+
+**Cut the Feed carries no damage, and that is the design rather than an
+oversight.** Every other Saboteur ability is `phys` and most of them are
+permanent; this one is the surgical half of the cut/destroy split (FLUX_GRID
+§1.8). A cut is cheap (350 standing, 1 flux), fast, and reversible by a
+Machinist's Field Splice, and what it buys is turns — everything the span was
+the only path to goes dark until somebody spends an action putting it back.
+Bring It Down stays the permanent, expensive verb at 750/3 for 28 object damage,
+and the two do not compete: one changes the map and one changes the next two
+turns. Bolting damage onto the cut would collapse them into each other and
+re-teach e2's lesson, where an enemy who could delete the presses deleted the
+thesis (`BALANCE_REPORT` §7.8.3). It is the job's grid verb precisely because it
+is not the Conduit's: no licence, no attunement, cutters.
 
 Bring the House came down 9 → 7 flux in the content follow-up
 (`BALANCE_REPORT` §7.8, G12). At 9 of a level-3 Saboteur's 20 it was the
@@ -380,7 +473,7 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 >   the ability's own fiction rather than a tax on it.
 >
 > Gap **4** (consumables) is deferred with a design sketch in
-> `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10 are open.
+> `docs/PROJECT_BREAKDOWN.md`. Gaps 3, 5, 6, 8, 9, 10, 11 are open.
 
 1. ~~**Deployables are inert.**~~ **Closed and used.** `spawnObject` takes only `object` and `hp`, and
    `spawnObject()` in `src/core/rules/effects.ts` builds them with
@@ -434,6 +527,19 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 10. **`hpCost` on a charged ability is spent at cast start** (COMBAT_RULES §7)
     and is lost if the caster is downed before the charge lands. Press Frame
     is authored knowing this; it is a real risk on the ability, not a bug.
+11. **A support passive cannot modify another ability's numbers.** FLUX_GRID §3's
+    seventh Conduit ability, **Rated Draw** ("the licensed Conduit draws cleanly"
+    — her `addLoad` amounts are 2 lower and her `modifyCharge` gifts add no load
+    at all), is **not shipped** for this reason. `SupportAbility.passive` can
+    only carry `statMods` and flat flags; nothing in it reaches into an effect's
+    magnitude, and load is deliberately outside the `Amount` pipeline that
+    `statMods` would otherwise ride (FLUX_GRID §1.5). Expressing it needs one new
+    optional key — something like `gridLoadReduction: z.int().nonnegative()` on
+    `passive`, read where `addLoad` resolves its amount — and the schema is
+    frozen for this pass, so it is deferred with that one-field proposal recorded
+    here and **the field is not added**. The consequence for balance: Overdraw is
+    flat +8 for everyone, and FLUX_GRID §6.4's third formula case ("with Rated
+    Draw it does not trip the first one either") has nothing to test yet.
 
 ## 8. Roster
 

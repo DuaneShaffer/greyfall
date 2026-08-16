@@ -35,7 +35,11 @@
     "tap-line",
     "throw-the-breaker",
     "overload-cell",
+    "reclose",
+    "backfeed",
+    "cross-tie",
     "ground",
+    "overdraw",
     "flare",
     "licensed-draw",
     "earth-strap"

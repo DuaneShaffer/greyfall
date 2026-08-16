@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "field-splice",
+  "name": "Field Splice",
+  "description": "Strip both ends, twist, tape, and the span carries again. Machines only, same as the rest of the shop's work — a splice does nothing for a body.",
+  "jobId": "machinist",
+  "standingCost": 250,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 3,
+      "vertical": 2
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "requires": [
+    "targetLine"
+  ],
+  "chargeCost": 3,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "severLine",
+      "mode": "splice"
+    }
+  ]
+}

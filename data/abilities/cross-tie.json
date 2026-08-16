@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "cross-tie",
+  "name": "Cross-Tie",
+  "description": "Find the tie by the way the bus reads rather than by looking at it, and throw it from wherever she happens to be standing. Second main, same bar.",
+  "jobId": "conduit",
+  "standingCost": 400,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 7,
+      "vertical": 4
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "requires": [
+    "targetBreaker"
+  ],
+  "chargeCost": 2,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "setPower",
+      "mode": "toggle"
+    }
+  ]
+}

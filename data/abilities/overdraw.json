@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "overdraw",
+  "name": "Overdraw",
+  "description": "Open a shunt across somebody else's main and hold it open past its rating. She makes nothing; the main's own protection does the rest.",
+  "jobId": "conduit",
+  "standingCost": 700,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 3
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "requires": [
+    "targetEnergized"
+  ],
+  "chargeCost": 6,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "addLoad",
+      "amount": 8,
+      "durationTurns": 3
+    }
+  ]
+}

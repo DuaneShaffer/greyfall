@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "reclose",
+  "name": "Reclose",
+  "description": "Clear the latch and put the main back in. Cheap on purpose: a floor nobody can afford to relight is a floor that stays dark.",
+  "jobId": "conduit",
+  "standingCost": 250,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 1,
+      "max": 4,
+      "vertical": 3
+    },
+    "area": {
+      "shape": "single"
+    },
+    "requiresLos": true,
+    "validTargets": [
+      "object"
+    ]
+  },
+  "requires": [
+    "targetSource"
+  ],
+  "chargeCost": 2,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "setPower",
+      "mode": "on"
+    }
+  ]
+}

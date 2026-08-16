@@ -14,6 +14,14 @@ import {
 import { advanceTo, loadContent } from "./fixtures.js";
 import { BENCH_ENCOUNTER_ID, BENCH_GRID_ID, benchContent, benchUnit } from "./gridFixtures.js";
 
+const SLICE_MAP_IDS = [
+  "marshaling-yard",
+  "foundry-floor-nine",
+  "tallow-row",
+  "refinery-three",
+  "charterhouse-steps",
+] as const;
+
 const HAND = "bench-hand";
 
 function bench(): GameState {
@@ -292,8 +300,11 @@ describe("the recompute itself", () => {
 describe("the degeneracy rule", () => {
   it("an object on no declared grid is energized exactly when its isolator is closed", () => {
     const content = loadContent();
-    for (const map of Object.values(content.maps)) {
-      expect(map.grids).toEqual([]);
+    // The five slice maps are deliberately not migrated, which is what keeps
+    // the golden replays available as the proof (`FLUX_GRID` §8). A grid-native
+    // map beside them is the point of the exercise, not a violation of it.
+    for (const mapId of SLICE_MAP_IDS) {
+      expect(content.maps[mapId]?.grids).toEqual([]);
     }
     let state = createBattle(content, "e1-marshaling-yard", [benchUnit("yard-hand", "conduit")], [
       { unitId: "yard-hand", position: { ...content.maps["marshaling-yard"]!.deploymentTiles[0]! } },

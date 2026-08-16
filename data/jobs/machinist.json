@@ -35,7 +35,9 @@
   "learnableAbilityIds": [
     "tripwire-charge",
     "field-repair",
+    "field-splice",
     "skitter-drone",
+    "reroute",
     "sentry-frame",
     "crossfeed",
     "feedback-shunt",

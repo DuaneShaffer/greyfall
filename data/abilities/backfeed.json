@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "id": "backfeed",
+  "name": "Backfeed",
+  "description": "Reverse the shunt and draw the node beside her straight into her own cells. The tap is open on the tile, so anyone stood in it drinks too, and flux always takes its cut out of the flesh.",
+  "jobId": "conduit",
+  "standingCost": 350,
+  "slot": "action",
+  "targeting": {
+    "range": {
+      "min": 0,
+      "max": 1,
+      "vertical": 0
+    },
+    "area": {
+      "shape": "radius",
+      "size": 1,
+      "vertical": 1
+    },
+    "requiresLos": false,
+    "validTargets": [
+      "self"
+    ]
+  },
+  "requires": [
+    "adjacentPoweredObject"
+  ],
+  "chargeCost": 0,
+  "hpCost": 3,
+  "castSpeed": null,
+  "effects": [
+    {
+      "kind": "modifyCharge",
+      "amount": 20
+    },
+    {
+      "kind": "addLoad",
+      "amount": 6,
+      "durationTurns": 2
+    }
+  ]
+}
