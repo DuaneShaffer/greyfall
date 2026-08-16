@@ -148,8 +148,9 @@ most legible objects on screen.
 
 ### Usage rules (binding)
 
-1. **Amber is scarce.** No more than ~5% of any frame's pixels may be from the
-   amber ramp, and every amber pixel must have an in-fiction source in the
+1. **Amber is scarce.** No more than 4% of any frame's pixels may be from the
+   amber ramp (an area share, re-derived by measurement — Appendix A.5), and
+   every amber pixel must have an in-fiction source in the
    same frame — a seam, a cell window, a fixture, a discharge. Amber never
    appears as ambient light, never tints terrain, never decorates UI chrome
    except where the UI is reporting a powered/charge state.
@@ -208,29 +209,43 @@ printed form from a standards bureau, not a glass surface.
 
 | Constant | Value |
 |---|---|
-| Sprite canvas | **32 × 48 px** |
-| Anchor (feet center) | **(16, 44)** |
-| Figure box | rows 0–43 |
-| Sub-floor band | rows 44–47 (ground contact, dust, slope tilt) |
+| Sprite canvas | **64 × 96 px** |
+| Anchor (feet center) | **(32, 88)** |
+| Figure box | rows 0–87 |
+| Sub-floor band | rows 88–95 (ground contact, dust, slope tilt) |
+| Rig unit | **2 px** (the armature is authored in units) |
+| Sprite pixels per world tile edge | **64** |
 | Tile top texture | **32 × 32 px** |
-| Pixels per world tile edge | **32** |
 | Pixels per height step | **16** (one height step = half a tile) |
+| Shipped sprite texture | **128 × 192 per cell** (2× the master, mipmapped) |
 | Billboard quad in world units | 1.0 wide × 1.5 tall |
 
-**Why 32×48.** The bible fixes FFT-register chunky proportions at ≈3 heads
-tall. A 13px head in a ~40px standing figure is exactly 3 heads with the
-top-heavy read FFT gets; the remaining 4 rows of the figure box are headroom
-for helmets, hats, and the 1–2px vertical bob of idle and jump poses without
-ever clipping the canvas. 32 wide (rather than 24) buys the shoulder span an
-Enforcer's shield and an Augmented's graft arm need, and keeps a Conduit's
-staff and a Railrunner's hook inside the quad. Both dimensions are powers-of-two
-multiples that tile cleanly into atlases (32 = tile size, 48 = 1.5 tiles), so a
-unit is exactly 1 tile wide and 3 height steps tall in world space — the sprite
-and the terrain share one ruler.
+**Why 64×96.** Measured in situ, not argued: at the default camera zoom a
+sprite covers roughly 75 screen pixels per tile. At 32 px per tile the art was
+being magnified 2.3×, which is what made units read as blocks against terrain
+that was not. 64 px per tile puts the master within a hair of pixel-exact at the
+default zoom and still crisp when the camera pulls in.
 
-The anchor sits at (16, 44), not (16, 47): x=16 is the seam at the exact
+**The billboard did not change.** It is 1.0 × 1.5 tiles as it always was; only
+the sprite's own ruler got denser. That is why the sprite ruler is now *split*
+from the tile ruler: `TILE_TEXTURE_SIZE` stays 32 and terrain textures are
+untouched, while `SPRITE_PIXELS_PER_TILE` is 64. A unit is still exactly 1 tile
+wide and 3 height steps tall in world space.
+
+The bible's FFT-register proportions are unchanged: ≈3 heads tall, a 26px head
+in an ~80px standing figure, with the top 8 rows of the figure box left as
+headroom for helmets, hats and the vertical bob of idle and jump poses. 64 wide
+buys the shoulder span an Enforcer's shield and an Augmented's graft arm need
+and keeps a Conduit's staff and a Railrunner's hook inside the quad.
+
+**Rig units.** The armature and every pose table are authored in **rig units**,
+two canvas pixels each, so the figure's proportions live in one place and a
+future density change is one constant. Shading rims stay one canvas pixel wide:
+64×96 is a finer drawing, not a doubled one.
+
+The anchor sits at (32, 88), not (32, 95): x=32 is the seam at the exact
 horizontal center of an even-width canvas, and figures are drawn symmetric
-about that seam. The 4 rows below the anchor are the sub-floor band, reserved
+about that seam. The 8 rows below the anchor are the sub-floor band, reserved
 so contact shadow, kicked dust, and standing-on-a-slope offsets have somewhere
 to live inside the sprite instead of leaking into the tile below.
 
@@ -324,8 +339,11 @@ row 8: hurt/se     row 9: hurt/ne
 row 10: downed/se  row 11: downed/ne
 ```
 
-Sheet = 8 × 32 = **256 px wide**, 12 × 48 = **576 px tall**. 28 drawn frames
-per view, 56 per job.
+Sheet = 8 × 64 = **512 px wide**, 12 × 96 = **1152 px tall**. 28 drawn frames
+per view, 56 per job. The sheet ships as a data texture at 2× that, with a
+supplied mip chain: nearest magnification keeps the zoomed-in read hard,
+trilinear minification stops far zooms crawling, and mip level 1 is exactly the
+master.
 
 ### Portraits
 
@@ -333,7 +351,7 @@ per view, 56 per job.
 place the game speaks in the Arcane-adjacent register the bible cites — visible
 ink edges, hard-shaped shadows, gouache flatness, no rendering polish and no
 soft airbrush. The contrast is deliberate: the *record* of a person is painted;
-the person on the battlefield is 32 pixels wide. It also decouples the biggest
+the person on the battlefield is 64 pixels wide. It also decouples the biggest
 character-art cost from the sprite pipeline.
 
 | Constant | Value |
@@ -344,8 +362,7 @@ character-art cost from the sprite pipeline.
 | Chip crop | source rect (32, 16, 64, 64), downscaled 2:1 → **32 × 32** |
 
 The chip is the head-only derivative used in the turn-order bar and unit lists;
-32×32 matches the tile texture size and the sprite width, so chips atlas with
-everything else.
+32×32 matches the tile texture size, so chips atlas with the terrain art.
 
 Portraits are **never mirrored** — asymmetric painted detail does not survive
 it. The UI therefore always places the portrait to the *left* of the dialogue
@@ -462,7 +479,7 @@ pitched forward, and so on), colored from the palette and team-tinted. They are
 pure data (`Shape[]` per frame) plus a `drawToCanvas` helper, so the renderer
 can draw them to a browser canvas and tests can assert on them headlessly.
 
-Placeholders honor the real spec exactly — same 32×48 canvas, same anchor, same
+Placeholders honor the real spec exactly — same 64×96 canvas, same anchor, same
 frame counts and tick tables. Real art drops in without a code change. That is
 the whole point of freezing this document now.
 
@@ -504,31 +521,37 @@ elsewhere.
 ### A.1 Rig proportions
 
 Authoring is in rig space: `dx` from the centerline seam, `up` from the ground
-line at `SPRITE_ANCHOR.y`. Landmarks, in `up`:
+line at `SPRITE_ANCHOR.y`, both in **rig units** of 2 canvas pixels. Landmarks,
+in `up`:
 
-| Landmark | up | Rows (canvas) |
+| Landmark | up (units) | Rows (canvas) |
 |---|---|---|
-| feet / boot | 1–3 | 41–43 |
-| knees | ~8 | ~36 |
-| hips | 15 | 29 |
-| shoulders | 27 | 17 |
-| head box | 28–40 (13 rows) | 4–16 |
+| feet / boot | 1–3 | 82–87 |
+| knees | ~8 | ~72 |
+| hips | 15 | 58 |
+| shoulders | 27 | 34 |
+| head box | 28–40 (13 units) | 8–33 (26 rows) |
 
-40 rows of figure with a 13px head is §3's "3 heads tall, top-heavy". Rows 0–3
-stay free for helmets, hoods, and the idle bob.
+40 units of figure with a 13-unit head is §3's "3 heads tall, top-heavy". Rows
+0–7 stay free for helmets, hoods, and the idle bob.
+
+Widths passed to the rig's drawing helpers are units too; the 1px light and
+shadow rims those helpers add are canvas pixels and do not scale.
 
 ### A.2 The 1px outline ring
 
-The outer 1px ring of the canvas (column 0, column 31, row 0) is reserved for
+The outer 1px ring of the canvas (column 0, column 63, row 0) is reserved for
 the silhouette outline: the rig clears any body pixel that lands there. Held
-props clamp to `PROP_REACH` (|dx| ≤ 11, up ∈ [1, 41]), head centers to |dx| ≤ 8,
-and shoulder joints to |dx| ≤ 11 — so the closed outline of §3 is structurally
-guaranteed rather than checked by eye.
+props clamp to `PROP_REACH` (|dx| ≤ 11 units, up ∈ [1, 41] units), head centers
+to |dx| ≤ 8 units, and shoulder joints to |dx| ≤ 11 units — so the closed
+outline of §3 is structurally guaranteed rather than checked by eye. Those
+clamps are the same *fraction* of the canvas they were at 32×48, which is why
+they did not have to be re-decided at the new density.
 
 ### A.3 Sub-floor band contents
 
-Rows 44–45 carry a 2-row `soot-900` contact shadow sized to the foot spread;
-rows 46–47 are unused for now (reserved for slope offset and kicked dust). No
+Rows 88–91 carry a 4-row `soot-900` contact shadow sized to the foot spread;
+rows 92–95 are unused for now (reserved for slope offset and kicked dust). No
 outline is drawn below the ground line — a standing figure meets the tile, and
 an outline under the feet would read as a float.
 
@@ -542,9 +565,14 @@ ticks. It is the only frame in the pipeline without visible team tint.
 
 §4 fixes frames 2–3 of `cast` as the hold loop. The two frames differ by a 1px
 torso bob and one step of emissive growth, so a charged action waiting on the
-CT timeline reads as a pulse, not a freeze. Emissive growth is capped at +2px
-of radius; with that cap the worst frame in the roster spends 50 of 1536 pixels
-on the amber ramp (3.3%), inside the ~5% budget of §2.
+CT timeline reads as a pulse, not a freeze. Emissive growth is capped at +2 units
+of radius; with that cap the worst frame in the roster spends 174 of 6144
+pixels on the amber ramp (2.8%), inside the 4% budget of §2.
+
+The budget is an **area share**, not a pixel count, and was re-derived at 64×96
+rather than carried over: the billboard's world size did not change with the
+density, so what a player sees is the fraction of the figure that glows. 4% is
+the tightest round share that still clears the cast peak.
 
 ### A.6 Team tint mask, in two parts
 
@@ -560,8 +588,8 @@ Measured across the roster this lands at 6–8% of body pixels.
 ### A.7 Facing indicator
 
 The wedge stays. Two of the four apparent views differ from the other two only
-by mirroring, and at 32px that difference is real but not fast enough to base a
-targeting decision on. The wedge is the tactical readout; the art carries the
+by mirroring, and at this size that difference is real but not fast enough to
+base a targeting decision on. The wedge is the tactical readout; the art carries the
 character. Revisit when facing gains a mechanical cost.
 
 ### A.8 Preview
@@ -698,7 +726,7 @@ generic at 1× on a dark ground, it loses nothing on:
 
 1. **Form.** Every mass — head, torso, each limb, each piece of gear — carries
    a visible light side and a shadow side. Nothing is one flat color.
-2. **Face.** The head reads as a face at 13px: you can find the eyes without
+2. **Face.** The head reads as a face at 26px: you can find the eyes without
    zooming.
 3. **Material.** Cloth, plate, leather and metal are told apart by ramp and
    edge treatment alone, with no outline help.
@@ -788,31 +816,36 @@ Approved patterns only:
 Any other pattern — noise, dot-scatter, 1px speckle — is off-model. Dither is
 a *ramp step between two ramp steps*, never texture.
 
-### C.3 The face standard at 13px
+### C.3 The face standard at 26px
 
-The head box is 13 rows (Appendix A.1). It is spent like this, and this is the
-single most load-bearing paragraph in the appendix — a Greyfall unit without a
-readable head is not shipping:
+The head box is 26 rows (Appendix A.1) — 13 rig units, the same head the spec
+always described, drawn at the current density. It is spent like this, and this
+is the single most load-bearing paragraph in the appendix — a Greyfall unit
+without a readable head is not shipping:
 
 | Head rows | Contents |
 |---|---|
-| 0–1 | crown taper (6px, then 8px wide) — hair or helmet mass only |
-| 2–5 | hair mass / helmet dome. Carries the hair light streak on the **left** |
-| 6 | brow shelf: a 1px line of the skin shadow step across the forehead |
-| 7 | **the eye row** |
-| 8–10 | cheeks, nose shade, mouth line |
-| 11 | chin (8px wide) |
-| 12 | jaw shadow / neck (6px wide), meeting the shoulders |
+| 0–3 | crown taper (12px, then 18px wide) — hair or helmet mass only |
+| 4–11 | hair mass / helmet dome. Carries the hair light streak on the **left** |
+| 12–13 | brow shelf: a line of the skin shadow step across the forehead |
+| 14–15 | **the eye rows** |
+| 16–21 | cheeks, nose shade, mouth line |
+| 22–23 | chin (18px wide) |
+| 24–25 | jaw shadow / neck (12px wide), meeting the shoulders |
 
-**Eyes.** Two 1px dots in the skin's **line** step (`umber-900`), on head row 7,
-separated by **2–3 px of base skin**, never adjacent to the silhouette outline
-and never stacked 2 rows tall. That is the whole treatment: FFT's eyes are dots
+Head masters are authored as 24 × 30 glyphs: column 2 is the left edge of a
+20px head and glyph row 4 is head row 0, so glyph rows 0–3 are helmet, hood and
+antenna headroom.
+
+**Eyes.** Two dots one rig unit square in the skin's **line** step
+(`umber-900`), on the eye rows, separated by **4–6 px of base skin**, never
+adjacent to the silhouette outline and never taller than the eye rows. That is the whole treatment: FFT's eyes are dots
 and they work because the *hair mass* and the *skin triangle* around them carry
 the read. A second row of eye pixels turns a face into a skull.
 
-**The skin/hair split.** Hair is a solid mass occupying head rows 0–5 plus the
-two outer columns down to row 10 (sideburns / hair fall). Skin is the triangle
-left over: widest at rows 7–8, tapering into the chin. In a three-quarter view
+**The skin/hair split.** Hair is a solid mass occupying head rows 0–11 plus the
+outer columns down to row 21 (sideburns / hair fall). Skin is the triangle
+left over: widest at the eye rows, tapering into the chin. In a three-quarter view
 the split is **asymmetric** — the far side (right, the shadow side) carries one
 extra column of hair, which is what makes the head read as turned rather than
 frontal. Total skin should be roughly 40–55% of the head box; a face that is
@@ -821,11 +854,11 @@ mostly skin reads as a bald bust, and one that is mostly hair reads as a hood.
 **Helmeted jobs substitute a visor read.** The Enforcer has no face; a closed
 riot helm that showed one would be wrong. In its place:
 
-- a **visor slit**: a horizontal band 1–2 rows tall on head rows 6–7, in the
-  plate line step (`soot-800`), spanning at least 5px — this is the *anchor of
-  the read*, and it sits where the eyes would have been so the head still
+- a **visor slit**: a horizontal band 2–3 rows tall across the brow and eye
+  rows, in the plate line step (`soot-800`), spanning at least 10px — this is
+  the *anchor of the read*, and it sits where the eyes would have been so the head still
   reads as a head;
-- a **gleam**: a 2px `soot-100` cluster at the slit's left (lit) end — this is
+- a **gleam**: a `soot-100` cluster at the slit's left (lit) end — this is
   the frame's one permitted spark under C.2, spent here because it obeys C.1's
   light direction and is the only thing that keeps the slit from reading as a
   hole;
@@ -900,24 +933,31 @@ the contract those masters answer to, and the pipeline that enforces it lives in
 `src/art/{png,ingest,intake,segments}.ts`. It is written so an artist can be
 handed the section and nothing else.
 
-**Deliver, per job:** two PNGs — `<job>-se.png` and `<job>-ne.png` — each a
-**32 × 48** master of the **idle, frame 0** pose. That is all. The other 27
-frames per view are derived (C.8.4).
+**Deliver, per job:** two figures — a front three-quarter and a back
+three-quarter over the same shoulder — of the **idle, frame 0** pose. That is
+all. The other 27 frames per view are derived (C.8.4).
+
+Deliver them at **256 × 384 per figure**, not at the spec size: painting at 4×
+and reducing keeps edges that hand-placing at 64×96 would lose, and
+`fitMasterToCanvas` does the reduction — it measures the figure in the delivery,
+box-filters it down to the figure box, centers it on the seam and stands it on
+the anchor row. The requirements below are stated in **canvas** terms and are
+checked after that reduction.
 
 #### C.8.1 What a master must satisfy
 
 | # | Requirement | Where it comes from |
 |---|---|---|
-| 1 | **32 × 48 canvas**, alpha strictly 0 or 255 — no partial alpha, no anti-aliasing | §3 |
-| 2 | **Feet on the anchor**: the lowest occupied row of the figure box is **row 43**, and the figure is drawn symmetric about the x = 16 seam | §3, A.1 |
-| 3 | **Rows 44–47 empty** except a `soot-900` contact shadow; nothing else in the sub-floor band | A.3 |
-| 4 | **Column 0, column 31 and row 0 empty** — the outer ring is the outline's | A.2 |
-| 5 | **3-heads proportions**: 13px head, shoulders at row 17, hips at row 29, feet at rows 41–43 | A.1 |
+| 1 | **64 × 96 canvas** after reduction, alpha strictly 0 or 255 — no partial alpha, no anti-aliasing, no baked glow | §3 |
+| 2 | **Feet on the anchor**: the lowest occupied row of the figure box is **row 87**, and the figure is drawn symmetric about the x = 32 seam | §3, A.1 |
+| 3 | **Rows 88–95 empty** except a `soot-900` contact shadow; nothing else in the sub-floor band | A.3 |
+| 4 | **Column 0, column 63 and row 0 empty** — the outer ring is the outline's | A.2 |
+| 5 | **3-heads proportions**: 26px head, shoulders at row 34, hips at row 58, feet at rows 82–87. A master drawn to other proportions still animates, but its own shoulder and hip rows must be declared as `Landmarks` so the region cut follows the art | A.1, C.8.3 |
 | 6 | **Palette**: every color a §2 value, or close enough that quantization is unambiguous (C.8.2) | §2, §3 |
 | 7 | **≤ 12 colors + 2 tint indices** after quantization | §3 |
 | 8 | **Closed 1px `soot-900` silhouette outline**; interior separation uses the local ramp's darkest step, never `soot-900` | §3 |
 | 9 | **Emissive elements unoutlined** — amber/overload/vein-glass bleed into a halo instead | §3 |
-| 10 | **Amber ≤ 5%** of the canvas (≤ 76 px), every amber pixel sourced in-frame | §2 |
+| 10 | **Amber ≤ 4%** of the canvas (≤ 245 px), every amber pixel sourced in-frame | §2 |
 | 11 | **Team tint** occupies exactly the two `steel` (player) indices, 5–12% of body pixels, as chest band + pauldron trim | §2, A.6 |
 | 12 | **Face standard** of C.3, or the documented substitute for a helmeted job | C.3 |
 | 13 | **Job read** of C.5 identifiable at 1× | C.5 |
@@ -932,6 +972,11 @@ returns a `ConformanceReport` naming every pixel that moved and how far.
 **It never repairs.** An open outline, an over-budget amber, a thirteenth color:
 reported, not fixed. Silently correcting incoming art is how a pipeline starts
 lying about what the artist drew.
+
+Flesh has its own ramp. `bone-500/300/100` are the low-saturation warms between
+the umber ramp and `soot-100`; without them the nearest palette step to a mid
+skin tone is `copper-300` (rusted) or `soot-100` (dead), and every delivered
+face arrives looking like one or the other.
 
 The palette has one dangerous near-collision: **`soot-900` (#0b0d10) and
 `umber-900` (#150e09) are ~12 units apart**, where the rest of the palette steps
@@ -958,10 +1003,19 @@ joint. The **default map** is derived from the rig itself and partitions rows
 | `legNear` | below the hips, right of the centerline | `hipNear` | `footNear` |
 
 Any gear that **crosses** those boundaries — a shield over the hips, a satchel
-at the waist, a maul head above the shoulder line — must be declared as a
-`prop` region, which is cut **first** and therefore never torn in half. A prop
-region is a rectangle in master coordinates plus the joint it rides; measure it
-off the master, not off the rig.
+at the waist, a maul head above the shoulder line, a staff running the full
+height of the canvas — must be declared as a `prop` region, which is cut
+**first** and therefore never torn in half. A prop region is a rectangle in
+master coordinates plus the joint it rides; measure it off the master, not off
+the rig.
+
+The **rows** the six default regions split on come from the rig, and a master
+drawn at other proportions must override them with `Landmarks`. The generator
+briefs ask for 5 to 5.5 heads and the armature is 3, so a master drawn to the
+brief has its shoulder and hip lines further down the canvas; without the
+override the head region takes half the chest with it. The joint *deltas* that
+move each region are still the rig's, and those are small enough to stay honest
+across the proportion gap.
 
 #### C.8.4 What derivation does to a master
 
@@ -1001,6 +1055,25 @@ generated art does, and a human confirms the C.5 read at 1×. Two of those four
 are automated; the other two are not, and the FFT floor of C.0 remains the bar
 for external art exactly as it is for ours.
 
+#### C.8.6 What ships anyway, and why
+
+`report.ok` is the acceptance gate of C.8.5, and a master that fails it can
+still be wired in — deliberately, with the report recorded where the art lives
+(`src/art/masters/<id>.ts` carries it as a header comment). The compositor's
+output is a placeholder; delivered art that violates the color budget still
+beats it on sight, and refusing the art would mean shipping the placeholder.
+
+What ships must record *which* violations it carries, because each one has a
+downstream cost the rest of the pipeline cannot see:
+
+| Violation | What it costs downstream |
+|---|---|
+| over the 12+2 color budget | nothing mechanical; the discipline is a hand-drawing rule and a reduction of painted art cannot produce it |
+| the master's outline is not closed | nothing in-game — derivation discards the master's outline and re-derives a closed one per frame — but the master itself cannot be trusted as a reference |
+| team tint absent | **the unit no longer reads as player or enemy from its art.** The facing wedge and the UI carry allegiance until the mask is painted in the player steel |
+| orphan clusters, ambiguous quantizations | dither-like noise at 1×; visible as sparkle when the camera pulls out |
+| one view delivered instead of two | the unit never turns around: the back view is the front master |
+
 ### C.9 Named failure modes
 
 Failures the roster actually shipped, each paired with the rule that prevents
@@ -1017,18 +1090,26 @@ a viewer looks first.
 
 **Cause.** Drawing the head parametrically: a rectangle per row, a color per
 region. Parametric heads always land here, because the thing that makes a face
-read at 13px is not proportion, it is a handful of *hand-placed* pixels whose
-positions no formula produces.
+read at head size is not proportion, it is a handful of *hand-placed* pixels
+whose positions no formula produces.
 
 **The rule that prevents it.** C.3 is not advisory. The head is a **stamp** — a
 literal, hand-authored index grid — and it must contain, at minimum: two
-line-step eye dots on head row 7 with 2–3px of base skin between them, a hair
+line-step eye dots on the eye rows with 4–6px of base skin between them, a hair
 mass with a light streak on the key-light side, a brow shelf, and an asymmetric
 hair/skin split. A head that cannot name those five features is not finished. If
 the job is helmeted, the visor substitute of C.3 applies and carries the same
 burden — including the gleam, which is the difference between a visor and a
-hole. **Test:** the eye row of every `se` master must contain at least two
-line-step pixels inside the skin region.
+hole. **Test:** the eye rows of every `se` master must contain at least two
+line-step clusters inside the skin region.
+
+**The generated heads are markers, not portraits.** Representational art comes
+from outside this pipeline (C.8); the compositor's heads exist so a unit is
+identifiable while its master is unpainted. What each one has to carry is the
+job's marker *above the shoulder line* — the visor slit and gleam, the goggles
+up on the brim or down over the eyes, the hood void and its cheekbone glint, the
+respirator, the temple graft — at roughly a tenth of the figure's height, since
+that is what survives to the screen at 1×.
 
 #### C.9.2 The cyan band
 

@@ -276,8 +276,8 @@ aligned.)
   on the Rise, furnace-warm in the Works, bioluminescent-dim in the
   Underveins.
 - Sprites: FFT-register chunky proportions (≈3 heads tall), pixel art
-  billboarded in 3D; exact resolution/anchor/frame counts frozen in the art
-  spec, not here.
+  billboarded in 3D; exact resolution/anchor/frame counts live in the art
+  spec, not here — they are a rendering decision and have moved once already.
 - Audio: industrial ambience is the score's percussion section — the map's
   machinery is audible and its rhythms sit under the music. Silence when the
   power dies should be frightening.

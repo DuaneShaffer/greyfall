@@ -4,6 +4,10 @@ import { defineConfig } from "vite";
 const root = import.meta.dirname;
 
 export default defineConfig({
+  // Sprite conformance sweeps run over 4x the pixels since the 64x96 re-spec.
+  test: {
+    testTimeout: 30_000,
+  },
   build: {
     rollupOptions: {
       input: {

@@ -13,8 +13,11 @@ import {
   AMBER_BUDGET,
   MAX_FRAME_COLORS,
   auditGrid,
+  contentBounds,
+  fitMasterToCanvas,
   formatReport,
   quantizeToPalette,
+  resampleRGBA,
   retint,
 } from "../../src/art/ingest.js";
 import { importExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
@@ -33,6 +36,7 @@ import {
   type PixelGrid,
 } from "../../src/art/pixel.js";
 import { decodePNG, encodePNG } from "../../src/art/png.js";
+import { buildJobSheet } from "../../src/art/sheet.js";
 import {
   buildExternalSheet,
   cutMaster,
@@ -80,9 +84,41 @@ describe("png codec", () => {
     expect(Array.from(decoded.data)).toEqual(Array.from(source.data));
   });
 
+  it("compresses, and a standard inflater reads what we wrote", async () => {
+    const { inflateSync } = await import("node:zlib");
+    const sheet = toRGBA(buildJobSheet("conduit", "player"));
+    const bytes = encodePNG(sheet);
+    // Stored blocks would be larger than the raw pixels; this must not be.
+    expect(bytes.length).toBeLessThan(sheet.data.length / 8);
+    const idat: number[] = [];
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (let at = 8; at < bytes.length; ) {
+      const length = view.getUint32(at);
+      const type = String.fromCharCode(...bytes.subarray(at + 4, at + 8));
+      if (type === "IDAT") idat.push(...bytes.subarray(at + 8, at + 8 + length));
+      at += 12 + length;
+    }
+    const raw = new Uint8Array(inflateSync(Uint8Array.from(idat)));
+    expect(raw.length).toBe((sheet.width * 4 + 1) * sheet.height);
+    expect(Array.from(decodePNG(bytes).data)).toEqual(Array.from(sheet.data));
+  });
+
+  it("round-trips incompressible data losslessly", () => {
+    const w = 61;
+    const h = 37;
+    const data = new Uint8ClampedArray(w * h * 4);
+    let s = 7;
+    for (let i = 0; i < data.length; i += 1) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      data[i] = (s >>> 13) & 0xff;
+    }
+    const decoded = decodePNG(encodePNG({ width: w, height: h, data }));
+    expect(Array.from(decoded.data)).toEqual(Array.from(data));
+  });
+
   it("reads a PNG produced elsewhere (dynamic-huffman deflate)", async () => {
-    // node:zlib emits a compressed stream; ours emits stored blocks. Decoding
-    // both proves the inflate path, not just our own encoder.
+    // node:zlib emits dynamic-huffman blocks; ours emits fixed. Decoding both
+    // proves the inflate path, not just a mirror of our own encoder.
     const { deflateSync } = await import("node:zlib");
     const source = toRGBA(jobFrame({ jobId: "enforcer", team: "enemy", state: "idle", view: "ne", frame: 0 }));
     const stride = source.width * 4;
@@ -130,6 +166,81 @@ describe("png codec", () => {
   });
 });
 
+describe("fitting a delivered master", () => {
+  /** A 4x-scale delivery: a figure block with a foot, on a wide transparent field. */
+  const delivery = (() => {
+    const width = 400;
+    const height = 600;
+    const data = new Uint8ClampedArray(width * height * 4);
+    const put = (x: number, y: number, r: number, g: number, b: number) => {
+      const at = (y * width + x) * 4;
+      data[at] = r;
+      data[at + 1] = g;
+      data[at + 2] = b;
+      data[at + 3] = 255;
+    };
+    for (let y = 100; y < 500; y += 1) {
+      for (let x = 150; x < 250; x += 1) put(x, y, 120, 90, 60);
+    }
+    // A four-pixel-tall sole at the very bottom, the thing a bad reduction eats.
+    for (let y = 496; y < 500; y += 1) {
+      for (let x = 140; x < 260; x += 1) put(x, y, 20, 20, 24);
+    }
+    return { width, height, data };
+  })();
+
+  it("measures the figure rather than trusting the canvas", () => {
+    const bounds = contentBounds(delivery, { x: 0, y: 0, w: 400, h: 600 }, 127);
+    expect(bounds).toEqual({ x: 140, y: 100, w: 120, h: 400 });
+  });
+
+  it("stands the figure on the anchor, centered on the seam", () => {
+    const fitted = fitMasterToCanvas(delivery);
+    expect(fitted.width).toBe(SPRITE_WIDTH);
+    expect(fitted.height).toBe(SPRITE_HEIGHT);
+    const alpha = (x: number, y: number) => fitted.data[(y * SPRITE_WIDTH + x) * 4 + 3] ?? 0;
+    let bottom = -1;
+    let left = SPRITE_WIDTH;
+    let right = -1;
+    for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
+      for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+        if (alpha(x, y) === 0) continue;
+        bottom = Math.max(bottom, y);
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+    expect(bottom).toBe(SPRITE_ANCHOR.y - 1);
+    expect(Math.abs((left + right) / 2 - (SPRITE_ANCHOR.x - 0.5))).toBeLessThanOrEqual(1);
+    // Alpha is binary: §3 has no partial coverage.
+    for (let i = 3; i < fitted.data.length; i += 4) {
+      expect(fitted.data[i] === 0 || fitted.data[i] === 255).toBe(true);
+    }
+  });
+
+  it("keeps thin detail through the reduction instead of averaging it away", () => {
+    const fitted = fitMasterToCanvas(delivery);
+    // The dark sole is 1% of the figure's height; it must still be there.
+    let dark = 0;
+    for (let i = 0; i < SPRITE_WIDTH * SPRITE_HEIGHT; i += 1) {
+      if ((fitted.data[i * 4 + 3] ?? 0) === 0) continue;
+      if ((fitted.data[i * 4] ?? 0) < 60) dark += 1;
+    }
+    expect(dark).toBeGreaterThan(0);
+  });
+
+  it("resamples with alpha weighting, so transparency cannot tint a neighbour", () => {
+    const source = {
+      width: 2,
+      height: 1,
+      data: new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 0]),
+    };
+    const out = resampleRGBA(source, 1, 1);
+    expect(Array.from(out.data.slice(0, 3))).toEqual([255, 0, 0]);
+    expect(out.data[3]).toBe(128);
+  });
+});
+
 describe("quantization", () => {
   const master = jobFrame({ jobId: "enforcer", team: "player", state: "idle", view: "se", frame: 0 });
 
@@ -151,17 +262,33 @@ describe("quantization", () => {
     expect(report.colorCount).toBeLessThanOrEqual(MAX_FRAME_COLORS);
   });
 
+  it("has a warm-neutral step for flesh, so faces stop landing on metal or grey", () => {
+    // The tones an outside master paints skin with, from the generator briefs.
+    const flesh = ["#cbb097", "#b79a7c", "#8d7358", "#e0cbad"];
+    for (const hex of flesh) {
+      const [r, g, b] = [1, 3, 5].map((at) => Number.parseInt(hex.slice(at, at + 2), 16)) as [
+        number,
+        number,
+        number,
+      ];
+      const source = { width: 1, height: 1, data: new Uint8ClampedArray([r, g, b, 255]) };
+      const { grid } = quantizeToPalette(source);
+      const landed = INDEXED_PALETTE[grid.data[0] ?? 0];
+      expect(RAMPS.bone as readonly string[], `${hex} -> ${landed}`).toContain(landed);
+    }
+  });
+
   it("reports violations instead of repairing them", () => {
     // A master with a hole punched in the torso: the outline is now open.
     const holed: PixelGrid = { ...master, data: Uint8Array.from(master.data) };
-    for (let y = 20; y < 24; y += 1) {
-      for (let x = 14; x < 18; x += 1) holed.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
+    for (let y = 40; y < 48; y += 1) {
+      for (let x = 28; x < 36; x += 1) holed.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
     }
     const report = auditGrid(holed);
     expect(report.ok).toBe(false);
     expect(report.outlineGaps.length).toBeGreaterThan(0);
     // The grid is not modified: reporting is the whole contract.
-    expect(holed.data[21 * SPRITE_WIDTH + 15]).toBe(TRANSPARENT);
+    expect(holed.data[42 * SPRITE_WIDTH + 30]).toBe(TRANSPARENT);
     expect(formatReport(report, "holed")).toContain("REJECTED");
   });
 
@@ -257,10 +384,10 @@ const importFallback = (jobId: (typeof FALLBACK)[number]) => {
     jobId === "enforcer"
       ? {
           // Shield across the hips, maul off the near hand.
-          se: [propRegion(5, 19, 15, 16, "hip"), propRegion(22, 8, 10, 9, "handNear")],
-          ne: [propRegion(5, 19, 15, 16, "hip"), propRegion(22, 8, 10, 9, "handNear")],
+          se: [propRegion(10, 38, 30, 32, "hip"), propRegion(44, 16, 20, 18, "handNear")],
+          ne: [propRegion(10, 38, 30, 32, "hip"), propRegion(44, 16, 20, 18, "handNear")],
         }
-      : { se: [propRegion(3, 24, 12, 12, "hip")], ne: [propRegion(17, 24, 12, 12, "hip")] };
+      : { se: [propRegion(6, 48, 24, 24, "hip")], ne: [propRegion(34, 48, 24, 24, "hip")] };
   return importExternalMaster({
     id: jobId,
     build: art.build,
@@ -407,7 +534,7 @@ describe("external masters become full animations", () => {
         expect(share, jobId).toBeLessThan(0.14);
       });
 
-      it("assembles into the frozen 256x576 sheet layout", () => {
+      it("assembles into the frozen sheet layout", () => {
         const sheet = buildExternalSheet(imported.master);
         expect(sheet.width).toBe(SHEET_LAYOUT.width);
         expect(sheet.height).toBe(SHEET_LAYOUT.height);

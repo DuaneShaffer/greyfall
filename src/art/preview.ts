@@ -19,7 +19,7 @@ import {
 const TEAMS: readonly Team[] = ["player", "enemy", "neutral"];
 
 let team: Team = "player";
-let scale = 4;
+let scale = 2;
 let mirrored = false;
 
 const scratch = document.createElement("canvas");

@@ -5,12 +5,22 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "vitest";
+import { hasExternalArt } from "../../src/art/external.js";
 import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "../../src/art/jobs.js";
+import { buildJobSheet, sheetCell } from "../../src/art/sheet.js";
 import { importExternalMaster, propRegion } from "../../src/art/intake.js";
 import { decodePNG, encodePNG as encodeSpritePNG } from "../../src/art/png.js";
 import { deriveExternalFrame } from "../../src/art/segments.js";
 import { INDEXED_PALETTE, mirrorGrid, type PixelGrid } from "../../src/art/pixel.js";
-import { ANIMATIONS, SPRITE_HEIGHT, SPRITE_WIDTH, type AnimState, type DrawnView } from "../../src/art/sprites.js";
+import {
+  ANIMATIONS,
+  ANIM_STATES,
+  SPRITE_ANCHOR,
+  SPRITE_HEIGHT,
+  SPRITE_WIDTH,
+  type AnimState,
+  type DrawnView,
+} from "../../src/art/sprites.js";
 import { createImage, drawGrid, drawText, encodePNG, fillRect } from "./png.js";
 
 const DUMP = process.env.SPRITE_DUMP === "1";
@@ -98,9 +108,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
   });
 
   it("writes a head close-up", () => {
-    const scale = 10;
-    const w = 16;
-    const h = 20;
+    const scale = 5;
+    const w = 32;
+    const h = 44;
     const pad = 4;
     const img = createImage(JOB_IDS.length * (w * scale + pad) + pad, 2 * (h * scale + pad + 8) + 16, BG);
     drawText(img, `heads ${TAG}`, pad, 3, INK);
@@ -112,7 +122,7 @@ describe.runIf(DUMP)("sprite gallery", () => {
         fillRect(img, x, y, w * scale, h * scale, [11, 13, 16, 255]);
         for (let gy = 0; gy < h; gy += 1) {
           for (let gx = 0; gx < w; gx += 1) {
-            const src = { x: gx + 8, y: gy };
+            const src = { x: gx + (SPRITE_WIDTH - w) / 2, y: gy };
             const v = grid.data[src.y * SPRITE_WIDTH + src.x] ?? 0;
             if (v === 0) continue;
             const sub = { width: 1, height: 1, data: new Uint8Array([v]) };
@@ -122,7 +132,7 @@ describe.runIf(DUMP)("sprite gallery", () => {
         drawText(img, `${jobId.slice(0, 6)} ${view}`, x, y + h * scale + 2, INK);
       });
     });
-    write(`heads-${TAG}-10x.png`, img);
+    write(`heads-${TAG}-5x.png`, img);
   });
 
   it("writes the ingest proof: generated master vs frames derived from it", () => {
@@ -145,10 +155,10 @@ describe.runIf(DUMP)("sprite gallery", () => {
       const prop =
         jobId === "enforcer"
           ? {
-              se: [propRegion(5, 19, 15, 16, "hip" as const), propRegion(22, 8, 10, 9, "handNear" as const)],
-              ne: [propRegion(5, 19, 15, 16, "hip" as const), propRegion(22, 8, 10, 9, "handNear" as const)],
+              se: [propRegion(10, 38, 30, 32, "hip" as const), propRegion(44, 16, 20, 18, "handNear" as const)],
+              ne: [propRegion(10, 38, 30, 32, "hip" as const), propRegion(44, 16, 20, 18, "handNear" as const)],
             }
-          : { se: [propRegion(3, 24, 12, 12, "hip" as const)], ne: [propRegion(17, 24, 12, 12, "hip" as const)] };
+          : { se: [propRegion(6, 48, 24, 24, "hip" as const)], ne: [propRegion(34, 48, 24, 24, "hip" as const)] };
       const { master } = importExternalMaster({
         id: jobId,
         build: art.build,
@@ -167,6 +177,92 @@ describe.runIf(DUMP)("sprite gallery", () => {
         rows.push(generated, derived);
       }
       write(`ingest-${jobId}-${TAG}-3x.png`, contactSheet(rows, 3, `${jobId}: generated vs ingested+derived`));
+    }
+  });
+
+  it("writes the verification sheet: every job as the renderer will see it", () => {
+    // Pulled out of the shipped sheet rather than the compositor, so a job with
+    // a delivered master shows the delivered art. The amber line is the ground
+    // line: every figure's feet must sit on it and nothing but contact shadow
+    // may hang below it.
+    const scale = 3;
+    const pad = 4;
+    const labelH = 8;
+    const cw = SPRITE_WIDTH * scale + pad;
+    const ch = SPRITE_HEIGHT * scale + pad + labelH;
+    const shots: readonly (readonly [AnimState, number])[] = [
+      ["idle", 0],
+      ["walk", 2],
+      ["attack", 2],
+      ["cast", 4],
+      ["hurt", 1],
+      ["downed", 3],
+    ];
+    const cols = shots.length * 2;
+    const img = createImage(cols * cw + pad + 40, JOB_IDS.length * ch + pad + 12, BG);
+    drawText(img, `verification ${TAG} ${SPRITE_WIDTH}x${SPRITE_HEIGHT} @${scale}x`, pad, 3, INK);
+    JOB_IDS.forEach((jobId, ri) => {
+      const sheet = buildJobSheet(jobId, ri % 2 === 0 ? "player" : "enemy");
+      const y = 12 + pad + ri * ch;
+      shots.forEach(([state, frame], si) => {
+        (["se", "ne"] as const).forEach((view, vi) => {
+          const cell = sheetCell(state, view, Math.min(frame, ANIMATIONS[state].frames - 1));
+          const grid = {
+            width: SPRITE_WIDTH,
+            height: SPRITE_HEIGHT,
+            data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
+          };
+          for (let gy = 0; gy < SPRITE_HEIGHT; gy += 1) {
+            for (let gx = 0; gx < SPRITE_WIDTH; gx += 1) {
+              grid.data[gy * SPRITE_WIDTH + gx] =
+                sheet.data[(cell.y + gy) * sheet.width + cell.x + gx] ?? 0;
+            }
+          }
+          const x = pad + (si * 2 + vi) * cw;
+          fillRect(img, x - 1, y - 1, SPRITE_WIDTH * scale + 2, SPRITE_HEIGHT * scale + 2, GRID);
+          fillRect(img, x, y, SPRITE_WIDTH * scale, SPRITE_HEIGHT * scale, BG);
+          fillRect(img, x, y + SPRITE_ANCHOR.y * scale, SPRITE_WIDTH * scale, 1, [217, 138, 27, 255]);
+          drawGrid(img, grid, x, y, scale);
+          drawText(img, `${state}${frame} ${view}`, x, y + SPRITE_HEIGHT * scale + 2, INK);
+        });
+      });
+      drawText(
+        img,
+        `${jobId.slice(0, 9)}${hasExternalArt(jobId) ? " ext" : ""}`,
+        pad + cols * cw,
+        y + 4,
+        INK,
+      );
+    });
+    write(`verify-${TAG}-${scale}x.png`, img);
+  });
+
+  it("writes every state of the jobs with delivered masters", () => {
+    for (const jobId of JOB_IDS.filter(hasExternalArt)) {
+      const sheet = buildJobSheet(jobId, "player");
+      const rows: Cell[][] = [];
+      for (const state of ANIM_STATES) {
+        for (const view of ["se", "ne"] as const) {
+          const row: Cell[] = [];
+          for (let f = 0; f < ANIMATIONS[state].frames; f += 1) {
+            const cell = sheetCell(state, view, f);
+            const grid = {
+              width: SPRITE_WIDTH,
+              height: SPRITE_HEIGHT,
+              data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
+            };
+            for (let gy = 0; gy < SPRITE_HEIGHT; gy += 1) {
+              for (let gx = 0; gx < SPRITE_WIDTH; gx += 1) {
+                grid.data[gy * SPRITE_WIDTH + gx] =
+                  sheet.data[(cell.y + gy) * sheet.width + cell.x + gx] ?? 0;
+              }
+            }
+            row.push({ grid, label: `${state.slice(0, 3)}${f}` });
+          }
+          rows.push(row);
+        }
+      }
+      write(`external-${jobId}-${TAG}-3x.png`, contactSheet(rows, 3, `${jobId} delivered master`));
     }
   });
 

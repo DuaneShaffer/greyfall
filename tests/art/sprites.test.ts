@@ -9,14 +9,18 @@ import {
   DRAWN_FRAMES_PER_VIEW,
   DRAWN_VIEWS,
   FIGURE_BOX_BOTTOM,
+  HEIGHT_STEPS_PER_TILE,
   HEIGHT_STEP_PX,
   MAX_COLORS_PER_SPRITE,
-  PIXELS_PER_TILE,
   PORTRAIT,
+  RIG_UNIT,
   SHEET_LAYOUT,
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
   SPRITE_OUTLINE_COLOR,
+  SPRITE_PIXELS_PER_TILE,
+  SPRITE_TEXTURE_CELL,
+  SPRITE_TEXTURE_SCALE,
   SPRITE_WIDTH,
   SUB_FLOOR_BAND_HEIGHT,
   TICKS_PER_SECOND,
@@ -35,9 +39,9 @@ const FACINGS = ["north", "east", "south", "west"] as const;
 const YAWS: readonly CameraYaw[] = [0, 1, 2, 3];
 
 describe("sprite canvas", () => {
-  it("is 32x48 with a feet-center anchor inside the canvas", () => {
-    expect(SPRITE_WIDTH).toBe(32);
-    expect(SPRITE_HEIGHT).toBe(48);
+  it("is 64x96 with a feet-center anchor inside the canvas", () => {
+    expect(SPRITE_WIDTH).toBe(64);
+    expect(SPRITE_HEIGHT).toBe(96);
     expect(SPRITE_ANCHOR.x).toBeGreaterThanOrEqual(0);
     expect(SPRITE_ANCHOR.x).toBeLessThan(SPRITE_WIDTH);
     expect(SPRITE_ANCHOR.y).toBeGreaterThanOrEqual(0);
@@ -49,17 +53,33 @@ describe("sprite canvas", () => {
   });
 
   it("reserves a sub-floor band below the anchor", () => {
-    expect(SUB_FLOOR_BAND_HEIGHT).toBe(4);
+    expect(SUB_FLOOR_BAND_HEIGHT).toBe(8);
     expect(FIGURE_BOX_BOTTOM).toBe(SPRITE_ANCHOR.y - 1);
     expect(FIGURE_BOX_BOTTOM + 1 + SUB_FLOOR_BAND_HEIGHT).toBe(SPRITE_HEIGHT);
   });
 
-  it("shares one ruler with the terrain", () => {
-    expect(PIXELS_PER_TILE).toBe(TILE_TEXTURE_SIZE);
-    expect(TILE_TEXTURE_SIZE / HEIGHT_STEP_PX).toBe(2);
-    expect(SPRITE_WIDTH / PIXELS_PER_TILE).toBe(1);
-    expect(SPRITE_HEIGHT / HEIGHT_STEP_PX).toBe(3);
+  it("keeps a separate, denser ruler from the terrain but the same world size", () => {
+    // The sprite ruler moved to 64; tile textures stayed at 32.
+    expect(TILE_TEXTURE_SIZE).toBe(32);
+    expect(SPRITE_PIXELS_PER_TILE).toBe(64);
+    expect(HEIGHT_STEPS_PER_TILE).toBe(TILE_TEXTURE_SIZE / HEIGHT_STEP_PX);
+    expect(HEIGHT_STEPS_PER_TILE).toBe(2);
+    expect(SPRITE_WIDTH / SPRITE_PIXELS_PER_TILE).toBe(1);
+    expect(BILLBOARD_WORLD_SIZE.height * HEIGHT_STEPS_PER_TILE).toBe(3);
     expect(BILLBOARD_WORLD_SIZE).toEqual({ width: 1, height: 1.5 });
+  });
+
+  it("rasterizes the rig at two canvas pixels per unit", () => {
+    expect(RIG_UNIT).toBe(2);
+    expect(SPRITE_ANCHOR.y % RIG_UNIT).toBe(0);
+    expect(SUB_FLOOR_BAND_HEIGHT % RIG_UNIT).toBe(0);
+  });
+
+  it("ships the texture at twice the master, which is the mip level under it", () => {
+    expect(SPRITE_TEXTURE_SCALE).toBe(2);
+    expect(SPRITE_TEXTURE_CELL).toEqual({ width: 128, height: 192 });
+    expect(SPRITE_TEXTURE_CELL.width / SPRITE_TEXTURE_SCALE).toBe(SPRITE_WIDTH);
+    expect(SPRITE_TEXTURE_CELL.height / SPRITE_TEXTURE_SCALE).toBe(SPRITE_HEIGHT);
   });
 
   it("uses soot-900 as the silhouette outline", () => {
@@ -246,6 +266,7 @@ describe("portrait spec", () => {
     expect(chipCrop.y + chipCrop.h).toBeLessThanOrEqual(PORTRAIT.height);
     expect(chipCrop.w).toBe(chipCrop.h);
     expect(chipCrop.w % chipSize).toBe(0);
+    // Chips atlas with the tile textures, which did not change density.
     expect(chipSize).toBe(TILE_TEXTURE_SIZE);
   });
 

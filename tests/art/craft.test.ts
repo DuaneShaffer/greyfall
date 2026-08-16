@@ -21,12 +21,15 @@ import {
   HEAD_CENTER_OFFSET,
   SHOULDER_UP,
   TINT_MASK_SEPARATION,
+  at,
+  toPx,
 } from "../../src/art/rig.js";
 import {
   ANIMATIONS,
   ANIM_STATES,
   DRAWN_VIEWS,
   FIGURE_BOX_BOTTOM,
+  RIG_UNIT,
   SPRITE_ANCHOR,
   SPRITE_WIDTH,
 } from "../../src/art/sprites.js";
@@ -35,8 +38,9 @@ const idle = (jobId: JobId, view: "se" | "ne" = "se"): PixelGrid =>
   jobFrame({ jobId, team: "player", state: "idle", view, frame: 0 });
 
 /** Rows the head box can occupy across the pose table, with slack for hats. */
-const HEAD_TOP = SPRITE_ANCHOR.y - (SHOULDER_UP + HEAD_CENTER_OFFSET) - 8;
-const HEAD_BOTTOM = HEAD_TOP + HEAD_HEIGHT + 6;
+const HEAD_CENTER_ROW = at(0, SHOULDER_UP + HEAD_CENTER_OFFSET).y;
+const HEAD_TOP = Math.max(0, HEAD_CENTER_ROW - HEAD_HEIGHT / 2 - toPx(3));
+const HEAD_BOTTOM = HEAD_CENTER_ROW + HEAD_HEIGHT / 2 + toPx(3);
 
 const cropRows = (grid: PixelGrid, y0: number, y1: number): PixelGrid => {
   const top = Math.max(0, y0);
@@ -99,8 +103,9 @@ describe("C.9.1 — the flat face cannot come back", () => {
         case "eyes": {
           // Two *dots*: separate line-step clusters of one or two pixels. A
           // line-step band across the head is a scowl, not a pair of eyes.
+          // An eye is one authored pixel per rig unit in each direction.
           const dots = colorClusters(cropRows(grid, HEAD_TOP, HEAD_BOTTOM)).filter(
-            (c) => c.color === SKIN_LINE && c.size <= 2,
+            (c) => c.color === SKIN_LINE && c.size <= 2 * RIG_UNIT * RIG_UNIT,
           );
           expect(dots.length, `${jobId}: no eye dots in the head box`).toBeGreaterThanOrEqual(2);
           // A face is skin, not a hair helmet: the light step must appear.
@@ -109,7 +114,7 @@ describe("C.9.1 — the flat face cannot come back", () => {
         }
         case "visor": {
           // A slit at least 5px wide, with its gleam on the lit end.
-          expect(longestRun(grid, PLATE_LINE, HEAD_TOP, HEAD_BOTTOM), jobId).toBeGreaterThanOrEqual(5);
+          expect(longestRun(grid, PLATE_LINE, HEAD_TOP, HEAD_BOTTOM), jobId).toBeGreaterThanOrEqual(toPx(5));
           expect(countIn(grid, SPARK, HEAD_TOP, HEAD_BOTTOM), jobId).toBeGreaterThanOrEqual(2);
           return;
         }
@@ -152,7 +157,7 @@ describe("C.9.2 — the cyan band cannot come back", () => {
         longestRun(grid, tint.base, 0, FIGURE_BOX_BOTTOM),
         longestRun(grid, tint.shadow, 0, FIGURE_BOX_BOTTOM),
       );
-      const bandWidth = Math.max(4, JOB_ART[jobId].build.shoulderW - 4);
+      const bandWidth = toPx(Math.max(4, JOB_ART[jobId].build.shoulderW - 4));
       expect(widest, `${jobId}: a ${widest}px tint run across the chest`).toBeLessThanOrEqual(bandWidth);
     });
 
@@ -196,9 +201,9 @@ describe("C.1 — the shading model is actually used", () => {
     for (const view of DRAWN_VIEWS) {
       it(`${jobId}/${view} carries at least three steps of some ramp on the torso`, () => {
         const grid = idle(jobId, view);
-        // The torso band: shoulders (row 17) down to the hips (row 29).
+        // The torso band: the shoulder row down to the hip row.
         const perRamp = new Map<string, Set<number>>();
-        for (let y = 17; y <= 29; y += 1) {
+        for (let y = at(0, SHOULDER_UP).y; y <= at(0, 15).y; y += 1) {
           for (let x = 0; x < SPRITE_WIDTH; x += 1) {
             const value = gridGet(grid, x, y);
             if (value === TRANSPARENT || value === OUTLINE_INDEX) continue;

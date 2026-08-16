@@ -46,6 +46,7 @@ import {
   paletteIndex,
   px,
   recessed,
+  scaleGlyph,
   shade3,
   type Glyph,
   type PixelGrid,
@@ -54,7 +55,9 @@ import {
 } from "./pixel.js";
 import {
   alongProp,
+  at,
   box,
+  HEAD_GLYPH,
   poseFor,
   renderFigure,
   shadedBox,
@@ -67,7 +70,7 @@ import {
   type RigPoint,
   type TintIndices,
 } from "./rig.js";
-import type { AnimState, DrawnView } from "./sprites.js";
+import { RIG_UNIT, type AnimState, type DrawnView } from "./sprites.js";
 
 export const JOB_IDS = [
   "enforcer",
@@ -108,129 +111,227 @@ const restingProp =
       : { ...p, propDir: { dx: p.propDir.dx + dx, up: p.propDir.up } };
 
 /**
- * Head masters. Twelve columns by fifteen rows: column 1 is the left edge of a
- * 10px head, row 2 is head row 0, so the eye row of Appendix C.3 is row 9 and
- * the crown taper lands on rows 2-3. Rows 0-1 are helmet and hood headroom.
+ * Head masters, authored at the 64x96 spec. Twenty-four columns by thirty rows:
+ * column 2 is the left edge of a 20px head and row 4 is head row 0, so the eye
+ * rows of Appendix C.3 are glyph rows 18-19 and the crown taper lands on rows
+ * 4-7. Rows 0-3 are helmet, hood and antenna headroom.
  *
- * Every face here follows one anatomy — hair mass rows 2-7, skin triangle rows
- * 8-13, eyes as single line-step dots on row 9 with 2px of base skin between —
- * and turns three-quarter to the right by carrying an extra column of hair on
- * the shadow side. What differs per job is the gear over it.
+ * Rows are written as *interiors* and centered by `headRows`, because the head
+ * box tapers: 12px at the crown, 20px through the face, 12px again at the neck.
+ * That removes the padding from the authoring and makes a miscount visible.
+ *
+ * Every head follows one anatomy — hair mass glyph rows 4-15, brow shelf 16-17,
+ * eyes 18-19, skin triangle down to the jaw — and turns three-quarter to the
+ * right by carrying extra columns of hair on the shadow side. What differs per
+ * job is the identifying gear over it, which is what actually survives to
+ * screen: at 1x these heads are ~26 rows of a 96-row figure, and the marker
+ * above the shoulders is the read.
  */
+function centerRow(row: string): string {
+  const pad = (HEAD_GLYPH.w - row.length) / 2;
+  if (pad < 0 || !Number.isInteger(pad)) {
+    throw new Error(`head row "${row}" is ${row.length} wide; needs an even width <= ${HEAD_GLYPH.w}`);
+  }
+  return ".".repeat(pad) + row + ".".repeat(pad);
+}
+
+/** Center each interior in the glyph's 24 columns. */
+function headRows(interiors: readonly string[]): readonly string[] {
+  if (interiors.length !== HEAD_GLYPH.h) {
+    throw new Error(`head master has ${interiors.length} rows, needs ${HEAD_GLYPH.h}`);
+  }
+  return interiors.map(centerRow);
+}
 // Glyphs are pure data and only vary by team tint, so they are built once per
 // (master, team) rather than once per frame — 56 frames a sheet makes that the
 // difference between a rebuild and a lookup.
 const GLYPH_CACHE = new WeakMap<readonly string[], Map<string, Glyph>>();
 
-function cachedGlyph(rows: readonly string[], c: GearContext): Glyph {
+function cachedGlyph(rows: readonly string[], c: GearContext, scale = 1): Glyph {
   let byTint = GLYPH_CACHE.get(rows);
   if (!byTint) {
     byTint = new Map();
     GLYPH_CACHE.set(rows, byTint);
   }
-  const key = `${c.tint.base}:${c.tint.shadow}`;
+  const key = `${c.tint.base}:${c.tint.shadow}:${scale}`;
   const hit = byTint.get(key);
   if (hit) return hit;
-  const built = glyph(rows, c.chars);
+  const base = glyph(rows, c.chars);
+  const built = scale === 1 ? base : scaleGlyph(base, scale);
   byTint.set(key, built);
   return built;
 }
+
+/**
+ * Gear stamps are authored at the 32x48-era density and enlarged: their read is
+ * the shape (a shield face, a pack panel), and the extra rows carry nothing a
+ * hand would have added. Heads are the exception and are authored at size.
+ */
+const gearGlyph = (rows: readonly string[], c: GearContext): Glyph =>
+  cachedGlyph(rows, c, RIG_UNIT);
 
 const head =
   (rows: readonly string[]) =>
   (c: GearContext): Glyph =>
     cachedGlyph(rows, c);
 
-/** Replace whole rows of a head master. Gear overrides anatomy, never redraws it. */
+/**
+ * Replace whole rows of a head master, in interior form. Gear overrides
+ * anatomy, never redraws it.
+ */
 const over = (
   base: readonly string[],
   patchRows: Readonly<Record<number, string>>,
-): readonly string[] => base.map((row, y) => patchRows[y] ?? row);
+): readonly string[] =>
+  base.map((row, y) => {
+    const patch = patchRows[y];
+    return patch === undefined ? row : centerRow(patch);
+  });
 
-const BARE_SE = [
-  "............",
-  "............",
-  "...hhhhhh...",
-  "..hhhhhhhh..",
-  ".hjhhhhhhhH.",
-  ".hjjhhhhhhH.",
-  ".hjhhhhhhhH.",
-  ".hhhhhhhhhH.",
-  ".hLsssssSSH.",
-  ".hLssdssdSH.",
-  ".hLssssssSH.",
-  ".hLsssSssSH.",
-  ".hLssSSssSH.",
-  "..LssSSsSH..",
-  "....ssSS....",
-] as const;
+const BARE_SE = headRows([
+  "",
+  "",
+  "",
+  "",
+  "hhjjhhhhhhhh",
+  "hhjjjhhhhhhhhh",
+  "hhjjjhhhhhhhhHHH",
+  "hhjjjhhhhhhhhhhHHH",
+  "hhjjhhhhhhhhhhhhHHHH",
+  "hjjjhhhhhhhhhhhhHHHH",
+  "hjjjhhhhhhhhhhhhhHHH",
+  "hjjhhhhhhhhhhhhhhHHH",
+  "hjjhhhhhhhhhhhhhhHHH",
+  "hjhhhhhhhhhhhhhhhHHH",
+  "hjhhhhhhhhhhhhhhhHHH",
+  "hhhhhhhhhhhhhhhhhHHH",
+  "hjLSSSSSSSSSSSSSSHHH",
+  "hjLSSSSSSSSSSSSSSHHH",
+  "hjLssddssssssddssHHH",
+  "hjLssddssssssddssHHH",
+  "hjLssssssssssssssHHH",
+  "hjLssssssssssssssHHH",
+  "hjLsssssssSSsssssHHH",
+  "hjLsssssssSSsssssHHH",
+  "hjLssssSSSSSSssssHHH",
+  "hjLsssssssssssSSSHHH",
+  "jLsssssssssssSSHHH",
+  "LssssssssSSSHHHH",
+  "LssssssSSSHHHH",
+  "ssssSSSSHHHH",
+]);
 
 /**
  * The back of a head is where flat pixel art gives up, so it gets its own
- * structure: a parted crown (line-step split left of center), a lit streak on
+ * structure: a parted crown (a line-step split left of center), a lit streak on
  * the key-light side, and a skin nape under the hair fall. Without those three
  * an `ne` head is a silhouette-colored egg.
  */
-const BARE_NE = [
-  "............",
-  "............",
-  "...hjjhhh...",
-  "..hjjhhhhH..",
-  ".hjjhhhhhHH.",
-  ".hjjhhhhhHH.",
-  ".hjhhhhhhHH.",
-  ".hjhhhhhhHH.",
-  ".hhhhhhhhHH.",
-  ".hhhhhhhhHH.",
-  ".hhhhhhhhHH.",
-  ".hHhhhhhhHH.",
-  ".HHHhhhHHHH.",
-  "..LssSSsSH..",
-  "....ssSS....",
-] as const;
+const BARE_NE = headRows([
+  "",
+  "",
+  "",
+  "",
+  "hjjhhhhhhhhh",
+  "hjjjhhhhhhhHHH",
+  "hjjjhhhhhhhhhHHH",
+  "hjjjhhhhhhhhhhhHHH",
+  "hjjjhhhhhhhhhhhhHHHH",
+  "hjjjhhhhhhhhhhhhHHHH",
+  "hjjhhhhhhhhhhhhhHHHH",
+  "hjjhhhhhhhhhhhhhHHHH",
+  "hjhhhhHhhhhhhhhhHHHH",
+  "hjhhhhHhhhhhhhhhHHHH",
+  "hjhhhhHhhhhhhhhhHHHH",
+  "hjhhhhHhhhhhhhhhHHHH",
+  "hhhhhhHhhhhhhhhhHHHH",
+  "hhhhhhHhhhhhhhhhHHHH",
+  "hhhhhhHhhhhhhhhhHHHH",
+  "hhhhhhHhhhhhhhhhHHHH",
+  "hHhhhhHhhhhhhhhhHHHH",
+  "hHhhhhHhhhhhhhhhHHHH",
+  "HHHhhhhhhhhhhhHHHHHH",
+  "HHHHHhhhhhhhHHHHHHHH",
+  "hjLssssssssssssSSHHH",
+  "hjLssssssssssssSSHHH",
+  "jLsssssssssssSSHHH",
+  "LssssssssSSSHHHH",
+  "LssssssSSSHHHH",
+  "ssssSSSSHHHH",
+]);
 
 // ---------------------------------------------------------------------------
 // Enforcer — plate. soot 900/800/700/500/300/100, umber 900/700/500/300,
 // copper 700/300. Closed helm: no face, a visor slit instead (Appendix C.3).
 // ---------------------------------------------------------------------------
 
-const ENFORCER_HEAD_SE = [
-  "............",
-  "....4mm4....",
-  "...nmmmmM...",
-  "..nmmmmmmM..",
-  ".nmmmmmmmmM.",
-  ".nmmmmmmmmM.",
-  ".nmMMMMMMmM.",
-  ".nmmmmmmmmM.",
-  ".n1155555MM.",
-  ".nm555555MM.",
-  ".nmmmmmmmmM.",
-  ".nmMmmmmmMM.",
-  ".nMmmmmmmMM.",
-  "..MmmmmmMM..",
-  "....4mmM....",
-] as const;
+const ENFORCER_HEAD_SE = headRows([
+  "",
+  "",
+  "44mmmm44",
+  "4nmmmmmmmmM4",
+  "nmmmmmmmmmMM",
+  "nmmmmmmmmmmMMM",
+  "nnmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmMMMMMMMMMMmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nn115555555555mMMMMM",
+  "nnm5555555555mMMMMMM",
+  "nnm5555555555mMMMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmMMMMMMMMMMMMMMMMM",
+  "nnmMMMMMMMMMMMMMMMMM",
+  "nnmMMMMMMMMMMMMMMMMM",
+  "nnmMMMMMMMMMMMMMMMMM",
+  "nnmmMMMMMMMMMMMMMMMM",
+  "nmmMMMMMMMMMMMMMMM",
+  "nmmMMMMMMMMMMMMM",
+  "nmmMMMMMMMMMMM",
+  "4mmmmmmmmMM4",
+]);
 
-const ENFORCER_HEAD_NE = [
-  "............",
-  "....5225....",
-  "...n5225M...",
-  "..nm5225mM..",
-  ".nmm5225mmM.",
-  ".nmm5225mmM.",
-  ".nmm5225mmM.",
-  ".nmm5225mmM.",
-  ".nmm5225mmM.",
-  ".nmmm55mmmM.",
-  ".nMMMMMMMMM.",
-  ".nmmmmmmmMM.",
-  ".nmmmmmmmMM.",
-  "..MmmmmmMM..",
-  "....4mmM....",
-] as const;
+const ENFORCER_HEAD_NE = headRows([
+  "",
+  "",
+  "44mmmm44",
+  "4nmm5225mmM4",
+  "nmmm5225mmMM",
+  "nmmmm5225mmMMM",
+  "nmmmmm5225mmmMMM",
+  "nmmmmmm5225mmmmMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmm5225mmmmMMMM",
+  "nnmmmmmmm55mmmmmMMMM",
+  "nnMMMMMMMMMMMMMMMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nnmmmmmmmmmmmmmmMMMM",
+  "nmmmmmmmmmmmmmMMMM",
+  "nmmmmmmmmmmmMMMM",
+  "nmmmmmmmmmMMMM",
+  "4mmmmmmmmMM4",
+]);
 
-/** Riot shield: the roster's largest flat plate. 11 x 19, boss on centerline. */
+/** Riot shield: the roster's largest flat plate. Boss on the centerline. */
 const SHIELD = [
   "..nmmmmM...",
   ".nmmmmmmM..",
@@ -279,7 +380,7 @@ const enforcer: JobArt = {
       ...shadedBox({ dx: j.shoulder.dx, up: j.shoulder.up - 9 }, c.build.shoulderW - 4, 3, PLATE),
       ...shadedBox({ dx: j.hip.dx, up: j.hip.up + 2 }, c.build.hipW + 1, 3, PLATE_DEEP),
       // The shield crosses the centerline: mirroring reads as a turn.
-      stampAt(shield, cachedGlyph(SHIELD, c), 5, 9),
+      stampAt(shield, gearGlyph(SHIELD, c), 10, 17),
     ];
   },
   held: (c) => {
@@ -299,23 +400,35 @@ const enforcer: JobArt = {
 // copper 700/300, amber 500 + glow. Goggles pushed up; the eye row stays bare.
 // ---------------------------------------------------------------------------
 
-/** Goggles pushed *up* onto the cap brim — the eye row stays bare (C.5). */
+/** Goggles pushed *up* onto the cap brim — the eye rows stay bare (C.5). */
 const MACHINIST_HEAD_SE = over(BARE_SE, {
-  2: "...klllKK...",
-  3: "..klllllKK..",
-  4: ".kllllllllK.",
-  5: ".kllllllllK.",
-  6: ".K99KK99KKK.",
-  7: ".K66KK66KKK.",
+  4: "kkllllllllKK",
+  5: "kkllllllllllKK",
+  6: "kkllllllllllllKK",
+  7: "kkllllllllllllllKK",
+  8: "kkllllllllllllllllKK",
+  9: "kkllllllllllllllllKK",
+  10: "kkllllllllllllllllKK",
+  11: "kkllllllllllllllllKK",
+  12: "KK9999KKKK9999KKKKKK",
+  13: "KK6666KKKK6666KKKKKK",
+  14: "KK9999KKKK9999KKKKKK",
+  15: "KKKKKKKKKKKKKKKKKKKK",
 });
 
 const MACHINIST_HEAD_NE = over(BARE_NE, {
-  2: "...klllKK...",
-  3: "..klllllKK..",
-  4: ".kllllllllK.",
-  5: ".kllllllllK.",
-  6: ".KllllllllK.",
-  7: ".K99999999K.",
+  4: "kkllllllllKK",
+  5: "kkllllllllllKK",
+  6: "kkllllllllllllKK",
+  7: "kkllllllllllllllKK",
+  8: "kkllllllllllllllllKK",
+  9: "kkllllllllllllllllKK",
+  10: "kkllllllllllllllllKK",
+  11: "kkllllllllllllllllKK",
+  12: "kkllllllllllllllllKK",
+  13: "KK999999999999999KKK",
+  14: "KK666666666666666KKK",
+  15: "KKKKKKKKKKKKKKKKKKKK",
 });
 
 /** Field pack: copper body, riveted lid, one amber cell window. */
@@ -357,7 +470,7 @@ const machinist: JobArt = {
     };
     const mast: RigPoint = { dx: j.shoulder.dx + (c.view === "se" ? -7 : 5), up: j.shoulder.up + 3 };
     return [
-      stampAt(packCenter, cachedGlyph(PACK, c), c.view === "se" ? 8 : 6, 7),
+      stampAt(packCenter, gearGlyph(PACK, c), c.view === "se" ? 16 : 12, 14),
       // A bare whip antenna: the tip stays grey so it cannot be mistaken for
       // the Conduit's amber staff node at silhouette size.
       ...shadedLimb({ dx: mast.dx, up: mast.up - 2 }, { dx: mast.dx, up: mast.up + 8 }, 2, 1, PLATE),
@@ -404,17 +517,25 @@ const machinist: JobArt = {
  * hair fall, past the jaw on the shadow side, and a copper collar clasp.
  */
 const CONDUIT_HEAD_SE = over(BARE_SE, {
-  11: ".hLsssSssHH.",
-  12: ".hLssSSssHH.",
-  13: "..LssSSsHH..",
-  14: "...9ssS9....",
+  22: "hjLsssssssSSssssshHH",
+  23: "hjLsssssssSSsssshhHH",
+  24: "hjLssssSSSSSSssshhHH",
+  25: "hjLsssssssssssShhhHH",
+  26: "jLsssssssssSShhhHH",
+  27: "LssssssssSS9hHHH",
+  28: "9ssssssSSS9HHH",
+  29: "9ssssSSSS9HH",
 });
 
 const CONDUIT_HEAD_NE = over(BARE_NE, {
-  11: ".hHhhhhhhHH.",
-  12: ".hHhhhhhhHH.",
-  13: "..HhhhhhhH..",
-  14: "...9ssS9....",
+  22: "hHhhhhhhhhhhhhhhHHHH",
+  23: "hHhhhhhhhhhhhhhhHHHH",
+  24: "HHHhhhhhhhhhhhHHHHHH",
+  25: "HHHHhhhhhhhhhHHHHHHH",
+  26: "HHhhhhhhhhhhHHHH",
+  27: "9hhhhhhhhhhhHHH9",
+  28: "9ssssssSSS9HHH",
+  29: "9ssssSSSS9HH",
 });
 
 const conduit: JobArt = {
@@ -479,41 +600,71 @@ const conduit: JobArt = {
 // copper 700/300, hazard. Face is a void with one glint (Appendix C.3).
 // ---------------------------------------------------------------------------
 
-const SABOTEUR_HEAD_SE = [
-  "............",
-  "....kllK....",
-  "...klllKK...",
-  "..klllllKK..",
-  ".klllllllKK.",
-  ".klllllllKK.",
-  ".kll6666lKK.",
-  ".kl666666KK.",
-  ".kl666666KK.",
-  ".kl6LL666KK.",
-  ".kl6SS666KK.",
-  ".kll6666lKK.",
-  ".klll66llKK.",
-  "..llll6lKK..",
-  "...lllKK....",
-] as const;
+const SABOTEUR_HEAD_SE = headRows([
+  "kllllK",
+  "kkllllllKK",
+  "kklllllllllKKK",
+  "kkllllllllllKKKK",
+  "kkllllllKKKK",
+  "kkllllllllKKKK",
+  "kkllllllllllKKKK",
+  "kkllllllllllllKKKK",
+  "kkllllllllllllllKKKK",
+  "kkllllllllllllllKKKK",
+  "kkllll66666666llKKKK",
+  "kkll6666666666llKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkl6666LL66666lKKKKK",
+  "kkl6666LL66666lKKKKK",
+  "kkl666666666666lKKKK",
+  "kkl666666666666lKKKK",
+  "kkll6666666666llKKKK",
+  "kkllll66666666llKKKK",
+  "kklllll666666lllKKKK",
+  "kkllllll6666llllKKKK",
+  "klllllll66lllllKKK",
+  "kllllllllllllKKK",
+  "klllllllllKKKK",
+  "klllllllKKKK",
+]);
 
-const SABOTEUR_HEAD_NE = [
-  "............",
-  "....kllK....",
-  "...klllKK...",
-  "..kklllKKK..",
-  ".kkll6lllKK.",
-  ".kkll6lllKK.",
-  ".kkll6lllKK.",
-  ".kkll6lllKK.",
-  ".kkll6lllKK.",
-  ".klll6llKKK.",
-  ".klll6llKKK.",
-  ".kKlll6lKKK.",
-  ".kKKllllKKK.",
-  "..KKllllKK..",
-  "...KllKK....",
-] as const;
+const SABOTEUR_HEAD_NE = headRows([
+  "kllllK",
+  "kkllllllKK",
+  "kklllllllllKKK",
+  "kkllllllllllKKKK",
+  "kklll66lKKKK",
+  "kkllll66llKKKK",
+  "kklllll66lllKKKK",
+  "kkllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkllllllll66llllKKKK",
+  "kkKlllllllllllllKKKK",
+  "kkKKlllllllllllKKKKK",
+  "kKKlllllllllllKKKK",
+  "kKKlllllllllKKKK",
+  "kKKlllllllKKKK",
+  "KKlllllKKKKK",
+]);
 
 /** Hip satchel: leather with a scuffed lid and a buckle. */
 const SATCHEL = [
@@ -558,7 +709,7 @@ const saboteur: JobArt = {
       ...charge(-4),
       ...charge(0),
       ...charge(4),
-      stampAt(satchel, cachedGlyph(SATCHEL, c), 5, 4),
+      stampAt(satchel, gearGlyph(SATCHEL, c), 10, 8),
     ];
   },
   held: (c) => {
@@ -577,19 +728,22 @@ const saboteur: JobArt = {
 // copper 300, verdigris 700/500. Respirator over the mouth, eyes left visible.
 // ---------------------------------------------------------------------------
 
-/** Respirator over head rows 9-12; the eye row stays clear (C.3). */
+/** Respirator over the lower face; the eye rows stay clear (C.3). */
 const CHEMIST_HEAD_SE = over(BARE_SE, {
-  11: ".hnmmmmmmMH.",
-  12: ".hnmvvvmMMH.",
-  13: "..nmvvvmMM..",
-  14: "...mvvVM....",
+  22: "hnmmmmmmmmmmmmmmMMHH",
+  23: "hnmmmmmmmmmmmmmmMMHH",
+  24: "hnmmvvvvvvvvmmmmMMHH",
+  25: "hnmmvvvvvvvvmmmmMMHH",
+  26: "nmmvvvvvvvvmmmMMHH",
+  27: "nmmvvvvvvvmmMMHH",
+  28: "nmmvvvvvVVmMHH",
+  29: "mmvvvvVVmMHH",
 });
 
 const CHEMIST_HEAD_NE = over(BARE_NE, {
-  11: ".hHmmmmmmHH.",
-  12: ".HHHmmmHHHH.",
-  13: "..LssSSsSH..",
-  14: "....ssSS....",
+  22: "hHmmmmmmmmmmmmmmHHHH",
+  23: "hHmmmmmmmmmmmmmmHHHH",
+  24: "HHHmmmmmmmmmmHHHHHHH",
 });
 
 const chemist: JobArt = {
@@ -671,31 +825,53 @@ const chemist: JobArt = {
 
 /** A temple plate bolted over the shadow side, brightblood running the neck. */
 const AUGMENTED_HEAD_SE = over(BARE_SE, {
-  4: ".hjhhhhhh9M.",
-  5: ".hjjhhhhh8M.",
-  6: ".hjhhhhhh8M.",
-  7: ".hhhhhhhh8M.",
-  8: ".hLsssssS8M.",
-  9: ".hLssdssd8M.",
-  10: ".hLssssss8M.",
-  11: ".hLsssSss8M.",
-  12: ".hLssSSssSp.",
-  13: "..LssSSsSp..",
-  14: "....ssSpp...",
+  8: "hhjjhhhhhhhhhhhh988M",
+  9: "hjjjhhhhhhhhhhhh988M",
+  10: "hjjjhhhhhhhhhhhh988M",
+  11: "hjjhhhhhhhhhhhhh988M",
+  12: "hjjhhhhhhhhhhhhh988M",
+  13: "hjhhhhhhhhhhhhhh988M",
+  14: "hjhhhhhhhhhhhhhh988M",
+  15: "hhhhhhhhhhhhhhhh988M",
+  16: "hjLSSSSSSSSSSSSS988M",
+  17: "hjLSSSSSSSSSSSSS988M",
+  18: "hjLssddssssssdds988M",
+  19: "hjLssddssssssdds988M",
+  20: "hjLsssssssssssss988M",
+  21: "hjLsssssssssssss988M",
+  22: "hjLsssssssSSssss988M",
+  23: "hjLsssssssSSssss988M",
+  24: "hjLssssSSSSSSsss988M",
+  25: "hjLsssssssssssSS9ppM",
+  26: "jLsssssssssssSSppM",
+  27: "LssssssssSSSppHH",
+  28: "LssssssSSSppHH",
+  29: "ssssSSSSppHH",
 });
 
 const AUGMENTED_HEAD_NE = over(BARE_NE, {
-  4: ".hjjhhhhh9M.",
-  5: ".hjjhhhhh8M.",
-  6: ".hjhhhhhh8M.",
-  7: ".hjhhhhhh8M.",
-  8: ".hhhhhhhh8M.",
-  9: ".hhhhhhhh8M.",
-  10: ".hhhhhhhh8M.",
-  11: ".hHhhhhhh8M.",
-  12: ".HHHhhhHHpH.",
-  13: "..LssSSsSp..",
-  14: "....ssSpp...",
+  8: "hjjjhhhhhhhhhhhh988M",
+  9: "hjjjhhhhhhhhhhhh988M",
+  10: "hjjhhhhhhhhhhhhh988M",
+  11: "hjjhhhhhhhhhhhhh988M",
+  12: "hjhhhhHhhhhhhhhh988M",
+  13: "hjhhhhHhhhhhhhhh988M",
+  14: "hjhhhhHhhhhhhhhh988M",
+  15: "hjhhhhHhhhhhhhhh988M",
+  16: "hhhhhhHhhhhhhhhh988M",
+  17: "hhhhhhHhhhhhhhhh988M",
+  18: "hhhhhhHhhhhhhhhh988M",
+  19: "hhhhhhHhhhhhhhhh988M",
+  20: "hHhhhhHhhhhhhhhh988M",
+  21: "hHhhhhHhhhhhhhhh988M",
+  22: "HHHhhhhhhhhhhhHH988M",
+  23: "HHHHHhhhhhhhHHHH988M",
+  24: "hjLsssssssssssS9ppMM",
+  25: "hjLsssssssssssS9ppMM",
+  26: "jLssssssssssSSppMM",
+  27: "LsssssssssSSppHH",
+  28: "LssssssSSSppHH",
+  29: "ssssSSSSppHH",
 });
 
 const augmented: JobArt = {
@@ -765,24 +941,45 @@ const augmented: JobArt = {
 // soot 900/700/500/300/100, copper 700/500/300. The only copper-500 on a person.
 // ---------------------------------------------------------------------------
 
-/** Goggles *down* over the eye row, lensed, gleam on the left lens only (C.3). */
+/** Goggles *down* over the eye rows, lensed, gleam on the left lens only (C.3). */
 const RAILRUNNER_HEAD_SE = over(BARE_SE, {
-  2: "...444444...",
-  3: "..44444444..",
-  4: ".4444444444.",
-  5: ".2222222222.",
-  6: ".K44444444K.",
-  8: ".K999K999KK.",
-  9: ".K166K666KK.",
+  4: "444444444444",
+  5: "44444444444444",
+  6: "4444444444444444",
+  7: "444444444444444444",
+  8: "44444444444444444444",
+  9: "44444444444444444444",
+  10: "K444444444444444444K",
+  11: "K444444444444444444K",
+  12: "K444444444444444444K",
+  13: "K444444444444444444K",
+  14: "22222222222222222222",
+  15: "KKKKKKKKKKKKKKKKKKKK",
+  16: "KK9999999KK9999999KK",
+  17: "KK9666666KK6666666KK",
+  18: "KK1166666KK6666666KK",
+  19: "KK1166666KK6666666KK",
+  20: "KK9999999KK9999999KK",
+  21: "KKKKKKKKKKKKKKKKKKKK",
 });
 
 const RAILRUNNER_HEAD_NE = over(BARE_NE, {
-  2: "...444444...",
-  3: "..44444444..",
-  4: ".4444444444.",
-  5: ".2222222222.",
-  6: ".K44444444K.",
-  8: ".K99999999K.",
+  4: "444444444444",
+  5: "44444444444444",
+  6: "4444444444444444",
+  7: "444444444444444444",
+  8: "44444444444444444444",
+  9: "44444444444444444444",
+  10: "K444444444444444444K",
+  11: "K444444444444444444K",
+  12: "K444444444444444444K",
+  13: "K444444444444444444K",
+  14: "22222222222222222222",
+  15: "KKKKKKKKKKKKKKKKKKKK",
+  16: "K99999999999999999KK",
+  17: "K66666666666666666KK",
+  18: "K99999999999999999KK",
+  19: "KKKKKKKKKKKKKKKKKKKK",
 });
 
 const railrunner: JobArt = {
@@ -839,9 +1036,14 @@ const railrunner: JobArt = {
   },
 };
 
-/** Canvas coordinates of a rig point, offset — for one-off spark pixels. */
+/**
+ * Canvas coordinates of a rig point, offset by `dx` right and `dy` down in rig
+ * units — for one-off spark pixels. Derived from the anchor, never from a
+ * literal half-canvas.
+ */
 function cxy(p: RigPoint, dx: number, dy: number): [number, number] {
-  return [Math.round(16 + p.dx + dx), Math.round(44 - p.up + dy)];
+  const c = at(p.dx + dx, p.up - dy);
+  return [Math.round(c.x), Math.round(c.y)];
 }
 
 export const JOB_ART = {
@@ -867,7 +1069,7 @@ export interface FrameRequest {
   readonly frame: number;
 }
 
-/** One 32x48 palette-index frame. Deterministic for a given request. */
+/** One 64x96 palette-index frame. Deterministic for a given request. */
 export function jobFrame(request: FrameRequest): PixelGrid {
   const art = JOB_ART[request.jobId];
   const pose = poseFor(art, request.state, request.frame);

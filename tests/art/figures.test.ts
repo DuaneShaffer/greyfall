@@ -18,6 +18,7 @@ import {
   type PixelGrid,
 } from "../../src/art/pixel.js";
 import { EMISSIVE_COLORS, PALETTE, RAMPS, TEAM_TINT } from "../../src/art/palette.js";
+import { AMBER_BUDGET } from "../../src/art/ingest.js";
 import { basePose, poseFor } from "../../src/art/rig.js";
 import {
   ANIMATIONS,
@@ -38,9 +39,6 @@ const TEAMS: readonly Team[] = ["player", "enemy", "neutral"];
 const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
 /** Emissive elements bleed outward instead of taking a black edge. */
 const HALO_INDICES = EMISSIVE_COLORS.map((hex) => paletteIndex(hex));
-const CANVAS_PIXELS = SPRITE_WIDTH * SPRITE_HEIGHT;
-/** ART_DIRECTION §2: no more than ~5% of a frame's pixels from the amber ramp. */
-const AMBER_BUDGET = CANVAS_PIXELS * 0.05;
 const MAX_FRAME_COLORS = MAX_COLORS_PER_SPRITE + TEAM_TINT_INDEX_COUNT;
 
 interface FrameRef {
@@ -109,7 +107,7 @@ describe("roster", () => {
 });
 
 describe("canvas and anchor", () => {
-  it("is 32x48 with every pixel a real palette index", () => {
+  it("is 64x96 with every pixel a real palette index", () => {
     const offPalette: string[] = [];
     for (const ref of FRAMES) {
       const grid = gridOf(ref);
@@ -137,7 +135,7 @@ describe("canvas and anchor", () => {
     }
   });
 
-  it("keeps the figure in rows 0..43 and the sub-floor band for contact only", () => {
+  it("keeps the figure inside the figure box and the band for contact only", () => {
     for (const ref of FRAMES) {
       const grid = gridOf(ref);
       let figureBottom = -1;
@@ -165,7 +163,7 @@ describe("palette discipline", () => {
     }
   });
 
-  it("spends no more than 5% of a frame on the amber ramp", () => {
+  it("spends no more than the amber budget on any frame", () => {
     for (const ref of FRAMES) {
       const counts = histogram(gridOf(ref));
       let amber = 0;

@@ -162,6 +162,23 @@ export function glyph(rows: readonly string[], map: Readonly<Record<string, numb
   return { w, h: rows.length, data };
 }
 
+/**
+ * Nearest-neighbour enlargement. For gear stamps whose shape is the whole
+ * point — a shield face, a pack panel — where the extra rows carry no
+ * information a hand would have added anyway. Heads are re-authored instead.
+ */
+export function scaleGlyph(g: Glyph, factor: number): Glyph {
+  const w = g.w * factor;
+  const h = g.h * factor;
+  const data: number[] = [];
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      data.push(g.data[Math.floor(y / factor) * g.w + Math.floor(x / factor)] ?? TRANSPARENT);
+    }
+  }
+  return { w, h, data };
+}
+
 export function mirrorGlyph(g: Glyph): Glyph {
   const data: number[] = [];
   for (let y = 0; y < g.h; y += 1) {

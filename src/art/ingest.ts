@@ -1,4 +1,4 @@
-// External master intake (ART_DIRECTION Appendix C.8). Takes a 32x48 RGBA
+// External master intake (ART_DIRECTION Appendix C.8). Takes a 64x96 RGBA
 // master drawn outside this pipeline — colors approximately right, not
 // palette-exact — and turns it into an internal palette-index grid, together
 // with a conformance report saying exactly what moved and what the result
@@ -48,6 +48,147 @@ export interface RGBASource {
   readonly width: number;
   readonly height: number;
   readonly data: Uint8ClampedArray | Uint8Array;
+}
+
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
+}
+
+const sampleAlpha = (source: RGBASource, x: number, y: number): number =>
+  source.data[(y * source.width + x) * 4 + 3] ?? 0;
+
+/**
+ * Box-filter resample to an exact size, averaging color weighted by alpha so a
+ * transparent pixel cannot drag its neighbours toward whatever RGB it stores.
+ * Every source pixel lands in exactly one destination box, which is what keeps
+ * a 4:1 reduction of a delivered master from dropping thin gear.
+ */
+export function resampleRGBA(source: RGBASource, width: number, height: number): RGBASource {
+  const data = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    const sy0 = Math.floor((y * source.height) / height);
+    const sy1 = Math.max(sy0 + 1, Math.floor(((y + 1) * source.height) / height));
+    for (let x = 0; x < width; x += 1) {
+      const sx0 = Math.floor((x * source.width) / width);
+      const sx1 = Math.max(sx0 + 1, Math.floor(((x + 1) * source.width) / width));
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let a = 0;
+      let taps = 0;
+      for (let sy = sy0; sy < sy1 && sy < source.height; sy += 1) {
+        for (let sx = sx0; sx < sx1 && sx < source.width; sx += 1) {
+          const at = (sy * source.width + sx) * 4;
+          const alpha = source.data[at + 3] ?? 0;
+          r += (source.data[at] ?? 0) * alpha;
+          g += (source.data[at + 1] ?? 0) * alpha;
+          b += (source.data[at + 2] ?? 0) * alpha;
+          a += alpha;
+          taps += 1;
+        }
+      }
+      const out = (y * width + x) * 4;
+      data[out] = a === 0 ? 0 : r / a;
+      data[out + 1] = a === 0 ? 0 : g / a;
+      data[out + 2] = a === 0 ? 0 : b / a;
+      data[out + 3] = taps === 0 ? 0 : a / taps;
+    }
+  }
+  return { width, height, data };
+}
+
+export interface FitOptions {
+  /** Source rectangle to take. Defaults to the whole image. */
+  readonly crop?: Rect;
+  /** Alpha at or below this is background when measuring the figure. */
+  readonly alphaThreshold?: number;
+  /** Canvas rows left clear above the figure. The outline ring needs one. */
+  readonly headroom?: number;
+}
+
+/** Tight bounds of the pixels above `threshold`, within `crop`. */
+export function contentBounds(
+  source: RGBASource,
+  crop: Rect,
+  threshold: number,
+): Rect | null {
+  let x0 = crop.x + crop.w;
+  let y0 = crop.y + crop.h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = crop.y; y < crop.y + crop.h; y += 1) {
+    for (let x = crop.x; x < crop.x + crop.w; x += 1) {
+      if (sampleAlpha(source, x, y) <= threshold) continue;
+      if (x < x0) x0 = x;
+      if (y < y0) y0 = y;
+      if (x > x1) x1 = x;
+      if (y > y1) y1 = y;
+    }
+  }
+  return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+/**
+ * Bring a delivered master onto the sprite canvas: crop to its content, reduce
+ * it to the figure box, center it on the seam and stand it on the anchor row.
+ *
+ * The briefs ask for 256x384 per figure and the spec is 64x96, so a delivery is
+ * a 4:1 reduction — but an artist's crop is never exactly the box, and the
+ * reduction is measured off the art rather than assumed. This is placement and
+ * resampling only; it makes no judgement about the result, which is still
+ * `quantizeToPalette`'s report to give.
+ */
+export function fitMasterToCanvas(source: RGBASource, options: FitOptions = {}): RGBASource {
+  const threshold = options.alphaThreshold ?? 127;
+  const headroom = options.headroom ?? 1;
+  const crop = options.crop ?? { x: 0, y: 0, w: source.width, h: source.height };
+  const bounds = contentBounds(source, crop, threshold);
+  if (!bounds) throw new Error("fitMasterToCanvas: nothing above the alpha threshold");
+
+  const boxHeight = SPRITE_ANCHOR.y - headroom;
+  const boxWidth = SPRITE_WIDTH - 2;
+  const scale = Math.min(boxHeight / bounds.h, boxWidth / bounds.w);
+  const width = Math.max(1, Math.round(bounds.w * scale));
+  const height = Math.max(1, Math.round(bounds.h * scale));
+
+  const cut: RGBASource = {
+    width: bounds.w,
+    height: bounds.h,
+    data: new Uint8ClampedArray(bounds.w * bounds.h * 4),
+  };
+  for (let y = 0; y < bounds.h; y += 1) {
+    const from = ((bounds.y + y) * source.width + bounds.x) * 4;
+    (cut.data as Uint8ClampedArray).set(
+      source.data.subarray(from, from + bounds.w * 4),
+      y * bounds.w * 4,
+    );
+  }
+  const scaled = resampleRGBA(cut, width, height);
+
+  const out = new Uint8ClampedArray(SPRITE_WIDTH * SPRITE_HEIGHT * 4);
+  const originX = Math.round(SPRITE_ANCHOR.x - width / 2);
+  const originY = SPRITE_ANCHOR.y - height;
+  for (let y = 0; y < height; y += 1) {
+    const ty = originY + y;
+    if (ty < 0 || ty >= SPRITE_HEIGHT) continue;
+    for (let x = 0; x < width; x += 1) {
+      const tx = originX + x;
+      if (tx < 0 || tx >= SPRITE_WIDTH) continue;
+      const from = (y * width + x) * 4;
+      const to = (ty * SPRITE_WIDTH + tx) * 4;
+      // Alpha is forced to 0 or 255: §3 has no partial coverage.
+      const alpha = scaled.data[from + 3] ?? 0;
+      if (alpha <= threshold) continue;
+      out[to] = scaled.data[from] ?? 0;
+      out[to + 1] = scaled.data[from + 1] ?? 0;
+      out[to + 2] = scaled.data[from + 2] ?? 0;
+      out[to + 3] = 255;
+    }
+  }
+  return { width: SPRITE_WIDTH, height: SPRITE_HEIGHT, data: out };
 }
 
 /** One pixel the quantizer had to move, and how far it moved it. */
@@ -140,8 +281,18 @@ const DEFAULT_TINT_INDICES: readonly number[] = [
   paletteIndex(TEAM_TINT.enemy.shadow),
 ];
 const CANVAS_PIXELS = SPRITE_WIDTH * SPRITE_HEIGHT;
-/** §2: no more than ~5% of a frame's pixels from the amber ramp. */
-export const AMBER_BUDGET = Math.floor(CANVAS_PIXELS * 0.05);
+/**
+ * §2: amber is scarce. The budget is an *area* share, because the billboard's
+ * world size did not change with the sprite density — what a player sees is the
+ * fraction of the figure that glows, not a pixel count.
+ *
+ * Re-derived at 64x96 rather than carried over: the worst frame in the roster
+ * (conduit/cast, the emissive peak) now spends 174 of 6144 px, 2.8%. The old
+ * 5% was measured against 32x48 areas and left more slack than it looked like;
+ * 4% is the tightest round share that still clears the cast peak.
+ */
+export const AMBER_SHARE = 0.04;
+export const AMBER_BUDGET = Math.floor(CANVAS_PIXELS * AMBER_SHARE);
 export const MAX_FRAME_COLORS = MAX_COLORS_PER_SPRITE + TEAM_TINT_INDEX_COUNT;
 
 const rgbTable = (hexes: readonly Hex[]): readonly (readonly [number, number, number])[] =>
@@ -294,7 +445,9 @@ export function auditGrid(
   let amberPixels = 0;
   for (const [index, count] of counts) if (AMBER_INDICES.has(index)) amberPixels += count;
   if (amberPixels > AMBER_BUDGET) {
-    errors.push(`${amberPixels} amber pixels, budget is ${AMBER_BUDGET} (~5% of the canvas)`);
+    errors.push(
+      `${amberPixels} amber pixels, budget is ${AMBER_BUDGET} (${AMBER_SHARE * 100}% of the canvas)`,
+    );
   }
 
   let teamTintPixels = 0;

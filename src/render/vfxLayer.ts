@@ -27,7 +27,7 @@ import {
   writeGridToImageData,
   type PixelGrid,
 } from "../art/pixel.js";
-import { PIXELS_PER_TILE, TICKS_PER_SECOND } from "../art/sprites.js";
+import { TICKS_PER_SECOND, TILE_TEXTURE_SIZE } from "../art/sprites.js";
 import type { DamageType, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import {
@@ -51,9 +51,9 @@ import {
   type PopupSpec,
 } from "./popups.js";
 
-/** One glyph pixel, in world units. Numbers read at twice the sprite density. */
+/** One glyph pixel, in world units. Popup glyphs read on the tile ruler. */
 const POPUP_PIXEL_SCALE = 2;
-const POPUP_PIXEL_UNIT = POPUP_PIXEL_SCALE / PIXELS_PER_TILE;
+const POPUP_PIXEL_UNIT = POPUP_PIXEL_SCALE / TILE_TEXTURE_SIZE;
 /** Fades step rather than ramp, to stay in the pixel register. */
 const FADE_STEPS = 4;
 

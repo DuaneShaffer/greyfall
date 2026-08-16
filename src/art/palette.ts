@@ -44,6 +44,17 @@ export const BLOOD_300 = "#c64a47";
 export const STEEL_600 = "#2e7a94";
 export const STEEL_400 = "#6fc3d9";
 
+/**
+ * Warm neutrals. Flesh, bone, bandage, raw canvas: the low-saturation warms
+ * that sit between the umber ramp and `soot-100`. Without them the nearest
+ * palette step to a mid skin tone is either `copper-300` (orange metal) or
+ * `soot-100` (cold grey), which is how an external master's faces arrive
+ * looking either rusted or dead.
+ */
+export const BONE_500 = "#8b7156";
+export const BONE_300 = "#b99b7a";
+export const BONE_100 = "#ddc6a8";
+
 export const HAZARD = "#e8622a";
 export const BRIGHTBLOOD = "#ff9db1";
 
@@ -80,13 +91,16 @@ export const PALETTE = {
   "blood-300": BLOOD_300,
   "steel-600": STEEL_600,
   "steel-400": STEEL_400,
+  "bone-500": BONE_500,
+  "bone-300": BONE_300,
+  "bone-100": BONE_100,
   hazard: HAZARD,
   brightblood: BRIGHTBLOOD,
 } as const satisfies Record<string, Hex>;
 
 export type ColorName = keyof typeof PALETTE;
 
-export const PALETTE_SIZE = 34;
+export const PALETTE_SIZE = 37;
 
 export type RampName =
   | "soot"
@@ -97,7 +111,8 @@ export type RampName =
   | "overload"
   | "veinglass"
   | "blood"
-  | "steel";
+  | "steel"
+  | "bone";
 
 /** Ordered darkest → lightest. */
 export const RAMPS = {
@@ -110,6 +125,7 @@ export const RAMPS = {
   veinglass: [VEINGLASS_700, VEINGLASS_500, VEINGLASS_100],
   blood: [BLOOD_900, BLOOD_500, BLOOD_300],
   steel: [STEEL_600, STEEL_400],
+  bone: [BONE_500, BONE_300, BONE_100],
 } as const satisfies Record<RampName, readonly Hex[]>;
 
 /** Colors the post chain is permitted to bloom. */
