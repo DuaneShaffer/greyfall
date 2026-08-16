@@ -36,14 +36,23 @@ export interface PowerTrigger {
   reason: PowerReason;
 }
 
+/** One component that blew: the numbers the annunciator names it by. */
+export interface GridTrip {
+  capacity: number;
+  load: number;
+  sources: string[];
+}
+
 export interface GridSolution {
   /** Object ids of every node currently being fed, ascending. */
   live: string[];
-  /** Rated capacity on the bus, ignoring the trip latch — what the register reads against. */
+  /** Rated capacity on the network, ignoring the trip latch — what the register reads against. */
   capacity: number;
   load: number;
   /** Object ids of every source latched open, ascending. */
   tripped: string[];
+  /** Components that tripped during this solve, in discovery order. */
+  trips: GridTrip[];
   /** Fixed-point passes taken. Bounded by the source count plus one. */
   passes: number;
 }
@@ -155,6 +164,7 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
     closed(node.objectId) && !(node.role === "source" && latched.has(node.objectId));
 
   const sourceCount = nodes.filter((n) => n.role === "source").length;
+  const trips: GridTrip[] = [];
   let live: string[] = [];
   let passes = 0;
   for (let pass = 0; pass <= sourceCount; pass += 1) {
@@ -189,9 +199,9 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
       }
       if (capacity === 0) continue;
       if (load > capacity) {
-        for (const objectId of component) {
-          if (roles.get(objectId)!.role === "source") latched.add(objectId);
-        }
+        const sources = component.filter((objectId) => roles.get(objectId)!.role === "source").sort();
+        for (const objectId of sources) latched.add(objectId);
+        trips.push({ capacity, load, sources });
         trippedThisPass = true;
         continue;
       }
@@ -214,7 +224,7 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
     load += loadsByNode.get(node.objectId) ?? 0;
   }
 
-  return { live, capacity, load, tripped: [...latched].sort(), passes };
+  return { live, capacity, load, tripped: [...latched].sort(), trips, passes };
 }
 
 /**
@@ -289,9 +299,12 @@ export function settlePower(ctx: Ctx, before: PowerSnapshot, trigger: PowerTrigg
     );
     for (const node of runtime?.nodes ?? []) node.tripped = solution.tripped.includes(node.objectId);
 
-    if (solution.tripped.some((objectId) => !wasTripped.has(objectId))) {
+    // One event per component that blew, naming what it was carrying against
+    // what it is rated for — the numbers the annunciator reads out.
+    for (const trip of solution.trips) {
+      if (trip.sources.every((objectId) => wasTripped.has(objectId))) continue;
       trippedGrids.add(grid.id);
-      emit(ctx, { type: "GridTripped", gridId: grid.id, capacity: solution.capacity, load: solution.load });
+      emit(ctx, { type: "GridTripped", gridId: grid.id, capacity: trip.capacity, load: trip.load });
     }
     const summary = summarize(solution);
     const previous = before.grids.get(grid.id);

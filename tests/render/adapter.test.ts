@@ -253,3 +253,37 @@ describe("beats that used to be scene rebuilds", () => {
     }
   });
 });
+
+// Phase A ships the grid's events without their presentation: the per-object
+// `PowerChanged` batch beside them is what the renderer plays, and the register
+// and annunciator that read the rest belong to `src/ui`.
+describe("the grid's own events", () => {
+  const state = battle();
+
+  it("passes through without an animation and without throwing", () => {
+    const events: BattleEvent[] = [
+      { type: "GridChanged", gridId: "g", capacity: 12, load: 14, liveNodes: ["a"], tripped: true },
+      { type: "GridTripped", gridId: "g", capacity: 12, load: 14 },
+      { type: "GridReset", gridId: "g", nodeId: "main", unitId: "rowen" },
+      { type: "LineSevered", objectId: "bus", unitId: "rowen" },
+      { type: "LineSpliced", objectId: "bus", unitId: "rowen" },
+      { type: "LoadAttached", gridId: "g", nodeId: "bus", amount: 8, turns: 3, unitId: "rowen" },
+      { type: "LoadExpired", loadId: "load-1" },
+    ];
+    expect(toRenderEventList(events, state)).toEqual([]);
+  });
+
+  it("still animates the power flip a cause is attached to", () => {
+    expect(
+      toRenderEvents(
+        {
+          type: "PowerChanged",
+          objectId: "freight-lift",
+          powered: false,
+          cause: { gridId: "g", nodeId: "main", reason: "tripped" },
+        },
+        state,
+      ),
+    ).toEqual([{ kind: "objectPowerChanged", objectId: "freight-lift", powered: false }]);
+  });
+});

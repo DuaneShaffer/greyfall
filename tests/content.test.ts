@@ -151,6 +151,53 @@ describe("content cross-references", () => {
     }
   });
 
+  /**
+   * The transition rule (`docs/design/FLUX_GRID.md` §1.6). `refinery-three`
+   * already tags twelve objects against a grid nobody declares; under the
+   * degeneracy rule those stay inert and correct, and are a ready-made
+   * authoring hint for whoever migrates e4. So an unresolved tag warns here and
+   * fails nothing — the map schema itself turns it into a hard failure the
+   * moment that map declares a grid.
+   */
+  it("warns on a network tag no grid answers, and fails on one a gridded map leaves dangling", () => {
+    const orphans: string[] = [];
+    for (const map of maps.values()) {
+      const declared = new Set(map.grids.map((g) => g.id));
+      for (const obj of map.objects) {
+        if (obj.network === undefined) continue;
+        // A gridded map cannot get here: `GameMap` refuses to parse one whose
+        // tags and nodes disagree, so loadAll would already have thrown.
+        expect(declared.has(obj.network) || declared.size === 0).toBe(true);
+        if (!declared.has(obj.network)) orphans.push(`${map.id}/${obj.id} -> ${obj.network}`);
+      }
+    }
+    if (orphans.length > 0) {
+      console.warn(`network tags against an undeclared grid (inert, not an error):\n  ${orphans.join("\n  ")}`);
+    }
+  });
+
+  it("grid nodes and edges name objects on their own map", () => {
+    for (const map of maps.values()) {
+      const objectIds = new Set(map.objects.map((o) => o.id));
+      const claimed = new Set<string>();
+      for (const grid of map.grids) {
+        for (const node of grid.nodes) {
+          expect(objectIds.has(node.objectId), `${map.id}/${grid.id}: unknown node ${node.objectId}`).toBe(true);
+          expect(claimed.has(node.objectId), `${map.id}: ${node.objectId} is a node of two grids`).toBe(false);
+          claimed.add(node.objectId);
+          const object = map.objects.find((o) => o.id === node.objectId)!;
+          expect(object.powered, `${map.id}/${node.objectId}: a node must be electrical`).not.toBeNull();
+          expect(object.network, `${map.id}/${node.objectId}: node does not name its grid`).toBe(grid.id);
+        }
+        const declared = new Set(grid.nodes.map((n) => n.objectId));
+        for (const edge of grid.edges) {
+          expect(declared.has(edge.a) && declared.has(edge.b), `${map.id}/${grid.id}: dangling edge`).toBe(true);
+        }
+        expect(grid.nodes.some((n) => n.role === "source"), `${map.id}/${grid.id}: no source`).toBe(true);
+      }
+    }
+  });
+
   // `checkContact` applies the payload with no acting unit, so a `phys`/`mag`/
   // `weapon` amount resolves to 0 and the mine is silently inert. `autoAttack`
   // is the opposite: it resolves against the deploying unit, so it may scale.
