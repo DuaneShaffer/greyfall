@@ -431,9 +431,33 @@
   box-shadow: var(--gf-drop);
 }
 
-/* Stacked menus stay legible but stand down; only the top one takes input. */
+/* Stacked menus stay legible but stand down; only the top one takes input.
+   Their rows are already inert — the handlers refuse anything that is not the
+   active menu — so the job here is to stop them *looking* actionable: no hover
+   fill, no pointer, and the row the player descended through marked as a trail
+   rather than as a selection waiting to be confirmed. */
 .gf-menu:not(.is-active) {
   opacity: 0.55;
+}
+
+.gf-menu-entry.is-inert {
+  cursor: default;
+  color: var(--gf-off);
+}
+
+.gf-menu-entry.is-inert:hover,
+.gf-menu-entry.is-inert.is-selected {
+  background: transparent;
+  border-color: transparent;
+}
+
+.gf-menu-entry.is-inert.is-selected {
+  border-left-color: var(--gf-off);
+}
+
+.gf-menu-entry.is-inert .gf-menu-cursor,
+.gf-menu-entry.is-inert .gf-menu-detail {
+  color: var(--gf-off);
 }
 
 .gf-menu.is-active {
@@ -581,10 +605,13 @@
   align-self: end;
 }
 
-.gf-battle-hud > .gf-turn-order {
+.gf-battle-hud > .gf-clock {
   grid-area: clock;
   justify-self: end;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gf-s-2);
 }
 
 .gf-battle-hud > .gf-forecast {
@@ -861,6 +888,57 @@
   color: var(--gf-text);
 }
 
+/* --- power register: which machines are live ----------------------------- */
+/* Machinery is copper and nothing else is (ART_DIRECTION §2), so the live rows
+   read copper and the dead ones fall to dim — a greyed row is information, not
+   an alarm, and the danger colours stay reserved for a refusal. */
+
+.gf-power.is-empty {
+  display: none;
+}
+
+.gf-power-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--gf-s-1) 0;
+}
+
+.gf-power-entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gf-s-2);
+  padding: 2px var(--gf-s-2);
+  font-size: var(--gf-t-100);
+}
+
+.gf-power-name {
+  font-family: var(--gf-face-stamp);
+  letter-spacing: 0.06em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gf-power-state {
+  font-family: var(--gf-face-ledger);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: none;
+}
+
+.gf-power-entry.is-live {
+  color: var(--gf-operable-lit);
+}
+
+.gf-power-entry.is-dead {
+  color: var(--gf-off);
+}
+
+.gf-power-entry.is-dead .gf-power-state {
+  border-bottom: 1px solid currentColor;
+}
+
 /* --- forecast: the consequence, and the one stamp that commits it -------- */
 
 .gf-forecast {
@@ -965,6 +1043,41 @@
 .gf-forecast-status.is-none {
   color: var(--gf-off);
   border-color: var(--gf-rule);
+}
+
+/* What the order does that is not a number of damage: stat changes and their
+   window, a cleansed status, a shove. Sentences, so they stay in mixed case —
+   uppercase is for short labels only (UI_DESIGN §2). */
+.gf-forecast-effects {
+  list-style: none;
+  margin: var(--gf-s-1) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.gf-forecast-effect {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-200);
+  color: var(--gf-good);
+  padding-left: var(--gf-s-2);
+  position: relative;
+}
+
+.gf-forecast-effect::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 5px;
+  border-top: 1px solid currentColor;
+}
+
+/* Ability-scoped consequences sit under the cost line, above the target rows:
+   they belong to the order, not to anyone standing in it. */
+.gf-forecast-effects.is-ability {
+  padding: 0 var(--gf-s-2) var(--gf-s-2);
+  margin: 0;
 }
 
 .gf-forecast-modifiers {
@@ -1268,22 +1381,58 @@
   gap: 2px;
 }
 
+/* The page body: list on the left, record on the right, both carrying the
+   height they are given (UI_DESIGN §10). Fractions, not fixed maxima — the
+   old fixed columns pinned every screen into the top-left of the viewport. */
 .gf-screen-cols {
   display: grid;
-  grid-template-columns: minmax(280px, 26rem) minmax(260px, 24rem);
-  align-items: start;
+  grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.15fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: var(--gf-s-4);
+  /* `auto` basis, so a screen mounted in an auto-height container (the harness)
+     still sizes to its content instead of collapsing. */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 @media (max-width: 880px) {
   .gf-screen-cols {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: start;
   }
 }
 
-.gf-screen-cols > .gf-menu-stack {
+/* A column that stacks more than one object: the roster list and, at the foot
+   of it, the names that are no longer on it. */
+.gf-screen-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gf-s-3);
+  min-width: 0;
+  min-height: 0;
+}
+
+.gf-screen-col > .gf-menu-stack {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.gf-screen-cols > .gf-menu-stack,
+.gf-screen-col > .gf-menu-stack {
   flex-direction: column;
   align-items: stretch;
+}
+
+.gf-screen-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gf-s-4);
+  border-top: 1px solid var(--gf-off);
+  padding-top: var(--gf-s-3);
 }
 
 .gf-screen-cols .gf-menu {
@@ -1479,6 +1628,174 @@
   display: flex;
   gap: var(--gf-s-2);
   align-items: center;
+}
+
+/* --- filed records: the battle's results, the chapter's close ------------- */
+/* A win banks and buries. The banking is a ledger; the burying is the page. */
+
+.gf-results .gf-screen-title {
+  font-size: var(--gf-t-700);
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+
+/* The loss banner's colour, and the only place it is spent here. */
+.gf-results.is-loss .gf-screen-title {
+  color: var(--gf-enemy);
+}
+
+.gf-results .gf-screen-head {
+  border-bottom-color: var(--gf-dim);
+}
+
+.gf-record-serial {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.06em;
+  color: var(--gf-off);
+}
+
+.gf-record .gf-plate-stamp {
+  font-size: var(--gf-t-200);
+  color: var(--gf-live);
+}
+
+.gf-record-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-record-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  padding: var(--gf-s-1) 0;
+}
+
+.gf-record-row:first-child {
+  border-top: none;
+}
+
+.gf-record-name {
+  font-size: var(--gf-t-300);
+  color: var(--gf-text);
+  letter-spacing: 0.02em;
+}
+
+.gf-record-amount {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-300);
+  color: var(--gf-text);
+}
+
+.gf-record-note {
+  grid-column: 1 / -1;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+}
+
+.gf-record-gain {
+  color: var(--gf-good);
+}
+
+/* Standing that was banked by somebody who did not come back. */
+.gf-record-row.is-struck .gf-record-name,
+.gf-record-row.is-struck .gf-record-amount {
+  color: var(--gf-dim);
+}
+
+.gf-record-list.is-kit .gf-record-amount {
+  color: var(--gf-dim);
+}
+
+/* --- the fallen ----------------------------------------------------------- */
+/* Set apart from the living: its own panel, a blood rule, and room to read. */
+
+.gf-fallen {
+  border-left: 2px solid var(--gf-danger);
+}
+
+.gf-fallen-roll {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--gf-s-3);
+}
+
+.gf-fallen-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  padding-top: var(--gf-s-3);
+}
+
+.gf-fallen-entry:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.gf-fallen-text {
+  min-width: 0;
+}
+
+.gf-fallen-name {
+  margin: 0;
+  font-size: var(--gf-t-500);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  color: var(--gf-text);
+}
+
+.gf-fallen-job,
+.gf-fallen-where {
+  margin: 0;
+  font-size: var(--gf-t-200);
+  color: var(--gf-dim);
+}
+
+.gf-fallen-where {
+  font-family: var(--gf-face-record);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.gf-fallen-note {
+  margin: var(--gf-s-3) 0 0;
+  padding-top: var(--gf-s-2);
+  border-top: var(--gf-hair);
+  font-family: var(--gf-face-record);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 56ch;
+  color: var(--gf-dim);
+}
+
+/* The roster's standing roll: the same record, sized for a column. */
+.gf-fallen-roll.is-compact {
+  gap: var(--gf-s-1);
+}
+
+.gf-fallen-roll.is-compact .gf-fallen-entry {
+  padding-top: var(--gf-s-1);
+}
+
+.gf-fallen-roll.is-compact .gf-fallen-name {
+  font-size: var(--gf-t-300);
+}
+
+.gf-fallen-roll.is-compact .gf-fallen-where {
+  font-size: var(--gf-t-200);
+}
+
+.gf-roster-fallen {
+  margin-top: auto;
 }
 
 /* ================================================================= harness */
@@ -1750,9 +2067,42 @@
   margin-right: auto;
 }
 
+/* The page fills the frame it was given. Screens used to draw at their content
+   size in the top-left corner and leave the rest of the viewport empty. */
 .gf-between-stage {
   min-height: 0;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.gf-between .gf-screen {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+.gf-between.is-field .gf-screen {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* A filed record is read and closed; the chapter's own chrome would offer
+   moves the page cannot honour (UI_DESIGN §8). */
+.gf-between.is-record .gf-between-bar {
+  display: none;
+}
+
+.gf-bar-reason {
+  font-size: var(--gf-t-200);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  max-width: 44ch;
+}
+
+.gf-bar-reason.is-hidden {
+  display: none;
 }
 
 .gf-between-foot {

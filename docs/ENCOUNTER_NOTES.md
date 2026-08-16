@@ -131,6 +131,22 @@ of that sentence.
 | the one-shot restore | `mains-hold-36/48/60/72/84`, five silent `setPower` triggers beside `mains-come-back` | `once: false` is not usable here: conditions read state, not the event batch, so a repeating `turnStart` trigger refires once per *command* and the switch would simply stop working. A twelve-unit-turn ladder — roughly a round on a twelve-body field — is the repeatable restore expressed in the trigger vocabulary that exists. `mains-come-back` keeps the dialogue; the five that follow are silent, because the foreman does not get to say the same two lines six times. |
 | the attrition | `maxDeployedUnits` 5 → 6 | Six enemies against five deploys was the arithmetic behind the human's six losses, and e3 and e4 both field six. Nothing about the floor changes: no enemy is removed, no level trimmed, no position moved, no satchel touched. |
 
+**Discoverability, added without touching a balance number.** The tug-of-war was
+tuned and then remained invisible: the mains being cut showed up only as the
+Operate entry greying out on a unit that happened to be beside a press, and
+`mains-come-back` at turn 24 was a window no player could see opening. Two UI
+changes carry it, both derived from state and neither specific to this map:
+
+- the **power register** in the battle HUD (UI_DESIGN §6) — one row per machine
+  something on the map can switch, LIVE or DEAD, permanently on screen. On this
+  floor that is the three presses, the ladle tap and the charging lift.
+- an **annunciator line for power the player did not throw** — when the Yard
+  Runner cuts the mains, the HUD says so and names the switch that carries them:
+  *"3 machines lost power. Floor Nine Mains carries them, and it works both
+  ways."* The clause is the cue: the cut is a position, not a fact of the map.
+
+No encounter JSON changed and no number moved; the balance above still stands.
+
 Measured: powered-press turns **11–12% → 35–39%**, press activations by the
 player **0 → 19 and 15** across two disjoint 24-seed sets, and a live press
 with a hostile standing in its box now occurs in **24 of 24 runs on both sets**

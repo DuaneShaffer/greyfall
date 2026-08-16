@@ -122,8 +122,8 @@ Grid areas, and the order the eye is meant to travel:
 │          │              │ (quiet)│   notice: transient feedback
 │  order   │   forecast   │        │   order:  ACTING plate + ORDERS menu (live)
 ├──────────┴──────────────┴────────┤   forecast: the consequence (live)
-│            dialogue              │
-├──────────────────────────────────┤
+│            dialogue              │   clock:  turn order, then the POWER
+├──────────────────────────────────┤            register on maps that have one
 │            mode bar              │
 └──────────────────────────────────┘
 ```
@@ -137,6 +137,13 @@ Grid areas, and the order the eye is meant to travel:
 
 The inspect card only appears for a unit that is *not* the actor — the acting
 unit already has a panel, and printing it twice was noise.
+
+**The power register** is a quiet ledger under the queue: one row per machine
+whose power something on the map can throw, name on the left, LIVE or DEAD on
+the right, in copper. It exists because power was the one piece of map state
+with no readout at all — the only cue that Floor Nine's mains had been cut was
+the Operate entry greying out on a unit that happened to be standing beside a
+press. Maps that switch nothing draw no register.
 
 ## 7. Modes
 
@@ -166,13 +173,25 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   themselves changed. Rebuilding under a resting pointer destroys the node that
   is about to receive `mousedown`.
 - **Disabled means visible and explained.** Greyed row, dim reason, tooltip.
+- **Inert means it stops looking live.** A menu row under an open submenu takes
+  no input, so it carries `is-inert`: no hover fill, no pointer, and the row the
+  player descended through reads as a trail rather than a pending selection.
 - **Refusals are non-modal.** A brief notice in the annunciator slot, in the
-  register: "No path there", "Out of reach".
-- **A panel never offers what it cannot do.** A forecast with no targets says so
-  and its stamp is dead; a committed forecast keeps its numbers and loses its
-  stamp; a closed battle empties the queue rather than listing the dead.
+  register: "No path there", "Out of reach", "Field Repair cannot target that".
+- **A panel never offers what it cannot do — and never hides what it can.** A
+  forecast with no targets says so and its stamp is dead; a committed forecast
+  keeps its numbers and loses its stamp, and holds them through the redraw that
+  follows until a new order is staged; a closed battle empties the queue rather
+  than listing the dead. The converse binds equally: an order whose whole payload
+  is a machine laid on an empty tile has an outcome and no target rows, and must
+  still offer its stamp.
+- **The forecast reports the whole order.** Damage, healing, status rolls, stat
+  grants and their window, a cleansed status, a shove, a machine placed. A row
+  that deals no damage prints no damage line at all — "Damage —" beside a
+  three-turn buff reads as "this does nothing".
 - **Machinery answers.** Operating an object prints what was operated and what it
-  did, in copper.
+  did to the rest of the floor, in copper; power that changes without the player
+  throwing anything is announced the same way, naming the switch that carries it.
 
 ## 9. Placeholder portraits
 

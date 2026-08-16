@@ -4,6 +4,7 @@ import {
   createBattle,
   getObject,
   getUnit,
+  poweredObjects,
   standHeight,
   type GameState,
 } from "../../src/core/index.js";
@@ -123,5 +124,47 @@ describe("the signal switch", () => {
       amount: 10,
       total: 10,
     });
+  });
+});
+
+describe("the power register", () => {
+  it("lists machinery something on the map can switch, and nothing else", () => {
+    const state = createBattle(testContent(), "e1-marshaling-yard", [rowen()], [
+      { unitId: "rowen", position: { x: 3, y: 5 }, facing: "north" },
+    ]).state;
+
+    // The flux cell carries power nobody can throw; the switch carries none.
+    expect(poweredObjects(state)).toEqual([
+      { objectId: "freight-lift", name: "Freight Lift", powered: true },
+    ]);
+  });
+
+  it("follows the mains that carry a whole press line", () => {
+    const state = createBattle(testContent(), "e2-foundry-floor-nine", [rowen()], [
+      { unitId: "rowen", position: { x: 2, y: 13 }, facing: "north" },
+    ]).state;
+    const register = poweredObjects(state);
+
+    // Object-id order, like every other collection the rules read.
+    expect(register.map((entry) => entry.objectId)).toEqual([
+      "charge-lift",
+      "pour-ladle-tap",
+      "press-line-mid",
+      "press-line-north",
+      "press-line-south",
+    ]);
+    expect(register.every((entry) => entry.powered)).toBe(true);
+  });
+
+  it("drops a destroyed machine off the register entirely", () => {
+    const start = createBattle(testContent(), "e1-marshaling-yard", [rowen()], [
+      { unitId: "rowen", position: { x: 3, y: 5 }, facing: "north" },
+    ]).state;
+    const flipped = applyCommand(advanceTo(start, "rowen"), {
+      kind: "activateObject",
+      unitId: "rowen",
+      objectId: "yard-switch",
+    });
+    expect(poweredObjects(flipped.state)[0]?.powered).toBe(false);
   });
 });

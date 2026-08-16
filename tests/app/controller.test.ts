@@ -164,14 +164,27 @@ describe("intent to command translation", () => {
     expect(h.ui.forecastLocks).toBe(before + 1);
   });
 
-  it("reports what operating the machinery actually did", () => {
+  it("names the machine that lost power, not just the switch that was thrown", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 2, y: 4 });
+    expect(getObject(h.controller.state, "freight-lift")?.powered).toBe(true);
+
+    h.controller.intents.activateObject("rowen", "yard-switch");
+    expect(h.controller.lastError).toBeNull();
+    expect(getObject(h.controller.state, "freight-lift")?.powered).toBe(false);
+    expect(h.ui.notices.at(-1)).toBe("Signal Switch operated — Freight Lift lost power.");
+    expect(h.ui.noticeTones.at(-1)).toBe("machine");
+  });
+
+  it("keeps a persistent readout of what is still live", () => {
+    const before = h.ui.latest()?.power?.entries ?? [];
+    expect(before).toEqual([{ objectId: "freight-lift", name: "Freight Lift", powered: true }]);
+
     h.controller.intents.beginMove("rowen");
     h.controller.intents.confirmMove("rowen", { x: 2, y: 4 });
     h.controller.intents.activateObject("rowen", "yard-switch");
-    expect(h.controller.lastError).toBeNull();
-    const notice = h.ui.notices.at(-1) ?? "";
-    expect(notice).toMatch(/powered up|shut down|operated/);
-    expect(h.ui.noticeTones.at(-1)).toBe("machine");
+    runUntilPlayer(h, "vale");
+    expect(h.ui.latest()?.power?.entries[0]?.powered).toBe(false);
   });
 
   it("operates adjacent machinery and plays its power change", () => {
@@ -226,6 +239,51 @@ describe("machinery", () => {
       powered: false,
     });
     expect(h.ui.dialogues.at(-1)?.[0]?.speaker).toBe("Watch Sergeant");
+  });
+});
+
+describe("power that goes out without the player throwing anything", () => {
+  /** A Conduit who can cut the freight lift from across the yard. */
+  function breakerHarness(): Harness {
+    const conduit: Unit = {
+      schemaVersion: 1,
+      id: "vale",
+      name: "Vale Tarn",
+      spriteId: "conduit",
+      level: 1,
+      jobId: "conduit",
+      disposition: { resolve: 50, attunement: 70 },
+      learnedAbilityIds: ["throw-the-breaker"],
+      equipment: {},
+    };
+    const battle = openBattle([rowen(), conduit]);
+    const renderer = fakeRenderer();
+    const ui = fakeUi();
+    const controller = new BattleController({
+      state: battle.state,
+      events: battle.events,
+      renderer: renderer.port,
+      ui: ui.port,
+      ai: stubAiCommand,
+    });
+    return { controller, renderer, ui };
+  }
+
+  it("says what went dark and which switch carries it", () => {
+    const h = breakerHarness();
+    h.controller.start();
+    runUntilPlayer(h, "vale");
+
+    h.controller.intents.selectAbility("vale", "throw-the-breaker");
+    h.controller.onTileClick({ x: 5, y: 4 });
+    h.controller.onTileClick({ x: 5, y: 4 });
+
+    expect(h.controller.lastError).toBeNull();
+    expect(getObject(h.controller.state, "freight-lift")?.powered).toBe(false);
+    expect(h.ui.notices).toContain(
+      "Freight Lift lost power. Signal Switch carries it, and it works both ways.",
+    );
+    expect(h.ui.noticeTones.at(-1)).toBe("machine");
   });
 });
 

@@ -6,6 +6,7 @@ import { DialogueBox } from "./dialogue.js";
 import { ForecastPanel } from "./forecast.js";
 import { ModeBar } from "./modeBar.js";
 import { NoticeStrip, type NoticeTone } from "./notice.js";
+import { PowerLedger } from "./powerLedger.js";
 import { TurnOrderStrip } from "./turnOrder.js";
 import { UnitStatusPanel } from "./unitStatus.js";
 
@@ -30,6 +31,8 @@ export class BattleHud implements Component<BattleHudView> {
   /** The unit whose turn it is, joined to the order menu. */
   readonly acting: UnitStatusPanel;
   readonly turnOrder: TurnOrderStrip;
+  /** Which machines are live; empty and hidden on maps that switch nothing. */
+  readonly power: PowerLedger;
   readonly dialogue: DialogueBox;
   readonly mode: ModeBar;
   readonly notice: NoticeStrip;
@@ -48,6 +51,7 @@ export class BattleHud implements Component<BattleHudView> {
     this.status = new UnitStatusPanel({ role: "inspect" });
     this.acting = new UnitStatusPanel({ role: "acting" });
     this.turnOrder = new TurnOrderStrip({ intents });
+    this.power = new PowerLedger();
     this.dialogue = new DialogueBox({ intents });
     this.mode = new ModeBar({ onWithdraw: () => this.withdraw() });
     this.notice = new NoticeStrip();
@@ -58,7 +62,7 @@ export class BattleHud implements Component<BattleHudView> {
         this.notice.el,
         el("div", { class: "gf-order", children: [this.acting.el, this.actionMenu.el] }),
         this.forecast.el,
-        this.turnOrder.el,
+        el("div", { class: "gf-clock", children: [this.turnOrder.el, this.power.el] }),
         this.dialogue.el,
         this.mode.el,
       ],
@@ -89,6 +93,7 @@ export class BattleHud implements Component<BattleHudView> {
       view.inspected === null || view.inspected.id === view.action.unit.id ? null : view.inspected,
     );
     this.turnOrder.update(view.turnOrder);
+    this.power.update(view.power);
     this.forecast.update(view.forecast);
   }
 
@@ -128,6 +133,7 @@ export class BattleHud implements Component<BattleHudView> {
     this.status.destroy();
     this.acting.destroy();
     this.turnOrder.destroy();
+    this.power.destroy();
     this.dialogue.destroy();
     this.mode.destroy();
     this.notice.destroy();

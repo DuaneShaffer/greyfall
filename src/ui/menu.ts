@@ -265,7 +265,9 @@ export class MenuStack implements Component<void> {
 
   private renderMenu(menu: MenuDef, active: boolean): HTMLElement {
     const cursor = this.cursors.get(menu.id) ?? 0;
-    const items = menu.entries.map((entry, index) => this.renderEntry(menu, entry, index, active && index === cursor));
+    const items = menu.entries.map((entry, index) =>
+      this.renderEntry(menu, entry, index, active && index === cursor, active),
+    );
     const list = el("ul", {
       class: "gf-menu-list",
       attrs: {
@@ -285,10 +287,19 @@ export class MenuStack implements Component<void> {
     });
   }
 
-  private renderEntry(menu: MenuDef, entry: MenuEntry, index: number, selected: boolean): HTMLElement {
+  private renderEntry(
+    menu: MenuDef,
+    entry: MenuEntry,
+    index: number,
+    selected: boolean,
+    active: boolean,
+  ): HTMLElement {
     const classes = ["gf-menu-entry"];
     if (selected) classes.push("is-selected");
     if (entry.disabled) classes.push("is-disabled");
+    // A row under an open submenu takes no input; it must not read as if it
+    // would. The handlers below already refuse it — this is what says so.
+    if (!active) classes.push("is-inert");
     const node = el("li", {
       class: classes.join(" "),
       title: entry.disabled ? entry.disabledReason : undefined,

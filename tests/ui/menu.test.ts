@@ -90,6 +90,24 @@ describe("MenuStack", () => {
     expect(stack.active?.id).toBe("orders");
   });
 
+  it("marks the parent's rows inert while a submenu is open, and restores them", () => {
+    const onSelect = vi.fn();
+    stack.push(baseMenu({ onSelect }));
+    const parentRow = (): HTMLElement =>
+      stack.el.querySelector<HTMLElement>("[data-menu='orders'] .gf-menu-entry")!;
+    expect(parentRow().classList.contains("is-inert")).toBe(false);
+
+    stack.push({ id: "skillset-enforcer", entries: [{ id: "pin", label: "Pin" }] });
+    expect(parentRow().classList.contains("is-inert")).toBe(true);
+    // Inert is not a lie: the row really does refuse the click it stopped
+    // advertising.
+    parentRow().dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(onSelect).not.toHaveBeenCalled();
+
+    stack.pop();
+    expect(parentRow().classList.contains("is-inert")).toBe(false);
+  });
+
   it("Escape pops the submenu and fires its cancel handler", () => {
     const onCancel = vi.fn();
     stack.push(baseMenu());
