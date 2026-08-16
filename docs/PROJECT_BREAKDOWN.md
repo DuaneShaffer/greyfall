@@ -184,8 +184,8 @@ Scope is a vertical slice, not a campaign:
   the start.
 - **Deferred past the slice:** networked infrastructure (power grids, steam
   pressure systems as graphs — the first post-slice mechanic, and Conduit's
-  full kit), overworld travel, shops/recruiting, cutscene system, audio,
-  post-processing chain.
+  full kit; **designed in `docs/design/FLUX_GRID.md`**), overworld travel,
+  shops/recruiting, cutscene system, audio, post-processing chain.
 - **Art:** placeholder-first — untextured colored terrain blocks and
   flat-color billboard quads — with sprite resolution, anchors, and animation
   frame counts frozen in the art-direction doc so real assets drop in without
