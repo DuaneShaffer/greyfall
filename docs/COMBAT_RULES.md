@@ -364,7 +364,7 @@ order.
 | Effect | Runs on |
 |---|---|
 | `damage`, `heal`, `applyStatus`, `removeStatus`, `forceMove`, `modifyCharge`, `modifyDisposition`, `modifyStats` | units in the area that were not missed |
-| `setPower`, `damageObject`, `repairObject` | objects named by the payload, plus objects covering the area |
+| `setPower`, `damageObject`, `repairObject`, `addLoad`, `severLine` | objects named by the payload, plus objects covering the area |
 | `spawnObject` | tiles of the area that are standable and unoccupied |
 | `moveSelf` | the acting unit, once, regardless of area size |
 
@@ -393,8 +393,10 @@ a dead map with no cells is nearly powerless" is a rule here, not flavour.
 | Requirement | Holds when |
 |---|---|
 | `railUnderfoot` | the actor's own tile has `rail` terrain |
-| `adjacentPoweredObject` | an undestroyed, powered object covers a tile within 1 of the actor (its own tile counts) |
-| `targetPowered` | the aimed-at object — or an object covering the aimed tile — is undestroyed and powered |
+| `adjacentPoweredObject` | an undestroyed, **energized** object covers a tile within 1 of the actor (its own tile counts) |
+| `targetPowered` | the aimed-at object — or an object covering the aimed tile — is undestroyed and **energized** |
+| `targetEnergized` | the same test, under its grid-native name (§14a) |
+| `targetLine` / `targetSource` / `targetBreaker` | the aimed-at object is a node of a declared grid holding that role |
 
 The first two read only the actor, so `availableAbilities` filters on them and
 a menu can grey the ability out before anything is aimed. `targetPowered`
@@ -451,6 +453,113 @@ once the owner is gone. A destroyed object banks no CT and never fires.
 
 A spawned deployable starts at 0 CT, so it is always slower to its first shot
 than the unit that placed it: setup time is the cost of board presence.
+
+## 14a. The flux grid
+
+A map may declare **grids** beside its object list. A grid is a named graph
+whose nodes each name exactly one map object and whose edges are authored, never
+derived from footprint adjacency — so destroying an unrelated wall cannot
+silently rewire the floor. Design record: `docs/design/FLUX_GRID.md`.
+
+**Roles.** Each node holds exactly one, and an object belongs to at most one
+grid.
+
+| role | is | extra data |
+|---|---|---|
+| `source` | a main, a plant feed, a racked cell bank | `capacity` |
+| `line` | the geometry that carries: cable runs, bus bars, trays | — |
+| `sink` | what consumes: presses, lifts, hoists, lamps, emitters | `draw` |
+| `breaker` | an isolator, a mains switch, a tie switch | — |
+
+**The one input, and the one derived value.** `MapObject.powered` keeps its
+field, its type and its mutability and is read as the node's own **isolator** —
+"this node's switch is closed". Everything that wrote power before still writes
+exactly that. What is derived is **energization**: whether the node is being
+fed. A normally-open tie is authored `powered: false`, which is the existing
+flag already saying the right thing; there is no `closed` field.
+
+Every rule that used to read `powered` reads energization instead:
+`operable.requiresPower`, `surfaceHeight` provision (§11), `adjacentPoweredObject`
+and `targetPowered` (§13a), the `object-unpowered` refusal, the POWER register,
+and the AI's operable scan. **No requirement is renamed** — those two already
+name the derived value.
+
+**Energization.** Per grid, on every mutation:
+
+```
+conducts(n) = !destroyed(n) && n.powered && !n.severed
+           && !(n.role === "source" && n.tripped)
+
+components = connected components of { n : conducts(n) } over the edge list
+for each component C, in ascending order of its lowest node id:
+    capacity(C) = Σ capacity of its sources
+    load(C)     = Σ draw of its sinks + Σ timed loads on its nodes
+    capacity(C) === 0     -> every node in C is dead
+    load(C) > capacity(C) -> trip every source in C (latching); recompute
+    otherwise             -> every node in C is live
+```
+
+The loop repeats while any source tripped, bounded at `sources.length + 1`
+passes and asserted so in tests: after a trip that component's capacity is zero,
+so it cannot trip twice.
+
+**The trip is total and it latches.** An overloaded component does not shed by
+priority — the main blows, the whole component goes dark, and it stays dark
+until someone recloses it. Load shedding is more faithful and unreadable; a
+total trip reads off the board in one glance. Latching makes overdraw a tempo
+attack (the reset costs an action) and removes any possibility of a recompute
+oscillating. **A timed load expiring does not un-trip anything.**
+
+**Sinks draw whenever they are energized, not when they are operated**, so the
+readout only moves when somebody acts on the grid. **Load and capacity are flat
+authored integers and never touch the `Amount` pipeline** (§4), so nothing in
+the grid can drift with Attunement.
+
+**The degeneracy rule.** An object with no `network`, or with one naming no
+declared grid, behaves exactly as it did before grids existed: formally a
+one-node grid that is both a source of capacity 0 and a sink of draw 0, joined
+to nothing, for which `conducts` reduces to `powered && !destroyed` and
+`energized === powered`. There is no special case in the code or the schema.
+
+**Cut, destroy, reroute.**
+
+| event | node state | reversed by | permanence |
+|---|---|---|---|
+| isolator thrown | `powered` false | throwing it back | any time, either side |
+| line cut (`severLine sever`) | `severed` true | a splice | any time |
+| breaker or tie opened | `powered` false | closing it | any time |
+| source tripped | `tripped` true | a reclose | any time |
+| object destroyed | out of the graph | nothing | permanent |
+
+The cut is the cheap reversible verb and belongs to `line` nodes only;
+destruction stays `damageObject` and stays permanent (§14). **The reclose is a
+`setPower on` written to a tripped source**: closing a latched source's isolator
+is the only thing that clears the latch, and it clears it even though `powered`
+was already true, since the latch lives on the node rather than on the isolator.
+
+**Recompute timing.** Called once per graph-mutating primitive — `setPower`,
+`severLine`, `addLoad`, object destruction, a timed load expiring — in the
+effect order §13 already fixes, never batched to end of command: an ability that
+cuts a source and then operates a machine must see a consistent world between
+its own effects. It is a pure function of (graph, node states, object states)
+and emits only where energization actually flipped, so calling it redundantly
+has no observable consequence. **Nothing about the grid is cached.**
+
+**New effects** (§13's table, routed to objects beside `setPower` /
+`damageObject` / `repairObject`):
+
+| effect | does |
+|---|---|
+| `addLoad { amount, durationTurns }` | hangs a flat timed draw on the aimed node's component; expires on **the caster's own turns** (§8) and is dropped immediately if the caster is downed, the same rule that cancels a charge in flight (§7) |
+| `severLine { mode }` | `sever` cuts a `line` node, `splice` puts it back; a no-op on any other role |
+
+**New requirements** (§13a): `targetLine`, `targetSource`, `targetBreaker` read
+the aimed-at node's role; `targetEnergized` is the grid-native spelling of
+`targetPowered` and both mean the same derived value.
+
+**Ordering** (extending §17): grids by grid id ascending; nodes by object id
+ascending; edges stored with `a < b` and visited in stored order; components
+discovered by scanning nodes in id order; timed loads by load id ascending.
 
 ## 15. Encounter triggers
 
@@ -551,6 +660,9 @@ Anything that can change an outcome iterates in an explicit order:
 - Tiles: row-major index.
 - Neighbours in pathfinding: north, east, south, west.
 - Statuses and timed mods: id, ascending.
+- Grids: grid id, ascending. Grid nodes: object id, ascending. Grid edges:
+  stored with `a < b` and visited in stored order. Timed loads: load id,
+  ascending.
 - Equipment: `weapon, shield, head, body, accessory`.
 - CT ties: higher CT first, then id ascending.
 

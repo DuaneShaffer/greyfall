@@ -20,8 +20,9 @@
         },
         "learnedAbilityIds": [
           "arc",
-          "reclose",
-          "cross-tie"
+          "cross-tie",
+          "ground",
+          "reclose"
         ],
         "equipment": {
           "weapon": "tap-rod",
@@ -48,9 +49,11 @@
           "attunement": 46
         },
         "learnedAbilityIds": [
+          "field-repair",
           "field-splice",
           "reroute",
-          "field-repair"
+          "skitter-drone",
+          "tripwire-charge"
         ],
         "supportAbilityId": "bench-eye",
         "equipment": {
@@ -72,7 +75,7 @@
         "id": "torch-hand-trough",
         "name": "Torch-Hand",
         "spriteId": "saboteur",
-        "level": 1,
+        "level": 2,
         "jobId": "saboteur",
         "disposition": {
           "resolve": 45,
@@ -80,8 +83,9 @@
         },
         "learnedAbilityIds": [
           "cut-the-feed",
-          "smoke-canister",
-          "rig-machinery"
+          "gas-line-tap",
+          "rig-machinery",
+          "smoke-canister"
         ],
         "movementAbilityId": "catwalk-sense",
         "equipment": {
@@ -103,13 +107,14 @@
         "id": "hand-runner-sill",
         "name": "Yard Runner",
         "spriteId": "railrunner",
-        "level": 1,
+        "level": 2,
         "jobId": "railrunner",
         "disposition": {
           "resolve": 52,
           "attunement": 32
         },
         "learnedAbilityIds": [
+          "coupling-hook",
           "switch-kick"
         ],
         "movementAbilityId": "rail-dash",
@@ -138,6 +143,7 @@
           "attunement": 45
         },
         "learnedAbilityIds": [
+          "cinder-oil",
           "coagulant-jet"
         ],
         "equipment": {
@@ -158,14 +164,15 @@
         "id": "crew-picket-vaughn",
         "name": "Picket",
         "spriteId": "enforcer",
-        "level": 1,
+        "level": 2,
         "jobId": "enforcer",
         "disposition": {
           "resolve": 44,
           "attunement": 38
         },
         "learnedAbilityIds": [
-          "pin"
+          "pin",
+          "shield-advance"
         ],
         "equipment": {
           "weapon": "shock-maul"

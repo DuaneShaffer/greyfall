@@ -41,6 +41,15 @@ findings-queue item 6.
 > `data/encounters/e4-refinery-three.json`; no schema, no core rules, no AI
 > weights, nothing else on any encounter.
 >
+> **§7.8.8 lands the flux grid's first encounter (2026-08-16).**
+> `s1-meter-house` reads **70.8% on both disjoint seed sets**, the closest
+> agreement any encounter in this report has managed, with all three new grid
+> findings flags silent. Two levers, tuned on the primary only: the crew got
+> its own trade back beside its grid verbs, and five of six went to L2. The
+> six grid counters and three grid flags are new in this pass. No slice
+> encounter, map, AI weight or schema moved, and all fifteen golden replays
+> reproduce byte for byte.
+>
 > **`src/sim/variants.ts` was rebased onto the live engine (cleanup pass,
 > 2026-08-15).** `divisorVariant()` used to emulate a fix that is now *in* the
 > engine, so running it double-applied the divisor. It now expresses the
@@ -1906,6 +1915,118 @@ does not play, not a rate that is out of band, and it belongs to the encounter
 workstream. The counters are otherwise unmoved: Quill still works
 `switchboard-main` 25 and 34 times against zero party and zero hostile
 activations of it.
+
+### 7.8.8 Addendum — the Meter House, the first encounter measured on a graph
+
+The flux grid's v1 content pass (`docs/design/FLUX_GRID.md`) ships one
+grid-native map and one encounter on it, `s1-meter-house`. This is its landing,
+and the first use of the six grid counters and the three grid findings flags
+(§6 of that document) as a tuning instrument rather than as a proof.
+
+**The instrument.** Two calls, `encounterRuns(content, ["s1-meter-house"],
+PRIMARY_ENCOUNTER_SEEDS, { commandCap: 4000 })` and the same on
+`ALT_ENCOUNTER_SEEDS`, campaign roster at authored levels, six deployed. The
+assertions are checked in as `tests/sim/meterHouse.test.ts`, so the landing is
+a test rather than a paragraph; `GREYFALL_METER=1` prints the table below.
+
+**Where it lands.**
+
+| set | win | turns | party lost | survivor HP | stalemates |
+|---|---|---|---|---|---|
+| primary, 24 | **70.8%** | 95.5 | 3.5 / 6 | 30.4% | 0 |
+| alt, 24 | **70.8%** | 96.3 | 3.3 / 6 | 33.0% | 0 |
+| pooled, 48 | **70.8%** | 95.9 | 3.4 / 6 | — | 0 |
+
+Inside the 40–83% band with twelve points of headroom, and **the two disjoint
+sets agree to the decimal** — no encounter in this report has read the same
+fight that closely on both, against e4's 4.1-point best after §7.8.7.
+
+**The ladder, tuned on the primary set only.** Two levers, in this order.
+
+| step | primary | why |
+|---|---|---|
+| as authored | 100.0% | — |
+| the crew gets its trade back | 100.0% | see below |
+| whole crew to L2 | 50.0% | |
+| four of six at L2 | 95.8% | |
+| **five at L2, the dosser at L1** | **70.8%** | shipped |
+
+The first lever is a content error worth naming, because it is the failure
+mode a mechanic pass invites: the crew was authored holding **grid verbs and
+almost nothing else** — a machinist whose entire kit was splice, reroute and
+repair, a saboteur who could cut a line and not hurt a person. Four of six
+enemies had no way to threaten a unit, and six enemies who cannot fight lose
+to six who can at 100.0% on both sets. They keep every grid verb and get their
+own trade back beside it (`ground`, `tripwire-charge` + `skitter-drone`,
+`gas-line-tap`, `coupling-hook`, `cinder-oil`, `shield-advance`). On its own
+that moved the rate not at all, which is the second finding: **on this map the
+level step is the whole lever**, worth forty-five points between four-of-six
+and six-of-six at L2, and the kit change is what makes the fight legible
+rather than what makes it hard.
+
+**Is the grid actually contested?** This is what the new counters are for, and
+the answer is yes on both sets, pooled over 48 runs:
+
+| counter | player | enemy | scripted |
+|---|---|---|---|
+| `tiesThrown` | 8 | 50 | 0 |
+| `gridPowerChanges` | 74 | 271 | 0 |
+| `gridTrips` | 2 | 0 | 3 |
+| `gridResets` | 0 | 0 | 3 |
+| `linesCut` / `linesSpliced` | 0 / 0 | 1 / 0 | 0 / 0 |
+| `machineryOperated` | 7 | 41 | 0 |
+
+`energizedMachineTurnShare` is 99.1% and 100.0%; `meanHeadroomPercent` is 34.6
+and 34.1 against a rating the tie can take to 8. **All three grid flags are
+silent on both sets** — `grid-never-contested`, `grid-never-restored`, and
+`grid-dark-by-turn-N`, the last of which is §4.5's inverted e2 risk and the
+one this whole exercise was afraid of. No run on either set spent more than
+60% of its turns with the grid feeding nothing, and `runsGridDark` is 0 of 24
+on both. The authored mitigation held: a mandatory tie, two operable reclose
+handles reachable from both approaches, no enemy able to delete a span, and a
+restore ladder on the clock.
+
+**The honest note, and it is a large one.** The party in the table above
+**cannot play the grid**. `authoredDeployment` takes the campaign roster from
+`data/units/` at authored levels, and those seven units were written before
+these seven abilities existed — Vale has no Overdraw, Marek no cutters, Ivo no
+splice. The 70.8% is therefore a fight the *enemy* plays on a graph while the
+party plays it as a floor, and it is why player `gridTrips` is 2 and player
+`linesCut` is 0. The verbs are on the jobs' learnable lists so a real player
+buys them with Standing; the sim cannot, and arming the roster in
+`data/units/` would move all fifteen golden replays, which are the release
+gate for the engine half of this change. Left alone deliberately.
+
+Measured instead as an instrument arm — Vale, Marek and Ivo given their own
+grid kit, nothing else changed, both seed sets:
+
+| set | win | turns | party lost | player trips | player resets | enemy trips | enemy resets |
+|---|---|---|---|---|---|---|---|
+| primary, 24 | 58.3% | 99.3 | 3.9 / 6 | 13 | 3 | 4 | 1 |
+| alt, 24 | 75.0% | 98.6 | 3.1 / 6 | 14 | 2 | 5 | 3 |
+
+Both in band, and this is the reading that shows the mechanic running in both
+directions: the party trips the bus 27 times across 48 runs, and **the enemy
+recloses on both sets** — `gridRestore` firing, which is the term §4.5 added
+precisely so the AI could put power back and the argument would not end at the
+first cut. `grid-dark-by-turn-N` stays silent here too (one dark run in 48,
+against a threshold of half of them).
+
+`linesCut` stays at 0 even with a Saboteur holding the cutters, and that is the
+AI pricing working rather than failing: with the gallery tie available, a cut
+on a span the tie covers scores near zero by construction, which is exactly
+what the `lineCut`-through-`gridDenial` rule was written to produce. A map that
+wants cuts has to author a span the tie does not cover.
+
+**The one open flag** is severity 3 and is the cut/destroy split showing up in
+telemetry: `the-west-feeder-goes` never fires on the primary set and
+`the-east-feeder-goes` never fires on the alt, because destroying a feeder is
+the expensive permanent verb and almost nobody buys it when a thrown isolator
+is on the table.
+
+**Nothing else moved.** No slice encounter, no map, no AI weight, no schema.
+The five slice maps declare no grid, every grid term is provably zero on them,
+and all fifteen golden replays reproduce byte for byte.
 
 ### 7.9 Regenerated test expectations
 

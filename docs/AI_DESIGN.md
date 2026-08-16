@@ -166,6 +166,32 @@ Objects are scored by what breaking them does, not by their integrity bar:
   loses power drops the tile to terrain height, which drags a hostile parked
   out of reach back into everyone's range, and strands an ally if the AI is not
   careful — and through the machine denial above.
+- **On a declared grid (`COMBAT_RULES` §14a), all of that runs over the
+  component rather than the object.** A cut, a thrown isolator, a hung load or a
+  destroyed source is priced by asking the *real* recompute what it would do:
+  the same `solveGrid` the rules run, on a hypothetical that clones only the
+  node states and the object flags it reads. There is no second model of the
+  graph, so the search and the rules cannot disagree about what a move does, and
+  a load that would not actually trip the bus is worth what it is worth — which
+  is usually nothing. The swing is computed once per (verb, target node) per
+  decision, alongside the four things already hoisted out of the candidate loop.
+  Every de-energized sink pays its machine denial, every `surfaceHeight` sink
+  its deck value in both directions, and consequences that land on the actor's
+  own side are weighted up rather than capped: a cut with six machines behind it
+  is allowed to be enormous, it is just not allowed to be free.
+- **Restoring is priced symmetrically.** A reclose, a splice and a tie-close
+  credit what the machine is worth in *our* hands — machine denial with both
+  tapers swapped — plus a flat tempo credit for clearing a latch that sits
+  deliberately above the credit for throwing one. Without this term the search
+  can cut and can never put anything back, and the tug-of-war a power switch has
+  to be (`BALANCE_REPORT` §7.8.3) only ever runs one way.
+- Line cuts and source kills carry **no flat value of their own**; they are
+  priced entirely through the two terms above, so cutting a span that an
+  authored tie already covers correctly scores zero.
+
+On a map with no declared grid every one of those terms is exactly zero and the
+arithmetic is the pre-grid arithmetic, byte for byte — which is what the golden
+replays check.
 - Deploying an object (`COMBAT_RULES` §14) is worth an obstacle credit, and only
   for a shape that actually blocks movement, plus its payload measured against
   the nearest hostile *by path from the tile it would stand on*. **A deployable
@@ -212,7 +238,10 @@ The unit's kit is read, never authored. Abilities that heal or clear statuses
 on allies make a **support**; otherwise a best offensive range of three or more
 makes **artillery**, and anything else is **melee**. Abilities that damage,
 power, or build objects add an object affinity on top of whichever archetype
-came out. The archetype is a row of percentages in `weights.ts` scaling
+came out; a kit carrying a grid verb — a cut, a splice, an overdraw, or a
+`setPower` gated on a breaker or a source — adds a **grid affinity** the same
+way, scaling every grid term. A bare `setPower` is not enough: every shipped
+switch ability carries one and none of them is reasoning about a network. The archetype is a row of percentages in `weights.ts` scaling
 approach, standoff, exposure, cover, height, ally aid, and object value — the
 same search with a different temperament, which is how a Conduit keeps its
 distance while an Enforcer walks into the maul.

@@ -787,6 +787,10 @@ Flagged as proposals, per the bible's own rule that nothing drifts silently.
 None is assumed by anything above; if all three are declined the design stands
 as written.
 
+> **Status (v1 content pass).** Proposal 1 is **accepted and applied** — the
+> clause and the three seeds are in `docs/CREATIVE_BIBLE.md` §6. Proposals 2 and
+> 3 stand as proposals, unapplied.
+
 **Proposal 1 — §6, the Conduit.** The Conduit's fantasy paragraph names three
 things she does to infrastructure: powers and kills machines, overloads cells,
 arcs charge between conductive targets. A fourth belongs beside them now — *she

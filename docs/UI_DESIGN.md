@@ -145,6 +145,32 @@ with no readout at all — the only cue that Floor Nine's mains had been cut was
 the Operate entry greying out on a unit that happened to be standing beside a
 press. Maps that switch nothing draw no register.
 
+On a map that declares a **flux grid** (`COMBAT_RULES` §14a) the register grows
+a section per network, and the right column widens to exactly one of LIVE /
+DEAD / OPEN / CUT / TRIPPED / TIE OPEN / TIE CLOSED — a thrown switch and a cut
+span are different problems with different answers, so they are different words.
+Sections run in grid-id order and then the ungridded machines; inside a section,
+sources, then breakers and ties, then lines, then sinks, each by object id, so
+the register never reshuffles under the player's eye (`COMBAT_RULES` §17).
+
+Each section carries a **LOAD line** — `LOAD load/capacity`, what the bus is
+carrying against what it is rated for. It is the single most important addition
+the grid made to this interface: it is what turns a trip into a decision the
+player can plan instead of a surprise they absorb. Its colour is the one place
+the register spends anything but copper and dim:
+
+| state | colour |
+|---|---|
+| under 90% of the rating | `copper-300` — a bus is machinery like any other |
+| 90% and over | `overload-500` — already the colour of flux-borne state, which is precisely what a bus at its rating is |
+| over 100% | `blood-300` |
+
+Thresholds are integer comparisons against the same numbers printed beside
+them, so the colour can never disagree with the figure. §5's scarcity rule
+survives literally: amber still appears in exactly its three places, copper is
+still reserved for machinery, and blood is spent once — on the number that
+caused the trip, not on the rows that went dark for it.
+
 ## 7. Modes
 
 `HudMode` (`src/ui/state.ts`) is the UI's account of what the game is waiting
@@ -192,6 +218,14 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
 - **Machinery answers.** Operating an object prints what was operated and what it
   did to the rest of the floor, in copper; power that changes without the player
   throwing anything is announced the same way, naming the switch that carries it.
+- **On a grid, the annunciator names the cause *and* the verb that answers it.**
+  "North Bus cut. 4 machines dark. Splice it or take the gallery tie."
+  "Refinery main tripped — 14 against a rating of 12. Someone has to reclose
+  it." The register tells the player the state; this tells them what to do
+  about it, because a mechanic whose counterplay has to be inferred is a
+  mechanic that measures well and plays badly. The verb is asked of the rules
+  rather than guessed: a tie is only offered when closing it would actually
+  bring something back.
 
 ## 9. Placeholder portraits
 

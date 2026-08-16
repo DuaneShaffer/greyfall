@@ -182,9 +182,9 @@ Scope is a vertical slice, not a campaign:
   (walls, catwalks, cover that change pathing and line-of-sight mid-battle).
   Consequence: pathfinding and LoS must treat map geometry as mutable from
   the start.
-- **Deferred past the slice:** networked infrastructure (power grids, steam
-  pressure systems as graphs — the first post-slice mechanic, and Conduit's
-  full kit; **designed in `docs/design/FLUX_GRID.md`**), overworld travel,
+- **Deferred past the slice:** networked infrastructure — **v1 shipped, see
+  the status section below**; steam/pressure as a second network kind is
+  reserved and unimplemented. Still deferred: overworld travel,
   shops/recruiting, cutscene system, audio, post-processing chain.
 - **Art:** placeholder-first — untextured colored terrain blocks and
   flat-color billboard quads — with sprite resolution, anchors, and animation
@@ -292,6 +292,54 @@ Also from the balance report (`docs/BALANCE_REPORT.md` §4(c)): the AI scoring
 defects C1 and C3–C5 are **DONE**; C2 was dropped as unnecessary once C3
 landed. The §4(a) data changes are deliberately **not** applied — they are the
 content pass's call, and every number in F2/F3/F4 predates this wave.
+
+## Flux grid status (2026-08-16)
+
+The first post-slice mechanic, designed in `docs/design/FLUX_GRID.md` and
+shipped in two passes. **v1 is complete.**
+
+**Phase A — the engine.** Power stopped being a flag per object and became a
+graph. `MapObject.powered` keeps its field and its meaning as the node's own
+isolator; energization is derived from connectivity and is what every rule now
+reads. `Grid`/`GridNode`/`GridEdge` on the map, `addLoad` and `severLine`
+effects, four flat requirement members, `GridRuntime` in `GameState`, six new
+events, capacity/load accounting with a total latching trip and the reclose.
+The degeneracy rule is the safety net: an object on no declared grid behaves
+exactly as it did before, with no special case in the code or the schema.
+Rules in `COMBAT_RULES` §14a.
+
+**Phase B — content, AI, legibility, balance.** Seven abilities (Overdraw,
+Cross-Tie, Reclose, Backfeed; the Saboteur's Cut the Feed; the Machinist's
+Field Splice and Reroute), one grid-native map and encounter
+(`meter-house` / `s1-meter-house`, shipped as a `works-skirmishes` campaign so
+the five-battle arc stays five), the AI's five grid terms and grid affinity
+priced through a hypothetical run on the real recompute, six sim counters and
+three findings flags, and the legibility contract — per-network POWER register
+sections with the LOAD line, an annunciator that names the cause and the verb
+that answers it, aim-time highlighting of the component an order would flip,
+and real presentation for the six grid events. Landed at **70.8% on both
+disjoint seed sets** (`BALANCE_REPORT` §7.8.8).
+
+**The release gate held throughout:** no slice map declares a grid, so all
+fifteen golden replays in `tests/golden/` reproduce byte for byte, and a grid
+change that moves a slice number is a bug in the change.
+
+**Deferred to v2, unchanged from the design's cut line:** `setContactPayload`
+and the three abilities that need it (Live Line, Dead Short, Live Rig);
+grid-aware trigger and win/loss conditions and the escort scenario they serve;
+mobile sources (the flux cart); lifting AI_DESIGN's "requirements as a reason
+to move" deferral, scoped to grid nodes; and migrating e4 Refinery Three,
+whose twelve `network` tags were written for exactly this and are still inert.
+
+**One v1 item did not ship: Rated Draw.** It needs an optional key on the
+support passive to express "her `addLoad` amounts are two lower", the schema
+was frozen for the content pass, and the one-field proposal is recorded in
+`CONTENT_NOTES` §7 rather than taken. The other four Conduit abilities on the
+v1 line shipped.
+
+**Creative bible amendment 1 is applied** (§6 gains the clause that the Conduit
+reads and rewires the network itself, plus three seeds). Proposals 2 and 3
+stand unapplied.
 
 ## Open decisions
 

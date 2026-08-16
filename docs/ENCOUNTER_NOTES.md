@@ -730,17 +730,45 @@ means either an optional-encounter concept on `Campaign` or a shared roster
 between campaigns, and both are schema changes this package is not allowed to
 make; recorded here as the price of shipping the grid a map to live on.
 
-**Difficulty.** Six enemies against six deployed, two of them L2, on a map
-where the real opponent is a circuit that repairs itself every twelve unit
-turns. Nothing has been measured. The party's grid verbs — `overdraw`,
-`cross-tie`, `reclose`, `backfeed`, `cut-the-feed`, `field-splice`, `reroute` —
-all landed in the same pass as this encounter and none of them has been
-priced in play, so the levers most likely to move the number are the crew's
-two L2s, the ladder's twelve-turn period, and whether an AI with a grid
-affinity finds the tie at all. The expected shape is a fight that runs long
-and is decided at the boards rather than in the middle of the floor.
+**Difficulty: 70.8% on both seed sets**, 48 runs, mean 96 turns and 3.4 of 6
+lost, no stalemates (`BALANCE_REPORT` §7.8.8). The two disjoint sets agree to
+the decimal, which no encounter in this file has managed before.
 
-TODO(balance): win rate, mean turns and losses at 24 seeds on two disjoint
-sets; `grid-never-contested` / `grid-dark-by-turn-N` / `grid-never-restored`
-findings flags; and whether the merciful `all` win is worth the same as the
-rout. The balance pass owns every number in this paragraph.
+Two things moved between the first read and that one, both tuned on the
+primary set only. The crew shipped holding grid verbs and almost nothing
+else — a machinist whose whole kit was splice, reroute and repair, a saboteur
+who could cut a line and not hurt a person — and six enemies who cannot fight
+lose to six who can, at **100.0% on both sets**. They keep the grid verbs and
+get their own trade back beside them: Nella takes `ground`, Bram takes
+`tripwire-charge` and `skitter-drone`, the torch-hand takes `gas-line-tap`,
+the runner takes `coupling-hook`, the dosser `cinder-oil`, the picket
+`shield-advance`. Then levels: the whole crew to L2 read **50.0%** and four of
+six at L2 read **95.8%**, so the level step is worth forty-odd points on its
+own and the landing is five at L2 with Orla, who is a healer and not a
+fighter, left at L1.
+
+**The grid is contested and neither side deletes it.** Across the two sets the
+crew throws the tie 50 times and writes 271 isolators, works the machinery 41
+times against the party's 7, and `grid-dark-by-turn-N`,
+`grid-never-contested` and `grid-never-restored` are all silent on both sets.
+No enemy can delete a span, so the worst case is a floor that is dark until
+somebody spends an action, which is the whole cut/destroy split working.
+
+**The honest note: the shipped roster cannot play the grid.** The party is
+`data/units/`'s campaign roster at authored levels, and those seven units were
+written before these seven abilities existed, so Vale has no Overdraw and
+Marek no cutters — the 70.8% above is a fight the *enemy* plays on a graph
+while the party plays it as a floor. The verbs are on the jobs' learnable
+lists, so a real player buys them; the sim cannot, and arming the roster in
+`data/units/` would move the golden replays. Measured as an instrument arm
+with Vale, Marek and Ivo given their own kit and nothing else changed
+(§7.8.8): **58.3% primary / 75.0% alt**, still in band, with the party
+tripping the bus 27 times across 48 runs and reclosing 5, and the crew
+reclosing and splicing back on both sets. That is the tug-of-war running in
+both directions, and it is the reading to trust once the progression loop has
+had a chapter to work.
+
+The one open flag is severity 3 and is the design working: `the-west-feeder-goes`
+never fires on the primary set and `the-east-feeder-goes` never fires on the
+alt, because destroying a feeder is the expensive permanent verb and almost
+nobody buys it when a cut or a thrown isolator is on the table.

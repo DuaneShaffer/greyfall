@@ -161,9 +161,10 @@ Drone, Field Repair (heals machines, not people).*
 
 **Conduit** — licensed attuned. Manipulates flux infrastructure: powers and
 kills machines, overloads cells into detonation, arcs charge between
-conductive targets. The mage analog whose spellbook is the map itself.
+conductive targets, and reads and rewires the network itself — the load, the
+ties, the trip. The mage analog whose spellbook is the map itself.
 *Seeds: Tap Line, Overload Cell, Arc, Ground (strip a machine or Augmented
-of charge).*
+of charge), Overdraw, Cross-Tie, Reclose.*
 
 **Saboteur** — explosives and environmental manipulation. The job that makes
 destructible terrain a plan rather than an accident: drops catwalks, blows
