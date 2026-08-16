@@ -1251,3 +1251,26 @@ HD-2D scene sells its miniature — and it loses on three counts here:
 The vignette does the framing job a tilt-shift would have been hired for, at
 none of the cost. If depth is ever wanted, it belongs in the *palette* — a cool
 desaturation with distance, which §1's fog already begins — not in focus.
+
+### D.4 Terrain texture delivery
+
+§5 fixed the tile dimensions and the per-terrain reads; it did not say at what
+density an external master arrives. It arrives at **4×** — tile tops 128 × 128,
+tile sides 128 × 64, box-filtered down to the 32 × 32 / 32 × 16 §5 fixes —
+mirroring the 256×384 → 64×96 sprite flow of C.8. `TILE_TEXTURE_SIZE` stays 32.
+8× was considered and refused: a 32px tile cannot carry the grain an 8:1
+reduction would throw away, and thrown-away grain reduces to sparkle, which is
+the failure C.8.6 already names.
+
+**One set covers all three strata.** §1 assigns the difference between the Rise,
+the Works and the Underveins to *light quality*, and D.2's chain plus the
+existing key/hemisphere/fog rig is where that difference lives. Per-stratum
+tilesets would be the same painting under two lights and are not commissioned.
+
+The material list, per-material briefs, the seam and strata-band rules, the
+six-colour ceiling and the zero-amber rule are `art-src/TERRAIN_BRIEFS.md`.
+Intake is sketched there too: `decodePNG` → `resampleRGBA` → `quantizeToPalette`
+with an `allowed` ramp, then a **new** terrain audit — `auditGrid` checks a
+figure box, a feet anchor and a silhouette outline, none of which a tile has.
+The pipeline is not built: the terrain mesh emits no `uv` attribute and there is
+no tile atlas, and that engine work belongs with the art, not ahead of it.
