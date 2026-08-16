@@ -472,3 +472,468 @@ scene and the night platform prove the register can carry all of it. The
 critique above is about making the player *earn and feel* what the document
 already knows; nothing in this paragraph is broken, and none of it should be
 touched.
+
+---
+
+## Round 2 — Author's disposition
+
+Ruled 2026-08-15. Every accepted change is implemented in
+`docs/STORY_BIBLE.md` in this pass; beats added in revision carry lettered
+numbers (3a., 4a.) so every cross-reference in Round 1 still points at the
+beat it named. `docs/CREATIVE_BIBLE.md` §12 was audited against every Layer
+0–1 change below and required no text change: nothing altered touches a
+sentence §12 asserts (thesis, five-chapter spine, ending's register, three
+engines, Compact names, canon rulings).
+
+### Canon changes (Layers 0–1; stated for the project owner, cold)
+
+1. **Gault's preference order is now binding: no deposition > filed >
+   published.** He fights the final battle in earnest — a sealed truth is a
+   truth with a future reader — and, beaten, converts the loss: received,
+   attested, sealed, unread, and the night's official line ("persons unknown
+   repelled without loss to the record") drafted in his own hand. The
+   repulsion is itself a filing.
+2. **Chapter 5 now costs a named life:** Ivo dies holding the Meter Floors'
+   counterweight gate so the company reaches the Standards Hall.
+3. **The annex is no longer surrendered; it is traded.** Quill's price is
+   Rowen's own sworn account, taken under standard into the archive's
+   registry — the Sodality learns the dead ensign is alive because she filed
+   it herself.
+4. **Gault and Rowen now meet once before the finale** (Ch4, the public
+   metering floor), and it is canon that Gault, then Master of the Licence,
+   took Rowen's commission measurement himself: she has been a number in his
+   archive since she was twenty-two. His amber-goes-dark argument moves to
+   this meeting; the Standards Hall gets a new one.
+5. **Dray's death swerves:** downed, he says his name once and refuses it —
+   "log the number; the number is the true one now" — and Rowen logs the
+   name over him.
+6. **The Assay-purchase plant moves** from the Chapter 2 summary into Lunn's
+   data at 3.4.
+7. **Chapter 4 now demonstrates the winners' premise in play** (beat 4.2a,
+   the week of short gas), and the Chapter 4 summary carries one clause
+   saying so; 5.4 argues from that memory rather than from assertion.
+8. **Chronology is bound** (Layer 3c): Rowen twenty-two at commission,
+   twenty-seven at the deposition, fifty-seven at the frame; the Act passes
+   near +2½ years and the R.C. letter (dated +3) prices it after passage.
+
+### Dispositions
+
+**F1 — ACCEPT.** All three defects, and the critic's handed material used
+and extended. (a) The preference order is binding canon (Ch5 summary, 5.7),
+and the repulsion-is-a-filing idea is taken one step further: Gault authors
+the official line himself, and the Ch5 annotation now notes the drafting is
+his hand — the man who lost the field writes the record of having held it.
+(b) Went past "one prior contact": Gault took her commission measurement
+(the Licence's Master, the year she was twenty-two), and 4.10 is rebuilt as
+their one meeting — offer, argument, and the "dead in the record" line
+delivered to her face. Relocating the amber argument to 4.10 also cures
+(c)'s restatement problem: it now arrives early enough to shape her 5.4
+choice, and the Standards Hall argument is new — Gault against the
+deposition itself ("A seal is a promise to a future reader. I have kept this
+archive safe by keeping it incomplete."), which the frame pays off thirty
+years later when Tam is the promised reader and the seal breaks correctly.
+(c) The spire costs Ivo (5.5, a rearguard, no speech, no epigram), and the
+brown-out ethics run to the top: Gault names each district the player
+darkens, as a filing, so the 5.4 argument continues inside the battle in the
+player's hands instead of being restaged in dialogue.
+
+**F2 — ACCEPT-PARTIAL.** Taken, in full: the annex converted from donation
+to extraction with the archive's own price (4.8 — she puts her sworn account
+*in* to take the truth *out*, which converts her exposure to the Sodality
+from a leak into her choice and gives 4.10 its source in one stroke); the
+Pump House triage (4.9 — the dry floor holds one archive, the player picks
+whose truth stays provable, campaign flag asked in 3b); and 4.10 itself is
+now a meeting she chooses to attend carrying leverage she built. Left: 3.1
+(the letter is still routed to her — but see F14: it is now dry estate paper
+that *Tally is paid to interpret*, a purchase rather than a gift, and it
+carries R5's shown plant, so the beat works for its keep) and 3.4 (Lunn's
+handover stands; the battle is the extraction and his vanishing is the cost
+— converting every donation would turn the middle into a heist anthology).
+Rebutted: 5.3 as a donation. Steelman: even the finale's access is opened by
+Jory's choice, so the climax is enabled by someone else's act. Rebuttal:
+Rowen banked that door herself in 3.7 by refusing the larger gift and asking
+for the smaller lever; 5.3 is her spending stored leverage at the moment of
+her choosing, and the scene says so in terms ("Then I'll spend it
+carefully"). A protagonist who converts relationships into capability and
+then spends it is driving.
+
+**F3 — ACCEPT.** The staircase is now climbed on-page, one tread per
+chapter, each ruthless-and-defensible and done to a person we know: 2.3 —
+she reads the corrected transcript, her memory in the record's wording, and
+signs it in her own hand, onscreen; 3.3 — the House exemption, traded away
+to buy the second reading, answered plainly to Maren's face (with a
+structural dividend: 4.6 now happens in a shop the Act cannot enter because
+Jory sold that entry, so her arc prices Dray's); 4.7a — the Grange finding
+signed *unattributed* with attribution on her desk, ruthlessness and loyalty
+in one signature. 5.1's co-signing is now the staircase's top step, and 2.3
+names the treads so no future agent unbuilds them. The interlude chapter
+stays optional and is no longer a load-bearing absence (Appendix B updated).
+
+**F4 — ACCEPT.** Beat 4.2a, the week of short gas: the trench truth leaks
+one street's worth, a render crew walks off, the Meter answers with a
+half-draw "recertification," and the Row spends a week cold while the
+company is quartered on it. Small, visible, starving-first, witnessed —
+and the campaign never asserts the premise again without it: 5.4 now argues
+from the memory (Ivo and Della were on the Row), and Gault's 4.10 argument
+lands on someone who has watched it proven at 1:10,000 scale. The ending is
+unchanged; it is no longer a syllogism.
+
+**F5 — ACCEPT.** Option (a), made load-bearing in one stated sentence at
+4.10: the rule that cannot see a person outside the record is the rule that
+cannot refuse a filing made under standard — Gault's blindness and the
+deposition's mechanism are one fact, and Chapter 5 spends it. Plus one
+clause of (b): the annex travels separately, its release priced and lodged
+with Tally, terms the Sodality can read. And the 4.8 trade quietly closes
+the remaining gap: her account is already filed — killing the officially
+dead would now cost the Assay something it can price.
+
+**F6 — ACCEPT.** Nessa's second sentence is cut (3.5 keeps the question);
+the Assay-purchase fact moves out of Chapter 2 into Lunn's unflagged column
+at 3.4; 4.1 is restaged in its own text as confirmation whose payload is
+scale and specificity — ranks, a column, her family's war — with the
+earliness owned ("a player who has carried R1 since 2.6 and 3.5 is meant
+to"); the R1 audit line is rewritten to measure the right event.
+
+**F7 — ACCEPT.** R5 restructured exactly along the critic's second option:
+4.3 reclassified as the spoken reveal, 4.8 its exhibit, and a genuine shown
+plant added before it — the counterpart-receipt for "the annex to the
+charter, sealed" among Maud's enclosures at 3.1 (which also does F14's work;
+see below). R2 gains the shown plant of *elsewhere*: the Marshaling Yard's
+second maul, half-recognized on the Chapter 2 weighbridge under a Saltmere
+bond-house's colors, gone before the sweep clears. R4 is additionally
+steadied by the 3c chronology block. R3 untouched; the note that the reveal
+lands on Perren's ghost rather than on Tam is accepted as a correct reading
+of intent.
+
+**F8 — ACCEPT-PARTIAL.** Taken: Dray's death-line swerves (he refuses the
+name the player has been writing for him since battle two, and Rowen logs it
+over him — the counter-record does not take dictation either); a binding
+motif budget in the Layer 2 header (record-vs-truth staged at most twice per
+chapter beyond the marked carriers; Chapter 1's shipped density is the
+ceiling, not the licence); and the non-paper mediums now exist — 4.2a is a
+street, 5.5–5.6 are the grid, 4.4 was already bodies, and 4.9 is no longer a
+fetch-the-paper fight but a choice about which paper exists. Left, with the
+steelman stated: the five excerpt/annotation pairs do perform one move — but
+the pair *is* the frame device, and the fix chosen is differentiation rather
+than deletion: the annotations now withhold (Ch2), err and correct (Ch1→Ch4),
+and attribute (Ch5), so no two perform the identical move any more. The
+medal beat also stays: "She's theirs" is Rowen's last aphorism before the
+descent strips the habit (see F14's voice rule), and cutting it would remove
+the hinge that rule turns on.
+
+**F9 — ACCEPT.** Beat 3.3a, the millpond: Maren swims the flooded quarry
+above the Works before shift, in any weather, an old habit the campaign
+never explains; the company sees her once, far off, and is not seen. It
+plants nothing and pays nothing; that is what it is for. (The beat text
+resists the obvious temptation to note that no ledger has a column for it —
+which would be the same instrumentalization in a nicer coat.)
+
+**F10 — ACCEPT-PARTIAL.** Taken: the volunteering gets its scene (3.8a, the
+consent) — the procedure-man reads the entire consent schedule, rejection
+tables included, and gives the only account of himself he will ever give:
+"The board found the instrument out of true. This is the correction the
+schedule offers." He does not doubt the procedure that discarded him; he
+concludes it was right. Rebutted: moving his fall a chapter later, or
+sending a body from his story up the spire. Steelman: spending Dray in
+Chapter 4 leaves the finale with no personal antagonist. Rebuttal: after the
+F1 fixes the finale *has* a personal antagonist — Gault, who measured her,
+met her, and offered her the third document — and Dray's fall belongs in the
+graftworks chapter, where the room (4.6) and the exemption that built it
+(3.3) price his tragedy; a second personal body in the spire would crowd a
+finale whose new cost is the company's own.
+
+**F11 — ACCEPT.** The instrument is decided: what Tally brokered was a
+certified copy, made against the original and attested in Hessle's
+registered hand — genuine legal tender, which is why the Inquiry had to say
+"forged" before it could say "burn." The Chapter 2 annotation now carries
+that logic, so "the forgeries were not forged" rests on the certification
+and the counterfoils rather than on a muddle; Rowen risked an instrument
+with real standing and the record ate it, so her lesson stands; the original
+never leaves her coat, so the epilogue's parcel stands. The Wick loose end
+is tied in 2.1: the House does not contest the Ledger's buyout because a man
+in the Ledger's debt is gagged more cheaply than a man in a cell, and his
+silence stays purchasable.
+
+**F12 — ACCEPT-PARTIAL.** Taken, all three: a binding sourcing rule opens 3d
+— every staged scene exists somewhere in the merged record; 4.3 survives as
+the Table of Measures' own minute (the machine files everything, including
+itself — the exemption is closed with the theme, not against it) and 4.10 as
+Rowen's deposition, both marked at the scenes. Tam now withholds something
+only the player saw: the Chapter 2 annotation admits he does not know the
+miners' sign and cannot learn it ("the men who would know do not teach it to
+archivists") — the archivist hitting the downward register's wall. And Tam
+is now wrong on the page and corrected later: the Chapter 1 annotation
+misreads Exhibit 19's missing names as a tired man's count; the Chapter 4
+annotation corrects it (three of Schedule D's numbers were the shop's own
+men, their names had buyers) and leaves the error standing — his authority
+is earned by paying for it, and the correction incidentally feeds R2. The
+voided-jeopardy note: 2.2's stake is restated as the gang's necks, with the
+frame's survival guarantee acknowledged in the beat text rather than played
+against. Left: the annotations still resolve some ironies and still hold
+better evidence than the player on two counts (counterfoils, bier-dockets).
+Steelman: that is the demotion-to-reader problem. Rebuttal: the frame's
+premise is that the player has been reading Tam's document all along — a
+narrator with no evidentiary edge would falsify the frame; the fix owed was
+to make his authority cost something, and it now does, twice.
+
+**F13 — ACCEPT-PARTIAL.** The middle-chapters retread is fixed by F2/F3 and
+is hereby credited to intent, as requested. The epilogue now leans on its
+inversion where it stands: beat 5.9 states that the amendment is an act the
+Sodality's own doctrine cannot refuse, and Scene 3's final annotation
+performs it — "The Sodality does not dispute findings; it files them. This
+is a finding." — the machine turned on itself, in the machine's grammar.
+Left: the furniture (lone archivist, parcel, amendment). Steelman: FFT owns
+that furniture and a genre-literate player will feel it. Rebuttal: the
+furniture is the shared grammar of every frame story with a keeper and a
+document; originality was never going to live in the props, and after this
+pass it demonstrably lives in the mechanism — a rehabilitation the
+suppressing institution is doctrinally unable to refuse, performed by the
+son of the first name it refused to log.
+
+**F14 — ACCEPT.** Three fixes. The rhetoric rule (Layer 4 header, binding on
+future scene work): the lapidary turn is a *Rise* dialect — the speech of
+people whose sentences become records — so Gault owns it, Aldric was raised
+in it, Jory acquiring it is her arc made audible, and Rowen losing it is her
+descent made audible (her shipped e1 aphorism becomes the diagnostic
+baseline, not a licence); workers cite cases — Marek never abstracts, Tally
+speaks in quantities, Dray in procedure, Ivo and Della in declaratives; Jory
+runs long when selling. This converts the monoculture finding into a
+class-marker system built on the §5.5 epistemology rather than a style note.
+Maud's letter is de-clairvoyanced: dry estate paper ("deliver where the
+House cannot ask for them back"), no farewell, no foreknowledge — Tally,
+paid, is the one who reads it as the docket-holder, and whether the mother
+knew is a question the annotator asks and the instruction does not answer
+(one more unknowable, held correctly). Scene 3's directions are trimmed (the
+second "dark that used to be a seam" and the smoothing simile are gone);
+"Log me as nobody" stays on the critic's own reasoning — the clerk's log is
+literal — and stays only as long as that remains true.
+
+**F15 — ACCEPT.** The 3c chronology block, binding: twenty-two at
+commission, twenty-seven at the deposition, fifty-seven at the frame — and
+the Act passes near +2½, with the +3 letter pricing it *after* passage,
+which dissolves the hidden requirement that Chapter 3 span a year and keeps
+the Chapter 3 excerpt's "two years' patient work" honest. Jory's climb is
+still fast; it is now consistent, dated, and (per F3) visibly paid for.
+
+### Fence audit
+
+- **Unknowable things:** R7 untouched; Nessa untouched; the annex's October
+  arithmetic untouched (the R5 restructure preserves the binding
+  never-resolved sentence verbatim). The revision *adds* one unknowable:
+  whether Maud knew.
+- **Layer 3b:** intact; the only changes are three added design asks (the
+  4.9 flag, Ivo's scripted death honored by the roster UI, persistent
+  brown-out dressing).
+- **Two-register epistemology:** extended, not sanded — the F14 voice rule
+  derives from it, and the Chapter 2 annotation's sign-gap makes the
+  archivist himself hit the downward register's wall.
+- **Deposit-vs-suppression inversion:** untouched, and now argued explicitly
+  where the epilogue stands on it (5.9, Scene 3).
+- **The two credited sample scenes:** dialogue and directions untouched.
+  Each gained a two-line source note above the scene, required by the F12
+  sourcing rule; nothing inside either scene moved.
+
+### Tally
+
+Accepted: 10 (F1, F3, F4, F5, F6, F7, F9, F11, F14, F15).
+Accepted in part: 5 (F2, F8, F10, F12, F13).
+Rebutted outright: 0 — the rebuttals live inside the partials (F2's 5.3,
+F8's excerpt structure and medal, F10's relocation, F12's evidentiary edge,
+F13's furniture), each with its steelman stated in place.
+
+### For the verification round, look hardest at
+
+1. Whether Gault's new Standards Hall argument (anti-deposition) and his
+   5.7 conversion read as one coherent preference order under pressure, or
+   as a villain changing his mind.
+2. Whether the 4.8 trade (her account filed as the annex's price) steals
+   thunder from Standing Deposition 1 — the bible fences it as "a witness
+   paper, not a Standing Deposition," but the distinction must hold at scene
+   level.
+3. Tone of the new lines against §2 and the new voice rule: Ivo's "It holds
+   two," Dray's "the number is the true one now," Tam's "This is a
+   finding." — each was written to be dry; verify none has drifted into
+   epigram-for-everyone, the sin F14 named.
+4. The 4.2a leak-week: political-never-doomsday must hold — the beat is one
+   street, one week, administrative violence; if it reads as apocalypse
+   rehearsal, cut its scale, not the beat.
+
+---
+
+## Round 3 — Verification
+
+Verified against the revised `docs/STORY_BIBLE.md` in full, not against the
+disposition's claims. Where the disposition says more than the text delivers,
+it is noted at the finding. The one permitted press is **not spent**: no
+implementation or rebuttal failed at the level that would earn it.
+
+### The four requested verifications
+
+1. **Gault's preference order under pressure — coherent, and better than
+   coherent.** The order is bound in three places (the header's binding list,
+   the Chapter 5 summary, beat 5.7), and the revision accidentally-on-purpose
+   gives Gault a single throughline the old draft lacked: the 4.10 offer (a
+   licensed life) is preference 1 pursued by absorption; the 5.6 fight ("A
+   seal is a promise to a future reader... I have kept this archive safe by
+   keeping it incomplete") is preference 1 pursued by force; 5.7 is the fall
+   to preference 2, converted ("permits what he could no longer prevent and
+   prefers it to publication"), with the drafting-in-his-own-hand attributed
+   in the Chapter 5 annotation. One order, three instruments, no mind
+   changed. The seal-argument's thirty-year payoff (Tam is the promised
+   reader; "the seal held thirty years") is a dividend the finding never
+   asked for.
+2. **The 4.8 fence holds at scene level.** The witness paper and Standing
+   Deposition 1 differ on all three axes that matter: instrument (a registry
+   entry vs. an instrument "that does not exist until 5.7 invents it"),
+   content (her Chapter 1 testimony vs. the assembled counter-record), and
+   volition (a price paid under compulsion vs. the campaign's chosen act).
+   4.8 strengthens 5.7 rather than pre-empting it — she rehearses the
+   machine's one unrefusable move once, at cost, which is what makes the
+   4.10 mechanism sentence load-bearing. Consistency check passed: the
+   Chapter 2 annotation's "the deposition says the old miners 'made the
+   sign'" must cite Standing Deposition 1 (the witness paper covers Chapter 1
+   only), and it can — Tam is its third reader. One-line note: give the
+   witness paper a registry-flavored proper name in scene prose so the two
+   instruments stay audible as different things.
+3. **The three new lines pass the F14 rule.** Ivo's "It holds two" is
+   narration, not dialogue — maximally dry, the best of the three. Dray's
+   "the number is the true one now" has a lapidary turn but is built entirely
+   of his procedural vocabulary (log, number, warrant) and functions as a
+   claim about the record, not a maxim — passes as his register. Tam's "This
+   is a finding." is a Rise-dialect move the voice rule itself licenses by
+   acquisition (his mirror of Jory's arc; "clean work... Standards work").
+   None is epigram-for-everyone.
+4. **4.2a stays political.** One street, one week; the Meter's weapon is a
+   rate schedule ("half-draw pending recertification"); the worst violence is
+   a beating by neighbors; "Marek pays a neighbor's gas arrears and says
+   nothing" is exactly §2's register. No apocalypse rehearsal; scale should
+   not be cut.
+
+### Verdicts
+
+**F1 — RESOLVED.** All three defects answered in the text: preference order
+binding (see verification 1), the prior meeting real and rebuilt (4.10, "he
+opens with her number," sourced per 3d), the cost real (Ivo at the Meter
+Floors, in the summary's "What breaks" and the trajectory table), the 5.6
+argument genuinely new rather than 5.4 restaged, and the brown-out ethics
+running to the top with Gault naming each district "as a filing."
+
+**F2 — RESOLVED-WITH-NOTE.** The annex is an extraction with a stated price
+that also sources 4.10 and closes F5's gap in one stroke; the 4.9 triage is a
+real player choice with priced consequences (Edda's royalty deal becomes the
+player's own arithmetic); 3.4's retention is defensible — the battle is the
+extraction and Lunn's vanishing is its cost. **The 5.3 rebuttal: SOUND in
+substance, overstated in one detail.** In 3.7 the door is *offered*, not
+asked for — the rebuttal's "asking for the smaller lever" outruns the scene;
+the ask happens at 5.3. But the substance survives the correction: the scene
+text itself frames the door as banked capital ("Then I'll spend it
+carefully") created by her refusal-choice, and 5.3 is her initiating the
+spend at the moment of her choosing. A protagonist who converts a refusal
+into a smaller instrument and times its expenditure is driving. The donation
+count falls from six to two defensible handovers plus one spend; the pattern
+the finding named is broken.
+
+**F3 — RESOLVED.** The staircase is on the page and each tread is
+ruthless-and-defensible, done to a person we know, watched: 2.3 (she signs
+her own corrected memory, onscreen, named as the first tread), 3.3 (the House
+exemption sold plainly to Maren's face — "to a woman the bill will bury"),
+4.7a (attribution on her desk, signed away). The 3.3→4.6 coupling — Dray's
+graftworks is a shop the Act cannot enter *because Jory sold that entry* — is
+structurally better than what the finding asked for: her arc now prices his.
+Appendix B correctly demotes the interlude to an option.
+
+**F4 — RESOLVED.** 4.2a exists, is witnessed, is small, and is never
+asserted-past again: 5.4 argues from the memory (Ivo and Della quartered on
+the Row), 4.10's argument lands on someone who watched it proven. See
+verification 4 for the register check.
+
+**F5 — RESOLVED.** The mechanism sentence at 4.10 makes Gault's blindness and
+the deposition's method one fact ("the rule that cannot see a person outside
+the record is the rule that cannot refuse a filing made under standard"), and
+Chapter 5 visibly spends it; the Tally-lodged release terms and the
+already-filed account give her protection the Sodality can price. The hole is
+now the theme, as directed.
+
+**F6 — RESOLVED.** Nessa's second sentence is cut ("She does not say the
+second sentence; the player is left to"); the purchase-fact moved into Lunn's
+unflagged column at 3.4; 4.1 owns its earliness in its own beat text; the R1
+audit now measures the right event and says so.
+
+**F7 — RESOLVED.** R5 now passes the ladder's own rule: one shown plant
+(3.1's counterpart-receipt, "uncomprehended at the beat") plus one told
+(3.9), reveal reclassified to 4.3 with 4.8 as exhibit — and the binding
+never-resolved sentence survives verbatim, as the fence audit claims. R2 has
+its plant of elsewhere (the second maul under Saltmere colors at 2.2, present
+in both the beat and the ladder, with the revision's reasoning stated). R4 is
+steadied by the chronology block.
+
+**F8 — RESOLVED-WITH-NOTE.** The swerve lands (Dray refuses the name the
+player has been writing for him; "the counter-record does not take dictation
+either" is the campaign's thesis complicated, not restated); the motif budget
+is binding in the Layer 2 header; the annotations now withhold (Ch2), err and
+stand corrected (Ch1→Ch4), and attribute (Ch5); the non-paper mediums exist.
+Note: the disposition's claim that "She's theirs" is Rowen's *last* aphorism
+is not in the document — she turns one more at 5.3 ("the only kind of open I
+trust"), legal under the voice rule's "any polish left in her mouth is
+deliberate" clause. Fine once; watch that clause, because it is shaped like
+an escape hatch.
+
+**F9 — RESOLVED.** The millpond plants nothing, pays nothing, and — as the
+beat text notes — resists annotating its own uselessness, which was the trap.
+Exactly the unbudgeted beat the finding asked for.
+
+**F10 — RESOLVED.** 3.8a gives the consent its scene, in Dray's own register,
+with the motivation chain complete (warrant voided → one posting left → "This
+is the correction the schedule offers"): he concludes the procedure that
+discarded him was right, which is the tragedy. The relocation rebuttal holds
+because its premise was actually delivered — after F1's fixes the finale has
+a personal antagonist, and a second body in the spire would crowd Ivo's
+death.
+
+**F11 — RESOLVED-WITH-NOTE.** The certified-copy decision closes the muddle:
+the tendered instrument had legal standing ("it was not a gesture, it was
+tender"), so Rowen's lesson stands, the annotation's "the forgeries were not
+forged" now rests on certification plus counterfoils, and the original
+survives to be the epilogue's parcel. Wick's buyout is priced in 2.1. Note:
+the Layer 1 Chapter 2 *summary* still reads "the docket... is burned" — three
+words ("a certified copy of") would stop the binding layer from being read
+against its own controlling beat.
+
+**F12 — RESOLVED.** The sourcing rule is binding at the head of 3d; both
+private rooms are sourced *with* the theme (the Table of Measures minutes
+itself — the exemption closed by the machine's own habit); Tam now pays for
+his authority twice (the sign he cannot learn, the Exhibit 19 error left
+standing where he wrote it); 2.2's jeopardy is restated as the gang's necks
+with the survival guarantee acknowledged. The evidentiary-edge rebuttal is
+sound: a narrator with no edge would falsify the frame's premise; the debt
+was cost, and it is paid.
+
+**F13 — RESOLVED.** 5.9 and Scene 3's final annotation now argue the
+inversion where they stand ("The Sodality does not dispute findings; it files
+them. This is a finding."), and the furniture rebuttal is a defensible taste
+call I will not relitigate — originality demonstrably lives in the mechanism
+now, and F1's seal-argument hands the epilogue a second differentiator FFT
+has no analog for.
+
+**F14 — RESOLVED.** The voice rule is a better fix than the finding proposed:
+lapidary-as-Rise-dialect converts a style note into a class-marker system
+riding the §5.5 epistemology, with Jory's acquisition and Rowen's loss made
+audible. Maud is de-clairvoyanced and the revision *adds* an unknowable
+(whether the mother knew) instead of a sentiment. Scene 3 is trimmed; "Log me
+as nobody" stays on the stated condition. The three new lines pass (see
+verification 3).
+
+**F15 — RESOLVED.** The chronology block closes the arithmetic: 22/27/57
+checks; the +3 letter pricing the Act after +2½ passage dissolves the hidden
+year-span requirement; "two years' patient work" stays honest; Tam's age
+works. Jory's climb is still fast, but it is now dated, consistent, and —
+per F3 — visibly paid for, which is what "aggressive but bought" requires.
+
+### Overall verdict
+
+**SHIP-WITH-NOTES.** All fifteen findings are answered in the document
+itself, not merely in the disposition — the three structural fixes (Gault's
+order and cost, the extraction/triage conversions, Jory's staircase) are
+bound where drift could undo them — and the residual notes (F2's rebuttal
+wording, F8's escape-hatch clause, F11's summary phrase, the witness paper's
+name) are one-sentence wording matters, none load-bearing.
