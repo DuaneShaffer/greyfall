@@ -10,6 +10,7 @@ import { TileHighlights, type HighlightOptions } from "./highlights.js";
 import { DRAW_ORDER } from "./layers.js";
 import { ObjectVisual } from "./objects.js";
 import { damagePopup, missPopup } from "./popups.js";
+import { PostChain } from "./post.js";
 import {
   PresentationQueue,
   easeInOut,
@@ -155,6 +156,7 @@ export class BattleRenderer {
   readonly queue: PresentationQueue;
 
   private readonly renderer: THREE.WebGLRenderer;
+  private readonly post: PostChain;
   private readonly canvas: HTMLCanvasElement;
   private readonly boardGroup = new THREE.Group();
   private readonly unitGroup = new THREE.Group();
@@ -191,6 +193,7 @@ export class BattleRenderer {
     this.scene.fog = new THREE.Fog(palette.skyGrey, 39, 66);
     this.scene.add(this.boardGroup, this.objectGroup, this.unitGroup, this.vfx.group);
     this.addLighting();
+    this.post = new PostChain(this.renderer, this.scene, this.rig.camera);
     this.queue = new PresentationQueue((event) => this.createAnimation(event));
     this.resize();
   }
@@ -228,6 +231,7 @@ export class BattleRenderer {
     this.terrainMesh = new THREE.Mesh(geometry, material);
     this.terrainMesh.renderOrder = DRAW_ORDER.terrain;
     this.boardGroup.add(this.terrainMesh);
+    this.post.setOccluders([this.terrainMesh]);
 
     this.highlights = new TileHighlights(map);
     this.boardGroup.add(this.highlights.group);
@@ -339,6 +343,7 @@ export class BattleRenderer {
     const width = this.canvas.clientWidth || this.canvas.width || 1;
     const height = this.canvas.clientHeight || this.canvas.height || 1;
     this.renderer.setSize(width, height, false);
+    this.post.setSize(width, height);
     this.rig.setViewport(width, height);
   }
 
@@ -361,7 +366,7 @@ export class BattleRenderer {
     for (const unit of this.units.values()) unit.update(deltaSeconds);
     this.vfx.update(deltaSeconds);
     this.updateBillboards();
-    this.renderer.render(this.scene, this.rig.camera);
+    this.post.render();
   }
 
   start(): void {
@@ -393,6 +398,7 @@ export class BattleRenderer {
     this.stop();
     this.disposeSceneContents();
     this.vfx.dispose();
+    this.post.dispose();
     this.renderer.dispose();
   }
 
@@ -427,6 +433,7 @@ export class BattleRenderer {
       this.highlights = null;
     }
     if (this.terrainMesh) {
+      this.post.setOccluders([]);
       this.boardGroup.remove(this.terrainMesh);
       this.terrainMesh.geometry.dispose();
       (this.terrainMesh.material as THREE.Material).dispose();

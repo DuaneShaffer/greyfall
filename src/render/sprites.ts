@@ -17,6 +17,7 @@
 
 import * as THREE from "three";
 import { isJobId, type JobId } from "../art/jobs.js";
+import { EMISSIVE_COLORS } from "../art/palette.js";
 import {
   buildJobSheet,
   cellUV,
@@ -112,6 +113,49 @@ export const applyCellUV = (
   const uv = cellUV(sheetCell(state, view, frame), mirrored);
   texture.offset.set(uv.offsetX, uv.offsetY);
   texture.repeat.set(uv.repeatX, uv.repeatY);
+};
+
+/**
+ * Wide enough to survive a mip level's rounding, far narrower than the gap
+ * between an emissive step and the ramp step under it (the closest pair,
+ * amber-glow against amber-300, sits 0.48 apart in linear space).
+ */
+const BLOOM_KEY_TOLERANCE = 0.15;
+
+const bloomKeyTest = (): string => {
+  const color = new THREE.Color();
+  return EMISSIVE_COLORS.map((hex) => {
+    color.setStyle(hex, THREE.SRGBColorSpace);
+    const rgb = [color.r, color.g, color.b].map((c) => c.toFixed(5)).join(", ");
+    return `\tkeyed += step(distance(diffuseColor.rgb, vec3(${rgb})), ${BLOOM_KEY_TOLERANCE});`;
+  }).join("\n");
+};
+
+/**
+ * Draws only the sheet pixels painted in the three colors ART_DIRECTION §2 lets
+ * the post chain bloom, so a sprite's emissive detail can be blurred without a
+ * second sheet: it samples the unit's own texture and its own UV window, and
+ * discards everything that is not a key color. Renders in the bloom pass alone.
+ */
+export const emissiveKeyMaterial = (map: THREE.Texture): THREE.MeshBasicMaterial => {
+  const material = new THREE.MeshBasicMaterial({
+    map,
+    transparent: false,
+    alphaTest: 0.5,
+    side: THREE.DoubleSide,
+    fog: false,
+    toneMapped: false,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <map_fragment>",
+      `#include <map_fragment>
+\tfloat keyed = 0.0;
+${bloomKeyTest()}
+\tif ( keyed < 0.5 ) discard;`,
+    );
+  };
+  return material;
 };
 
 export const releaseSheetView = (texture: THREE.Texture): void => {

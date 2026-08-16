@@ -2,7 +2,14 @@ export { BattleRenderer, type BattleRendererOptions } from "./scene.js";
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
 export { TileHighlights, type HighlightOptions } from "./highlights.js";
-export { DRAW_ORDER } from "./layers.js";
+export { BASE_LAYER, BLOOM_LAYER, DRAW_ORDER } from "./layers.js";
+export {
+  BLOOM_RADIUS,
+  BLOOM_STRENGTH,
+  PostChain,
+  VIGNETTE,
+  type PostChainOptions,
+} from "./post.js";
 export {
   PresentationQueue,
   easeInOut,

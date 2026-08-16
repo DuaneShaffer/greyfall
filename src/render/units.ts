@@ -3,7 +3,7 @@ import { AnimationPlayer } from "../art/player.js";
 import { resolveFacing, type AnimState, type CameraYaw, type DrawnView } from "../art/sprites.js";
 import type { Facing, Team } from "../data/schemas/common.js";
 import { facingYaw } from "./grid.js";
-import { DRAW_ORDER } from "./layers.js";
+import { DRAW_ORDER, markBloomOnly } from "./layers.js";
 import { palette, teamColor } from "./palette.js";
 import {
   SPRITE_ANCHOR_Y,
@@ -11,6 +11,7 @@ import {
   SPRITE_PIXELS_X,
   SPRITE_PIXELS_Y,
   applyCellUV,
+  emissiveKeyMaterial,
   releaseSheetView,
   unitSheetView,
 } from "./sprites.js";
@@ -105,6 +106,8 @@ export class UnitVisual {
   private readonly markerMaterial: THREE.MeshBasicMaterial;
   private readonly rim: THREE.Mesh;
   private readonly rimMaterial: THREE.MeshBasicMaterial;
+  private readonly glow: THREE.Mesh;
+  private readonly glowMaterial: THREE.MeshBasicMaterial;
   private readonly shadow: THREE.Mesh;
   private readonly geometry: THREE.PlaneGeometry;
   private readonly rimGeo: THREE.PlaneGeometry;
@@ -176,6 +179,15 @@ export class UnitVisual {
     this.rim.position.z = -RIM_DEPTH_OFFSET;
     this.rim.renderOrder = DRAW_ORDER.unitRim;
     this.billboard.add(this.rim);
+
+    // Same quad, same sheet, same UV window — a bloom-pass-only twin that keeps
+    // the sprite's emissive pixels and discards the rest. Parented to the
+    // billboard so it turns with it and needs no separate frame bookkeeping.
+    this.glowMaterial = emissiveKeyMaterial(this.texture);
+    this.glow = new THREE.Mesh(this.geometry, this.glowMaterial);
+    this.glow.name = "sprite-glow";
+    markBloomOnly(this.glow);
+    this.billboard.add(this.glow);
 
     this.markerTeam = view.team;
     this.markerGeo = markerGeometry(view.team);
@@ -251,6 +263,8 @@ export class UnitVisual {
       this.material.needsUpdate = true;
       this.rimMaterial.map = this.texture;
       this.rimMaterial.needsUpdate = true;
+      this.glowMaterial.map = this.texture;
+      this.glowMaterial.needsUpdate = true;
       this.stamp = "";
     }
     this.view = view;
@@ -379,6 +393,7 @@ export class UnitVisual {
     releaseSheetView(this.texture);
     this.rimGeo.dispose();
     this.rimMaterial.dispose();
+    this.glowMaterial.dispose();
     this.markerGeo.dispose();
     this.markerMaterial.dispose();
     this.wedgeGeo.dispose();

@@ -41,7 +41,7 @@ import {
 } from "./effects.js";
 import { NUMBER_OUTLINE_INDEX, popupGrid } from "./glyphs.js";
 import { HEIGHT_STEP, standingHeight, tileAt, tileCenter } from "./grid.js";
-import { DRAW_ORDER } from "./layers.js";
+import { DRAW_ORDER, markBloomEligible } from "./layers.js";
 import { terrainAccentColor, terrainTopColor } from "./palette.js";
 import {
   PopupField,
@@ -240,6 +240,7 @@ export class VfxLayer {
       toneMapped: false,
     });
     const line = new THREE.Line(geometry, material);
+    markBloomEligible(line);
 
     const spreadGeometry = new THREE.BufferGeometry().setFromPoints(
       points.map((p) => new THREE.Vector3(p.x, p.y + 0.05, p.z)),
@@ -422,6 +423,7 @@ export class VfxLayer {
     });
     const glow = new THREE.Mesh(glowGeometry, glowMaterial);
     glow.position.set(at.x, at.y + 0.15 * scale, at.z);
+    markBloomEligible(glow);
     group.add(glow);
 
     const life = IMPACT_TIMING.thermal.seconds;
@@ -482,6 +484,7 @@ export class VfxLayer {
       toneMapped: false,
     });
     const motes = new THREE.Points(geometry, moteMaterial);
+    markBloomEligible(motes);
     group.add(motes);
 
     const life = IMPACT_TIMING.chemical.seconds * 0.5;
@@ -511,6 +514,7 @@ export class VfxLayer {
     });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(at.x, at.y, at.z);
+    markBloomEligible(mesh);
     this.add({
       object: mesh,
       age: 0,

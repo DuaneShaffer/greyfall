@@ -8,6 +8,8 @@
 // and the unit billboards are opaque and are already under every transparent
 // overlay whatever their band says.
 
+import type * as THREE from "three";
+
 export const DRAW_ORDER = {
   terrain: 0,
   /** Contact shadow: a darkening of the ground, so a tile wash covers it. */
@@ -21,3 +23,19 @@ export const DRAW_ORDER = {
   vfx: 7,
   popup: 8,
 } as const;
+
+/**
+ * Bloom-eligible geometry lives on its own camera layer; the post chain renders
+ * that layer alone into the blur. Objects that also appear in the beauty pass
+ * `enable` it; a mesh that exists only to be blurred `set`s it.
+ */
+export const BASE_LAYER = 0;
+export const BLOOM_LAYER = 1;
+
+export const markBloomEligible = (object: THREE.Object3D): void => {
+  object.layers.enable(BLOOM_LAYER);
+};
+
+export const markBloomOnly = (object: THREE.Object3D): void => {
+  object.layers.set(BLOOM_LAYER);
+};

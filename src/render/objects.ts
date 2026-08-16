@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { GameMap } from "../data/schemas/map.js";
 import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./grid.js";
+import { markBloomEligible } from "./layers.js";
 import { objectColor, palette } from "./palette.js";
 import type { MapObjectView } from "./viewmodel.js";
 
@@ -175,6 +176,9 @@ export class ObjectVisual {
     this.geometries.push(geometry);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
+    // A seam carries the object's only emissive; the bloom pass sees no lights,
+    // so it renders exactly that and nothing of the body around it.
+    if (this.seamMaterials.has(material)) markBloomEligible(mesh);
     this.group.add(mesh);
     return mesh;
   }

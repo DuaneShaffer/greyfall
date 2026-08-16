@@ -1192,3 +1192,62 @@ The small `y` offsets each overlay carries (shadow 0.020, ring 0.028, wedge
 0.034, wash 0.025–0.050) are **z-fight avoidance against the terrain**, not
 ordering: none of these write depth, so they cannot occlude each other. Do not
 reach for a y offset to change what covers what.
+
+### D.2 The bloom chain (binding)
+
+§2 rule 2 named three colors and left the mechanism open; §7/B.8 recorded the
+chain as the last outstanding VFX item. It is `src/render/post.ts`.
+
+**Keying is by geometry, not by luminance.** A threshold on the beauty image
+would catch lit terrain — the default tile top is `soot-500` under a key light
+and lands around the same brightness as a warm seam — so the chain instead
+renders the scene a **second time with the camera restricted to a bloom camera
+layer**. Only geometry that declared itself emissive is in that render, so
+nothing else can leak into the halo whatever the exposure does. Three things
+declare themselves:
+
+| Source | How | Note |
+|---|---|---|
+| object seams | the seam meshes carry the layer; the bloom render has no lights, so a `MeshLambertMaterial` there resolves to exactly its emissive | unpowered and destroyed seams set emissive to black and vanish from the pass for free |
+| unit sprites | a bloom-only twin quad hung off the billboard, sampling the **same sheet and the same UV window**, discarding every pixel that is not one of the three key colors (`emissiveKeyMaterial`) | costs no second sheet and no extra frame bookkeeping; the key tolerance is 0.15 in linear space, against a 0.48 nearest-neighbour gap |
+| VFX | arc cores, thermal glow cores, heal motes and muzzle glow enable the layer | the amber-glow/overload-100 elements B.4 already isolated |
+
+**Numbers.** Strength 0.45, radius 0.28, threshold 0 (everything in the pass is
+emissive by construction), vignette 0.22. Tuned in situ against the Marshaling
+Yard at 40 / 85 / 152 screen px per tile: a flux cell reads as a lit canister
+whose body silhouette is still legible, not a white blob, and terrain gains
+nothing anywhere.
+
+**The halo is the engine's, and that is the point.** §3 forbids the source art
+from painting one — emissives are crisp-edged and unoutlined — precisely so the
+halo can be light rather than paint, and so a sprite keeps its hard 1px edge
+when the lamp beside it does not.
+
+The beauty pass keeps its multisampling (the composer's own render target is
+built with `samples: 4`); a board of hard-edged ortho blocks aliases badly
+without it. The composite adds half a code value of hash dither, because a
+vignette across an almost-black sky banks into visible rings at 8 bits.
+
+**Known limit.** Only the terrain mesh is registered as a bloom-pass occluder,
+so an object body does not stop its own seam's halo and one unit does not stop
+another's. On a raised ortho board with billboards standing clear of the ground
+this is not visible; if a map ever puts a lit machine behind a tall mass of
+*objects*, register those too rather than reaching for the strength slider.
+
+### D.3 No depth of field
+
+Considered and refused. Tilt-shift was the candidate — it is the usual way an
+HD-2D scene sells its miniature — and it loses on three counts here:
+
+1. **The camera is orthographic.** There is no focal plane to defocus from; any
+   depth blur is a fabricated screen-space gradient, and it drifts against the
+   board every time the rig orbits.
+2. **It blurs the read.** At the default zoom a sprite covers ~64–85 screen
+   pixels. The units at the front and back of the board are the first things a
+   tilt-shift softens, and they are the objects the player is actually reading.
+3. **It contradicts §3.** Sprite alpha is 0 or 255 and sprites are not
+   anti-aliased; a post blur anti-aliases the whole cast wholesale.
+
+The vignette does the framing job a tilt-shift would have been hired for, at
+none of the cost. If depth is ever wanted, it belongs in the *palette* — a cool
+desaturation with distance, which §1's fog already begins — not in focus.
