@@ -199,6 +199,7 @@ export type PowerNodeState =
   | "dead"
   | "open"
   | "cut"
+  | "destroyed"
   | "tripped"
   | "tie-open"
   | "tie-closed";
@@ -216,14 +217,29 @@ export interface PowerNodeView {
  */
 export type PowerLoadLevel = "rest" | "rated" | "over";
 
-export interface PowerNetworkView {
-  gridId: string;
-  name: string;
+/**
+ * One bus, with its own rating and its own draw. The LOAD line belongs here and
+ * not on the network: an open tie makes a house into two circuits, and the sum
+ * of two circuits is a number nobody can plan a trip against.
+ */
+export interface PowerComponentView {
+  id: string;
+  /** What feeds it, named. Empty when nothing does, and then there is no LOAD line. */
+  sources: string[];
   load: number;
   capacity: number;
   level: PowerLoadLevel;
-  tripped: boolean;
+  state: "live" | "tripped" | "dead";
   nodes: PowerNodeView[];
+}
+
+export interface PowerNetworkView {
+  gridId: string;
+  name: string;
+  /** The buses the switches currently make, by ascending lowest node id. */
+  components: PowerComponentView[];
+  /** Nodes on no bus at all: switched out, cut, or wrecked. */
+  outOfCircuit: PowerNodeView[];
 }
 
 export interface PowerLedgerView {

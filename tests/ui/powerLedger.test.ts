@@ -13,11 +13,18 @@ const entries = [
 const network = (level: PowerLoadLevel): PowerNetworkView => ({
   gridId: "refinery-three-grid",
   name: "Refinery Three Grid",
-  load: 14,
-  capacity: 12,
-  level,
-  tripped: false,
-  nodes: [],
+  components: [
+    {
+      id: "east-main",
+      sources: ["east main"],
+      load: 14,
+      capacity: 12,
+      level,
+      state: "live",
+      nodes: [],
+    },
+  ],
+  outOfCircuit: [],
 });
 
 describe("PowerLedger", () => {
@@ -63,20 +70,32 @@ describe("the register's network sections", () => {
       "Yard Grid",
     ]);
     const first = sections[0]!;
-    expect(first.querySelector(".gf-power-load")?.textContent).toBe("Load 14/12");
-    expect(first.querySelector(".gf-power-flag")?.textContent).toBe("Tripped");
+    const groups = [...first.querySelectorAll(".gf-power-component")];
+    expect(
+      groups.map((group) => [
+        group.querySelector(".gf-power-name")?.textContent,
+        group.querySelector(".gf-power-load")?.textContent ?? null,
+        group.querySelector(".gf-power-flag")?.textContent ?? null,
+      ]),
+    ).toEqual([
+      ["east main", "Load 14/12", "Tripped"],
+      // A bus with nothing feeding it prints no arithmetic at all.
+      ["Unfed", null, "Dead"],
+      ["Out of circuit", null, null],
+    ]);
     expect(
       [...first.querySelectorAll(".gf-power-entry")].map((row) => [
         row.querySelector(".gf-power-name")?.textContent,
         row.querySelector(".gf-power-state")?.textContent,
       ]),
     ).toEqual([
-      ["west main", "Open"],
       ["east main", "Tripped"],
+      ["charge hoist east", "Live"],
+      ["charge hoist west", "Dead"],
+      ["west main", "Open"],
       ["tie, gallery", "Tie Open"],
       ["north bus", "Cut"],
-      ["charge hoist west", "Dead"],
-      ["charge hoist east", "Live"],
+      ["feeder trough", "Destroyed"],
     ]);
     // The ungridded rows still draw, underneath the sections.
     const rows = [...ledger.el.querySelectorAll(".gf-power-list > .gf-power-entry")];
@@ -97,7 +116,7 @@ describe("the register's network sections", () => {
     }
   });
 
-  it("prints no trip flag on a network that has not blown", () => {
+  it("prints no trip flag on a bus that has not blown", () => {
     const ledger = new PowerLedger();
     ledger.update({ entries: [], networks: [network("rest")] });
     expect(ledger.el.querySelector(".gf-power-flag")).toBeNull();
@@ -107,7 +126,7 @@ describe("the register's network sections", () => {
     const ledger = new PowerLedger();
     ledger.update(mockPowerRegisterView());
     // 2 live and a closed tie in the gallery, 2 live in the yard, 1 live hoist
-    // and the Service Lift, out of twelve rows.
-    expect(ledger.el.querySelector(".gf-plate-stamp")?.textContent).toBe("7/12");
+    // and the Service Lift, out of thirteen rows.
+    expect(ledger.el.querySelector(".gf-plate-stamp")?.textContent).toBe("7/13");
   });
 });

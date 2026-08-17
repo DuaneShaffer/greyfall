@@ -22,7 +22,7 @@ export type {
   CommandResult,
 } from "./commands/types.js";
 export type { BattleEvent, BattleEventType, PowerCause } from "./events/types.js";
-export { solveGrid, type GridSolution } from "./rules/power.js";
+export { solveGrid, type GridComponent, type GridSolution } from "./rules/power.js";
 
 export type {
   ActionAbility,
@@ -71,6 +71,7 @@ export {
   forecast,
   getObject,
   getUnit,
+  gridComponents,
   gridFlipPreview,
   gridRestoringTies,
   itemInfo,
@@ -95,7 +96,9 @@ export {
   usableItems,
   type ForecastEntry,
   type ForecastOutcome,
+  type GridComponentNodes,
   type GridNodeState,
+  type GridRegisterComponent,
   type GridRegisterNode,
   type GridRegisterSection,
   type PowerRegister,

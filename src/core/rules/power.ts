@@ -43,6 +43,28 @@ export interface GridTrip {
   sources: string[];
 }
 
+/**
+ * One electrically joined piece of the grid as the switches currently stand.
+ *
+ * The trip latch is deliberately ignored here: a blown component keeps its
+ * shape and still reads what it was carrying against what it is rated for.
+ * Every number a player reads is a component's, never a grid's — a house split
+ * in two by an open tie is two buses at 10 of 14, and summing them to 20 of 28
+ * is an arithmetic claim about a circuit that does not exist.
+ */
+export interface GridComponent {
+  /** Object ids in it, ascending. The lowest is the component's identity. */
+  nodes: string[];
+  /** Sources feeding it, ascending. Empty means nothing does. */
+  sources: string[];
+  capacity: number;
+  load: number;
+  /** A source in it is latched open. */
+  tripped: boolean;
+  /** The grid is actually feeding it. */
+  live: boolean;
+}
+
 export interface GridSolution {
   /** Object ids of every node currently being fed, ascending. */
   live: string[];
@@ -53,6 +75,11 @@ export interface GridSolution {
   tripped: string[];
   /** Components that tripped during this solve, in discovery order. */
   trips: GridTrip[];
+  /**
+   * The grid as it is actually wired right now, by ascending lowest node id.
+   * Nodes conducting nothing — isolated, cut, wrecked — are in none of them.
+   */
+  components: GridComponent[];
   /** Fixed-point passes taken. Bounded by the source count plus one. */
   passes: number;
 }
@@ -62,6 +89,8 @@ interface GridSummary {
   load: number;
   live: string;
   tripped: boolean;
+  /** Component shape, so a bus splitting in two is a change even at equal totals. */
+  components: string;
 }
 
 export interface PowerSnapshot {
@@ -163,20 +192,13 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
   const conducts = (node: GridNode): boolean =>
     closed(node.objectId) && !(node.role === "source" && latched.has(node.objectId));
 
-  const sourceCount = nodes.filter((n) => n.role === "source").length;
-  const trips: GridTrip[] = [];
-  let live: string[] = [];
-  let passes = 0;
-  for (let pass = 0; pass <= sourceCount; pass += 1) {
-    passes = pass + 1;
-    const conducting = nodes.filter(conducts);
-    const open = new Set(conducting.map((n) => n.objectId));
+  /** Connected components over the nodes a predicate admits, in node-id order. */
+  const componentsOver = (admits: (node: GridNode) => boolean): string[][] => {
+    const open = new Set(nodes.filter(admits).map((n) => n.objectId));
     const seen = new Set<string>();
-    const fed: string[] = [];
-    let trippedThisPass = false;
-
-    for (const start of conducting) {
-      if (seen.has(start.objectId)) continue;
+    const out: string[][] = [];
+    for (const start of nodes) {
+      if (!open.has(start.objectId) || seen.has(start.objectId)) continue;
       const component: string[] = [];
       const queue = [start.objectId];
       seen.add(start.objectId);
@@ -189,14 +211,35 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
           queue.push(neighbour);
         }
       }
-      let capacity = 0;
-      let load = 0;
-      for (const objectId of component) {
-        const node = roles.get(objectId)!;
-        if (node.role === "source") capacity += node.capacity;
-        if (node.role === "sink") load += node.draw;
-        load += loadsByNode.get(objectId) ?? 0;
-      }
+      out.push(component);
+    }
+    return out;
+  };
+
+  const sourceCount = nodes.filter((n) => n.role === "source").length;
+  const trips: GridTrip[] = [];
+  let live: string[] = [];
+  let passes = 0;
+  /** What a set of nodes is rated for and what it is drawing. */
+  const meter = (component: readonly string[]): { capacity: number; load: number } => {
+    let capacity = 0;
+    let load = 0;
+    for (const objectId of component) {
+      const node = roles.get(objectId)!;
+      if (node.role === "source") capacity += node.capacity;
+      if (node.role === "sink") load += node.draw;
+      load += loadsByNode.get(objectId) ?? 0;
+    }
+    return { capacity, load };
+  };
+
+  for (let pass = 0; pass <= sourceCount; pass += 1) {
+    passes = pass + 1;
+    const fed: string[] = [];
+    let trippedThisPass = false;
+
+    for (const component of componentsOver(conducts)) {
+      const { capacity, load } = meter(component);
       if (capacity === 0) continue;
       if (load > capacity) {
         const sources = component.filter((objectId) => roles.get(objectId)!.role === "source").sort();
@@ -213,18 +256,31 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
     }
   }
 
-  // Readout numbers ignore the latch, so a tripped bus still reads what it was
-  // carrying against what it is rated for: `LOAD 14/12 TRIPPED`.
+  // Readout numbers ignore the latch, so a tripped component still reads what
+  // it was carrying against what it is rated for: `LOAD 16/14 TRIPPED`.
+  const liveSet = new Set(live);
+  const components: GridComponent[] = componentsOver((node) => closed(node.objectId)).map(
+    (component) => {
+      const sorted = [...component].sort();
+      const sources = sorted.filter((objectId) => roles.get(objectId)!.role === "source");
+      return {
+        nodes: sorted,
+        sources,
+        ...meter(sorted),
+        tripped: sources.some((objectId) => latched.has(objectId)),
+        live: sorted.some((objectId) => liveSet.has(objectId)),
+      };
+    },
+  );
+
   let capacity = 0;
   let load = 0;
-  for (const node of nodes) {
-    if (!closed(node.objectId)) continue;
-    if (node.role === "source") capacity += node.capacity;
-    if (node.role === "sink") load += node.draw;
-    load += loadsByNode.get(node.objectId) ?? 0;
+  for (const component of components) {
+    capacity += component.capacity;
+    load += component.load;
   }
 
-  return { live, capacity, load, tripped: [...latched].sort(), trips, passes };
+  return { live, capacity, load, tripped: [...latched].sort(), trips, components, passes };
 }
 
 /**
@@ -245,6 +301,9 @@ function summarize(solution: GridSolution): GridSummary {
     load: solution.load,
     live: solution.live.join(","),
     tripped: solution.tripped.length > 0,
+    components: solution.components
+      .map((c) => `${c.nodes.join("+")}=${c.load}/${c.capacity}`)
+      .join("|"),
   };
 }
 
@@ -313,7 +372,8 @@ export function settlePower(ctx: Ctx, before: PowerSnapshot, trigger: PowerTrigg
       previous.capacity !== summary.capacity ||
       previous.load !== summary.load ||
       previous.live !== summary.live ||
-      previous.tripped !== summary.tripped
+      previous.tripped !== summary.tripped ||
+      previous.components !== summary.components
     ) {
       emit(ctx, {
         type: "GridChanged",

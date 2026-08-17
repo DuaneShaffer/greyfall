@@ -957,6 +957,14 @@
   color: var(--gf-flux);
 }
 
+/* A wreck has no answer, so it does not read like the states that do: struck
+   through and dimmer than dim, with none of the copper the circuit keeps. */
+.gf-power-entry.is-wrecked {
+  color: var(--gf-off);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
 /* --- power register: the load line -------------------------------------- */
 /* The single most important line in the register: what the bus is carrying
    against what it is rated for, so the trip is a decision the player can plan
@@ -1023,7 +1031,49 @@
 }
 
 .gf-power-nodes .gf-power-entry {
-  padding-left: var(--gf-s-3);
+  padding-left: var(--gf-s-4);
+}
+
+/* --- power register: one group per bus ----------------------------------- */
+/* The LOAD line belongs to a component and not to a network: with the tie open
+   the house is two buses at 10 of 14, and their sum is a circuit nobody is
+   standing in. Groups are indented under the network plate so the split reads
+   as a split. */
+
+.gf-power-components {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-power-component + .gf-power-component {
+  border-top: 1px dotted var(--gf-rule);
+}
+
+.gf-power-component-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--gf-s-2);
+  padding: 2px var(--gf-s-2) 2px var(--gf-s-3);
+  font-size: var(--gf-t-100);
+  color: var(--gf-dim);
+}
+
+.gf-power-component-head .gf-power-name {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex: 1 1 auto;
+}
+
+/* A bus with nothing feeding it prints no arithmetic at all; the missing LOAD
+   line is the readout saying there is nothing left to read. */
+.gf-power-component.is-dead .gf-power-component-head,
+.gf-power-component.is-out .gf-power-component-head {
+  color: var(--gf-off);
+}
+
+.gf-power-component.is-dead .gf-power-flag {
+  color: var(--gf-off);
 }
 
 /* --- forecast: the consequence, and the one stamp that commits it -------- */

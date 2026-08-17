@@ -18,6 +18,7 @@ import {
   allUnits,
   battleMap,
   getUnit,
+  gridComponents,
   itemIdFromAbilityId,
   objectEnergized,
   objectSevered,
@@ -103,15 +104,40 @@ const gridNodeIds = (state: GameState, gridId: string): string[] => {
 };
 
 /**
- * How hard the bus is being worked, on the register's own three steps: at rest,
+ * How hard one bus is being worked, on the register's own three steps: at rest,
  * at its rating from 90%, and past it. Integer arithmetic, because the grid
  * never touches the `Amount` pipeline and the seams must not drift off the
  * LOAD line the player is reading.
+ *
+ * A component with no rating at all is not straining, it is dead: nothing is
+ * feeding it, so there is nothing for it to be over. Reading a dead house as
+ * maximum overload was the seams contradicting every other readout on screen.
  */
 const strainOf = (load: number, capacity: number): number => {
-  if (capacity <= 0) return load > 0 ? 1 : 0;
+  if (capacity <= 0) return 0;
   if (load > capacity) return 1;
   return load * 10 >= capacity * 9 ? 0.6 : 0;
+};
+
+/**
+ * The bus each node is actually on, in one event per distinct strain. Strain is
+ * a property of a component and never of a grid — with the tie open the two
+ * halves of a house can be at rest and blown at the same time.
+ */
+const gridStrainEvents = (state: GameState, gridId: string): RenderEvent[] => {
+  const byStrain = new Map<number, string[]>();
+  for (const component of gridComponents(state, gridId)) {
+    const strain = strainOf(component.load, component.capacity);
+    byStrain.set(strain, [...(byStrain.get(strain) ?? []), ...component.nodes]);
+  }
+  return [...byStrain.keys()]
+    .sort((a, b) => a - b)
+    .map((strain) => ({
+      kind: "gridChanged" as const,
+      gridId,
+      nodeIds: [...(byStrain.get(strain) ?? [])].sort(),
+      strain,
+    }));
 };
 
 /**
@@ -211,14 +237,7 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
     // batch answers "what do I animate"; these answer "what happened to the
     // bus", and they never re-animate the per-object lights.
     case "GridChanged":
-      return [
-        {
-          kind: "gridChanged",
-          gridId: event.gridId,
-          nodeIds: gridNodeIds(stateAfter, event.gridId),
-          strain: strainOf(event.load, event.capacity),
-        },
-      ];
+      return gridStrainEvents(stateAfter, event.gridId);
     case "GridTripped":
       return [
         {

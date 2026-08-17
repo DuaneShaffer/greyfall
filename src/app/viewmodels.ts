@@ -58,6 +58,7 @@ import {
   type PowerLedgerView,
   type PowerLoadLevel,
   type PowerNetworkView,
+  type PowerNodeState,
   type RosterEntryView,
   type SkillsetView,
   type StatLineView,
@@ -412,18 +413,21 @@ export function powerLedgerView(state: GameState): PowerLedgerView | undefined {
     name: entry.name,
     powered: entry.powered,
   }));
+  const nodeViews = (nodes: readonly { objectId: string; name: string; state: PowerNodeState }[]) =>
+    nodes.map((node) => ({ objectId: node.objectId, name: node.name, state: node.state }));
   const networks: PowerNetworkView[] = register.grids.map((section) => ({
     gridId: section.gridId,
     name: section.name,
-    load: section.load,
-    capacity: section.capacity,
-    level: powerLoadLevel(section.load, section.capacity),
-    tripped: section.tripped,
-    nodes: section.nodes.map((node) => ({
-      objectId: node.objectId,
-      name: node.name,
-      state: node.state,
+    components: section.components.map((component) => ({
+      id: component.id,
+      sources: [...component.sources],
+      load: component.load,
+      capacity: component.capacity,
+      level: powerLoadLevel(component.load, component.capacity),
+      state: component.state,
+      nodes: nodeViews(component.nodes),
     })),
+    outOfCircuit: nodeViews(section.outOfCircuit),
   }));
   if (entries.length === 0 && networks.length === 0) return undefined;
   return networks.length === 0 ? { entries } : { entries, networks };

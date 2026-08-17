@@ -230,12 +230,17 @@ export function objectSevered(state: GameState, objectId: string): boolean {
 
 // --- the power register ---------------------------------------------------
 
-/** The one word the register's right column prints for a node. */
+/**
+ * The one word the register's right column prints for a node. `destroyed` is
+ * its own word for the same reason `cut` is: a wreck and a node the grid merely
+ * stopped feeding are different problems, and only one of them has an answer.
+ */
 export type GridNodeState =
   | "live"
   | "dead"
   | "open"
   | "cut"
+  | "destroyed"
   | "tripped"
   | "tie-open"
   | "tie-closed";
@@ -247,14 +252,27 @@ export interface GridRegisterNode {
   state: GridNodeState;
 }
 
+/** One bus on the register: its own rating, its own draw, its own nodes. */
+export interface GridRegisterComponent {
+  /** Lowest object id in the component — a stable identity for the group. */
+  id: string;
+  /** What feeds it, named. Empty when nothing does. */
+  sources: string[];
+  /** Rating and draw ignoring the trip latch: a blown bus still reads 16/14. */
+  capacity: number;
+  load: number;
+  state: "live" | "tripped" | "dead";
+  nodes: GridRegisterNode[];
+}
+
 export interface GridRegisterSection {
   gridId: string;
   name: string;
-  /** Rating and draw ignoring the trip latch: a blown bus still reads 14/12. */
-  capacity: number;
-  load: number;
+  /** The buses the switches currently make, by ascending lowest node id. */
+  components: GridRegisterComponent[];
+  /** Nodes conducting nothing: switched out, cut, or wrecked. */
+  outOfCircuit: GridRegisterNode[];
   tripped: boolean;
-  nodes: GridRegisterNode[];
 }
 
 export interface PowerRegister {
@@ -326,7 +344,7 @@ interface NodeContext {
 
 function nodeState(state: GameState, node: GridNode, ctx: NodeContext): GridNodeState {
   const object = objectById(state, node.objectId);
-  if (object === undefined || object.destroyed) return "dead";
+  if (object === undefined || object.destroyed) return "destroyed";
   const fed = ctx.live.has(node.objectId);
   const open = object.powered !== true;
   switch (node.role) {
@@ -345,12 +363,18 @@ function nodeState(state: GameState, node: GridNode, ctx: NodeContext): GridNode
 }
 
 /**
- * The floor's power as one readable ledger: a section per declared grid with
- * its rating and its draw, then the loose machinery on no grid at all.
+ * The floor's power as one readable ledger: a section per declared grid, a
+ * group per bus inside it carrying that bus's own rating and draw, then the
+ * loose machinery on no grid at all.
+ *
+ * **Load is a component's, never a grid's.** A house split by an open tie is
+ * two buses at 10 of 14; printing their sum as 20 of 28 describes a circuit
+ * nobody is standing in, and the number a player plans a trip against would be
+ * wrong by exactly the amount that matters.
  *
  * Ordering is binding (FLUX_GRID §2.5a, COMBAT_RULES §17): sections in grid-id
- * order, nodes by role then object id. The register must never reshuffle under
- * the player's eye.
+ * order, components by their lowest node id, nodes by role then object id. The
+ * register must never reshuffle under the player's eye.
  */
 export function powerRegister(state: GameState): PowerRegister {
   const grids: GridRegisterSection[] = [];
@@ -361,29 +385,73 @@ export function powerRegister(state: GameState): PowerRegister {
       tripped: new Set(solution.tripped),
       ties: tieNodes(grid),
     };
-    const nodes = [...grid.nodes]
-      .sort(
-        (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || byId(a.objectId, b.objectId),
-      )
-      .map((node) => ({
+    const rows = new Map<string, GridRegisterNode>();
+    for (const node of [...grid.nodes].sort(
+      (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || byId(a.objectId, b.objectId),
+    )) {
+      rows.set(node.objectId, {
         objectId: node.objectId,
         name: objectById(state, node.objectId)?.def.name ?? node.objectId,
         role: node.role,
         state: nodeState(state, node, ctx),
-      }));
+      });
+    }
+    const grouped = new Set<string>();
+    const components: GridRegisterComponent[] = solution.components.map((component) => {
+      for (const objectId of component.nodes) grouped.add(objectId);
+      return {
+        id: component.nodes[0] ?? grid.id,
+        sources: component.sources.map((objectId) => rows.get(objectId)?.name ?? objectId),
+        capacity: component.capacity,
+        load: component.load,
+        state: component.tripped ? "tripped" : component.live ? "live" : "dead",
+        nodes: [...rows.values()].filter((row) => component.nodes.includes(row.objectId)),
+      };
+    });
     grids.push({
       gridId: grid.id,
       name: grid.name,
-      capacity: solution.capacity,
-      load: solution.load,
+      components,
+      outOfCircuit: [...rows.values()].filter((row) => !grouped.has(row.objectId)),
       tripped: solution.tripped.length > 0,
-      nodes,
     });
   }
   const ungridded = poweredObjects(state).filter(
     (entry) => gridOf(state, entry.objectId) === null,
   );
   return { grids, ungridded };
+}
+
+export interface GridComponentNodes {
+  /** Object ids on this bus, ascending. */
+  nodes: string[];
+  capacity: number;
+  load: number;
+}
+
+/**
+ * Every node of a grid grouped by the bus it is on, with what is on no bus at
+ * all last, rated and drawing nothing. The renderer paints strain off this:
+ * strain is a property of a component, and a node that has left the circuit is
+ * not straining with the bus it left.
+ */
+export function gridComponents(state: GameState, gridId: string): GridComponentNodes[] {
+  const grid = state.content.map.grids.find((candidate) => candidate.id === gridId);
+  if (grid === undefined) return [];
+  const solution = solveGrid(state, grid);
+  const grouped = new Set(solution.components.flatMap((component) => component.nodes));
+  const loose = grid.nodes
+    .map((node) => node.objectId)
+    .filter((objectId) => !grouped.has(objectId))
+    .sort(byId);
+  return [
+    ...solution.components.map((component) => ({
+      nodes: [...component.nodes],
+      capacity: component.capacity,
+      load: component.load,
+    })),
+    ...(loose.length === 0 ? [] : [{ nodes: loose, capacity: 0, load: 0 }]),
+  ];
 }
 
 /** Objects the effect touches, without asking the dice or the damage pipeline. */

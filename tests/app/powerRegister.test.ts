@@ -35,8 +35,20 @@ function bench(mutate?: (map: GameMap) => void): GameState {
 const section = (state: GameState) =>
   powerRegister(state).grids.find((entry) => entry.gridId === BENCH_GRID_ID)!;
 
+/** Every row of the section, buses in order, then whatever is on none of them. */
+const rows = (state: GameState) => {
+  const entry = section(state);
+  return [...entry.components.flatMap((component) => component.nodes), ...entry.outOfCircuit];
+};
+
 const stateOf = (state: GameState, objectId: string) =>
-  section(state).nodes.find((node) => node.objectId === objectId)?.state;
+  rows(state).find((node) => node.objectId === objectId)?.state;
+
+/** The bus a node is on, as the register reads it. */
+const busOf = (state: GameState, objectId: string) =>
+  section(state).components.find((component) =>
+    component.nodes.some((node) => node.objectId === objectId),
+  );
 
 function act(state: GameState, abilityId: string, objectId: string): GameState {
   const result = applyCommand(state, {
@@ -51,16 +63,19 @@ function act(state: GameState, abilityId: string, objectId: string): GameState {
 
 describe("the register's ordering", () => {
   it("runs sources, then breakers and ties, then lines, then sinks, each by id", () => {
-    expect(section(bench()).nodes.map((node) => node.objectId)).toEqual([
+    expect(rows(bench()).map((node) => node.objectId)).toEqual([
+      // The east bus, by ascending lowest node id.
       "east-main",
-      "west-main",
-      "gallery-tie",
       "east-bus",
+      "press-east",
+      // Then the west one.
+      "west-main",
       "north-bus",
       "west-bus",
       "lift-deck",
-      "press-east",
       "press-west",
+      // Then what is on neither.
+      "gallery-tie",
     ]);
   });
 
@@ -69,14 +84,63 @@ describe("the register's ordering", () => {
     expect(register.grids.map((entry) => entry.gridId)).toEqual([BENCH_GRID_ID]);
     expect(register.ungridded).toEqual([]);
   });
+});
 
-  it("reads what the bus is carrying against what it is rated for", () => {
-    const entry = section(bench());
-    expect({ load: entry.load, capacity: entry.capacity, tripped: entry.tripped }).toEqual({
+describe("the load line is a component's, never a grid's", () => {
+  it("reads each bus against its own rating rather than summing the house", () => {
+    expect(
+      section(bench()).components.map((component) => ({
+        sources: component.sources,
+        load: component.load,
+        capacity: component.capacity,
+        state: component.state,
+      })),
+    ).toEqual([
+      { sources: ["east-main"], load: 4, capacity: 10, state: "live" },
+      { sources: ["west-main"], load: 6, capacity: 12, state: "live" },
+    ]);
+  });
+
+  it("reads one bus when the tie joins them, and both mains feed it", () => {
+    const tied = act(bench(), "bench-cross-tie", "gallery-tie");
+    expect(section(tied).components).toHaveLength(1);
+    expect(section(tied).components[0]).toMatchObject({
+      sources: ["east-main", "west-main"],
       load: 10,
       capacity: 22,
-      tripped: false,
+      state: "live",
     });
+  });
+
+  it("keeps the blown bus's own arithmetic, and leaves the other one alone", () => {
+    const blown = act(bench(), "bench-overdraw", "west-bus");
+    expect(busOf(blown, "west-main")).toMatchObject({
+      load: 14,
+      capacity: 12,
+      state: "tripped",
+    });
+    expect(busOf(blown, "east-main")).toMatchObject({ load: 4, capacity: 10, state: "live" });
+  });
+
+  it("gives a bus with nothing feeding it no arithmetic to read", () => {
+    const dark = act(bench(), "bench-isolate", "west-main");
+    const stranded = busOf(dark, "north-bus");
+    expect(stranded).toMatchObject({ sources: [], capacity: 0, state: "dead" });
+    expect(stranded?.nodes.map((node) => node.objectId)).toEqual([
+      "north-bus",
+      "west-bus",
+      "lift-deck",
+      "press-west",
+    ]);
+  });
+
+  it("takes a wrecked node out of the circuit entirely", () => {
+    const wrecked = act(bench(), "bench-demolish", "north-bus");
+    expect(busOf(wrecked, "north-bus")).toBeUndefined();
+    expect(section(wrecked).outOfCircuit.map((node) => node.objectId)).toEqual([
+      "gallery-tie",
+      "north-bus",
+    ]);
   });
 });
 
@@ -98,7 +162,7 @@ describe("the state each node prints", () => {
     expect(stateOf(blown, "west-main")).toBe("tripped");
     // The readout ignores the latch: a blown bus still reads what it was
     // carrying against what it is rated for.
-    expect(section(blown).load).toBe(18);
+    expect(busOf(blown, "west-main")?.load).toBe(14);
   });
 
   it("reads a closed tie as closed, not merely live", () => {
@@ -106,9 +170,10 @@ describe("the state each node prints", () => {
     expect(stateOf(closed, "gallery-tie")).toBe("tie-closed");
   });
 
-  it("reads a wrecked node dead, whatever role it held", () => {
+  it("tells a wreck from a node the grid merely stopped feeding", () => {
     const wrecked = act(bench(), "bench-demolish", "north-bus");
-    expect(stateOf(wrecked, "north-bus")).toBe("dead");
+    expect(stateOf(wrecked, "north-bus")).toBe("destroyed");
+    expect(stateOf(wrecked, "press-west")).toBe("dead");
   });
 });
 
@@ -156,15 +221,20 @@ describe("the LOAD line's three colours", () => {
     expect(powerLoadLevel(4, 0)).toBe("over");
   });
 
-  it("reaches the view model", () => {
+  it("reaches the view model, one line per bus", () => {
     const view = powerLedgerView(bench());
-    expect(view?.networks?.[0]).toMatchObject({
-      gridId: BENCH_GRID_ID,
-      load: 10,
-      capacity: 22,
-      level: "rest",
-      tripped: false,
-    });
+    expect(view?.networks?.[0]?.gridId).toBe(BENCH_GRID_ID);
+    expect(
+      view?.networks?.[0]?.components.map((component) => ({
+        load: component.load,
+        capacity: component.capacity,
+        level: component.level,
+        state: component.state,
+      })),
+    ).toEqual([
+      { load: 4, capacity: 10, level: "rest", state: "live" },
+      { load: 6, capacity: 12, level: "rest", state: "live" },
+    ]);
   });
 });
 

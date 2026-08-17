@@ -5,17 +5,55 @@
 // badly, which is the e2 lesson this file holds the line on.
 
 import { describe, expect, it } from "vitest";
-import { activeUnit, createBattle } from "../../src/core/index.js";
+import { activeUnit, createBattle, type ContentLibrary } from "../../src/core/index.js";
+import type { Ability, GameMap } from "../../src/data/index.js";
 import { BattleController } from "../../src/app/controller.js";
 import { stubAiCommand } from "../../src/app/stubAi.js";
 import {
   BENCH_ENCOUNTER_ID,
+  BENCH_MAP_ID,
   benchContent,
   benchUnit,
 } from "../core/gridFixtures.js";
 import { fakeRenderer, fakeUi, type FakeRenderer, type FakeUi } from "./fixtures.js";
 
 const HAND = "bench-hand";
+
+/** Rig Machinery's shape: one order that opens a node and then wrecks it. */
+const RIG: Ability = {
+  schemaVersion: 1,
+  id: "bench-rig",
+  name: "bench-rig",
+  description: "Bench: open it, then wreck it.",
+  jobId: "saboteur",
+  standingCost: 0,
+  slot: "action",
+  targeting: {
+    range: { min: 0, max: 9, vertical: 9 },
+    area: { shape: "single" },
+    requiresLos: false,
+    validTargets: ["object"],
+  },
+  chargeCost: 0,
+  castSpeed: null,
+  effects: [
+    { kind: "setPower", mode: "off" },
+    { kind: "damageObject", amount: { base: "fixed", power: 30 } },
+  ],
+};
+
+/** The bench mains carry their own reclose handle, as the Meter House's do. */
+function operableMains(map: GameMap): void {
+  for (const object of map.objects) {
+    if (object.id !== "west-main") continue;
+    object.operable = {
+      requiresPower: false,
+      targetObjectIds: [object.id],
+      targetTiles: [],
+      effects: [{ kind: "setPower", mode: "on" }],
+    };
+  }
+}
 
 interface Harness {
   controller: BattleController;
@@ -48,10 +86,19 @@ function runToHand(h: Harness): Harness {
   throw new Error(`${HAND} never got the floor`);
 }
 
-function harness(): Harness {
-  const battle = createBattle(benchContent(), BENCH_ENCOUNTER_ID, [benchUnit(HAND)], [
-    { unitId: HAND, position: { x: 4, y: 0 }, facing: "north" },
-  ]);
+function harness(mutate?: (map: GameMap) => void): Harness {
+  const content: ContentLibrary = {
+    ...benchContent(),
+    abilities: { ...benchContent().abilities, [RIG.id]: RIG },
+  };
+  mutate?.(content.maps[BENCH_MAP_ID] as GameMap);
+  const hand = benchUnit(HAND);
+  const battle = createBattle(
+    content,
+    BENCH_ENCOUNTER_ID,
+    [{ ...hand, learnedAbilityIds: [...hand.learnedAbilityIds, RIG.id] }],
+    [{ unitId: HAND, position: { x: 4, y: 0 }, facing: "north" }],
+  );
   const renderer = fakeRenderer();
   const ui = fakeUi();
   const controller = new BattleController({
@@ -126,6 +173,43 @@ describe("the annunciator names the cause and the verb that answers it", () => {
     const h = harness();
     order(h, "bench-cut", WEST_BUS);
     expect(h.ui.noticeTones.at(-1)).toBe("machine");
+  });
+
+  // An order that opens a node and then wrecks it reports the isolator first,
+  // because that is the effect that took the branch dark. The player told to
+  // throw it back would be standing at rubble.
+  it("lets destruction outrank the isolator that came with it", () => {
+    expect(order(harness(), "bench-rig", NORTH_BUS)).toBe(
+      "north-bus destroyed. 3 machines dark. Nothing on this grid feeds them now.",
+    );
+  });
+});
+
+// The player's own answer-verb reports its consequence in the same voice the
+// enemy's does. "West Main operated." was the machine acknowledging a click.
+describe("the player's own hand on the lever", () => {
+  /** Walk to the west main and work its handle. */
+  function operate(h: Harness): string {
+    runToHand(h);
+    h.controller.intents.beginMove(HAND);
+    h.controller.intents.confirmMove(HAND, { x: 1, y: 0 });
+    h.controller.intents.activateObject(HAND, "west-main");
+    expect(h.controller.lastError).toBeNull();
+    return h.ui.notices.at(-1) ?? "";
+  }
+
+  it("names the reclose and the trip it walked straight back into", () => {
+    const h = harness(operableMains);
+    order(h, "bench-overdraw", WEST_BUS);
+    expect(operate(h)).toBe(
+      "west-main reclosed — tripped again, 14 against a rating of 12. Shed a load before it will hold.",
+    );
+  });
+
+  it("names what came back when the reclose holds", () => {
+    const h = harness(operableMains);
+    order(h, "bench-isolate", WEST_MAIN);
+    expect(operate(h)).toBe("west-main put back in — 5 machines came back up.");
   });
 });
 

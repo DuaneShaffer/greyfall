@@ -10,6 +10,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createBattle,
+  powerRegister,
   solveGrid,
   standHeight,
   type BattleEvent,
@@ -164,6 +165,38 @@ describe("the Meter House grid, as authored", () => {
     const state = battle();
     demolish(state, "west-main");
     expect(settle(state).live.sort()).toEqual([...EAST_HALF].sort());
+  });
+
+  // The register is the only place the player meets this arithmetic, and the
+  // number it prints has to be the one the map notes claim.
+  it("puts 10 of 14 on the register once per half, and 20 of 28 only when tied", () => {
+    const read = (state: GameState): string[] =>
+      powerRegister(state)
+        .grids.find((entry) => entry.gridId === GRID_ID)!
+        .components.map(
+          (component) =>
+            `${component.sources.join(" + ")} ${component.load}/${component.capacity} ${component.state}`,
+        );
+    expect(read(battle())).toEqual(["East Main 10/14 live", "West Main 10/14 live"]);
+
+    const tied = battle();
+    isolate(tied, "gallery-tie", true);
+    expect(read(tied)).toEqual(["East Main + West Main 20/28 live"]);
+  });
+
+  // A half nothing feeds has no rating to read against, and the LOAD line
+  // disappearing is the explanation: this is not a bus running quietly, it is
+  // a bus with nothing on the other end of it.
+  it("gives a dead half no arithmetic and does not read it as at rest", () => {
+    const state = battle();
+    demolish(state, "west-main");
+    settle(state);
+    const section = powerRegister(state).grids.find((entry) => entry.gridId === GRID_ID)!;
+    const stranded = section.components.find((component) =>
+      component.nodes.some((node) => node.objectId === "west-board"),
+    );
+    expect(stranded).toMatchObject({ sources: [], capacity: 0, load: 10, state: "dead" });
+    expect(section.outOfCircuit.map((node) => node.state)).toContain("destroyed");
   });
 
   it("carries 10 of 14 on each half — a load of 4 fits and a load of 5 does not", () => {

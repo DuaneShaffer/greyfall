@@ -45,6 +45,8 @@ import {
   type Command,
   type CommandError,
   type GameState,
+  type GridRegisterNode,
+  type GridRegisterSection,
   type PowerCause,
   type TargetRef,
 } from "../core/index.js";
@@ -178,12 +180,53 @@ const machineList = (names: readonly string[]): string =>
   names.length <= 2 ? names.join(" and ") : `${names.length} machines`;
 
 /**
+ * What the player's own hand on the lever actually did to the circuit. A
+ * reclose that blows again on the same pass is the whole tug-of-war in one
+ * beat, and it is exactly what "West Main operated." was hiding.
+ */
+function operateVerb(state: GameState, objectId: string, events: readonly BattleEvent[]): string {
+  if (events.some((event) => event.type === "GridReset" && event.nodeId === objectId)) {
+    return "reclosed";
+  }
+  const node = registerNode(state, objectId);
+  const object = getObject(state, objectId);
+  if (node === null || object === null || object.powered === null) return "operated";
+  if (node.role === "source") return object.powered ? "put back in" : "pulled";
+  return object.powered ? "closed" : "opened";
+}
+
+/**
  * What the machine actually did, not that it was touched. A switch usually
  * changes something else on the floor — e2's mains carry three presses — and
  * "Floor Nine Mains operated." left the player to discover the consequence by
  * walking up to a press and finding its controls dead.
+ *
+ * On a grid the player's answer-verb reports in the same voice the enemy's does
+ * (FLUX_GRID §2.5b): naming the machine is not naming the consequence.
  */
-function operateNotice(state: GameState, name: string, before: Map<string, boolean>): string {
+function operateNotice(
+  state: GameState,
+  name: string,
+  objectId: string,
+  before: Map<string, boolean>,
+  events: readonly BattleEvent[],
+): string {
+  const verb = operateVerb(state, objectId, events);
+  const trip = events.find(
+    (event): event is Extract<BattleEvent, { type: "GridTripped" }> => event.type === "GridTripped",
+  );
+  if (trip !== undefined) {
+    const tie = tieClause(state, trip.gridId);
+    const answer =
+      verb === "reclosed"
+        ? tie === null
+          ? "Shed a load before it will hold."
+          : `Shed a load, or take the ${tie}.`
+        : "Someone has to reclose it.";
+    const blew = verb === "reclosed" ? "tripped again" : "the bus tripped";
+    return `${name} ${verb} — ${blew}, ${trip.load} against a rating of ${trip.capacity}. ${answer}`;
+  }
+
   const lost: string[] = [];
   const gained: string[] = [];
   for (const object of allObjects(state)) {
@@ -196,8 +239,8 @@ function operateNotice(state: GameState, name: string, before: Map<string, boole
   const clauses: string[] = [];
   if (lost.length > 0) clauses.push(`${machineList(lost)} lost power`);
   if (gained.length > 0) clauses.push(`${machineList(gained)} came back up`);
-  if (clauses.length === 0) return `${name} operated.`;
-  return `${name} operated — ${clauses.join("; ")}.`;
+  if (clauses.length === 0) return `${name} ${verb}.`;
+  return `${name} ${verb} — ${clauses.join("; ")}.`;
 }
 
 /** The switch that carries these machines, if the floor has one. */
@@ -221,14 +264,36 @@ function tieClause(state: GameState, gridId: string): string | null {
   return tie === undefined ? null : objectName(state, tie);
 }
 
+/** Every register row of a grid, buses first, then whatever is on none of them. */
+const sectionNodes = (section: GridRegisterSection): GridRegisterNode[] => [
+  ...section.components.flatMap((component) => component.nodes),
+  ...section.outOfCircuit,
+];
+
+/** The name of the source that just latched open, off the register. */
+function trippedSourceName(state: GameState, gridId: string): string | null {
+  const section = powerRegister(state).grids.find((entry) => entry.gridId === gridId);
+  if (section === undefined) return null;
+  return sectionNodes(section).find((node) => node.state === "tripped")?.name ?? section.name;
+}
+
+/** The register's own row for an object, when it is a node of a declared grid. */
+function registerNode(state: GameState, objectId: string): GridRegisterNode | null {
+  for (const section of powerRegister(state).grids) {
+    const found = sectionNodes(section).find((node) => node.objectId === objectId);
+    if (found !== undefined) return found;
+  }
+  return null;
+}
+
 /**
  * The grid's own annunciator. The register tells the player the state; this
  * tells them the verb that answers it, because a mechanic whose counterplay has
  * to be inferred is a mechanic that measures well and plays badly
  * (FLUX_GRID §2.5b, and the e2 lesson it operationalises).
  *
- * One line, always: the notice strip is single-slot with no queue, so three
- * lines that overwrite each other are worse than one dense one.
+ * One line, always: the notice strip shows one at a time, so three lines that
+ * overwrite each other are worse than one dense one.
  */
 function gridNotice(state: GameState, events: readonly BattleEvent[]): string | null {
   const trip = events.find(
@@ -236,8 +301,7 @@ function gridNotice(state: GameState, events: readonly BattleEvent[]): string | 
       event.type === "GridTripped",
   );
   if (trip !== undefined) {
-    const section = powerRegister(state).grids.find((entry) => entry.gridId === trip.gridId);
-    const name = section?.nodes.find((node) => node.state === "tripped")?.name ?? section?.name;
+    const name = trippedSourceName(state, trip.gridId);
     return `${name ?? "The main"} tripped — ${trip.load} against a rating of ${trip.capacity}. Someone has to reclose it.`;
   }
 
@@ -252,8 +316,15 @@ function gridNotice(state: GameState, events: readonly BattleEvent[]): string | 
     anyCause ??= event.cause;
     if (!event.powered) darkCause ??= event.cause;
   }
-  const cause = darkCause ?? anyCause;
-  if (cause === null) return null;
+  const found = darkCause ?? anyCause;
+  if (found === null) return null;
+  // An order that opens a node and then wrecks it reports the isolator first,
+  // because that is the effect that took the branch dark. Destruction outranks
+  // it: the player told to throw it back would be standing at rubble.
+  const wrecked = new Set(
+    events.filter((event) => event.type === "ObjectDestroyed").map((event) => event.objectId),
+  );
+  const cause: PowerCause = wrecked.has(found.nodeId) ? { ...found, reason: "destroyed" } : found;
 
   const node = objectName(state, cause.nodeId);
   const tie = tieClause(state, cause.gridId);
@@ -338,6 +409,8 @@ export class BattleController {
   private started = false;
   /** Set while the player's own Operate is in flight; it reports itself. */
   private operating = false;
+  /** The events the last command settled into, for a notice composed after it. */
+  private lastBatch: readonly BattleEvent[] = [];
 
   constructor(options: ControllerOptions) {
     this.gameState = options.state;
@@ -615,7 +688,10 @@ export class BattleController {
     const sent = this.dispatch({ kind: "activateObject", unitId, objectId });
     this.operating = false;
     if (!sent) return;
-    this.ui.notify?.(operateNotice(this.gameState, name, before), "machine");
+    this.ui.notify?.(
+      operateNotice(this.gameState, name, objectId, before, this.lastBatch),
+      "machine",
+    );
   }
 
   private commitAct(unitId: string, abilityId: string, target: TargetRef | null): void {
@@ -661,6 +737,7 @@ export class BattleController {
       return false;
     }
     this.lastCommandError = null;
+    this.lastBatch = result.events;
     this.gameState = result.state;
     this.clearSelection();
     // The forecast stays up through the presentation as the record of what was

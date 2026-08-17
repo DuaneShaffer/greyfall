@@ -401,9 +401,10 @@ export function mockTurnOrderView(): TurnOrderView {
 }
 
 /**
- * The register as §2.5(a)'s mock draws it: one gridded section carrying more
- * than it is rated for, a second sitting on its rating, a third at rest, and
- * the loose machinery underneath — the three load colours on one screen.
+ * The register as §2.5(a)'s mock draws it: one gridded section split in two by
+ * an open tie — one bus past its rating and blown, one dead with no feed at all
+ * — a second section sitting on its rating, a third at rest, and the loose
+ * machinery underneath. The three load colours on one screen.
  */
 export function mockPowerRegisterView(): PowerLedgerView {
   return {
@@ -411,43 +412,76 @@ export function mockPowerRegisterView(): PowerLedgerView {
       {
         gridId: "refinery-three-grid",
         name: "Refinery Three Grid",
-        load: 14,
-        capacity: 12,
-        level: "over",
-        tripped: true,
-        nodes: [
+        components: [
+          {
+            id: "charge-hoist-east",
+            sources: ["east main"],
+            load: 14,
+            capacity: 12,
+            level: "over",
+            state: "tripped",
+            nodes: [
+              { objectId: "east-main", name: "east main", state: "tripped" },
+              { objectId: "charge-hoist-east", name: "charge hoist east", state: "live" },
+            ],
+          },
+          {
+            id: "charge-hoist-west",
+            sources: [],
+            load: 4,
+            capacity: 0,
+            level: "over",
+            state: "dead",
+            nodes: [
+              { objectId: "charge-hoist-west", name: "charge hoist west", state: "dead" },
+            ],
+          },
+        ],
+        outOfCircuit: [
           { objectId: "west-main", name: "west main", state: "open" },
-          { objectId: "east-main", name: "east main", state: "tripped" },
           { objectId: "gallery-tie", name: "tie, gallery", state: "tie-open" },
           { objectId: "north-bus", name: "north bus", state: "cut" },
-          { objectId: "charge-hoist-west", name: "charge hoist west", state: "dead" },
-          { objectId: "charge-hoist-east", name: "charge hoist east", state: "live" },
+          { objectId: "feeder-trough", name: "feeder trough", state: "destroyed" },
         ],
       },
       {
         gridId: "gallery-grid",
         name: "Gallery Grid",
-        load: 9,
-        capacity: 10,
-        level: "rated",
-        tripped: false,
-        nodes: [
-          { objectId: "gallery-main", name: "gallery main", state: "live" },
-          { objectId: "gallery-board", name: "board, gallery", state: "tie-closed" },
-          { objectId: "gallery-lamps", name: "lamp standards", state: "live" },
+        components: [
+          {
+            id: "gallery-board",
+            sources: ["gallery main"],
+            load: 9,
+            capacity: 10,
+            level: "rated",
+            state: "live",
+            nodes: [
+              { objectId: "gallery-main", name: "gallery main", state: "live" },
+              { objectId: "gallery-board", name: "board, gallery", state: "tie-closed" },
+              { objectId: "gallery-lamps", name: "lamp standards", state: "live" },
+            ],
+          },
         ],
+        outOfCircuit: [],
       },
       {
         gridId: "yard-grid",
         name: "Yard Grid",
-        load: 4,
-        capacity: 10,
-        level: "rest",
-        tripped: false,
-        nodes: [
-          { objectId: "yard-main", name: "yard main", state: "live" },
-          { objectId: "yard-hoist", name: "yard hoist", state: "live" },
+        components: [
+          {
+            id: "yard-hoist",
+            sources: ["yard main"],
+            load: 4,
+            capacity: 10,
+            level: "rest",
+            state: "live",
+            nodes: [
+              { objectId: "yard-main", name: "yard main", state: "live" },
+              { objectId: "yard-hoist", name: "yard hoist", state: "live" },
+            ],
+          },
         ],
+        outOfCircuit: [],
       },
     ],
     entries: [{ objectId: "service-lift", name: "Service Lift", powered: true }],

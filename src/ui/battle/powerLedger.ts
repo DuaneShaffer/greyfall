@@ -1,5 +1,6 @@
 import { Component, el, plate, replaceChildren } from "../dom.js";
 import type {
+  PowerComponentView,
   PowerEntryView,
   PowerLedgerView,
   PowerNetworkView,
@@ -37,7 +38,10 @@ export class PowerLedger implements Component<PowerLedgerView | undefined> {
   update(view: PowerLedgerView | undefined): void {
     const entries = view?.entries ?? [];
     const networks = view?.networks ?? [];
-    const nodes = networks.flatMap((network) => network.nodes);
+    const nodes = networks.flatMap((network) => [
+      ...network.components.flatMap((component) => component.nodes),
+      ...network.outOfCircuit,
+    ]);
     const total = entries.length + nodes.length;
     this.el.classList.toggle("is-empty", total === 0);
     const live =
@@ -61,46 +65,108 @@ const STATE_LABEL: Record<PowerNodeState, string> = {
   dead: "Dead",
   open: "Open",
   cut: "Cut",
+  destroyed: "Destroyed",
   tripped: "Tripped",
   "tie-open": "Tie Open",
   "tie-closed": "Tie Closed",
 };
 
 /**
- * A thrown switch and a cut span are different problems with different
+ * A thrown switch, a cut span and a wreck are different problems with different
  * answers, so they are different rows: copper for what is being fed, dim for
- * what is merely switched out, `overload-500` for the latch that blew.
+ * what is merely switched out, `overload-500` for the latch that blew, and the
+ * destroyed language for the one nothing answers.
  */
 const STATE_CLASS: Record<PowerNodeState, string> = {
   live: "is-live",
   dead: "is-dead",
   open: "is-dead",
   cut: "is-cut",
+  destroyed: "is-wrecked",
   tripped: "is-tripped",
   "tie-open": "is-dead",
   "tie-closed": "is-live",
 };
 
-function renderNetwork(network: PowerNetworkView): HTMLElement {
-  const head = el("div", {
-    class: "gf-power-network-head",
+/** What feeds a bus, named — or the fact that nothing does. */
+const componentName = (component: PowerComponentView): string =>
+  component.sources.length === 0 ? "Unfed" : component.sources.join(" + ");
+
+function renderComponent(component: PowerComponentView): HTMLElement {
+  // A component with no rating has no LOAD line, and its absence is the
+  // explanation: nothing feeds this, so there is no arithmetic to read.
+  const load =
+    component.capacity === 0
+      ? []
+      : [
+          el("span", {
+            class: `gf-power-load is-${component.level}`,
+            text: `Load ${component.load}/${component.capacity}`,
+          }),
+        ];
+  const flag =
+    component.state === "live"
+      ? []
+      : [
+          el("span", {
+            class: "gf-power-flag",
+            text: component.state === "tripped" ? "Tripped" : "Dead",
+          }),
+        ];
+  return el("li", {
+    class: `gf-power-component is-${component.state}`,
+    data: { component: component.id },
     children: [
-      el("span", { class: "gf-power-name", text: network.name }),
-      el("span", {
-        class: `gf-power-load is-${network.level}`,
-        text: `Load ${network.load}/${network.capacity}`,
+      el("div", {
+        class: "gf-power-component-head",
+        children: [
+          el("span", { class: "gf-power-name", text: componentName(component) }),
+          ...load,
+          ...flag,
+        ],
       }),
-      ...(network.tripped ? [el("span", { class: "gf-power-flag", text: "Tripped" })] : []),
+      el("ul", {
+        class: "gf-power-nodes",
+        children: component.nodes.map((node) => renderNode(node)),
+      }),
     ],
   });
+}
+
+function renderOutOfCircuit(nodes: readonly PowerNodeView[]): HTMLElement[] {
+  if (nodes.length === 0) return [];
+  return [
+    el("li", {
+      class: "gf-power-component is-out",
+      children: [
+        el("div", {
+          class: "gf-power-component-head",
+          children: [el("span", { class: "gf-power-name", text: "Out of circuit" })],
+        }),
+        el("ul", {
+          class: "gf-power-nodes",
+          children: nodes.map((node) => renderNode(node)),
+        }),
+      ],
+    }),
+  ];
+}
+
+function renderNetwork(network: PowerNetworkView): HTMLElement {
   return el("li", {
     class: "gf-power-network",
     data: { grid: network.gridId },
     children: [
-      head,
+      el("div", {
+        class: "gf-power-network-head",
+        children: [el("span", { class: "gf-power-name", text: network.name })],
+      }),
       el("ul", {
-        class: "gf-power-nodes",
-        children: network.nodes.map((node) => renderNode(node)),
+        class: "gf-power-components",
+        children: [
+          ...network.components.map((component) => renderComponent(component)),
+          ...renderOutOfCircuit(network.outOfCircuit),
+        ],
       }),
     ],
   });

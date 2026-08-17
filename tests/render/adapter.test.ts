@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BASIC_ATTACK_ID,
+  applyCommand,
   createBattle,
   unitMaxHp,
   type BattleEvent,
@@ -11,10 +12,37 @@ import {
 } from "../../src/core/index.js";
 import { toRenderEventList, toRenderEvents, viewModelFromGameState } from "../../src/render/adapter.js";
 import { ObjectVisual } from "../../src/render/objects.js";
-import { loadContent, rowen } from "../core/fixtures.js";
+import { advanceTo, loadContent, rowen } from "../core/fixtures.js";
+import {
+  BENCH_ENCOUNTER_ID,
+  BENCH_GRID_ID,
+  benchContent,
+  benchUnit,
+} from "../core/gridFixtures.js";
 import { openBattle, VALE } from "../app/fixtures.js";
 
 const battle = (): GameState => openBattle([rowen(), VALE]).state;
+
+const HAND = "bench-hand";
+
+/** A battle on the grid bench, so grid events land against a declared grid. */
+const benchState = (): GameState => {
+  const start = createBattle(benchContent(), BENCH_ENCOUNTER_ID, [benchUnit(HAND)], [
+    { unitId: HAND, position: { x: 4, y: 0 }, facing: "north" },
+  ]);
+  return advanceTo(start.state, HAND);
+};
+
+const act = (state: GameState, abilityId: string, objectId: string): GameState => {
+  const result = applyCommand(state, {
+    kind: "act",
+    unitId: HAND,
+    abilityId,
+    target: { kind: "object", objectId },
+  });
+  expect(result.error).toBeNull();
+  return result.state;
+};
 
 const attack: BattleEvent = {
   type: "AbilityUsed",
@@ -268,14 +296,14 @@ describe("the grid's own events", () => {
 
   it("carries every one of them to the renderer's own vocabulary", () => {
     const events: BattleEvent[] = [
-      { type: "GridChanged", gridId: "g", capacity: 12, load: 14, liveNodes: ["a"], tripped: true },
-      { type: "GridTripped", gridId: "g", capacity: 12, load: 14 },
-      { type: "GridReset", gridId: "g", nodeId: "main", unitId: "rowen" },
-      { type: "LineSevered", objectId: "bus", unitId: "rowen" },
-      { type: "LineSpliced", objectId: "bus", unitId: "rowen" },
-      { type: "LoadAttached", gridId: "g", nodeId: "bus", amount: 8, turns: 3, unitId: "rowen" },
+      { type: "GridChanged", gridId: BENCH_GRID_ID, capacity: 22, load: 10, liveNodes: [], tripped: false },
+      { type: "GridTripped", gridId: BENCH_GRID_ID, capacity: 12, load: 14 },
+      { type: "GridReset", gridId: BENCH_GRID_ID, nodeId: "west-main", unitId: HAND },
+      { type: "LineSevered", objectId: "north-bus", unitId: HAND },
+      { type: "LineSpliced", objectId: "north-bus", unitId: HAND },
+      { type: "LoadAttached", gridId: BENCH_GRID_ID, nodeId: "west-bus", amount: 8, turns: 3, unitId: HAND },
     ];
-    expect(toRenderEventList(events, state).map((event) => event.kind)).toEqual([
+    expect(toRenderEventList(events, benchState()).map((event) => event.kind)).toEqual([
       "gridChanged",
       "gridTripped",
       "gridReset",
@@ -291,18 +319,29 @@ describe("the grid's own events", () => {
     expect(toRenderEvents({ type: "LoadExpired", loadId: "load-1" }, state)).toEqual([]);
   });
 
-  it("reads the load against the rating in the register's own three steps", () => {
-    const strain = (load: number, capacity: number): number => {
-      const [event] = toRenderEvents(
-        { type: "GridChanged", gridId: "g", capacity, load, liveNodes: [], tripped: false },
-        state,
-      );
-      return event !== undefined && event.kind === "gridChanged" ? event.strain : -1;
+  // Strain belongs to a component and never to a grid: the numbers on the
+  // event are the whole network's, and the seams must read the bus each node is
+  // actually standing on.
+  it("paints each bus at its own strain, off the state rather than the event", () => {
+    const painted = (grid: GameState): Record<string, number> => {
+      const out: Record<string, number> = {};
+      for (const event of toRenderEvents(
+        { type: "GridChanged", gridId: BENCH_GRID_ID, capacity: 0, load: 0, liveNodes: [], tripped: false },
+        grid,
+      )) {
+        if (event.kind !== "gridChanged") continue;
+        for (const nodeId of event.nodeIds) out[nodeId] = event.strain;
+      }
+      return out;
     };
-    expect(strain(10, 12)).toBe(0);
-    expect(strain(11, 12)).toBeGreaterThan(0);
-    expect(strain(12, 12)).toBeGreaterThan(0);
-    expect(strain(13, 12)).toBe(1);
+    // At rest both halves are quiet: 6 of 12 and 4 of 10.
+    expect(painted(benchState())).toMatchObject({ "west-main": 0, "east-main": 0 });
+    // Overdrawn, the west half is past its rating and the east half is not.
+    const blown = act(benchState(), "bench-overdraw", "west-bus");
+    expect(painted(blown)).toMatchObject({ "west-main": 1, "west-bus": 1, "east-main": 0 });
+    // And a half with nothing feeding it is not straining, it is dead.
+    const dark = act(benchState(), "bench-isolate", "west-main");
+    expect(painted(dark)).toMatchObject({ "north-bus": 0, "press-west": 0 });
   });
 
   /**
