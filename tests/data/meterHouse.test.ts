@@ -7,6 +7,8 @@
  * `docs/MAP_NOTES.md` §6 states the claims; this file is the proof of them.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   createBattle,
@@ -18,7 +20,7 @@ import {
 } from "../../src/core/index.js";
 import { inBounds, isStandable, neighbors } from "../../src/core/rules/grid.js";
 import { evaluateTriggers } from "../../src/core/rules/triggers.js";
-import type { Grid, MapObject, TileCoord } from "../../src/data/index.js";
+import { Campaign, type Grid, type MapObject, type TileCoord } from "../../src/data/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";
 
 const MAP_ID = "meter-house";
@@ -445,14 +447,85 @@ describe("the encounter's restore ladder", () => {
     state.turn = 24;
     const ctx = { state, events: [] as BattleEvent[] };
     evaluateTriggers(ctx);
+    // The latch reads energization: a tripped source keeps `powered: true` and
+    // is still a house in the dark.
+    expect(state.firedTriggerIds).toContain("the-west-main-goes-out");
     expect(state.firedTriggerIds).toContain("the-house-comes-back");
     expect(ctx.events.some((e) => e.type === "GridReset")).toBe(true);
     expect(solve(state).tripped).toEqual([]);
     expect(solve(state).live.sort()).toEqual([...WEST_HALF, ...EAST_HALF].sort());
   });
 
-  it("names no grid-aware trigger, win, or loss condition — those are v2", () => {
+  // LOW 14: the ladder used to announce a restore on a house nobody had
+  // touched. The gate is `afterTriggerId` on the latch, so the rung and its
+  // lines land together or not at all.
+  it("says nothing at turn 24 on a house that never went dark", () => {
+    const state = battle();
+    state.turn = 24;
+    const ctx = { state, events: [] as BattleEvent[] };
+    evaluateTriggers(ctx);
+
+    expect(state.firedTriggerIds).not.toContain("the-west-main-goes-out");
+    expect(state.firedTriggerIds).not.toContain("the-house-comes-back");
+    expect(ctx.events.some((e) => e.type === "DialogueRequested")).toBe(false);
+    // Nothing was lost with it: the restore it skipped had both mains already in.
+    expect(object(state, "west-main").powered).toBe(true);
+    expect(object(state, "east-main").powered).toBe(true);
+    expect(solve(state).live.sort()).toEqual([...WEST_HALF, ...EAST_HALF].sort());
+  });
+
+  it("speaks it at turn 24 once a main has been out", () => {
+    const state = battle();
+    isolate(state, "west-main", false);
+    evaluateTriggers({ state, events: [] as BattleEvent[] });
+    expect(state.firedTriggerIds).toContain("the-west-main-goes-out");
+
+    state.turn = 24;
+    const ctx = { state, events: [] as BattleEvent[] };
+    evaluateTriggers(ctx);
+    expect(state.firedTriggerIds).toContain("the-house-comes-back");
+    expect(
+      ctx.events.some(
+        (e) => e.type === "DialogueRequested" && e.triggerId === "the-house-comes-back",
+      ),
+    ).toBe(true);
+    expect(object(state, "west-main").powered).toBe(true);
+    expect(solve(state).live.sort()).toEqual([...WEST_HALF, ...EAST_HALF].sort());
+  });
+
+  // The honest limit, tested rather than asserted in prose: the latch watches
+  // the west main, so an east-only pull with the tie open misses the turn-24
+  // rung and waits for a silent one.
+  it("misses the rung when only the east main is pulled, and the ladder still holds", () => {
+    const state = battle();
+    isolate(state, "east-main", false);
+    state.turn = 24;
+    evaluateTriggers({ state, events: [] as BattleEvent[] });
+    expect(state.firedTriggerIds).not.toContain("the-house-comes-back");
+    expect(object(state, "east-main").powered).toBe(false);
+
+    state.turn = 36;
+    evaluateTriggers({ state, events: [] as BattleEvent[] });
+    expect(state.firedTriggerIds).toContain("the-house-holds-36");
+    expect(object(state, "east-main").powered).toBe(true);
+  });
+
+  // With the tie closed there is no east-only pull: one main carrying 20 of 14
+  // trips, and the west main is dark whichever cutout the player walked to.
+  it("catches an east-main pull anyway once the tie is closed", () => {
+    const state = battle();
+    isolate(state, "gallery-tie", true);
+    isolate(state, "east-main", false);
+    expect(settle(state).tripped).toEqual(["west-main"]);
+    expect(object(state, "west-main").powered, "the trip is a latch, not an isolator").toBe(true);
+
+    evaluateTriggers({ state, events: [] as BattleEvent[] });
+    expect(state.firedTriggerIds).toContain("the-west-main-goes-out");
+  });
+
+  it("names one grid-aware trigger condition and no grid-aware win or loss", () => {
     const kinds = encounter.triggers.map((t) => t.when.kind);
+    expect(kinds.filter((k) => k === "objectPowered")).toEqual(["objectPowered"]);
     expect(kinds.every((k) => k !== ("gridTripped" as string))).toBe(true);
     const wins = encounter.winConditions.flatMap((w) =>
       w.kind === "all" ? w.conditions.map((c) => c.kind) : [w.kind],
@@ -477,5 +550,50 @@ describe("the encounter's restore ladder", () => {
     expect(
       learned.some((id) => id === "reclose" || id === "field-splice" || id === "cross-tie"),
     ).toBe(true);
+  });
+});
+
+// The skirmish is one battle long, so a grid verb the party cannot afford
+// before it is a grid verb the party never gets on this map.
+describe("what the skirmish can afford", () => {
+  const campaign = Campaign.parse(
+    JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, "..", "..", "data", "campaigns", "works-skirmishes.json"),
+        "utf8",
+      ),
+    ),
+  );
+
+  /** Anything that moves the graph: writes an isolator, hangs a load, cuts a span. */
+  function touchesTheGrid(abilityId: string): boolean {
+    const ability = content.abilities[abilityId];
+    if (ability === undefined || ability.slot !== "action") return false;
+    return (
+      ability.effects.some((e) => e.kind === "setPower" || e.kind === "addLoad" || e.kind === "severLine") ||
+      (ability.requires ?? []).some((r) => r !== "railUnderfoot")
+    );
+  }
+
+  it("opens with Standing enough to buy a grid verb", () => {
+    const units = loadUnits();
+    const buyable = campaign.startingRosterUnitIds.flatMap((unitId) => {
+      const unit = units[unitId]!;
+      const known = new Set([
+        ...unit.learnedAbilityIds,
+        unit.reactionAbilityId,
+        unit.supportAbilityId,
+        unit.movementAbilityId,
+      ]);
+      return (content.jobs[unit.jobId]?.learnableAbilityIds ?? [])
+        .filter(
+          (abilityId) =>
+            touchesTheGrid(abilityId) &&
+            !known.has(abilityId) &&
+            content.abilities[abilityId]!.standingCost <= campaign.startingStandingBonus!,
+        )
+        .map((abilityId) => `${unitId}: ${abilityId}`);
+    });
+    expect(buyable.sort()).toEqual(["ivo-brace: field-splice", "vale: reclose"]);
   });
 });

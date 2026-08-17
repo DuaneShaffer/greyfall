@@ -5,6 +5,7 @@ import { createBattleUnit, sortUnits } from "../state/unit.js";
 import { checkContact, destroyObject, emptyOutcome, setObjectPower } from "./effects.js";
 import { coordEq, isStandable, objectById, unitAt, unitById } from "./grid.js";
 import { hpPercent, endBattle } from "./outcome.js";
+import { isEnergized } from "./power.js";
 import { endActiveTurn } from "./turn.js";
 
 type Trigger = Encounter["triggers"][number];
@@ -32,6 +33,11 @@ export function isConditionMet(state: GameState, when: TriggerCondition): boolea
       return unitById(state, when.unitId)?.downed === true;
     case "objectDestroyed":
       return objectById(state, when.objectId)?.destroyed === true;
+    case "objectPowered":
+      // Energization, not the isolator flag — FLUX_GRID §1.3. A tripped source
+      // still reads `powered: true` and is feeding nothing, and that is exactly
+      // the state an author means by "the house went dark".
+      return isEnergized(state, when.objectId) === when.powered;
     case "unitEntersTiles":
       return state.units.some(
         (u) =>

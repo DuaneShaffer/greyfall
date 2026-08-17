@@ -356,11 +356,32 @@
       ]
     },
     {
+      "id": "the-west-main-goes-out",
+      "when": {
+        "kind": "objectPowered",
+        "objectId": "west-main",
+        "powered": false
+      },
+      "once": true,
+      "actions": [
+        {
+          "kind": "dialogue",
+          "lines": [
+            {
+              "speaker": "Watch Sergeant",
+              "text": "West main is out, ma'am. The Meter keeps a boy on the cutouts and he does not have far to walk."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "the-house-comes-back",
       "when": {
         "kind": "turnStart",
         "turn": 24
       },
+      "afterTriggerId": "the-west-main-goes-out",
       "once": true,
       "actions": [
         {

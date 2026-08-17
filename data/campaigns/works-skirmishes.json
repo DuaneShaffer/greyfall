@@ -15,7 +15,7 @@
     "marek-sump",
     "orin-vane"
   ],
-  "startingStandingBonus": 150,
+  "startingStandingBonus": 250,
   "startingInventory": [
     {
       "itemId": "riot-shield",

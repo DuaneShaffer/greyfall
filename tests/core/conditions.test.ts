@@ -253,6 +253,38 @@ describe("encounter triggers", () => {
     expect(state.result).toBeNull();
   });
 
+  it("watches an object's power and latches the moment it goes out", () => {
+    const lit = battle("e-lift-lit", {
+      triggers: [
+        {
+          id: "lift-is-dark",
+          when: { kind: "objectPowered", objectId: "freight-lift", powered: false },
+          once: true,
+          actions: [{ kind: "dialogue", lines: [{ speaker: "Vale Tarn", text: "Deck's dead." }] }],
+        },
+      ],
+    });
+    expect(lit.firedTriggerIds).toEqual([]);
+
+    const pulled = battle("e-lift-pulled", {
+      triggers: [
+        {
+          id: "pull-the-lift",
+          when: { kind: "battleStart" },
+          once: true,
+          actions: [{ kind: "setPower", objectId: "freight-lift", powered: false }],
+        },
+        {
+          id: "lift-is-dark",
+          when: { kind: "objectPowered", objectId: "freight-lift", powered: false },
+          once: true,
+          actions: [{ kind: "dialogue", lines: [{ speaker: "Vale Tarn", text: "Deck's dead." }] }],
+        },
+      ],
+    });
+    expect(pulled.firedTriggerIds).toEqual(["pull-the-lift", "lift-is-dark"]);
+  });
+
   it("only fires a once trigger a single time", () => {
     const start = battle("e-once", {
       triggers: trigger("opening", { kind: "battleStart" }, [

@@ -45,6 +45,9 @@ const TriggerCondition = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("turnStart"), turn: z.int().positive() }),
   z.object({ kind: z.literal("unitDowned"), unitId: Id }),
   z.object({ kind: z.literal("objectDestroyed"), objectId: Id }),
+  // Reads energization, not the isolator flag (`docs/design/FLUX_GRID.md`
+  // §1.3): `powered: false` is "nothing is feeding it", however it got there.
+  z.object({ kind: z.literal("objectPowered"), objectId: Id, powered: z.boolean() }),
   z.object({ kind: z.literal("unitEntersTiles"), tiles: z.array(TileCoord).min(1), team: Team.optional() }),
   z.object({ kind: z.literal("unitHpBelowPercent"), unitId: Id, percent: z.int().min(1).max(99) }),
 ]);

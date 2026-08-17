@@ -283,7 +283,10 @@ describe("content cross-references", () => {
         expect(inBounds(placed.position), `${enc.id}/${placed.unit.id}: position out of bounds`).toBe(true);
       }
       for (const trigger of enc.triggers) {
-        if (trigger.when.kind === "objectDestroyed") {
+        // A typo'd id in either of these reads as "not destroyed" / "not
+        // energized" and the trigger simply never fires, which is the quietest
+        // possible way for a scripted beat to go missing.
+        if (trigger.when.kind === "objectDestroyed" || trigger.when.kind === "objectPowered") {
           expect(objectIds.has(trigger.when.objectId), `${enc.id}/${trigger.id}`).toBe(true);
         }
         for (const action of trigger.actions) {

@@ -674,14 +674,44 @@ at turn 24 against a house the player has just overdrawn.
 | `on-the-landing` | player on `(7,7),(8,7),(7,8),(8,8)` | **The legibility beat.** The sergeant explains the tie in one line — closed, both mains carry one bus and there is room on it; open, each carries its half and neither has anything spare — and Rowen names the verb that answers it. §2.5(b) says the player must be told the state *and* the counterplay; e2 proved that inferring it is the same as not having it. |
 | `the-west-feeder-goes` | `objectDestroyed: west-feeder` | The cut/destroy split, said out loud: *"Not cut — gone. A cut I splice. A hole stays a hole."* Phrased so it reads correctly whether or not the tie is closed, because with it closed the west board is still fed from the far main. |
 | `the-east-feeder-goes` | `objectDestroyed: east-feeder` | The mirror, naming the pump and the apron lamp. |
-| `the-house-comes-back` | `turnStart: 24` | Both mains back in, with the only dialogue on the ladder: the Meter keeps a spare key and a boy who has to walk four steps. Rowen's answer is the design note — *"pulling a main is a delay. Standing on the boards is the job."* |
+| `the-west-main-goes-out` | `objectPowered: west-main, powered: false` | The latch under the restore. One line from the sergeant, flat and procedural: the west main is out and the Meter keeps a boy on the cutouts who does not have far to walk. It marks the moment the house first goes dark and it sets up the payoff twelve unit turns later. |
+| `the-house-comes-back` | `turnStart: 24`, `afterTriggerId: the-west-main-goes-out` | Both mains back in, with the only dialogue on the ladder: the Meter keeps a spare key and a boy who has to walk four steps. Rowen's answer is the design note — *"pulling a main is a delay. Standing on the boards is the job."* The gate is the fix for acceptance finding 14: the rung used to fire unconditionally, so on a house nobody had touched Nella announced a restore of a state the house had never left. |
 | `the-house-holds-36` … `-84` | `turnStart: 36/48/60/72/84` | The same two `setPower` actions, silent. The house does not give up after one cut, and Nella does not get to say the same two lines six times. |
 | `nella-goes-down` | `unitDowned: crew-sparker-nella` | The one that should cost something. Rowen logs a name; the sergeant points out that the Assay will file her as a sparker whatever the Watch writes; Rowen tells him to write both and let the Archive hold two documents that disagree. Authored last, per §5's overkill ruling. |
 
 No trigger tile overlaps a deployment tile — the landing is at y 7–8 and the
-receiving bay is at y 14–15 — and nothing here needs a grid-aware condition,
-which is the point: §7.5's `gridTripped` and `objectPowered` are v2 and this
-encounter is the proof that v1 does not need them.
+receiving bay is at y 14–15.
+
+**The one grid-aware condition, and why it is no longer v2.** `objectPowered`
+is FLUX_GRID §7.5's own spelling, `{ kind, objectId, powered }`, added to
+`src/data/schemas/encounter.ts` verbatim and implemented in `isConditionMet`
+against **energization** rather than the isolator flag (§1.3 is binding: every
+rule that read `powered` reads energized). That distinction is the whole value
+of it here — a tripped source keeps `powered: true` and is feeding nothing, so
+a player who overdraws the west half has put the house in the dark by the only
+definition that matters, and the flag would have missed it. `gridTripped` and
+the grid-aware win and loss conditions stay v2; nothing here needs them.
+
+**Two honest limits of the latch, recorded so nobody rediscovers them as
+bugs.** They are tested in `tests/data/meterHouse.test.ts` rather than left as
+prose.
+
+- It watches the **west** main. With the tie open the two halves are separate
+  circuits, so a player who only ever pulls the *east* main never opens the
+  gate: he misses the turn-24 rung entirely and gets his restore from the first
+  silent one at 36. The five silent rungs are ungated for exactly this reason —
+  the mechanical ladder holds whatever the dialogue does.
+- With the tie closed there is no east-only pull to worry about. One main
+  carrying the whole house is 20 against 14, so pulling either cutout trips the
+  survivor and de-energizes the west main anyway; the gate catches that case
+  through the same condition.
+
+A third case is a deliberate acceptance rather than a limit: with the west main
+still in at turn 24 the rung stays armed, so the *first* time the house goes
+dark after turn 24 it comes straight back in the same batch. That is the ladder
+being overdue rather than punctual, the dialogue is true when it lands, and it
+happens at most once — `afterTriggerId` ANDs with `when` and gates the whole
+trigger, so there is no vocabulary for holding the actions and the lines apart.
 
 **Win: `all` of Nella Fen, Bram Coil and the picket, or `rout`. Loss:
 `partyRout`.** The same shape e2's win takes and for the same reason: the two
@@ -699,8 +729,9 @@ flag, no side list — and the schema is frozen. Appending `s1-meter-house` to
 `foundry-chapter` would make it a mandatory sixth battle and break bible §8's
 five-battle arc outright, so it ships as its own campaign:
 **`data/campaigns/works-skirmishes.json`**, id `works-skirmishes`, name "The
-Works - Skirmishes", one encounter, and the chapter's seven roster ids,
-Standing bonus and starting inventory copied verbatim.
+Works - Skirmishes", one encounter, and the chapter's seven roster ids and
+starting inventory copied verbatim. Its Standing bonus started as the
+chapter's too and no longer is; see "Standing: 250" below.
 
 Nothing in the codebase enumerates campaigns in a way this disturbs, and that
 was checked rather than assumed:
@@ -767,6 +798,23 @@ tripping the bus 27 times across 48 runs and reclosing 5, and the crew
 reclosing and splicing back on both sets. That is the tug-of-war running in
 both directions, and it is the reading to trust once the progression loop has
 had a chapter to work.
+
+**Standing: 250, raised from 150.** "A real player buys them" was not true as
+shipped, and acceptance finding 15 said so: `works-skirmishes` is **one**
+encounter long, `startingStandingBonus` is banked per unit into that unit's own
+job at campaign creation, and at 150 not one grid verb on the roster's job
+lists was inside the balance before the only battle — the cheapest are Reclose,
+Field Splice and Throw the Breaker at 250 apiece, and Vale already knows the
+last of them. 250 is the price of the cheapest one and no more: it buys **Vale
+one Reclose, or Ivo Brace one Field Splice**, and no other grid verb on any of
+the seven comes into reach — Marek's Cut the Feed is 350, Cross-Tie and Reroute
+are 400, Overdraw is 700. The number is deliberately the
+exact price rather than a comfortable margin — the skirmish's job is to let the
+party touch the grid once, not to open a shop before a tutorial-adjacent
+fight — and it leaves the chapter's own 150 untouched, since
+`foundry-chapter` has five battles to earn in. `tests/data/meterHouse.test.ts`
+pins both the number and what it buys, derived from the ability effects rather
+than a hand-kept list.
 
 The one open flag is severity 3 and is the design working: `the-west-feeder-goes`
 never fires on the primary set and `the-east-feeder-goes` never fires on the
