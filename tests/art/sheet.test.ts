@@ -7,6 +7,7 @@ import {
   SHEET_MANIFEST,
   buildJobSheet,
   cellAtPixel,
+  compositeJobSheet,
   cellUV,
   flipRows,
   sheetCell,
@@ -71,9 +72,10 @@ describe("manifest", () => {
 
 describe("assembly", () => {
   it("builds a 512x1152 sheet whose cells match the frame generator", () => {
-    // A job the compositor still draws; jobs with a delivered master derive
-    // their sheet instead, and `external` below covers that path.
-    const sheet = buildJobSheet("machinist", "player");
+    // The compositor path explicitly: every job now ships a delivered master, so
+    // `buildJobSheet` derives instead of compositing, and `external` below
+    // covers that. The placeholder still has to assemble correctly.
+    const sheet = compositeJobSheet("machinist", "player");
     expect(sheet.width).toBe(512);
     expect(sheet.height).toBe(1152);
     expect(SHEET_LAYOUT.width).toBe(512);

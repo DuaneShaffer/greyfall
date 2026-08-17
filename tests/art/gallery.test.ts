@@ -237,6 +237,47 @@ describe.runIf(DUMP)("sprite gallery", () => {
     write(`verify-${TAG}-${scale}x.png`, img);
   });
 
+  it("writes the shipped roster: what the renderer actually hands the camera", () => {
+    // `roster-*` above is the compositor's placeholder. This one is pulled out of
+    // the shipped sheet, so it is the delivered masters where there are any —
+    // the sheet to check identity markers and feet against.
+    const shipped = (jobId: JobId, view: DrawnView, state: AnimState, frame: number): PixelGrid => {
+      const sheet = buildJobSheet(jobId, "player");
+      const cell = sheetCell(state, view, frame);
+      const grid = {
+        width: SPRITE_WIDTH,
+        height: SPRITE_HEIGHT,
+        data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
+      };
+      for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
+        for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+          grid.data[y * SPRITE_WIDTH + x] = sheet.data[(cell.y + y) * sheet.width + cell.x + x] ?? 0;
+        }
+      }
+      return grid;
+    };
+    for (const scale of [1, 3, 6]) {
+      const rows: Cell[][] = (["se", "ne"] as const).map((view) =>
+        JOB_IDS.map((jobId) => ({ grid: shipped(jobId, view, "idle", 0), label: jobId.slice(0, 7) })),
+      );
+      write(`shipped-${TAG}-${scale}x.png`, contactSheet(rows, scale, `shipped roster ${TAG} ${scale}x`));
+    }
+    for (const jobId of JOB_IDS) {
+      const rows: Cell[][] = [];
+      for (const view of ["se", "ne"] as const) {
+        for (const state of ["idle", "walk", "attack"] as const) {
+          rows.push(
+            Array.from({ length: ANIMATIONS[state].frames }, (_, f) => ({
+              grid: shipped(jobId, view, state, f),
+              label: `${state.slice(0, 3)}${f} ${view}`,
+            })),
+          );
+        }
+      }
+      write(`shipped-${jobId}-${TAG}-6x.png`, contactSheet(rows, 6, `${jobId} shipped, 6x`));
+    }
+  });
+
   it("writes every state of the jobs with delivered masters", () => {
     for (const jobId of JOB_IDS.filter(hasExternalArt)) {
       const sheet = buildJobSheet(jobId, "player");

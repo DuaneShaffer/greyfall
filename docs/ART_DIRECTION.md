@@ -626,6 +626,12 @@ import it.
 
 ### A.9 Still outstanding (sprites)
 
+All seven jobs now ship a delivered master (C.8, C.8.7); the compositor's figures
+are the placeholder they always were and stay reachable via
+`compositeJobSheet`. What the delivered art still owes is recorded per job in
+`art-src/INTAKE_LOG.md` — the team-tint mask is absent across the whole roster,
+which is the one violation with an in-game cost.
+
 Portraits remain the open character-art workstream: §4 commits them to painted,
 which this pipeline cannot express. The placeholder blocks stand.
 
@@ -960,7 +966,10 @@ handed the section and nothing else.
 
 **Deliver, per job:** two figures — a front three-quarter and a back
 three-quarter over the same shoulder — of the **idle, frame 0** pose. That is
-all. The other 27 frames per view are derived (C.8.4).
+all. The other 27 frames per view are derived (C.8.4). Where both cells arrive,
+the back one drives the away-facing rows; where only one does, the front master
+stands in for both and the unit never turns around (C.8.6). Deliveries that come
+as finished character sheets rather than bare grids are handled by C.8.7.
 
 Deliver them at **256 × 384 per figure**, not at the spec size: painting at 4×
 and reducing keeps edges that hand-placing at 64×96 would lose, and
@@ -1034,6 +1043,13 @@ height of the canvas — must be declared as a `prop` region, which is cut
 master coordinates plus the joint it rides; measure it off the master, not off
 the rig.
 
+A view may declare **several** prop regions and they ride different joints — a
+tower shield strapped to the hip and a maul swinging from the hand are both
+props and must not move together. Each region owns only the pixels inside its own
+rectangle. (This was worth writing down: the first implementation bucketed cut
+pixels by region *name*, so two prop regions each received the union and the
+shield was painted a second time at the maul's offset, on every attack frame.)
+
 The **rows** the six default regions split on come from the rig, and a master
 drawn at other proportions must override them with `Landmarks`. The generator
 briefs ask for 5 to 5.5 heads and the armature is 3, so a master drawn to the
@@ -1098,6 +1114,69 @@ downstream cost the rest of the pipeline cannot see:
 | team tint absent | **the unit no longer reads as player or enemy from its art.** The facing wedge and the UI carry allegiance until the mask is painted in the player steel |
 | orphan clusters, ambiguous quantizations | dither-like noise at 1×; visible as sparkle when the camera pulls out |
 | one view delivered instead of two | the unit never turns around: the back view is the front master |
+| a stance wider than the figure box | the reduction is measured off the whole figure, so the figure pays for its gear spread in **height**: it stands shorter than a character of the same drawn height in a narrower stance, and its widest gear clips against the reserved ring on any pose that translates laterally |
+| midtones drawn under a warm key | neutral greys quantize into the `bone` ramp rather than `soot` (`#6b6e6d` is 39.5 from `bone-500` and 40.5 from `soot-300`), so the unit reads warmer than §1's ash-grey intent. Visible as cream where the art meant grey |
+
+The per-job record of which of these each delivered master carries lives in
+`art-src/INTAKE_LOG.md`, next to the art.
+
+### C.8.7 When the delivery is a character sheet
+
+C.8 asks for a bare two-cell grid on transparent ground. Real deliveries are
+finished **character sheets**: two figure cells plus a title block, a 64×96
+preview inset, a proportion silhouette, a palette strip, caption text, guide
+frames and a painted backdrop — at a different size and layout per sheet. The
+roster's six-job delivery arrived that way. `src/art/delivery.ts` locates the two
+figure cells in such a sheet; `tools/ingest-master.ts` declares which shape each
+delivery is (`"sheet"` or a hand-measured `"crop"`).
+
+**The method is a threshold, not a heuristic, and that is a finding about the
+files rather than a choice.** The sheets look like opaque paintings, and the
+tempting approach is to key on edge crispness or flood from the corners — the
+figures are crisp pixel art over blurry painted ground. Don't: the alpha channel
+of every one of those files is *already a clean matte* of everything the artist
+drew. The painted backdrop lives in RGB at alpha 0–40 and the drawn art sits at
+alpha 250+. Keying by anything other than alpha would be guessing where the file
+states the answer. Measure before inventing.
+
+What the locator then has to survive, in the order it bites:
+
+1. **A drawn ground line under the feet.** On half the sheets it runs across both
+   cells and welds the two figures into one blob. It is cut by shape: a
+   horizontal run wider than a third of the sheet whose median vertical thickness
+   is a dozen rows or less is a line, not a body.
+2. **Guide frames in saturated cyan.** Stripped by color. The test requires
+   `b >= g - 8`, which is what keeps `verdigris-500` and `verdigris-300` — the
+   accent family, an apron, a rag — out of it. Guide-colored pixels within 2 px
+   of a kept figure are handed back, because a goggle lens and a vial of teal
+   fluid are also cyan and are inside the figure; anything still touching the
+   figure after that is reported as a **collision** and counted, never absorbed.
+3. **Sheet furniture.** With the line cut and the frame stripped, the two figures
+   are the two largest connected blobs of the matte by an order of magnitude, and
+   the leftmost is the front three-quarter on every sheet the briefs produced.
+   Everything discarded is counted and sized in the report.
+4. **A soft matte rim.** ~4% of each cell's pixels have neither background nor
+   foreground alpha. The threshold decides them; the report says how many
+   decisions it made (`ambiguousAlpha`). Where the key is ambiguous, **say how
+   ambiguous** — do not resolve it quietly.
+
+Two rules the sheet path adds:
+
+- **One character, one reduction.** Both cells of a character are fitted at the
+  scale that fits *both* (`masterFitScale`), because a front three-quarter with a
+  maul out one side and a shield out the other is wider than the back view of the
+  same figure — and width binds. Fitting each view alone made one delivery 70
+  rows from the front and 85 from the back: a unit that grows when it turns
+  around. Nothing is clipped to buy height; cropping the artist's maul off would
+  be a repair.
+- **`FIELD_PALETTE` is the intake target, not the whole palette.** §2's reserved
+  signal colors — `overload-*`, `veinglass-*`, `hazard`, `brightblood` — are loud
+  on purpose and each sits within a ramp step of some skin or cloth tone in
+  painted art. A `#eba386` cheek is 47 units from `brightblood` and 51 from
+  `bone-100`, so a face quantized against everything lands on the pink and then
+  gets an emissive halo instead of an outline. A delivery whose fiction actually
+  carries one declares it back in — the augmented job's neck scarring is what
+  `brightblood` is for.
 
 ### C.9 Named failure modes
 

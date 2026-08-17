@@ -81,19 +81,27 @@ export function cellAtPixel(x: number, y: number): SheetCell | null {
 export const sheetKey = (jobId: JobId, team: Team): string => `${jobId}:${team}`;
 
 /**
- * The whole sheet as one palette-index grid. Deterministic. A job with a
- * delivered external master gets it derived from that instead of composited —
- * the compositor output is a placeholder and loses to real art on sight.
+ * The compositor's own sheet: 56 generated frames in the frozen layout. Every
+ * job still has one — it is the placeholder that shipped before the masters
+ * arrived, and it is what the frame tests assert against — but a job with a
+ * delivered master does not ship it.
  */
-export function buildJobSheet(jobId: JobId, team: Team): PixelGrid {
-  const external = externalJobSheet(jobId, team);
-  if (external) return external;
+export function compositeJobSheet(jobId: JobId, team: Team): PixelGrid {
   const sheet = createGrid(SHEET_LAYOUT.width, SHEET_LAYOUT.height);
   for (const cell of SHEET_MANIFEST) {
     const grid = jobFrame({ jobId, team, state: cell.state, view: cell.view, frame: cell.frame });
     blitGrid(sheet, grid, cell.x, cell.y);
   }
   return sheet;
+}
+
+/**
+ * The whole sheet as one palette-index grid. Deterministic. A job with a
+ * delivered external master gets it derived from that instead of composited —
+ * the compositor output is a placeholder and loses to real art on sight.
+ */
+export function buildJobSheet(jobId: JobId, team: Team): PixelGrid {
+  return externalJobSheet(jobId, team) ?? compositeJobSheet(jobId, team);
 }
 
 export interface TextureLevel {

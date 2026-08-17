@@ -107,6 +107,13 @@ export interface FitOptions {
   readonly alphaThreshold?: number;
   /** Canvas rows left clear above the figure. The outline ring needs one. */
   readonly headroom?: number;
+  /**
+   * Reduction ratio to use instead of the one measured off this image. A
+   * front/back pair is one character and must not change size when it turns
+   * around, so both views are fitted at the pair's shared scale — see
+   * `masterFitScale`.
+   */
+  readonly scale?: number;
 }
 
 /** Tight bounds of the pixels above `threshold`, within `crop`. */
@@ -131,6 +138,34 @@ export function contentBounds(
   return x1 < 0 ? null : { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
+const FIT_BOX_WIDTH = SPRITE_WIDTH - 2;
+
+/**
+ * The largest reduction ratio at which every one of these cells still fits the
+ * figure box whole. Fitting each view of a character independently would make
+ * it change height when it turns around — a front three-quarter holding a maul
+ * out to one side and a shield out to the other is *wider* than the back view
+ * of the same figure, and width is what binds here — so the pair is measured
+ * together and reduced together.
+ *
+ * Nothing is clipped to buy height. A delivery whose outstretched gear costs it
+ * canvas height keeps all of its gear and stands shorter, and the intake log
+ * says by how much; cropping the artist's maul off would be a repair.
+ */
+export function masterFitScale(cells: readonly RGBASource[], options: FitOptions = {}): number {
+  const threshold = options.alphaThreshold ?? 127;
+  const boxHeight = SPRITE_ANCHOR.y - (options.headroom ?? 1);
+  let scale = Number.POSITIVE_INFINITY;
+  for (const cell of cells) {
+    const crop = options.crop ?? { x: 0, y: 0, w: cell.width, h: cell.height };
+    const bounds = contentBounds(cell, crop, threshold);
+    if (!bounds) throw new Error("masterFitScale: nothing above the alpha threshold");
+    scale = Math.min(scale, boxHeight / bounds.h, FIT_BOX_WIDTH / bounds.w);
+  }
+  if (!Number.isFinite(scale)) throw new Error("masterFitScale: no cells");
+  return scale;
+}
+
 /**
  * Bring a delivered master onto the sprite canvas: crop to its content, reduce
  * it to the figure box, center it on the seam and stand it on the anchor row.
@@ -149,8 +184,7 @@ export function fitMasterToCanvas(source: RGBASource, options: FitOptions = {}):
   if (!bounds) throw new Error("fitMasterToCanvas: nothing above the alpha threshold");
 
   const boxHeight = SPRITE_ANCHOR.y - headroom;
-  const boxWidth = SPRITE_WIDTH - 2;
-  const scale = Math.min(boxHeight / bounds.h, boxWidth / bounds.w);
+  const scale = options.scale ?? Math.min(boxHeight / bounds.h, FIT_BOX_WIDTH / bounds.w);
   const width = Math.max(1, Math.round(bounds.w * scale));
   const height = Math.max(1, Math.round(bounds.h * scale));
 
@@ -266,6 +300,38 @@ export interface QuantizeResult {
 }
 
 const ALL_HEXES = Object.values(PALETTE) as readonly Hex[];
+
+/**
+ * §2's reserved signal colors: an overload aura, a vein-glass deposit, a hazard
+ * marker, and the augmented job's brightblood scarring. Each one is loud on
+ * purpose and each one sits within a ramp step of some skin or cloth tone in
+ * painted art — `#eba386` cheek is 47 units from `brightblood` and 51 from
+ * `bone-100`, so a face quantized against the whole palette lands on the pink
+ * and then gets an emissive halo instead of an outline. They are excluded from
+ * the default intake target; a delivery whose fiction actually carries one
+ * declares it back in (C.8.7).
+ */
+export const RESERVED_SIGNAL_COLORS: readonly Hex[] = [
+  PALETTE["overload-700"],
+  PALETTE["overload-500"],
+  PALETTE["overload-100"],
+  PALETTE["veinglass-700"],
+  PALETTE["veinglass-500"],
+  PALETTE["veinglass-100"],
+  PALETTE.hazard,
+  PALETTE.brightblood,
+];
+
+/** The quantizer's target for a delivered field sprite: §2 minus the signals. */
+export const FIELD_PALETTE: readonly Hex[] = ALL_HEXES.filter(
+  (hex) => !RESERVED_SIGNAL_COLORS.includes(hex),
+);
+
+/** `FIELD_PALETTE` with named signal colors declared back in. */
+export const fieldPaletteWith = (...extra: readonly Hex[]): readonly Hex[] => [
+  ...FIELD_PALETTE,
+  ...extra.filter((hex) => !FIELD_PALETTE.includes(hex)),
+];
 const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
 const EMISSIVE_INDICES = new Set(EMISSIVE_COLORS.map((hex) => paletteIndex(hex)));
 /**

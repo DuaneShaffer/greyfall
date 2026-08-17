@@ -242,30 +242,32 @@ function cutShell(grid: PixelGrid, map: RegionMap): CutPiece[] {
   return cutBy(grid, map, (value) => value === OUTLINE_INDEX);
 }
 
+/**
+ * Pixels are bucketed per segment *instance*, not per segment name: a job can
+ * declare several `prop` regions — a shield on the hip and a maul in the hand
+ * ride different joints — and bucketing by name would hand each of them the
+ * whole prop pixel list, so the shield would be painted a second time at the
+ * maul's offset.
+ */
 function cutBy(
   grid: PixelGrid,
   map: RegionMap,
   keep: (value: number) => boolean,
 ): CutPiece[] {
-  const byName = new Map<SegmentName, { x: number; y: number; value: number }[]>();
   const ordered = SEGMENT_NAMES.flatMap((name) => map.segments.filter((s) => s.name === name));
-  for (const segment of ordered) byName.set(segment.name, []);
+  const buckets: { x: number; y: number; value: number }[][] = ordered.map(() => []);
   for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
     for (let x = 0; x < grid.width; x += 1) {
       const value = gridGet(grid, x, y);
       if (!keep(value)) continue;
-      for (const segment of ordered) {
-        if (!inRect(segment.rect, x, y)) continue;
-        (byName.get(segment.name) as { x: number; y: number; value: number }[]).push({
-          x,
-          y,
-          value,
-        });
+      for (let i = 0; i < ordered.length; i += 1) {
+        if (!inRect((ordered[i] as Segment).rect, x, y)) continue;
+        (buckets[i] as { x: number; y: number; value: number }[]).push({ x, y, value });
         break;
       }
     }
   }
-  return ordered.map((segment) => ({ segment, pixels: byName.get(segment.name) ?? [] }));
+  return ordered.map((segment, i) => ({ segment, pixels: buckets[i] ?? [] }));
 }
 
 interface Delta {
