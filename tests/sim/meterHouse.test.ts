@@ -3,8 +3,12 @@
  * addendum is measured with: one `encounterRuns` call per seed set, tuned on
  * the primary only and confirmed on the disjoint alt.
  *
- * Set GREYFALL_METER=1 to print the table this reads into
- * `docs/BALANCE_REPORT.md`; the assertions below are the landing itself.
+ * The everyday gate runs the first 8 seeds of each set against widened bands —
+ * enough to catch a balance-breaking change, deterministic so never flaky.
+ * GREYFALL_SIM=full runs all 24+24 with the measurement bands; that mode is
+ * the landing, and what `docs/BALANCE_REPORT.md` records was measured there.
+ *
+ * Set GREYFALL_METER=1 to print the table the report reads.
  */
 
 import { describe, expect, it } from "vitest";
@@ -19,6 +23,10 @@ import { encounterReports, objectiveFindings } from "../../src/sim/analysis.js";
 
 const ENCOUNTER = "s1-meter-house";
 const REPORT = process.env.GREYFALL_METER === "1";
+const FULL = process.env["GREYFALL_SIM"] === "full";
+const SMOKE_SEEDS = 8;
+const WIN_BAND = FULL ? ([0.4, 0.83] as const) : ([0.25, 0.95] as const);
+const AGREEMENT = FULL ? 0.25 : 0.5;
 
 function run(seeds: readonly number[]): SweepBattle[] {
   return encounterRuns(simContent(), [ENCOUNTER], seeds, { commandCap: 4000 });
@@ -46,22 +54,27 @@ function summarize(label: string, battles: readonly SweepBattle[]) {
 }
 
 describe("s1-meter-house on two disjoint seed sets", () => {
-  const primary = run(PRIMARY_ENCOUNTER_SEEDS);
-  const alt = run(ALT_ENCOUNTER_SEEDS);
+  const primary = run(FULL ? PRIMARY_ENCOUNTER_SEEDS : PRIMARY_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
+  const alt = run(FULL ? ALT_ENCOUNTER_SEEDS : ALT_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
   const p = summarize("primary", primary);
   const a = summarize("alt", alt);
 
-  it("lands inside the 40-83% band on both sets and pooled", () => {
-    const pooled = [...primary, ...alt];
-    const pooledRate = encounterReports(pooled)[0]!.winRate;
-    for (const rate of [p.row.winRate, a.row.winRate, pooledRate]) {
-      expect(rate).toBeGreaterThanOrEqual(0.4);
-      expect(rate).toBeLessThanOrEqual(0.83);
-    }
-  });
+  it(
+    FULL
+      ? "lands inside the measured 40-83% band on both sets and pooled"
+      : "stays inside the smoke band on both partial sets and pooled",
+    () => {
+      const pooled = [...primary, ...alt];
+      const pooledRate = encounterReports(pooled)[0]!.winRate;
+      for (const rate of [p.row.winRate, a.row.winRate, pooledRate]) {
+        expect(rate).toBeGreaterThanOrEqual(WIN_BAND[0]);
+        expect(rate).toBeLessThanOrEqual(WIN_BAND[1]);
+      }
+    },
+  );
 
   it("reads the same fight on both sets", () => {
-    expect(Math.abs(p.row.winRate - a.row.winRate)).toBeLessThanOrEqual(0.25);
+    expect(Math.abs(p.row.winRate - a.row.winRate)).toBeLessThanOrEqual(AGREEMENT);
   });
 
   it("contests the grid: state flips, and the enemy puts power back", () => {

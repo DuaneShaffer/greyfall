@@ -30,3 +30,9 @@ aggregates over whole seed sets and so cannot be parallelised — and runs
 everything else, every golden replay included, in a quarter of the time. It is
 an inner-loop tool and never the gate: the full `npx vitest run` must pass
 before any commit.
+
+The default gate runs the balance instruments CI-sized (a deterministic seed
+subset against widened bands). `GREYFALL_SIM=full` runs the whole measurement —
+all seed sets, the tight bands `docs/BALANCE_REPORT.md` records. Any change
+that touches balance (abilities, stats, AI weights, encounter content) must
+pass the full measurement before it lands, not just the smoke gate.
