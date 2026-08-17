@@ -348,6 +348,17 @@ v1 line shipped.
 reads and rewires the network itself, plus three seeds). Proposals 2 and 3
 stand unapplied.
 
+## Genre survey (2026-08-16)
+
+`docs/design/GENRE_SURVEY.md` — what FFT (original and War of the Lions) has
+that Greyfall lacks, judged one feature at a time against the pillars, plus the
+strongest borrowable systems from Tactics Ogre, Triangle Strategy, Into the
+Breach, Fire Emblem, Divinity, Disgaea, XCOM, Fell Seal, Banner Saga, Unicorn
+Overlord and Mario+Rabbids. Ends in a ranked top-8 with v1 scopes, an explicit
+rejected-with-reasons list (so nothing gets re-litigated), and a cheap-QoL tier
+sized at one agent each. **Advisory: it amends no schema, rule, or bible**; its
+three proposed bible/deferral amendments are flagged in its §6 and unapplied.
+
 ## Open decisions
 
 - **Retro-PS1 vs. HD-2D shader treatment** — decide once art direction
