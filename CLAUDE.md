@@ -17,3 +17,8 @@ Content lives as JSON in `data/`, validated by the zod schemas in
 `src/data/schemas/` (the frozen contract; amend schemas deliberately, never
 ad hoc). `npm test` validates content and cross-references; `npm run
 typecheck` runs tsc.
+
+The README screenshots (`docs/media/*.png`) must track the game's real look:
+after landing any change that affects what the battle screen looks like (UI
+chrome or layout, rendering, sprites, terrain, bloom/post), run `npm run
+shots` from a clean tree and commit the refreshed images with the change.
