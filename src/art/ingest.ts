@@ -408,6 +408,19 @@ export function quantizeToPalette(
   source: RGBASource,
   options: QuantizeOptions = {},
 ): QuantizeResult {
+  const { grid, stats } = quantizeGrid(source, options);
+  return { grid, report: auditGrid(grid, stats, options) };
+}
+
+/**
+ * The snap on its own, without the sprite audit. A tile face has no figure box,
+ * no feet anchor and no silhouette outline, so it takes this and runs its own
+ * audit (`src/art/tiles.ts`) over the same numbers.
+ */
+export function quantizeGrid(
+  source: RGBASource,
+  options: QuantizeOptions = {},
+): { grid: PixelGrid; stats: QuantizeStats } {
   const alphaThreshold = options.alphaThreshold ?? 127;
   const reportDistance = options.reportDistance ?? 24;
   const hexes = options.allowed ?? ALL_HEXES;
@@ -450,18 +463,18 @@ export function quantizeToPalette(
   moves.sort((a, b) => b.distance - a.distance);
   return {
     grid,
-    report: auditGrid(grid, {
+    stats: {
       movedCount,
       opaqueCount: opaque,
       maxDistance,
       meanDistance: movedCount === 0 ? 0 : distanceSum / movedCount,
       farMoves: moves,
       ambiguous,
-    }, options),
+    },
   };
 }
 
-interface QuantizeStats {
+export interface QuantizeStats {
   readonly movedCount: number;
   readonly opaqueCount: number;
   readonly maxDistance: number;

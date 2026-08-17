@@ -1,9 +1,16 @@
-# Field-sprite intake log
+# Art intake log
 
-What was delivered, what the audit found, and what shipped anyway. One entry per
-job. The rule this file lives by is `ART_DIRECTION` C.8.2: **the intake reports,
-it never repairs.** Nothing below was fixed by hand; where the delivery diverges
-from its brief, the divergence is written down and the art ships as drawn.
+What was delivered, what the audit found, and what shipped anyway. The rule this
+file lives by is `ART_DIRECTION` C.8.2: **the intake reports, it never repairs.**
+Nothing below was fixed by hand; where the delivery diverges from its brief, the
+divergence is written down and the art ships as drawn.
+
+Part A is the six field sprites (§1–§5). Part B is the Wave 1 terrain texture set
+(§B.1–§B.5).
+
+# Part A — field sprites
+
+One entry per job.
 
 Regenerate the numbers with:
 
@@ -221,3 +228,248 @@ Reviewed at 6× from the shipped sheet, all 56 frames per character
   Rowen's ponytail and slung shield. This is the upgrade Vale's single-view
   delivery could not have.
 - **Feet meet the anchor in all 7 × 56 frames**, asserted as well as eyeballed.
+
+---
+
+# Part B — Wave 1 terrain textures
+
+The brief is `art-src/TERRAIN_BRIEFS.md`; the binding spec is `ART_DIRECTION` §5
+and D.4. One delivered file, `art-src/greyfall_terrain.png` (1535 × 1024): a
+labelled sheet carrying nine framed preview cells — five tile tops and four tile
+sides — with a title block, a "wave 1 includes" panel, per-cell captions and a
+delivery checklist.
+
+Regenerate the numbers with:
+
+```
+npx tsx tools/ingest-tiles.ts --dry                              # report only
+npx tsx tools/ingest-tiles.ts                                    # rewrite src/art/masters/tiles.ts
+npx tsx tools/ingest-tiles.ts --png .art-review/terrain/masters  # + 8x previews and the 4x masters
+```
+
+`tests/art/tiles.test.ts` re-runs the whole path against the delivered PNG and
+compares it byte for byte with the committed grids, and pins every number in §B.3.
+
+## B.1 Verdicts against the brief
+
+| Face | Material read | Seams | Strata band | Colours | Verdict |
+|---|---|---|---|---|---|
+| `plain-top` | **Right.** Poured concrete: `soot-500` ground, sparse `umber-500` grit, `soot-700` shadow. Quietest thing on the board, as asked | E/W 1.10 — clean. **N/S 2.60** — the grit is bottom-weighted, so a faint horizontal band shows once per tile | n/a | 3 | **Ship.** Best face in the set |
+| `plain-side` | **Right.** Cut stone over dark mortar, courses running horizontally | E/W 0.71 — clean | Present, **flat**, 2 rows — but drawn `soot-500`, one ramp step darker than §5's `soot-300` | 5 | **Ship, minor** |
+| `rail-top` | **Right and legible at 32 px** — two rails on umber ballast with sleeper bands, findable across a whole map at a glance. But the rails are drawn as **cool grey metal, not copper**: no `copper-700` rail body and **no `copper-300` head specular anywhere**. The only shine on the ground plane was not delivered | E/W 0.52, N/S 0.33 — the best-wrapping face in the set; rails run unbroken tile to tile | n/a | 7 | **Ship, regenerate** |
+| `rough-top` | **Right.** Visibly coarser grain than plain at the same value, which is exactly the contrast §5 asks for | E/W 1.18, N/S 1.27 — clean | n/a | 5 | **Ship** |
+| `rough-side` | **Right.** Packed earth and broken stone, warmer and darker than `plain-side` | E/W 0.89 — clean | Present and **flat `umber-500`** — but §5 wants it **interrupted**, broken into segments over about half the width. The move-cost tell is missing, and the band is warm rather than `soot-300` | 6 | **Ship, regenerate** |
+| `water-top` | **Wrong, and the one that costs the most.** The delivered water is near-black cool grey with thin light caustic filaments. It quantizes to `soot-800`/`soot-700`/`soot-500`/`umber-700` and lands on **zero verdigris**: no `verdigris-700` body, no `verdigris-500` shimmer bands. On the board it does not read as water at all and is hard to tell from `impassable` | **E/W 2.06** — the horizontal filaments do not meet across the join; the repeat is visible as diagonal streaking on a flat run | n/a | 4 | **Ship, regenerate first** |
+| `water-side` | Plausible wet masonry, darker than `plain-side` | E/W 1.23 — clean | Present but **not flat** (two colours across the 2 rows) | 6 | **Ship, minor** |
+| `impassable-top` | **Wrong.** §5 asks for `soot-900` almost flat, "nearly featureless", explicitly *uncountable*. The delivery is warm broken rock and debris in six colours — busier and warmer than `rough-top`, and the single loudest material on the board. On the Charterhouse Steps and Tallow Row the eye goes to the impassable masses before it goes to the units | E/W 1.47, N/S 0.82 — clean | n/a | 6 | **Ship, regenerate** |
+| `impassable-side` | Same material as its top, drawn as a rock face with breaks | E/W 1.48 — clean | **Present, and §5 says there must be none.** Countable height on a face whose height must not be countable | 7 | **Ship, regenerate** |
+
+Three things the table cannot carry:
+
+- **The band is at the top, not the bottom.** Three of the four side captions say
+  "Strata band at bottom" and the fourth says "Strata band — water at base". The
+  paint says otherwise: on all four faces the top 2 shipped rows are lighter than
+  the body (100% of band pixels) and the bottom 2 rows are darker (0%). The
+  captions are wrong about their own art; the art is right, and no rows were
+  moved to make it so. This is the one place the delivery accidentally matches §5
+  better than its own checklist claims.
+- **The delivery's checklist contradicts the brief on colour.** The sheet's own
+  panel asks for "16–24 colors (inclusive)"; the brief's shared spec says **max
+  6, flat, no gradients, no anti-aliasing**. What arrived is continuous-tone
+  painting, so the ceiling is measured after the reduction and the quantization
+  against each material's ramp: 3 to 7 colours, over the ceiling on two faces.
+  Nothing mechanical rides on that count — see §B.3.
+- **The one missing asset is the second water frame.** §5 and the brief both ask
+  for two `water-top` frames with the shimmer bands at different heights,
+  alternating every 30 ticks. One frame was delivered. The interim is engine-side
+  and is recorded in §B.5.
+
+## B.2 Cell location in the delivered sheet
+
+The nine crop rects are **hand-measured off this one file and declared** in
+`src/art/tileSheet.ts` — the same honesty `tools/ingest-master.ts` uses for Vale's
+sheet. What keeps them honest is automatic: a frame sweep finds the nine cell
+boxes without being told where they are, and every rect is checked against the 1px
+near-black inset line that fences each painting on all four sides.
+
+An automatic *interior* locator was tried first and rejected. Luma and
+variance sweeps find seven of the nine cells to the pixel and then miss badly on
+the other two: `rail-top`'s ballast is as dark as the panel behind it (found 179
+of 289 columns) and `water-top`'s lower half is nearly flat (found 237 of 270
+rows). A locator that is right about seven cells and lies about two is worse than
+a measured number, because only the measured number can be checked.
+
+Found automatically:
+
+| Band | Frame rules (rows) | Cell box edges (columns) |
+|---|---|---|
+| tops | 170 / 541 | 17, 314, 609, 919, 1210, 1518 |
+| sides | 583 / 880 | 17, 364, 733, 1119, 1518 |
+
+Declared, and the inset check on each:
+
+| Face | Crop rect | Delivered aspect | Nominal | Inset margins L/R/T/B |
+|---|---|---|---|---|
+| `plain-top` | 277 × 270 @ (29,204) | 1.026 | 1.000 | −66.2 / −24.7 / −28.1 / −52.2 |
+| `impassable-top` | 276 × 270 @ (325,204) | 1.022 | 1.000 | −29.2 / −24.4 / −10.3 / −21.8 |
+| `rail-top` | 289 × 270 @ (621,204) | 1.070 | 1.000 | −52.1 / −45.1 / −15.0 / −34.7 |
+| `rough-top` | 271 × 270 @ (930,204) | 1.004 | 1.000 | −33.0 / −36.4 / −16.8 / −27.1 |
+| `water-top` | 284 × 270 @ (1223,204) | 1.052 | 1.000 | −9.7 / −29.3 / −16.7 / −22.9 |
+| `plain-side` | 328 × 185 @ (28,618) | 1.773 | 2.000 | −4.0 / −29.1 / −42.1 / −19.1 |
+| `impassable-side` | 349 × 185 @ (375,618) | 1.886 | 2.000 | −10.5 / −26.0 / −32.0 / −17.2 |
+| `rough-side` | 366 × 185 @ (744,618) | 1.978 | 2.000 | −31.2 / −24.6 / −27.9 / −18.6 |
+| `water-side` | 377 × 185 @ (1130,618) | 2.038 | 2.000 | −32.1 / −24.1 / −41.7 / −24.4 |
+
+Every margin is negative, which is what "the pixel just outside the rect is darker
+than the painting just inside it" means: no caption, cell title or frame rule is
+inside any crop. `impassable-side` was one column wide on the first pass — the
+inset check caught it, which is the whole reason the check exists.
+
+**The cells are not at nominal aspect.** Both rows are drawn at a constant height
+(tops 270 rows, sides 185 rows) and a per-cell width, so resampling to 128 × 128
+and 128 × 64 stretches each face by a different amount. The tops are within 0.4%
+to 7%, which is invisible. `plain-side` is the outlier at 1.773 against 2.000: it
+is stretched 12.8% horizontally to reach the nominal master. Nothing was cropped
+to fix the ratio — cropping the owner's painting would be a repair — and the
+courses read correctly stretched, but a Wave 2 sheet drawing the cells at their
+nominal ratio would remove the question.
+
+## B.3 Audit, per face
+
+The reduction is two steps, both `resampleRGBA`: delivered preview → the 4×
+nominal master D.4 fixes → the shipped face §5 fixes. Quantization targets **each
+material's own ramps** and nothing else, which is what makes the first three rows
+of this table true by construction rather than by inspection.
+
+| Face | Shipped | Colours (ceiling 6) | Amber | Reserved ramps | `copper-300` | Off-ramp | E/W wrap ratio | N/S wrap ratio | Quantized | mean / worst move | Ambiguous |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `plain-top` | 32×32 | 3 | 0 | 0 | 0 | 0 | 1.10 | **2.60** | 1024/1024 | 28.0 / 45.8 | 996 |
+| `plain-side` | 32×16 | 5 | 0 | 0 | 0 | 0 | 0.71 | 5.49 † | 512/512 | 21.0 / 40.8 | 442 |
+| `impassable-top` | 32×32 | 6 | 0 | 0 | 0 | 0 | 1.47 | 0.82 | 1024/1024 | 21.1 / 35.0 | 1021 |
+| `impassable-side` | 32×16 | **7** | 0 | 0 | 0 | 0 | 1.48 | 2.79 † | 512/512 | 18.2 / 36.0 | 468 |
+| `rail-top` | 32×32 | **7** | 0 | 0 | **0** | 0 | 0.52 | 0.33 | 1024/1024 | 19.5 / 35.8 | 923 |
+| `rough-top` | 32×32 | 5 | 0 | 0 | 0 | 0 | 1.18 | 1.27 | 1024/1024 | 23.6 / 35.7 | 1007 |
+| `rough-side` | 32×16 | 6 | 0 | 0 | 0 | 0 | 0.89 | 5.33 † | 512/512 | 15.8 / 35.4 | 413 |
+| `water-top` | 32×32 | 4 | 0 | 0 | 0 | 0 | **2.06** | 1.45 | 1024/1024 | 14.0 / 31.9 | 597 |
+| `water-side` | 32×16 | 6 | 0 | 0 | 0 | 0 | 1.23 | 5.87 † | 512/512 | 16.0 / 35.0 | 512 |
+
+**How the seam numbers are built, and why the ratio is the one to read.** A wrap
+edge is measured as the mean per-channel step across the join — pixel (w−1, y) laid
+beside (0, y) — divided by the same texture's mean step between *neighbouring
+interior* pixels on the same axis. A coarse material has a big step everywhere, so
+the absolute number says nothing on its own; the ratio says whether the join is
+worse than the grain. 1.0 is invisible, and the eye starts finding a seam around
+2.0 on a 32 px tile laid 300 times. Nothing was smeared, cloned or blended to
+improve a number.
+
+† **A side face's vertical join is measured but not held against it.** §5 puts a
+lighter cut line across the top 2 rows of every side face and nothing across the
+bottom, so a face stacked on a copy of itself *must* step from dark masonry to
+light cut line at every height unit. That discontinuity is not a seam; it is the
+thing the player counts steps with. The numbers are logged because the brief asked
+for them and because a Wave 2 face that lost the band would show up here as a
+ratio near 1.0.
+
+**Strata band, per side face:**
+
+| Face | Top 2 rows | Flat? | Colour | Band luminance vs body | §5 wants |
+|---|---|---|---|---|---|
+| `plain-side` | lighter, 100% of pixels | **yes**, 2/2 | `soot-500` | 0.0862 vs 0.0295 | flat `soot-300` — **band right, colour one step dark** |
+| `impassable-side` | lighter, 100% | no, 0/2 | `soot-700` `soot-500` `umber-500` | 0.0596 vs 0.0220 | **no band at all** — divergence |
+| `rough-side` | lighter, 100% | **yes**, 2/2 | `umber-500` | 0.0409 vs 0.0212 | **interrupted** — divergence, and warm |
+| `water-side` | lighter, 100% | no, 0/2 | `soot-700` `soot-500` | 0.0752 vs 0.0115 | flat `soot-300` — band right, not flat |
+
+`soot-300` appears in **none** of the four bands. Height is still countable on the
+board — the staircase and sampler shots make that plain — but it is countable at
+one ramp step less contrast than §5 specified.
+
+**What each column costs downstream:**
+
+- **Colours 3–7 against a ceiling of 6.** Nothing mechanical; the engine draws
+  whatever the grid holds. Two faces are over. Same root cause as the sprites: the
+  ceiling is a hand-drawing rule and a reduction of painted art cannot meet it.
+- **Amber, reserved ramps, off-ramp all zero, on all nine faces.** True by
+  construction: `allowed` is soot + umber, plus the copper ramp on `rail-top` and
+  the verdigris ramp on the two water faces, and nothing else. The whole amber,
+  overload, vein-glass, blood, steel and bone families are not in the target, so
+  the ground cannot be powered by accident.
+- **`copper-300` zero everywhere, including where it was wanted.** The rail head
+  specular is §5's single most load-bearing pixel on the ground plane and it is
+  absent. Rail still reads, in cool grey against warm ballast, and the engine's
+  old placeholder rail strips were removed rather than left on top of the
+  delivered art — see §B.5.
+- **Ambiguous quantizations, 413–1021 px of 512/1024.** C.8.2 says do not proceed
+  past a non-empty ambiguous list. We proceeded, deliberately and for the same
+  reason the sprites did: the alternative is shipping flat vertex colour. The
+  numbers are high here because a photographic ground texture is *all* midtone
+  drift — there are no flat areas to be unambiguous about — and because terrain is
+  the surface with the most near-black in it, which is exactly the
+  `soot-900`/`umber-900` collision `allowed` exists to fence. The `allowed` lever
+  was used as far as it usefully goes.
+
+## B.4 What the owner should regenerate, in priority order
+
+1. **`water-top`, twice over.** It has no verdigris in it and does not read as
+   water; and only one of the two frames arrived. §5 wants a `verdigris-700` body
+   with two 4-master-pixel `verdigris-500` shimmer bands, crisp horizontal lines,
+   no reflection and no caustics — the filaments in the delivery are 1–2 master
+   pixels wide and the 4:1 reduction eats them. This is the only face where the
+   textured board is **less** legible than the flat colour it replaced, and it is
+   the first thing to redraw. Deliver both frames, bands at different heights.
+2. **`impassable-top` and `impassable-side`.** §5: `soot-900` almost flat, the
+   barest `soot-800` grain, no courses, no strata, nothing whose height a player
+   could try to measure. What arrived is warm rock and rubble with a cut line, and
+   it is the loudest material on the board — it wins the contest for the eye
+   against the units, which the shared spec says is the one thing a ground
+   texture must never do. It is also close enough to `rough-top` to be confused
+   with it, which costs a real tactical read (impassable vs. costly-to-cross).
+3. **The rail head specular.** Two `copper-700` rails 16 master pixels wide with a
+   4-pixel `copper-300` specular along the upper edge. The delivery's grey rails
+   are legible but they are not the promised shine, and `copper-300` is reserved
+   for them alone, so nothing else in the set can carry it.
+4. **`rough-side`'s interrupted band.** Draw it broken into irregular segments over
+   roughly half the width. As delivered the band is unbroken, so the cut face does
+   not tell the player this ground costs more to cross.
+5. **The strata band colour.** All four bands should be flat `soot-300`. Two are
+   flat but one ramp step dark (`soot-500`, `umber-500`); two are not flat.
+6. **Draw the cells at nominal aspect.** Tops square, sides exactly 2:1.
+   `plain-side` currently arrives 12.8% narrow and is stretched to fit.
+7. **`plain-top`'s grit distribution.** The only real top seam in the set: the grit
+   is bottom-weighted, so tiling shows a faint horizontal band once per tile
+   (N/S ratio 2.60). Spread the grit evenly and it goes away. `water-top`'s
+   E/W 2.06 is on the same list and is fixed by redrawing it anyway.
+
+## B.5 Engine decisions the intake had to make
+
+The renderer had no `uv` attribute and no tileset before this pass. Four decisions,
+recorded because D.4 left them open and because the art depends on them:
+
+- **Nine textures, not an atlas.** ≤9 draw calls on a board that is one merged
+  mesh, against two things an atlas cannot pay for: `RepeatWrapping`, which is
+  what the tall-face rule below needs, and edge-clean mip levels, since a tiling
+  texture's edge pixel's true neighbour is the pixel on the opposite edge and any
+  atlas padding is a lie about that. The maps actually use three to five groups.
+- **A tall face is one quad with `v` running 0..N.** §5: "a column of height N
+  stacks N side tiles." One quad per face against a repeating texture gives the
+  same texels as N quads at a sixth of the vertices, and it puts the strata cut
+  line at the top of every height step — which is the point of the band, because
+  that is what makes a four-step drop countable without moving the cursor. The
+  skirt is `SKIRT_DEPTH / HEIGHT_STEP` = 3 whole steps, so it lands square too.
+- **32 texels per world unit, on every face.** A top is 32 × 32 across 1 × 1; a
+  side is 32 × 16 across 1 × HEIGHT_STEP. One ruler, asserted in
+  `tests/render/terrain.test.ts`, so there is no zoom at which the ground changes
+  density between a top and the face under it. Mip chains are supplied rather than
+  generated (`gl.generateMipmap` clamps at the edge); `NearestFilter` magnifies,
+  trilinear minifies, matching the sprite sheet.
+- **The water shimmer is an engine translation, not a repaint.** With one frame
+  delivered instead of two, `water-top` is the one texture whose `offset.y` is
+  animated: the whole surface steps one texel and back on the brief's 30-tick
+  beat, which puts the shimmer bands at two different heights without touching a
+  pixel of the owner's painting. Verified alternating in live GL. When the second
+  frame lands, `WATER_SHIMMER_TICKS` in `src/render/terrainTextures.ts` is what it
+  replaces.
+
+The three strata still come from light alone: one set of nine textures serves the
+Rise, the Works and the Underveins, and the Underveins board (Tallow Row) reads
+darker than the Works boards with no per-stratum art, exactly as §1 and D.4 say it
+should.

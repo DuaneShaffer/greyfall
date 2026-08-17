@@ -20,6 +20,7 @@ import {
 } from "./presentation.js";
 import { palette } from "./palette.js";
 import { buildTerrainMeshData, tileFromTriangle, type TerrainMeshData } from "./terrain.js";
+import { TerrainTextures } from "./terrainTextures.js";
 import { UnitVisual } from "./units.js";
 import { VfxLayer } from "./vfxLayer.js";
 import {
@@ -273,6 +274,8 @@ export class BattleRenderer {
   private readonly units = new Map<string, UnitVisual>();
   private readonly objects = new Map<string, ObjectVisual>();
   private readonly vfx = new VfxLayer();
+  /** The tile-face materials, shared by every board this renderer builds. */
+  private readonly terrain = new TerrainTextures();
   private readonly onTileHover: ((tile: TileCoord | null) => void) | undefined;
   private readonly onTileSelect: ((tile: TileCoord | null) => void) | undefined;
 
@@ -338,10 +341,13 @@ export class BattleRenderer {
     geometry.setAttribute("position", new THREE.BufferAttribute(this.terrainData.positions, 3));
     geometry.setAttribute("normal", new THREE.BufferAttribute(this.terrainData.normals, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(this.terrainData.colors, 3));
+    geometry.setAttribute("uv", new THREE.BufferAttribute(this.terrainData.uvs, 2));
     geometry.setIndex(new THREE.BufferAttribute(this.terrainData.indices, 1));
+    for (const group of this.terrainData.groups) {
+      geometry.addGroup(group.start, group.count, group.materialIndex);
+    }
     geometry.computeBoundingSphere();
-    const material = new THREE.MeshLambertMaterial({ vertexColors: true });
-    this.terrainMesh = new THREE.Mesh(geometry, material);
+    this.terrainMesh = new THREE.Mesh(geometry, [...this.terrain.materials]);
     this.terrainMesh.renderOrder = DRAW_ORDER.terrain;
     this.boardGroup.add(this.terrainMesh);
     this.post.setOccluders([this.terrainMesh]);
@@ -506,6 +512,7 @@ export class BattleRenderer {
     for (const hook of this.frameHooks) hook(deltaSeconds);
     this.clock += deltaSeconds;
     this.rig.update(deltaSeconds);
+    this.terrain.advance(deltaSeconds);
     this.queue.update(deltaSeconds);
     for (const object of this.objects.values()) object.update(this.clock);
     for (const unit of this.units.values()) unit.update(deltaSeconds);
@@ -543,6 +550,7 @@ export class BattleRenderer {
     this.stop();
     this.disposeSceneContents();
     this.vfx.dispose();
+    this.terrain.dispose();
     this.post.dispose();
     this.renderer.dispose();
   }
@@ -581,7 +589,7 @@ export class BattleRenderer {
       this.post.setOccluders([]);
       this.boardGroup.remove(this.terrainMesh);
       this.terrainMesh.geometry.dispose();
-      (this.terrainMesh.material as THREE.Material).dispose();
+      // The materials outlive the mesh: they are the shared tile-face set.
       this.terrainMesh = null;
     }
     this.terrainData = null;

@@ -1378,3 +1378,59 @@ with an `allowed` ramp, then a **new** terrain audit — `auditGrid` checks a
 figure box, a feet anchor and a silhouette outline, none of which a tile has.
 The pipeline is not built: the terrain mesh emits no `uv` attribute and there is
 no tile atlas, and that engine work belongs with the art, not ahead of it.
+
+### D.5 Terrain texturing, as built (binding)
+
+D.4 named the density and left the engine open. Wave 1 landed, the pipeline was
+built, and these are the decisions it forced. Binding on
+`src/render/{terrain,terrainTextures}.ts` and `src/art/{tiles,tileSheet,tileset}.ts`.
+The delivery's own report card — what diverged, and what the owner should redraw
+— is `art-src/INTAKE_LOG.md` Part B.
+
+**Nine textures, one per face of the set. No atlas.** An atlas would draw the
+board in one call; nine textures draw it in as many groups as a map actually uses,
+three to five in the shipped maps, on a mesh that is already merged. Two things
+bought that:
+
+1. **`RepeatWrapping`.** §5 stacks N side tiles up an N-step face. With a texture
+   of its own that is one quad and `v` running 0..N. Inside an atlas the same
+   thing costs either N quads or a custom shader wrapping a sub-rectangle by hand.
+2. **Clean mip levels.** A 32px cell in an atlas needs padded, duplicated edges,
+   and the padding has to survive every level of the chain — which is exactly the
+   border a *tiling* texture must not have, because its edge pixel's true
+   neighbour is the pixel on the opposite edge. Nine textures wrap correctly at
+   every level for free. The chains are supplied rather than generated, because
+   `gl.generateMipmap` clamps at the texture edge and this is a texture whose
+   edges meet themselves three hundred times a board. Every dimension in the set
+   is a power of two, so no 2×2 box ever straddles a wrap edge.
+
+**One ruler: 32 texels per world unit, on every face.** A top is 32 × 32 across a
+1 × 1 tile; a side is 32 × 16 across 1 × `HEIGHT_STEP`. There is no zoom at which
+a top and the face under it show different texel sizes. Asserted, not assumed.
+
+**A column of height N is one quad, not N quads.** Same texels, a sixth of the
+vertices, and the strata cut line lands at the top of every height step — which
+is the point of the band, since counting a four-step drop without moving the
+cursor is what §5 hired it for. The skirt is `SKIRT_DEPTH / HEIGHT_STEP` whole
+steps and lands square with the rest.
+
+**Filtering follows the sprite sheet.** `NearestFilter` on magnification, because
+the ground must show hard texel edges at the zooms the camera sits at; trilinear
+on minification, because a board pulled out to ~40 screen px per tile crawls
+otherwise. Textures are neutral: vertex colour carries only the per-tile
+brightness wobble and the face shade, so the three strata stay a property of the
+light exactly as §1 and D.4 require.
+
+**Rail rotates, it is not redrawn.** Rails are painted running north–south; an
+east–west run is the same texture turned a quarter (`(u,v) → (v, 1−u)`, a
+rotation, never a mirror). The placeholder inset rail strips were removed with
+this pass — leaving engine geometry on top of delivered art is how a renderer
+starts lying about what the artist drew — which leaves `railStripColor` in
+`render/palette.ts` with no consumer.
+
+**The water shimmer is a translation, not a repaint.** §5 wants two `water-top`
+frames alternating every 30 ticks; Wave 1 delivered one. Interim: `water-top` is
+the one texture with an animated `offset`, stepping the whole surface one texel
+and back on the same 30-tick beat, which puts the shimmer bands at two heights
+without touching a pixel of the delivery. `WATER_SHIMMER_TICKS` is what the second
+frame replaces when it lands.
