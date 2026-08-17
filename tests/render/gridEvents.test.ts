@@ -34,6 +34,7 @@ const objectView = (): MapObjectView => ({
   spriteId: "machine",
   tiles: [{ x: 0, y: 0 }],
   surfaceHeight: null,
+  gridRole: "line",
   powered: true,
   destroyed: false,
   severed: false,

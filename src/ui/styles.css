@@ -2310,3 +2310,53 @@
 .gf-campaign-detail .gf-detail-title {
   margin: 0 0 var(--gf-s-2);
 }
+
+/* --- notice scrollback: the lines a batch displaced ----------------------- */
+/* The slot keeps one live line and stacks what it displaced underneath, newest
+   first, each retiring on its own clock. Punched record, not a panel: the
+   newest line keeps every bit of the weight, and the log is a trail. */
+
+.gf-notice-slot {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.gf-notice-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  max-width: 46ch;
+  /* Reference only: it never takes a click away from the field under it. */
+  pointer-events: none;
+}
+
+.gf-notice-line {
+  margin: 0;
+  padding: 0 var(--gf-s-2);
+  border-left: 1px solid var(--gf-off);
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  color: var(--gf-dim);
+  opacity: 0.78;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Tone survives the demotion — a refusal that scrolled back is still a refusal —
+   but at the log's weight, so it cannot compete with the live line. */
+.gf-notice-line.is-refusal {
+  border-left-color: var(--gf-danger);
+  color: var(--gf-enemy);
+}
+
+.gf-notice-line.is-machine {
+  border-left-color: var(--gf-operable);
+  color: var(--gf-operable);
+}

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { GameMap } from "../data/schemas/map.js";
+import type { GameMap, GridRole, MapObjectKind } from "../data/schemas/map.js";
 import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./grid.js";
 import { markBloomEligible } from "./layers.js";
 import { objectColor, palette } from "./palette.js";
@@ -11,6 +11,25 @@ const SEVERED_GAP = 0.38;
 const SEVERED_KINK = 0.13;
 /** How far a cut run's body is pulled toward the dead-seam grey. */
 const SEVERED_FADE = 0.5;
+
+/**
+ * Kinds whose own primitive carries something the rules or the tactical read
+ * depend on — a deck to stand on, a grate, a blocking silhouette, a cell — and
+ * which therefore outrank the grid role. Everything else (`machine`, and the
+ * switch a breaker is) is built out of what it does on the bus, because that is
+ * what the player has to tell apart across the floor (FLUX_GRID §2.5).
+ *
+ * The assemblies below are deliberately cheap placeholder boxes on the massing
+ * of art-src/OBJECT_BRIEFS.md wave 1 — a main at 1.5 world units, a trough at
+ * 0.25, a hoist at 1.75 — so the object masters drop straight over them.
+ */
+const KIND_OVER_ROLE: ReadonlySet<MapObjectKind> = new Set<MapObjectKind>([
+  "lift",
+  "cell",
+  "wall",
+  "catwalk",
+  "turret",
+]);
 
 interface Footprint {
   center: THREE.Vector3;
@@ -234,7 +253,23 @@ export class ObjectVisual {
     return mesh;
   }
 
+  /** A box measured along the run axis first, so a run reads the same either way. */
+  private runBox(along: number, height: number, across: number): THREE.BoxGeometry {
+    return this.runAxis === "x"
+      ? new THREE.BoxGeometry(along, height, across)
+      : new THREE.BoxGeometry(across, height, along);
+  }
+
+  /** Position from run-axis coordinates: distance along the run, height, offset across. */
+  private place(along: number, y: number, across = 0): [number, number, number] {
+    return this.runAxis === "x" ? [along, y, across] : [across, y, along];
+  }
+
   private build(view: MapObjectView, footprint: Footprint): void {
+    if (view.gridRole !== null && !KIND_OVER_ROLE.has(view.kind)) {
+      this.buildGridRole(view.gridRole, view.tiles.length, footprint);
+      return;
+    }
     const w = footprint.spanX;
     const d = footprint.spanZ;
     switch (view.kind) {
@@ -358,5 +393,149 @@ export class ObjectVisual {
         break;
       }
     }
+  }
+
+  private buildGridRole(role: GridRole, tileCount: number, footprint: Footprint): void {
+    switch (role) {
+      case "source":
+        this.buildSource(footprint);
+        return;
+      case "line":
+        this.buildLine(footprint);
+        return;
+      case "breaker":
+        this.buildBreaker(tileCount, footprint);
+        return;
+      case "sink":
+        this.buildSink(footprint);
+        return;
+    }
+  }
+
+  /**
+   * A main: the heaviest mass in its bay, on a plinth, under a flared cap, with
+   * the amber column climbing its full height. Nothing else in the set is
+   * allowed that column — it is how a player picks out where the floor's power
+   * comes from without hovering anything.
+   */
+  private buildSource(footprint: Footprint): void {
+    const w = footprint.spanX;
+    const d = footprint.spanZ;
+    const column = 1.1;
+    const midY = 0.14 + column / 2;
+    this.add(new THREE.BoxGeometry(w * 0.72, 0.14, d * 0.72), this.mat(objectColor.frameDark), 0, 0.07, 0);
+    this.add(new THREE.BoxGeometry(w * 0.44, column, d * 0.44), this.mat(objectColor.frame), 0, midY, 0);
+    for (const side of [-1, 1] as const) {
+      this.add(
+        new THREE.BoxGeometry(0.07, column * 0.94, 0.07),
+        this.mat(objectColor.unpowered, { powered: true }),
+        side * w * 0.24,
+        midY,
+        0,
+      );
+    }
+    this.add(
+      new THREE.CylinderGeometry(Math.min(w, d) * 0.34, w * 0.24, 0.22, 6),
+      this.mat(objectColor.frame),
+      0,
+      0.14 + column + 0.11,
+      0,
+    );
+  }
+
+  /**
+   * A run: a channel laid in the floor along its long axis, end-capped, with one
+   * filament down the middle that either runs the whole way or does not run at
+   * all. The caps are what make `setSevered` read — the parting pulls the span
+   * back from both tile edges, and a capped end is a visible end.
+   */
+  private buildLine(footprint: Footprint): void {
+    const along = this.runAxis === "x" ? footprint.spanX : footprint.spanZ;
+    const across = this.runAxis === "x" ? footprint.spanZ : footprint.spanX;
+    const width = Math.min(0.46, across * 0.62);
+    this.add(this.runBox(along * 0.98, 0.08, width), this.mat(objectColor.frameDark), ...this.place(0, 0.04));
+    for (const side of [-1, 1] as const) {
+      this.add(
+        this.runBox(along * 0.98, 0.2, 0.07),
+        this.mat(objectColor.frame),
+        ...this.place(0, 0.1, side * (width / 2)),
+      );
+      this.add(
+        this.runBox(0.1, 0.24, width * 1.15),
+        this.mat(objectColor.frame),
+        ...this.place(side * along * 0.47, 0.12),
+      );
+    }
+    this.add(
+      this.runBox(along * 0.94, 0.05, width * 0.3),
+      this.mat(objectColor.unpowered, { powered: true }),
+      ...this.place(0, 0.11),
+    );
+  }
+
+  /**
+   * A board: a cabinet with the copper handle a player can reach, one per tile
+   * of its footprint, so a two-tile switchboard is not the one-tile gallery tie.
+   * Its only seam is the indicator strip — a breaker carries no column.
+   */
+  private buildBreaker(tileCount: number, footprint: Footprint): void {
+    const w = footprint.spanX;
+    const d = footprint.spanZ;
+    this.add(new THREE.BoxGeometry(w * 0.66, 0.1, d * 0.66), this.mat(objectColor.frameDark), 0, 0.05, 0);
+    this.add(new THREE.BoxGeometry(w * 0.5, 0.56, d * 0.44), this.mat(objectColor.frame), 0, 0.38, 0);
+    this.add(
+      new THREE.BoxGeometry(w * 0.34, 0.05, d * 0.1),
+      this.mat(objectColor.unpowered, { powered: true }),
+      0,
+      0.69,
+      0,
+    );
+    const levers = Math.min(3, Math.max(1, tileCount));
+    for (let index = 0; index < levers; index += 1) {
+      const lever = this.add(
+        new THREE.BoxGeometry(0.07, 0.4, 0.07),
+        this.mat(objectColor.operable),
+        ...this.place((index - (levers - 1) / 2) * 0.3, 0.86),
+      );
+      lever.rotation.x = -0.5;
+    }
+  }
+
+  /**
+   * A driven machine: a portal frame with daylight under the beam and a drum and
+   * hook hanging in it. The gap is the silhouette — it is what separates a thing
+   * that consumes from the solid mass of the main that feeds it. One indicator
+   * seam and no more: a sink does not supply.
+   */
+  private buildSink(footprint: Footprint): void {
+    const along = this.runAxis === "x" ? footprint.spanX : footprint.spanZ;
+    const across = this.runAxis === "x" ? footprint.spanZ : footprint.spanX;
+    const legs = 1.4;
+    this.add(this.runBox(along * 0.86, 0.08, across * 0.8), this.mat(objectColor.frameDark), ...this.place(0, 0.04));
+    for (const side of [-1, 1] as const) {
+      this.add(
+        this.runBox(0.14, legs, 0.14),
+        this.mat(objectColor.frame),
+        ...this.place(side * along * 0.34, 0.08 + legs / 2),
+      );
+    }
+    this.add(
+      this.runBox(along * 0.9, 0.18, across * 0.34),
+      this.mat(objectColor.frame),
+      ...this.place(0, legs + 0.17),
+    );
+    const drum = this.add(
+      new THREE.CylinderGeometry(0.15, 0.15, across * 0.4, 8),
+      this.mat(objectColor.frameDark),
+      ...this.place(0, legs - 0.06),
+    );
+    if (this.runAxis === "x") drum.rotation.x = Math.PI / 2;
+    else drum.rotation.z = Math.PI / 2;
+    this.add(this.runBox(0.12, 0.34, 0.12), this.mat(objectColor.frameDark), ...this.place(0, legs - 0.4));
+    this.add(
+      this.runBox(0.12, 0.08, 0.12),
+      this.mat(objectColor.unpowered, { powered: true }),
+      ...this.place(along * 0.2, legs + 0.3),
+    );
   }
 }

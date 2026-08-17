@@ -7,7 +7,7 @@
 // else in `src/render` may import core — the adapter is the only crossing.
 
 import type { Facing, Team, TileCoord } from "../data/schemas/common.js";
-import type { GameMap, MapObject, MapObjectKind } from "../data/schemas/map.js";
+import type { GameMap, GridRole, MapObject, MapObjectKind } from "../data/schemas/map.js";
 import type { Unit } from "../data/schemas/unit.js";
 import { standingHeight } from "./grid.js";
 
@@ -30,6 +30,8 @@ export interface MapObjectView {
   spriteId: string;
   tiles: TileCoord[];
   surfaceHeight: number | null;
+  /** What it does on its grid (FLUX_GRID §1.2); null = on no declared grid. */
+  gridRole: GridRole | null;
   /** null = the object is not electrical. */
   powered: boolean | null;
   destroyed: boolean;
@@ -67,12 +69,25 @@ export const unitViewFromPlacement = (map: GameMap, placement: UnitPlacement): U
   downed: placement.downed ?? (placement.hpFraction !== undefined && placement.hpFraction <= 0),
 });
 
-export const objectViewFromMapObject = (object: MapObject): MapObjectView => ({
+/** The role the authored topology gives this object, without asking core. */
+export const gridRoleOf = (map: GameMap, objectId: string): GridRole | null => {
+  for (const grid of map.grids) {
+    const node = grid.nodes.find((candidate) => candidate.objectId === objectId);
+    if (node !== undefined) return node.role;
+  }
+  return null;
+};
+
+export const objectViewFromMapObject = (
+  object: MapObject,
+  gridRole: GridRole | null = null,
+): MapObjectView => ({
   id: object.id,
   kind: object.kind,
   spriteId: object.spriteId,
   tiles: object.tiles.map((tile) => ({ ...tile })),
   surfaceHeight: object.surfaceHeight ?? null,
+  gridRole,
   powered: object.powered,
   destroyed: false,
   severed: false,
@@ -82,7 +97,7 @@ export const objectViewFromMapObject = (object: MapObject): MapObjectView => ({
 export const buildViewModel = (map: GameMap, placements: UnitPlacement[]): BattleViewModel => ({
   map,
   units: placements.map((placement) => unitViewFromPlacement(map, placement)),
-  objects: map.objects.map(objectViewFromMapObject),
+  objects: map.objects.map((object) => objectViewFromMapObject(object, gridRoleOf(map, object.id))),
 });
 
 export const findUnitView = (viewModel: BattleViewModel, unitId: string): UnitView | undefined =>

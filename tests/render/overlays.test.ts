@@ -60,6 +60,7 @@ const cellView = (): MapObjectView => ({
   spriteId: "cell",
   tiles: [{ x: 0, y: 0 }],
   surfaceHeight: null,
+  gridRole: null,
   powered: true,
   destroyed: false,
   severed: false,

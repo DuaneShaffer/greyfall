@@ -21,6 +21,7 @@ import {
   gridComponents,
   itemIdFromAbilityId,
   objectEnergized,
+  objectGridRole,
   objectSevered,
   standHeight,
   unitMaxHp,
@@ -58,6 +59,9 @@ const objectViewOf = (state: GameState, object: ObjectRuntime): MapObjectView =>
   spriteId: object.def.spriteId,
   tiles: object.def.tiles.map((tile) => ({ ...tile })),
   surfaceHeight: object.def.surfaceHeight ?? null,
+  // What the object does on the bus is what it is built out of: a main, a run, a
+  // board and a pump are all `kind: "machine"` and must not share a silhouette.
+  gridRole: objectGridRole(state, object.def.id),
   // The renderer's lit state is energization, not the isolator flag
   // (`docs/design/FLUX_GRID.md` §1.3) — otherwise a rebuild relights a bus the
   // `PowerChanged` batch had just taken dark.
