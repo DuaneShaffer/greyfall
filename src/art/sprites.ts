@@ -173,11 +173,14 @@ const FACING_INDEX = { north: 0, east: 1, south: 2, west: 3 } as const satisfies
 export type CameraYaw = 0 | 1 | 2 | 3;
 export const CAMERA_YAW_CORNERS = ["se", "sw", "nw", "ne"] as const;
 
+// The rig's yaw 0 hangs over the SE corner, which puts world north up and to
+// the screen's right — so a north-facing unit shows its unmirrored back, and
+// each facing step from there walks the apparent ring the same way round.
 const RELATIVE_TO_APPARENT = [
-  "back-left",
-  "front-left",
-  "front-right",
   "back-right",
+  "front-right",
+  "front-left",
+  "back-left",
 ] as const satisfies readonly ApparentView[];
 
 export function apparentView(facing: Facing, cameraYaw: CameraYaw): ApparentView {

@@ -184,11 +184,11 @@ describe("facing derivation", () => {
     }
   });
 
-  it("matches the documented SE-corner baseline at yaw 0", () => {
-    expect(apparentView("south", 0)).toBe("front-right");
-    expect(apparentView("east", 0)).toBe("front-left");
-    expect(apparentView("west", 0)).toBe("back-right");
-    expect(apparentView("north", 0)).toBe("back-left");
+  it("matches the SE-corner baseline at yaw 0: north reads up-screen-right", () => {
+    expect(apparentView("north", 0)).toBe("back-right");
+    expect(apparentView("east", 0)).toBe("front-right");
+    expect(apparentView("south", 0)).toBe("front-left");
+    expect(apparentView("west", 0)).toBe("back-left");
     expect(CAMERA_YAW_CORNERS[0]).toBe("se");
     expect([...CAMERA_YAW_CORNERS]).toEqual(["se", "sw", "nw", "ne"]);
   });
