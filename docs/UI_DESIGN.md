@@ -147,17 +147,37 @@ press. Maps that switch nothing draw no register.
 
 On a map that declares a **flux grid** (`COMBAT_RULES` §14a) the register grows
 a section per network, and the right column widens to exactly one of LIVE /
-DEAD / OPEN / CUT / TRIPPED / TIE OPEN / TIE CLOSED — a thrown switch and a cut
-span are different problems with different answers, so they are different words.
+DEAD / OPEN / CUT / DESTROYED / TRIPPED / TIE OPEN / TIE CLOSED — a thrown
+switch, a cut span and a wreck are different problems with different answers, so
+they are different words, and only two of the three have an answer at all.
 Sections run in grid-id order and then the ungridded machines; inside a section,
 sources, then breakers and ties, then lines, then sinks, each by object id, so
 the register never reshuffles under the player's eye (`COMBAT_RULES` §17).
 
-Each section carries a **LOAD line** — `LOAD load/capacity`, what the bus is
-carrying against what it is rated for. It is the single most important addition
-the grid made to this interface: it is what turns a trip into a decision the
-player can plan instead of a surprise they absorb. Its colour is the one place
-the register spends anything but copper and dim:
+**Inside a section the rows are grouped by bus, and the LOAD line belongs to the
+bus rather than to the network.** A network is not a circuit; the switches
+decide how many circuits it currently is, and an open tie makes a house into two
+of them. The register groups each connected component, heads it with what feeds
+it ("West Main", "West Main + East Main", or *Unfed*) and its own
+`LOAD load/capacity`, and lists that component's nodes underneath in the order
+above. Nodes conducting nothing — switched out, cut, wrecked — are grouped last
+as **Out of circuit**, with no arithmetic, because they are on no bus to have
+any. Groups run by their lowest node id, so the grouping is as stable as the
+ordering inside it and rows move only when the topology actually moves — which
+is the thing the player most needs to see.
+
+Summing components was the bug this replaced: a house running as two halves at
+10 of 14 read `LOAD 20/28`, a number describing a circuit nobody was standing
+in, and a house whose feeds were both gone read `16/28` in copper, at rest. **A
+component with no rating prints no LOAD line at all**, and that absence is the
+readout at its most useful: nothing feeds this, so there is nothing left to read
+against.
+
+The **LOAD line** — `LOAD load/capacity`, what a bus is carrying against what it
+is rated for — is the single most important addition the grid made to this
+interface: it is what turns a trip into a decision the player can plan instead
+of a surprise they absorb. Its colour is the one place the register spends
+anything but copper and dim:
 
 | state | colour |
 |---|---|
@@ -169,7 +189,19 @@ Thresholds are integer comparisons against the same numbers printed beside
 them, so the colour can never disagree with the figure. §5's scarcity rule
 survives literally: amber still appears in exactly its three places, copper is
 still reserved for machinery, and blood is spent once — on the number that
-caused the trip, not on the rows that went dark for it.
+caused the trip, not on the rows that went dark for it. The seams on the
+battlefield read the same arithmetic off the same components, so a bus at rest
+and a bus past its rating can be lit differently on one floor at one moment,
+and a bus with nothing feeding it is painted dead rather than overloaded.
+
+**The inspect card answers for machinery too.** The quiet card under the notice
+slot takes whatever the cursor is over: a unit, or — when no unit is standing
+there — the machine on the tile, reading its name in copper, what it is on the
+bus ("Source · rated 14", "Sink · draws 4", "Cable run", "Breaker") or off it,
+its power state in the register's own word, and its integrity. On a map where
+the machines are the terrain, "what is this and is it being fed" was a question
+only the register could answer, by name, about something the player was already
+pointing at.
 
 ## 7. Modes
 
@@ -204,6 +236,27 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   player descended through reads as a trail rather than a pending selection.
 - **Refusals are non-modal.** A brief notice in the annunciator slot, in the
   register: "No path there", "Out of reach", "Field Repair cannot target that".
+- **The annunciator keeps a short scrollback.** The slot holds one line, and the
+  lines it displaces stack under it, dimmer, newest first, each on its own
+  clock, out of the live region and taking no pointer. A single slot was fine
+  while a notice was one machine answering a click; it stopped being fine when
+  the strip became how the grid explains itself, because an enemy turn that
+  cuts a span, trips a bus and drops a lift deck is three lines and the player
+  saw the third.
+- **Every order the player can send says what it would do before it is sent.**
+  Aiming an ability marks the tiles it covers and, on a grid, the component it
+  would flip; the forecast panel reports the whole order. Operate has no aim
+  step, so the Operate menu's cursor does that job instead: resting on a machine
+  forecasts the order off the real recompute and marks what it would flip, and
+  the panel's stamp sends it. An order with no preview is an order the player
+  learns by spending a turn on it, and on a grid the cheapest verb was the one
+  with none.
+- **An order the rules will refuse is never offered.** The aim overlay lights
+  only what the command layer would accept, and the two ask the same question:
+  a multi-tile machine answers on any of its own tiles, and an order with
+  nothing to act on — an isolator thrown at a stack of drums — is not lit, is
+  refused by name, and costs nothing. A stamp that commits and then does
+  nothing is worse than a stamp that is not offered.
 - **A panel never offers what it cannot do — and never hides what it can.** A
   forecast with no targets says so and its stamp is dead; a committed forecast
   keeps its numbers and loses its stamp, and holds them through the redraw that

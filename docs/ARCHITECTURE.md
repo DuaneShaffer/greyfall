@@ -150,4 +150,13 @@ JSON; a new effect primitive is an engine change with tests.
   `network` id on objects.
 - Cutscene script format — post-slice; scripted beats in the slice use
   encounter triggers + dialogue lines only.
+- **Mid-battle save/load — deliberately not built.** What is persisted is
+  `CampaignState` (roster, progress, inventory, fallen, encounter index), one
+  file per campaign, written between battles. A battle is initial state plus a
+  command log, so resuming one mid-fight is a replay-format problem rather than
+  a save-format one: it needs the log persisted, the RNG stream restored at the
+  right draw, and a rule that a reloaded battle cannot re-roll a miss. None of
+  that is hard and none of it is free, and an engagement being a thing you
+  finish is a design position as much as a scope one. Recorded so it reads as a
+  decision rather than an omission.
 - Gamepad input, audio engine, post-processing chain, map editor tooling.

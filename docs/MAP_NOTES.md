@@ -706,6 +706,15 @@ All of the above is asserted against the engine's own `solveGrid` in
 exactly (a hung load of 4 fits a half and 5 does not; 8 fits the bus and 9
 does not).
 
+**And all of it is on screen.** The POWER register groups its rows by component
+and carries one LOAD line per bus, so the reading above is literally what the
+player sees: `EAST MAIN 10/14` and `WEST MAIN 10/14` with the tie open, one
+`EAST MAIN + WEST MAIN 20/28` with it closed, and no LOAD line at all on a half
+nothing is feeding. It shipped summing the whole grid to `20/28` — a circuit
+nobody was standing in — and that is corrected (`docs/design/FLUX_GRID.md`
+§2.5a). The tie's arithmetic is therefore permanent rather than something the
+sergeant says once if a player happens to walk onto the landing.
+
 **Siting, per §1.7's mandatory pair.** There is one tie and there are two
 reclose points, and all three are reachable from both approaches: the mains
 sit at mid-depth on opposite side walls rather than behind either force's

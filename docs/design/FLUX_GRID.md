@@ -315,22 +315,45 @@ machine something on the map can switch. It gains a section header per network:
 
 ```
 POWER
- REFINERY THREE GRID              LOAD 14/12   TRIPPED
-   west main                      OPEN
-   east main                      LIVE
-   north bus                      CUT
-   tie, gallery                   TIE OPEN
-   charge hoist west              DEAD
-   charge hoist east              LIVE
+ METER HOUSE GRID
+   EAST MAIN                      LOAD 10/14
+     east main                    LIVE
+     east switchboard             LIVE
+     sump run                     LIVE
+     sump feed pump               LIVE
+   WEST MAIN                      LOAD 16/14   TRIPPED
+     west main                    TRIPPED
+     west switchboard             LIVE
+     charge hoist, west bay       DEAD
+   UNFED                                       DEAD
+     gallery run                  DEAD
+     meter lift                   DEAD
+   OUT OF CIRCUIT
+     gallery tie                  TIE OPEN
+     west feeder trough           DESTROYED
  SERVICE LIFT                     LIVE
 ```
 
 Rules: one section per grid, sections in grid-id order then ungridded objects;
-within a section, sources, then breakers and ties, then lines, then sinks, each
-in object-id order (COMBAT_RULES §17's ordering discipline applies to the
-readout too, so the register never reshuffles under the player's eye). Right
-column is exactly one of LIVE / DEAD / OPEN / CUT / TRIPPED / TIE OPEN / TIE
+within a section, one group per **component**, groups by their lowest node id;
+within a group, sources, then breakers and ties, then lines, then sinks, each in
+object-id order (COMBAT_RULES §17's ordering discipline applies to the readout
+too, so the register never reshuffles under the player's eye). Right column is
+exactly one of LIVE / DEAD / OPEN / CUT / DESTROYED / TRIPPED / TIE OPEN / TIE
 CLOSED. Maps with no switchable power still draw no register.
+
+**Corrected in the build (acceptance findings 2, 3 and 6).** This section
+originally put one LOAD line on the *network*, and the first shipped grid proved
+that wrong on its first screen: the Meter House runs as two halves at 10 of 14,
+and one line summing them read `20/28` — a claim about a circuit nobody is
+standing in, and the exact number a player would plan a trip against. **Load,
+capacity and strain are properties of a component and of nothing else**, which
+is what §1.4 always said and what the readout failed to say. A component with no
+capacity prints no LOAD line at all; its absence is the readout saying there is
+nothing left to read against. Nodes conducting nothing are grouped out of
+circuit rather than folded into a bus they have left. And DESTROYED is its own
+word for the same reason CUT is: a wreck and a node the grid merely stopped
+feeding are different problems, and only one of them has an answer.
 
 **The load line is the single most important addition in this document.** It is
 what makes the trip a decision the player can plan instead of a surprise they
@@ -359,6 +382,24 @@ would flip are marked, in the same overlay the area highlight already uses. This
 is the piece that makes "cut the north bus" a legible choice rather than a
 guess, and it is a pure function of the same recompute the rules run — no second
 model of the graph anywhere.
+
+**Every grid order, including the two that are not abilities** (findings 9 and
+10). Destruction is in the preview: `damageObject` on a main is the one grid
+verb with no undo, and it was the only one going out unseen. So is Operate —
+`activateObject` has no aim step, so the affordance lives on the Operate menu's
+cursor instead, forecasting the order and marking its component off the same
+replay. On a grid map Operate is the cheapest and commonest grid verb there is;
+leaving it without a preview left the mechanic's front door blind.
+
+**(d) The player's own verbs report like the enemy's.** The annunciator was
+suppressed while the player's own Operate was in flight, on the theory that the
+machine had already acknowledged the click — so a reclose that blew again on the
+same pass printed "West Main operated." Naming the machine is not naming the
+consequence, and the player's answer-verb has to report in the same voice, with
+the same arithmetic: *"West Main reclosed — tripped again, 16 against a rating
+of 14. Shed a load before it will hold."* Where an order carries two causes —
+Rig Machinery opens a node and then wrecks it — **destruction outranks the
+isolator**, because a player told to throw it back would be standing at rubble.
 
 ---
 
@@ -734,12 +775,19 @@ computing anybody's Mag first.
 | addition | kind |
 |---|---|
 | `{ kind: "gridTripped", gridId }` | trigger condition |
-| `{ kind: "objectPowered", objectId, powered }` | trigger condition |
+| ~~`{ kind: "objectPowered", objectId, powered }`~~ — **shipped in v1** | trigger condition |
 | `{ kind: "keepPowered", objectId, turns }` | win condition — §4.4's escort |
 | `{ kind: "gridTripped", gridId }` | loss condition |
 
-Deferred to v2 with the escort scenario that needs them; nothing in v1's cut
-line depends on a grid-aware trigger.
+Deferred to v2 with the escort scenario that needs them — except one.
+**`objectPowered` shipped in v1**, additively and exactly as spelled above,
+because the Meter House's restore ladder had to be gated on the house having
+gone dark and the vocabulary could not say it: the ladder announced a restore of
+a state the house had never left (acceptance finding 14). It reads
+**energization**, not the isolator flag, per §1.3 — a tripped source keeps
+`powered: true` and feeds nothing, and that is precisely what an author means by
+"the house went dark". `gridTripped` and the grid-aware win and loss conditions
+are still v2 and still unbuilt.
 
 ### 7.6 Code-side (not schema, listed for completeness)
 
@@ -761,9 +809,12 @@ line depends on a grid-aware trigger.
   rule, and the degeneracy rule.
 - `addLoad`, `severLine`, capacity/load, the latching trip, the reclose.
 - Events (§5.4), save format (§5.5), ordering (§5.3).
-- The POWER register's load line, cause column and network sections; the
-  annunciator cause clause; the aim-time component highlight (§2.5). **Inside
-  v1, not after it** — the mechanic is not shippable without them.
+- The POWER register's per-component load lines, cause column and network
+  sections; the annunciator cause clause, on the player's own verbs as well as
+  the enemy's; the aim-time component highlight on every grid order including
+  destruction and Operate (§2.5). **Inside v1, not after it** — the mechanic is
+  not shippable without them, and the acceptance play proved it by finding four
+  of these wrong at once.
 - Conduit abilities **1 Overdraw, 2 Cross-Tie, 3 Reclose, 4 Backfeed, 7 Rated
   Draw**; Saboteur cut; Machinist splice and reroute. **All five shipped.**
   Rated Draw landed last, on the one-field schema amendment
@@ -781,7 +832,9 @@ line depends on a grid-aware trigger.
 **v2 — the verbs that need new payload concepts.**
 
 - `setContactPayload`; **Live Line**, **Dead Short**, **Live Rig**.
-- Grid-aware trigger and win/loss conditions (§7.5) and the escort scenario.
+- Grid-aware trigger and win/loss conditions (§7.5) and the escort scenario —
+  **minus `objectPowered`, which v1 shipped** to gate the Meter House's restore
+  ladder.
 - Mobile sources (§4.3's flux cart).
 - Lifting AI_DESIGN's "requirements as a reason to move" deferral, scoped to
   grid nodes.

@@ -816,7 +816,73 @@ fight — and it leaves the chapter's own 150 untouched, since
 pins both the number and what it buys, derived from the ability effects rather
 than a hand-kept list.
 
-The one open flag is severity 3 and is the design working: `the-west-feeder-goes`
-never fires on the primary set and `the-east-feeder-goes` never fires on the
-alt, because destroying a feeder is the expensive permanent verb and almost
-nobody buys it when a cut or a thrown isolator is on the table.
+The open flags are severity 3 and every one of them is the design working:
+`the-west-feeder-goes` never fires on the primary set and `the-east-feeder-goes`
+never fires on the alt, because destroying a feeder is the expensive permanent
+verb and almost nobody buys it when a cut or a thrown isolator is on the table.
+
+**Re-read after the acceptance fixes: 70.8% on both seed sets, unchanged.**
+Mean 95.5 and 96.3 unit turns, 3.5 and 3.3 of 6 lost, no stalemates, and the
+grid contested on both — 4 player and 22–28 crew tie throws, 28–46 player and
+127–144 crew isolator writes. The economy (Standing 150 → 250) and the
+targeting legality layer both moved and neither moved the number, which is the
+expected result and the reason it was measured rather than assumed: the sim
+plays the roster at authored levels and cannot spend Standing, and the
+legality layer only removes orders that already did nothing.
+
+The primary set now carries **three** severity-3 flags rather than one, and the
+two new ones are the turn-24 gate doing its job: on that set nobody ever takes
+the west main out, so `the-west-main-goes-out` never latches and
+`the-house-comes-back` never fires. Before the gate the rung fired on all 24 of
+those runs and announced a restore of a state the house had never left. A flag
+that says "the house was never put in the dark, so the house never came back"
+is the readout being honest.
+
+### A design consideration the acceptance play turned up
+
+**Killing load can make the trip arithmetically impossible, and nothing on the
+board used to say so.** The player's own permanent verbs work on sinks as
+readily as on sources: wreck the sump run and its pump and apron lamp go with
+it, and the east half falls from 10 of 14 to 4 of 14. An Overdraw of +8 then
+lands at 12 against 14 and does not trip, and a player who had been setting up
+that exact trip has spent an action making his own plan impossible — by
+*winning* a fight against the machinery.
+
+That is a real consequence of the model and not a bug: load is what a component
+draws, and destroying a draw is a legitimate way to relieve a bus (it is the
+defender's own shed-a-load counterplay, done permanently and by the attacker).
+What was wrong is that it was invisible. The per-component register is the
+partial mitigation and it is a good one: the east half's LOAD line now reads
+`4/14` the instant the pump dies, in copper rather than at its rating, so the
+arithmetic that just changed is on screen at the moment it changes and the
+Overdraw that will no longer trip is visibly no longer worth casting. **A dead
+component's LOAD line disappearing is the same explanation in its strongest
+form** — nothing feeds this, so there is nothing left to read against.
+
+What the register still cannot say is *"this used to be trippable and is not
+any more"*, because the register has no memory. If that turns out to matter in
+play, the honest fix is an annunciator line on the load falling rather than a
+second readout — the strip already speaks whenever the grid moves, and it now
+keeps a scrollback so a line about the load is not eaten by the line about the
+wreck. Recorded rather than built: one acceptance play is not evidence that a
+player needs to be told twice.
+
+**Acceptance finding 12, closed by the register rather than by content.** The
+tie's arithmetic — 10 of 14 a side, 20 of 28 joined — used to exist only in
+`on-the-landing`, an optional once-trigger fired by walking onto the landing. A
+player who never went up there never met the numbers the whole map is about.
+With the load line per component those numbers are now permanently on screen
+and correct at every moment: two lines at `10/14` with the tie open, one at
+`20/28` with it closed, and the sergeant's line on the landing is the
+explanation of a readout the player has been looking at rather than the only
+place it appears. Verified in `tests/data/meterHouse.test.ts`.
+
+**Mid-battle save/load does not exist, by design.** The save envelope is a
+`CampaignState` — roster, progress, inventory, fallen, encounter index — and it
+is written between battles, never during one. A battle is initial state plus a
+command log (`docs/ARCHITECTURE.md`), so a resumable battle is a replay format
+question and not a save-format one, and the between-battle Save and Load
+buttons file the campaign rather than the field. An engagement is entered and
+finished. Recorded here because a player who reaches for Save mid-fight will
+not find it, and because the Meter House is long — 95-odd unit turns is the
+longest engagement in the game.
