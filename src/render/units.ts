@@ -56,6 +56,16 @@ const MARKER_OPACITY_DOWNED = 0.35;
 /** Team-tinted halo thickness around the silhouette, in tiles. */
 const RIM_THICKNESS = 0.04;
 const RIM_DEPTH_OFFSET = 0.006;
+/** Stacking order of the ground decals under a unit, tightest to the floor up. */
+const SHADOW_LIFT = 0.02;
+const MARKER_LIFT = 0.028;
+const WEDGE_LIFT = 0.034;
+
+interface Offset {
+  x: number;
+  y: number;
+  z: number;
+}
 
 /**
  * Side identity is carried by ring *shape* as well as hue, so it survives
@@ -125,6 +135,7 @@ export class UnitVisual {
   private drawnView: DrawnView = "se";
   private mirrored = false;
   private stamp = "";
+  private preview: Offset | null = null;
 
   constructor(view: UnitView) {
     this.unitId = view.id;
@@ -201,7 +212,7 @@ export class UnitVisual {
     });
     this.marker = new THREE.Mesh(this.markerGeo, this.markerMaterial);
     this.marker.name = "team-marker";
-    this.marker.position.y = 0.028;
+    this.marker.position.y = MARKER_LIFT;
     this.marker.renderOrder = DRAW_ORDER.unitMarker;
 
     this.wedgeGeo = wedgeGeometry();
@@ -214,7 +225,7 @@ export class UnitVisual {
     });
     this.wedge = new THREE.Mesh(this.wedgeGeo, this.wedgeMaterial);
     this.wedge.name = "facing-wedge";
-    this.wedge.position.y = 0.034;
+    this.wedge.position.y = WEDGE_LIFT;
     this.wedge.renderOrder = DRAW_ORDER.unitMarker;
 
     this.shadowGeo = new THREE.CircleGeometry(0.3, 12);
@@ -227,7 +238,7 @@ export class UnitVisual {
     });
     this.shadow = new THREE.Mesh(this.shadowGeo, this.shadowMaterial);
     this.shadow.name = "unit-shadow";
-    this.shadow.position.y = 0.02;
+    this.shadow.position.y = SHADOW_LIFT;
     this.shadow.renderOrder = DRAW_ORDER.unitShadow;
 
     this.group.add(this.shadow, this.marker, this.wedge, this.billboard);
@@ -289,6 +300,25 @@ export class UnitVisual {
 
   setWorldPosition(x: number, y: number, z: number): void {
     this.group.position.set(x, y, z);
+  }
+
+  /**
+   * Stand the figure clear of the tile the unit is really on — the standing
+   * half only: the sprite, its shadow and its facing wedge travel, and the team
+   * ring stays behind to mark the true tile. `null` puts it back.
+   */
+  setPreviewOffset(offset: Offset | null): void {
+    this.preview = offset === null ? null : { ...offset };
+    const x = offset?.x ?? 0;
+    const y = offset?.y ?? 0;
+    const z = offset?.z ?? 0;
+    this.billboard.position.set(x, y, z);
+    this.shadow.position.set(x, SHADOW_LIFT + y, z);
+    this.wedge.position.set(x, WEDGE_LIFT + y, z);
+  }
+
+  get previewOffset(): Offset | null {
+    return this.preview === null ? null : { ...this.preview };
   }
 
   setFacing(facing: Facing): void {

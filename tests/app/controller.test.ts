@@ -1,12 +1,20 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it } from "vitest";
 import { activeUnit, createBattle, getObject, type GameState } from "../../src/core/index.js";
-import type { Unit } from "../../src/data/index.js";
+import type { TileCoord, Unit } from "../../src/data/index.js";
 import { BattleController } from "../../src/app/controller.js";
 import { stubAiCommand } from "../../src/app/stubAi.js";
 import { BattleHud } from "../../src/ui/index.js";
 import { enemyAt, enforcer, rowen, testContent, yardEncounter } from "../core/fixtures.js";
-import { fakeRenderer, fakeUi, openBattle, VALE, type FakeRenderer, type FakeUi } from "./fixtures.js";
+import {
+  fakeRenderer,
+  fakeUi,
+  openBattle,
+  VALE,
+  VALE_TILE,
+  type FakeRenderer,
+  type FakeUi,
+} from "./fixtures.js";
 
 interface Harness {
   controller: BattleController;
@@ -526,5 +534,152 @@ describe("scene rebuilds", () => {
     expect(removed).toBe(true);
     expect(h.renderer.events).toContainEqual({ kind: "unitRemoved", unitId: "provocateur-b" });
     expect(h.renderer.scenes).toHaveLength(scenesAfterSpawn);
+  });
+});
+
+describe("the move preview", () => {
+  let h: Harness;
+  beforeEach(() => {
+    h = harness();
+    h.controller.start();
+    runUntilPlayer(h, "rowen");
+  });
+
+  /** Lit move tiles other than the one the unit is already standing on. */
+  function reachable(): TileCoord[] {
+    const own = h.controller.unitSnapshot("rowen")?.position;
+    return (h.renderer.highlights.get("move-range") ?? []).filter(
+      (tile) => own === undefined || tile.x !== own.x || tile.y !== own.y,
+    );
+  }
+
+  it("stands the unit on the hovered tile while Move is open", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover({ x: 0, y: 3 });
+    expect(h.renderer.movePreview).toEqual({ unitId: "rowen", tile: { x: 0, y: 3 } });
+    // Presentation only: nothing in state moved.
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 0, y: 4 });
+  });
+
+  it("previews nothing until Move is open", () => {
+    h.controller.onTileHover({ x: 0, y: 3 });
+    expect(h.renderer.movePreview).toBeNull();
+  });
+
+  it("restores the unit on a tile it cannot reach, and when the cursor leaves", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover({ x: 0, y: 3 });
+    h.controller.onTileHover({ x: 5, y: 0 });
+    expect(h.renderer.movePreview).toBeNull();
+
+    h.controller.onTileHover({ x: 0, y: 3 });
+    expect(h.renderer.movePreview).not.toBeNull();
+    h.controller.onTileHover(null);
+    expect(h.renderer.movePreview).toBeNull();
+  });
+
+  it("restores the unit on every way out of move mode", () => {
+    const exits: Array<() => void> = [
+      () => h.controller.intents.cancelSelection("rowen"),
+      () => h.controller.intents.selectAbility("rowen", "basic-attack"),
+      () => h.controller.intents.beginMove("rowen"),
+      () => h.controller.intents.wait("rowen", "north"),
+    ];
+    for (const exit of exits) {
+      h.controller.intents.beginMove("rowen");
+      h.controller.onTileHover({ x: 0, y: 3 });
+      expect(h.renderer.movePreview).not.toBeNull();
+      exit();
+      expect(h.renderer.movePreview).toBeNull();
+      h.ui.facingPrompt?.onCancel();
+    }
+  });
+
+  it("holds exactly one preview position while the cursor scrubs across tiles", () => {
+    h.controller.intents.beginMove("rowen");
+    const tiles = reachable().slice(0, 5);
+    expect(tiles.length).toBeGreaterThan(2);
+
+    const before = h.renderer.movePreviewCalls.length;
+    for (const tile of tiles) h.controller.onTileHover(tile);
+
+    const orders = h.renderer.movePreviewCalls.slice(before);
+    expect(orders).toHaveLength(tiles.length);
+    expect(orders.every((order) => order !== null)).toBe(true);
+    expect(h.renderer.movePreview).toEqual({ unitId: "rowen", tile: tiles.at(-1) });
+
+    // Resting on the same tile is not a fresh order: no flicker, no churn.
+    h.controller.onTileHover(tiles.at(-1)!);
+    expect(h.renderer.movePreviewCalls.slice(before)).toHaveLength(tiles.length);
+  });
+
+  it("shows nothing for the unit's own tile, and still sends the zero-distance move", () => {
+    const own = h.controller.unitSnapshot("rowen")?.position;
+    expect(own).toBeDefined();
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover(own!);
+    expect(h.renderer.movePreview).toBeNull();
+
+    h.controller.onTileClick(own!);
+    h.controller.onTileClick(own!);
+    expect(h.controller.lastError).toBeNull();
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual(own);
+    expect(h.renderer.movePreview).toBeNull();
+  });
+
+  it("restores the unit before the walk it ordered reaches the renderer", () => {
+    h.controller.intents.beginMove("rowen");
+    const tile = { x: 0, y: 3 };
+    h.controller.onTileHover(tile);
+    expect(h.renderer.movePreview).not.toBeNull();
+
+    const atEvents: (typeof h.renderer.movePreview)[] = [];
+    const port = h.renderer.port;
+    const push = port.applyRenderEvents.bind(port);
+    port.applyRenderEvents = (events) => {
+      atEvents.push(h.renderer.movePreview);
+      push(events);
+    };
+
+    h.controller.onTileClick(tile);
+    h.controller.onTileClick(tile);
+
+    expect(h.renderer.events.some((event) => event.kind === "unitMoved")).toBe(true);
+    expect(atEvents).toEqual([null]);
+    expect(h.renderer.movePreview).toBeNull();
+  });
+
+  it("keeps the field clear of previews once the AI has the floor", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover({ x: 0, y: 3 });
+    expect(h.renderer.movePreview).not.toBeNull();
+
+    for (let tick = 0; tick < 400 && h.controller.phase !== "ai"; tick += 1) {
+      if (h.controller.phase === "ended") break;
+      if (h.controller.phase === "dialogue") {
+        h.controller.intents.endDialogue();
+        continue;
+      }
+      if (h.controller.phase === "player") {
+        const acting = activeUnit(h.controller.state);
+        if (acting !== null) h.controller.intents.wait(acting.id, acting.facing);
+        h.ui.facingPrompt?.onPick(acting?.facing ?? "north");
+        continue;
+      }
+      h.controller.tick(1);
+    }
+    expect(h.controller.phase).toBe("ai");
+    expect(h.renderer.movePreview).toBeNull();
+
+    h.controller.onTileHover({ x: 0, y: 3 });
+    expect(h.renderer.movePreview).toBeNull();
+  });
+
+  it("still inspects another unit hovered while Move is open", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover({ x: 0, y: 3 });
+    h.controller.onTileHover(VALE_TILE);
+    expect(h.ui.latest()?.inspected?.name).toBe(VALE.name);
+    expect(h.renderer.movePreview).toBeNull();
   });
 });

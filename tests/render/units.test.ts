@@ -257,3 +257,34 @@ describe("team cues", () => {
     expect(retired.map((entry) => entry.disposed)).toEqual([true, true, true, true]);
   });
 });
+
+describe("the move preview", () => {
+  it("stands the figure clear of its tile and leaves the team ring behind", () => {
+    const visual = new UnitVisual(unitView("player"));
+    const billboard = meshNamed(visual, "unit-billboard");
+    const shadow = meshNamed(visual, "unit-shadow");
+    const wedge = meshNamed(visual, "facing-wedge");
+    const marker = meshNamed(visual, "team-marker");
+    const restY = { shadow: shadow.position.y, wedge: wedge.position.y };
+
+    visual.setPreviewOffset({ x: 2, y: 1, z: -3 });
+
+    expect(billboard.position.toArray()).toEqual([2, 1, -3]);
+    expect([shadow.position.x, shadow.position.z]).toEqual([2, -3]);
+    expect(shadow.position.y).toBeCloseTo(restY.shadow + 1, 6);
+    expect([wedge.position.x, wedge.position.z]).toEqual([2, -3]);
+    expect(wedge.position.y).toBeCloseTo(restY.wedge + 1, 6);
+    // The unit is really still here, and the ring is what says so.
+    expect([marker.position.x, marker.position.z]).toEqual([0, 0]);
+    expect(visual.group.position.toArray()).toEqual([0, 0, 0]);
+    expect(visual.previewOffset).toEqual({ x: 2, y: 1, z: -3 });
+
+    visual.setPreviewOffset(null);
+
+    expect(billboard.position.toArray()).toEqual([0, 0, 0]);
+    expect(shadow.position.y).toBeCloseTo(restY.shadow, 6);
+    expect(wedge.position.y).toBeCloseTo(restY.wedge, 6);
+    expect(visual.previewOffset).toBeNull();
+    visual.dispose();
+  });
+});

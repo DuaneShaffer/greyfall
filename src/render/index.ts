@@ -1,4 +1,4 @@
-export { BattleRenderer, type BattleRendererOptions } from "./scene.js";
+export { BattleRenderer, type BattleRendererOptions, type MovePreview } from "./scene.js";
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
 export { TileHighlights, type HighlightOptions } from "./highlights.js";

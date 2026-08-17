@@ -55,6 +55,7 @@ import type { DialogueLine, Facing, TileCoord } from "../data/index.js";
 import { toRenderEventList, viewModelFromGameState } from "../render/adapter.js";
 import { palette } from "../render/palette.js";
 import type { RenderEvent } from "../render/presentation.js";
+import type { MovePreview } from "../render/scene.js";
 import type { BattleViewModel } from "../render/viewmodel.js";
 import type {
   BattleHudView,
@@ -84,6 +85,8 @@ export interface RendererPort {
     options?: HighlightStyle,
   ): void;
   clearHighlight(layerId: string): void;
+  /** Stand a unit on a tile it has not moved to; `null` puts it back. */
+  setMovePreview(preview: MovePreview | null): void;
   skipPresentation(): void;
   isPresentationIdle(): boolean;
 }
@@ -435,6 +438,8 @@ export class BattleController {
   private awaitingPresentation = false;
   private aiTimer = 0;
   private moveTargets: TileCoord[] = [];
+  /** The tile the move cursor is standing the acting unit on, if any. */
+  private previewedMove: TileCoord | null = null;
   private aimTargets: TileCoord[] = [];
   private aimReach: TileCoord[] = [];
   private lastCommandError: CommandError | null = null;
@@ -518,7 +523,44 @@ export class BattleController {
     const hovered = tile === null ? null : this.unitAt(tile);
     this.inspectedObjectId = hovered !== null || tile === null ? null : this.objectAt(tile);
     this.inspectedUnitId = hovered?.id ?? acting?.id ?? null;
+    this.previewMove(tile);
     this.refresh();
+  }
+
+  /**
+   * FFT's move preview: with Move open, the tile under the cursor is where the
+   * unit would be standing, so height, adjacency and facing lines are read off
+   * the figure itself instead of imagined from a highlight. Nothing here is a
+   * command — the renderer displaces a billboard and the game state never hears
+   * about it.
+   *
+   * It hangs off the one hover entry point, so a keyboard cursor over the tiles
+   * drives it exactly as the pointer does (UI_DESIGN §8's parity rule).
+   */
+  private previewMove(tile: TileCoord | null): void {
+    const acting = activeUnit(this.gameState);
+    if (
+      tile === null ||
+      acting === null ||
+      this.currentPhase !== "player" ||
+      this.selection.mode !== "move" ||
+      // The unit's own tile is a legal zero-distance move with nothing to show:
+      // it is already standing there.
+      sameTile(acting.position, tile) ||
+      !this.moveTargets.some((candidate) => sameTile(candidate, tile))
+    ) {
+      this.clearMovePreview();
+      return;
+    }
+    if (this.previewedMove !== null && sameTile(this.previewedMove, tile)) return;
+    this.previewedMove = { ...tile };
+    this.renderer.setMovePreview({ unitId: acting.id, tile: { ...tile } });
+  }
+
+  private clearMovePreview(): void {
+    if (this.previewedMove === null) return;
+    this.previewedMove = null;
+    this.renderer.setMovePreview(null);
   }
 
   /**
@@ -885,6 +927,8 @@ export class BattleController {
   }
 
   private setPhase(phase: ControllerPhase): void {
+    // Nobody is holding a cursor over the field outside the player's own turn.
+    if (phase !== "player") this.clearMovePreview();
     this.currentPhase = phase;
     this.ui.setBusy(phase !== "player");
     this.announceMode();
@@ -979,6 +1023,9 @@ export class BattleController {
   private clearSelection(): void {
     this.selection = { mode: "none" };
     this.previewedOperable = null;
+    // Before anything the command produces is handed to the renderer: a walk
+    // must start from the unit's true tile, never from a previewed one.
+    this.clearMovePreview();
     this.moveTargets = [];
     this.aimTargets = [];
     this.aimReach = [];

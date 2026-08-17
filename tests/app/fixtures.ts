@@ -7,6 +7,7 @@ import {
 import type { DialogueLine, Facing, ItemStack, TileCoord, Unit } from "../../src/data/index.js";
 import type { HighlightStyle, RendererPort, UiPort } from "../../src/app/controller.js";
 import type { RenderEvent } from "../../src/render/presentation.js";
+import type { MovePreview } from "../../src/render/scene.js";
 import type { BattleViewModel } from "../../src/render/viewmodel.js";
 import type { BattleHudView, HudMode } from "../../src/ui/index.js";
 import { loadContent, rowen, YARD_ENCOUNTER_ID } from "../core/fixtures.js";
@@ -47,6 +48,9 @@ export interface FakeRenderer {
   events: RenderEvent[];
   highlights: Map<string, TileCoord[]>;
   scenes: BattleViewModel[];
+  /** Where the acting unit is being shown standing, and every order to date. */
+  movePreview: MovePreview | null;
+  movePreviewCalls: (MovePreview | null)[];
   /** Flip to false to hold the presentation queue open. */
   idle: boolean;
   skips: number;
@@ -58,6 +62,8 @@ export function fakeRenderer(): FakeRenderer {
     events: [],
     highlights: new Map<string, TileCoord[]>(),
     scenes: [],
+    movePreview: null,
+    movePreviewCalls: [],
     idle: true,
     skips: 0,
   };
@@ -78,6 +84,10 @@ export function fakeRenderer(): FakeRenderer {
     },
     clearHighlight: (layerId: string) => {
       fake.highlights.delete(layerId);
+    },
+    setMovePreview: (preview: MovePreview | null) => {
+      fake.movePreview = preview === null ? null : { unitId: preview.unitId, tile: { ...preview.tile } };
+      fake.movePreviewCalls.push(fake.movePreview);
     },
     skipPresentation: () => {
       fake.skips += 1;

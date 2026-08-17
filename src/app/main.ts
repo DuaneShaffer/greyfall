@@ -80,6 +80,7 @@ const rendererPort: RendererPort = {
   setHighlight: (layerId, tiles, color, options) =>
     renderer.setHighlight(layerId, tiles, color, options),
   clearHighlight: (layerId) => renderer.clearHighlight(layerId),
+  setMovePreview: (preview) => renderer.setMovePreview(preview),
   skipPresentation: () => renderer.skipPresentation(),
   isPresentationIdle: () => renderer.queue.isIdle,
 };

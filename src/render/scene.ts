@@ -75,6 +75,12 @@ const EXIT_VANISH_SECONDS = 0.3;
 const POPUP_HEAD_HEIGHT = 1.6;
 const IMPACT_HEIGHT = 0.8;
 
+/** A unit shown standing somewhere it has not moved to. Presentation only. */
+export interface MovePreview {
+  unitId: string;
+  tile: TileCoord;
+}
+
 export interface BattleRendererOptions {
   canvas: HTMLCanvasElement;
   onTileHover?: (tile: TileCoord | null) => void;
@@ -250,6 +256,7 @@ export class BattleRenderer {
   private viewModel: BattleViewModel | null = null;
   private hovered: TileCoord | null = null;
   private selected: TileCoord | null = null;
+  private preview: MovePreview | null = null;
   private readonly frameHooks: Array<(deltaSeconds: number) => void> = [];
   private clock = 0;
   private frameHandle = 0;
@@ -284,6 +291,10 @@ export class BattleRenderer {
 
   get selectedTile(): TileCoord | null {
     return this.selected;
+  }
+
+  get movePreview(): MovePreview | null {
+    return this.preview === null ? null : { unitId: this.preview.unitId, tile: { ...this.preview.tile } };
   }
 
   /** Full rebuild from a snapshot. Safe to call at any time. */
@@ -337,15 +348,47 @@ export class BattleRenderer {
     else this.rig.frameMap(map);
     this.hovered = null;
     this.selected = null;
+    this.preview = null;
     this.updateBillboards();
+  }
+
+  /**
+   * FFT's move preview: the unit's own figure stands on the tile the cursor is
+   * over, at that tile's height, so the player judges the position from the
+   * sprite rather than from a highlight. Its team ring stays on the tile it is
+   * really on, which is the whole marker of where the preview is lying.
+   *
+   * Derived presentation: no game state moves, and `null` restores the figure
+   * immediately. A preview and an animation are never on screen together — the
+   * queue clears it (see `applyRenderEvents`), so a walk plays from the true
+   * origin however the caller ordered the two.
+   */
+  setMovePreview(preview: MovePreview | null): void {
+    const current = this.preview;
+    if (current !== null && (preview === null || preview.unitId !== current.unitId)) {
+      this.units.get(current.unitId)?.setPreviewOffset(null);
+      this.preview = null;
+    }
+    const viewModel = this.viewModel;
+    if (preview === null || viewModel === null) return;
+    if (this.preview !== null && sameTileOrNull(this.preview.tile, preview.tile)) return;
+    const visual = this.units.get(preview.unitId);
+    const view = findUnitView(viewModel, preview.unitId);
+    if (!visual || !view) return;
+    const from = worldPositionOf(viewModel.map, view.position);
+    const to = worldPositionOf(viewModel.map, preview.tile);
+    visual.setPreviewOffset({ x: to.x - from.x, y: to.y - from.y, z: to.z - from.z });
+    this.preview = { unitId: preview.unitId, tile: { ...preview.tile } };
   }
 
   /** Enqueue a presentation. Terminal state lands in the snapshot on finish. */
   applyRenderEvent(event: RenderEvent): void {
+    this.setMovePreview(null);
     this.queue.push(event);
   }
 
   applyRenderEvents(events: readonly RenderEvent[]): void {
+    if (events.length > 0) this.setMovePreview(null);
     this.queue.pushAll(events);
   }
 
