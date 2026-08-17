@@ -203,6 +203,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
 
   hide(): void {
     this.detachAll();
+    this.clearNotice();
     this.el.classList.add("is-hidden");
     if (this.screen === "formation") this.handlers.onFormationClosed?.();
   }
@@ -215,6 +216,17 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     this.toast.textContent = message;
     this.toast.classList.remove("is-hidden");
     this.toastMs = TOAST_MS;
+  }
+
+  /**
+   * Retire the toast now. A line is an acknowledgement of the thing the player
+   * just did on the page they did it on; carried onto the next screen it reads
+   * as that screen's own answer, which is how "Progress filed." came to be the
+   * only thing a reopened file said.
+   */
+  clearNotice(): void {
+    this.toastMs = 0;
+    this.toast.classList.add("is-hidden");
   }
 
   /**
@@ -290,6 +302,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
 
   private show(screen: BetweenScreenId): void {
     const leavingFormation = this.screen === "formation" && screen !== "formation";
+    if (screen !== this.screen) this.clearNotice();
     this.screen = screen;
     this.el.classList.remove("is-hidden");
     // Formation runs as a rail over the live battlefield; every other screen is

@@ -43,11 +43,34 @@ describe("NoticeStrip", () => {
     strip.tick(2500);
     // Displaced 100ms before it would have retired: it still gets a read.
     strip.show("And another", "machine");
-    strip.tick(1700);
+    strip.tick(2000);
+    // The trail outlives the slot on purpose: the live line has already gone.
+    expect(strip.message).toBe("And another");
+    strip.tick(4700);
+    expect(strip.message).toBe("");
     expect(strip.scrollback).toEqual(["A machine answers"]);
     strip.tick(200);
     expect(strip.scrollback).toEqual([]);
-    expect(strip.message).toBe("And another");
+  });
+
+  // An enemy turn that cuts a span, trips a bus and drops a lift deck is three
+  // lines. At 1.8s the trail retired while the turn that wrote it was still
+  // animating, and the acceptance play never saw more than two survive at once.
+  it("holds a whole enemy batch long enough to be read after the turn", () => {
+    const strip = new NoticeStrip();
+    strip.show("North Bus cut. 4 machines dark. Splice it or take the gallery tie.", "machine");
+    strip.tick(700);
+    strip.show("West Main tripped — 18 against a rating of 14. Someone has to reclose it.", "machine");
+    strip.tick(700);
+    strip.show("Meter Lift lost power. Its deck dropped.", "machine");
+    strip.tick(700);
+    strip.show("Charge Hoist, East Bay lost power.", "machine");
+
+    // Four beats of one turn, and the whole turn is still on screen a full live
+    // slot's worth of time after the last of them landed.
+    strip.tick(2600);
+    expect(strip.scrollback).toHaveLength(3);
+    expect(strip.scrollback.at(-1)).toContain("North Bus cut");
   });
 
   it("bounds the scrollback", () => {

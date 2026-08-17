@@ -148,6 +148,22 @@ describe("BetweenBattleScreens", () => {
     expect(h.screens.el.querySelector(".gf-toast")?.classList.contains("is-hidden")).toBe(true);
   });
 
+  // A toast answers the thing the player just did on the page they did it on.
+  // Carried across, it reads as the next screen's own answer — which is how a
+  // reopened file came to be announced by "Progress filed." (finding D).
+  it("retires a toast rather than carrying it onto the next screen", () => {
+    h.session.learnAbility("rowen", "overload-cell");
+    const toast = h.screens.el.querySelector(".gf-toast")!;
+    expect(toast.classList.contains("is-hidden")).toBe(false);
+
+    [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")]
+      .find((node) => node.textContent === "Move out")!
+      .click();
+
+    expect(h.screens.current).toBe("formation");
+    expect(toast.classList.contains("is-hidden")).toBe(true);
+  });
+
   it("moves out into the formation screen and lists the deployment tiles", () => {
     const moveOut = [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].find(
       (node) => node.textContent === "Move out",

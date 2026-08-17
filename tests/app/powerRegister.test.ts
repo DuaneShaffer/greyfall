@@ -8,11 +8,12 @@ import {
   createBattle,
   gridFlipPreview,
   powerRegister,
+  solveGrid,
   type GameState,
 } from "../../src/core/index.js";
 import type { GameMap } from "../../src/data/index.js";
 import { powerLedgerView, powerLoadLevel } from "../../src/app/viewmodels.js";
-import { advanceTo } from "../core/fixtures.js";
+import { advanceTo, loadContent, loadUnits } from "../core/fixtures.js";
 import {
   BENCH_ENCOUNTER_ID,
   BENCH_GRID_ID,
@@ -221,6 +222,15 @@ describe("the LOAD line's three colours", () => {
     expect(powerLoadLevel(4, 0)).toBe("over");
   });
 
+  // Copper is the colour of a bus running quietly, and a blown bus is not one
+  // however comfortable the ratio looks once every main's rating is counted.
+  it("never spends the at-rest copper on a bus that has tripped", () => {
+    expect(powerLoadLevel(18, 28)).toBe("rest");
+    expect(powerLoadLevel(18, 28, true)).toBe("rated");
+    expect(powerLoadLevel(18, 14, true)).toBe("over");
+    expect(powerLoadLevel(0, 0, true)).toBe("rated");
+  });
+
   it("reaches the view model, one line per bus", () => {
     const view = powerLedgerView(bench());
     expect(view?.networks?.[0]?.gridId).toBe(BENCH_GRID_ID);
@@ -235,6 +245,89 @@ describe("the LOAD line's three colours", () => {
       { load: 4, capacity: 10, level: "rest", state: "live" },
       { load: 6, capacity: 12, level: "rest", state: "live" },
     ]);
+  });
+});
+
+// Acceptance finding A. The Meter House runs on two mains, and they can latch
+// one after the other: the east one blows carrying both halves through a closed
+// tie, and the west one blows the moment the feeder is put back and it inherits
+// the same bus. The register then had a component containing both of them, so
+// it read their ratings summed — 20 against 28 — and painted the load as
+// headroom in the copper of a bus running quietly.
+describe("a house whose second main latched after the first", () => {
+  const METER_MAP = "meter-house";
+  const METER_ENCOUNTER = "s1-meter-house";
+  const METER_GRID = "meter-house-grid";
+
+  function meterHouse(): GameState {
+    const content = loadContent();
+    const rowen = loadUnits()["rowen"]!;
+    const tile = content.maps[METER_MAP]!.deploymentTiles[0]!;
+    return createBattle(content, METER_ENCOUNTER, [rowen], [
+      { unitId: rowen.id, position: { ...tile }, facing: "north" },
+    ]).state;
+  }
+
+  /** Throw a node's own isolator, then let the grid latch whatever blows. */
+  function throwAndSettle(state: GameState, objectId: string, closed: boolean): void {
+    state.map.objects.find((object) => object.def.id === objectId)!.powered = closed;
+    const grid = state.content.map.grids.find((candidate) => candidate.id === METER_GRID)!;
+    const solution = solveGrid(state, grid);
+    for (const node of state.grids[0]!.nodes) {
+      node.tripped = solution.tripped.includes(node.objectId);
+    }
+  }
+
+  /** The acceptance run's own sequence, in order. */
+  function twoLatches(): GameState {
+    const state = meterHouse();
+    throwAndSettle(state, "west-feeder", false);
+    throwAndSettle(state, "gallery-tie", true);
+    throwAndSettle(state, "west-feeder", true);
+    return state;
+  }
+
+  const bus = (state: GameState) =>
+    powerRegister(state).grids.find((entry) => entry.gridId === METER_GRID)!.components[0]!;
+
+  it("latches the east main on the tie and the west main on the feeder", () => {
+    const state = twoLatches();
+    const section = powerRegister(state).grids.find((entry) => entry.gridId === METER_GRID)!;
+    expect(section.components).toHaveLength(1);
+    expect(
+      section.components[0]!.nodes.filter((node) => node.state === "tripped").map((n) => n.name),
+    ).toEqual(["East Main", "West Main"]);
+  });
+
+  it("names both mains in the header and holds none of their rating", () => {
+    expect(bus(twoLatches())).toMatchObject({
+      sources: ["East Main", "West Main"],
+      load: 20,
+      capacity: 28,
+      held: 0,
+      state: "tripped",
+    });
+  });
+
+  it("never reads a blown bus as a bus at rest", () => {
+    const view = powerLedgerView(twoLatches());
+    const component = view?.networks?.[0]?.components[0];
+    expect(component?.state).toBe("tripped");
+    expect(component?.level).not.toBe("rest");
+    expect(component?.held).toBe(0);
+  });
+
+  // The single-source reading was already honest and stays byte-for-byte what
+  // it was: 20 against the 14 the east main alone is rated for, in blood.
+  it("leaves the single-main trip reading exactly as it did", () => {
+    const state = meterHouse();
+    throwAndSettle(state, "west-feeder", false);
+    throwAndSettle(state, "gallery-tie", true);
+    const blown = powerRegister(state)
+      .grids.find((entry) => entry.gridId === METER_GRID)!
+      .components.find((component) => component.state === "tripped")!;
+    expect(blown).toMatchObject({ sources: ["East Main"], load: 20, capacity: 14, held: 0 });
+    expect(powerLoadLevel(blown.load, blown.capacity, true)).toBe("over");
   });
 });
 

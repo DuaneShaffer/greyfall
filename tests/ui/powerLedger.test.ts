@@ -19,6 +19,7 @@ const network = (level: PowerLoadLevel): PowerNetworkView => ({
       sources: ["east main"],
       load: 14,
       capacity: 12,
+      held: 12,
       level,
       state: "live",
       nodes: [],
@@ -120,6 +121,50 @@ describe("the register's network sections", () => {
     const ledger = new PowerLedger();
     ledger.update({ entries: [], networks: [network("rest")] });
     expect(ledger.el.querySelector(".gf-power-flag")).toBeNull();
+  });
+
+  // Findings A and F, in the readout. A house running on two mains that latched
+  // one after the other read "EAST MAIN + WEST…" over a load line claiming 18 of
+  // 28 in the copper of a bus at rest: the second source hidden by an ellipsis
+  // in the one place §6 says the header names what feeds the bus, and the
+  // arithmetic that blew it hidden behind the pair's summed rating.
+  it("names every source and says how much of their rating is still closed", () => {
+    const ledger = new PowerLedger();
+    ledger.update({
+      entries: [],
+      networks: [
+        {
+          gridId: "meter-house-grid",
+          name: "Meter House Grid",
+          components: [
+            {
+              id: "charge-hoist-east",
+              sources: ["East Main", "West Main"],
+              load: 18,
+              capacity: 28,
+              held: 0,
+              level: "rated",
+              state: "tripped",
+              nodes: [],
+            },
+          ],
+          outOfCircuit: [],
+        },
+      ],
+    });
+
+    const head = ledger.el.querySelector(".gf-power-component-head")!;
+    expect(head.querySelector(".gf-power-name")?.textContent).toBe("East Main + West Main");
+    expect(head.querySelector(".gf-power-load")?.textContent).toBe("Load 18/28");
+    expect(head.querySelector(".gf-power-load")?.classList.contains("is-rest")).toBe(false);
+    expect(head.querySelector(".gf-power-held")?.textContent).toBe("0/28 closed");
+    expect(head.querySelector(".gf-power-flag")?.textContent).toBe("Tripped");
+  });
+
+  it("keeps the held clause off a bus that is holding all of its rating", () => {
+    const ledger = new PowerLedger();
+    ledger.update({ entries: [], networks: [network("rest")] });
+    expect(ledger.el.querySelector(".gf-power-held")).toBeNull();
   });
 
   it("counts the network's live nodes on the plate", () => {

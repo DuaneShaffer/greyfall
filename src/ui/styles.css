@@ -989,16 +989,11 @@
 .gf-power-network-head {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--gf-s-2);
   padding: 2px var(--gf-s-2);
   font-size: var(--gf-t-100);
   color: var(--gf-dim);
-}
-
-.gf-power-network-head .gf-power-name {
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  flex: 1 1 auto;
 }
 
 .gf-power-load {
@@ -1031,6 +1026,17 @@
   color: var(--gf-flux);
 }
 
+/* What a reclose has to beat, printed only when the latch has taken part of the
+   rating away. Two mains that blew one after the other read 18 of 28 and are
+   holding none of it, and that gap is the whole reason the line exists. */
+.gf-power-held {
+  font-family: var(--gf-face-ledger);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex: none;
+  color: var(--gf-off);
+}
+
 .gf-power-nodes {
   list-style: none;
   margin: 0;
@@ -1060,16 +1066,25 @@
 .gf-power-component-head {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--gf-s-2);
   padding: 2px var(--gf-s-2) 2px var(--gf-s-3);
   font-size: var(--gf-t-100);
   color: var(--gf-dim);
 }
 
-.gf-power-component-head .gf-power-name {
+/* The header names what feeds the bus, so it wraps rather than ellipsizes:
+   "East Main + West Main" clipped to "EAST MAIN + WEST…" hides the second
+   source in the one place §6 says the second source has to be named. */
+.gf-power-component-head .gf-power-name,
+.gf-power-network-head .gf-power-name {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: break-word;
 }
 
 /* A bus with nothing feeding it prints no arithmetic at all; the missing LOAD
@@ -1320,6 +1335,23 @@
 
 .gf-mode-withdraw[hidden] {
   display: none;
+}
+
+/* The camera's bearing, on screen. Q/E were the only way to turn the board, and
+   at the one bearing the game opens on the taller geometry hides whole columns
+   of tiles from the pointer — a keyboard-only control for something the mouse
+   has to be able to reach is UI_DESIGN §8's parity rule broken (finding C). */
+.gf-mode-orbit {
+  display: flex;
+  gap: 1px;
+  flex: none;
+}
+
+.gf-mode-orbit-step {
+  padding: 1px var(--gf-s-2);
+  font-size: var(--gf-t-200);
+  line-height: 1.1;
+  min-width: 22px;
 }
 
 .gf-mode-keys {
@@ -2320,6 +2352,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .gf-notice-log {
@@ -2330,11 +2364,18 @@
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  max-width: 46ch;
+  /* The live slot's own measure. At 46ch the trail was narrower than the line
+     that had just been in the slot above it, so a grid notice lost its closing
+     clause — the counterplay half — to an ellipsis every time it was demoted. */
+  width: 62ch;
+  max-width: 100%;
   /* Reference only: it never takes a click away from the field under it. */
   pointer-events: none;
 }
 
+/* A demoted line wraps rather than clips, to two lines. The annunciator's whole
+   job on a grid is the second clause — "Someone has to reclose it." — and that
+   is exactly the half a one-line ellipsis takes. */
 .gf-notice-line {
   margin: 0;
   padding: 0 var(--gf-s-2);
@@ -2343,9 +2384,14 @@
   letter-spacing: var(--gf-track-label);
   color: var(--gf-dim);
   opacity: 0.78;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
 }
 

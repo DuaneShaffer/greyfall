@@ -270,6 +270,13 @@ export interface GridRegisterComponent {
   sources: string[];
   /** Rating and draw ignoring the trip latch: a blown bus still reads 16/14. */
   capacity: number;
+  /**
+   * The part of that rating still closed. It equals `capacity` on any bus that
+   * has not tripped; on one that has, it is what the reclose actually has to
+   * beat, and on a bus whose second main latched after the first it is the only
+   * honest denominator there is.
+   */
+  held: number;
   load: number;
   state: "live" | "tripped" | "dead";
   nodes: GridRegisterNode[];
@@ -413,6 +420,7 @@ export function powerRegister(state: GameState): PowerRegister {
         id: component.nodes[0] ?? grid.id,
         sources: component.sources.map((objectId) => rows.get(objectId)?.name ?? objectId),
         capacity: component.capacity,
+        held: component.held,
         load: component.load,
         state: component.tripped ? "tripped" : component.live ? "live" : "dead",
         nodes: [...rows.values()].filter((row) => component.nodes.includes(row.objectId)),

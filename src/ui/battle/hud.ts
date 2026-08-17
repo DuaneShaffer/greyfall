@@ -40,7 +40,14 @@ export class BattleHud implements Component<BattleHudView> {
   /** Who the orders belong to, for the withdraw affordance. */
   private actingUnitId: string | null = null;
 
-  constructor(options: { intents?: Partial<UiIntents>; onAbilityPreview?: (abilityId: string | null) => void } = {}) {
+  constructor(
+    options: {
+      intents?: Partial<UiIntents>;
+      onAbilityPreview?: (abilityId: string | null) => void;
+      /** The camera's bearing, from the mode bar's own buttons. */
+      onOrbit?: (direction: 1 | -1) => void;
+    } = {},
+  ) {
     const intents = withIntents(options.intents);
     this.intents = intents;
     this.actionMenu = new ActionMenu({
@@ -53,7 +60,10 @@ export class BattleHud implements Component<BattleHudView> {
     this.turnOrder = new TurnOrderStrip({ intents });
     this.power = new PowerLedger();
     this.dialogue = new DialogueBox({ intents });
-    this.mode = new ModeBar({ onWithdraw: () => this.withdraw() });
+    this.mode = new ModeBar({
+      onWithdraw: () => this.withdraw(),
+      ...(options.onOrbit ? { onOrbit: options.onOrbit } : {}),
+    });
     this.notice = new NoticeStrip();
     this.el = el("div", {
       class: "gf-battle-hud",

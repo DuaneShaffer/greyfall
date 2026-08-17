@@ -506,10 +506,18 @@ function itemRemaining(state: GameState, unitId: string, itemId: string): number
  * Where the LOAD line takes its colour. Integer arithmetic throughout: nothing
  * in the grid touches the `Amount` pipeline, so nothing in the readout can
  * drift off a rounding step (FLUX_GRID §5.3).
+ *
+ * A tripped bus never reads at rest, whatever the ratio says. On a house with
+ * two mains the second one latches against what the first one left — 18 against
+ * 14, not against the 28 the pair are rated for together — so the copper of a
+ * bus running quietly was being spent on a bus that had already blown, and the
+ * load was painted as headroom. The figures stay what the component is carrying
+ * against what it is rated for; only the claim that this is a bus at rest goes.
  */
-export function powerLoadLevel(load: number, capacity: number): PowerLoadLevel {
-  if (capacity <= 0) return load > 0 ? "over" : "rest";
+export function powerLoadLevel(load: number, capacity: number, tripped = false): PowerLoadLevel {
+  if (capacity <= 0) return load > 0 ? "over" : tripped ? "rated" : "rest";
   if (load > capacity) return "over";
+  if (tripped) return "rated";
   return load * 10 >= capacity * 9 ? "rated" : "rest";
 }
 
@@ -531,7 +539,8 @@ export function powerLedgerView(state: GameState): PowerLedgerView | undefined {
       sources: [...component.sources],
       load: component.load,
       capacity: component.capacity,
-      level: powerLoadLevel(component.load, component.capacity),
+      held: component.held,
+      level: powerLoadLevel(component.load, component.capacity, component.state === "tripped"),
       state: component.state,
       nodes: nodeViews(component.nodes),
     })),

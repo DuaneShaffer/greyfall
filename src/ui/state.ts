@@ -216,6 +216,7 @@ export interface PowerNodeView {
  * How hard the bus is being worked, and the only thing that colours the LOAD
  * line: copper at rest, `overload-500` from 90% of the rating, `blood-300` past
  * it. Amber stays in its three places (UI_DESIGN §5) and copper stays machinery.
+ * A tripped bus is never at rest, whatever its ratio reads.
  */
 export type PowerLoadLevel = "rest" | "rated" | "over";
 
@@ -230,6 +231,8 @@ export interface PowerComponentView {
   sources: string[];
   load: number;
   capacity: number;
+  /** How much of that rating is still closed; below `capacity` only on a trip. */
+  held: number;
   level: PowerLoadLevel;
   state: "live" | "tripped" | "dead";
   nodes: PowerNodeView[];

@@ -104,6 +104,18 @@ function renderComponent(component: PowerComponentView): HTMLElement {
             text: `Load ${component.load}/${component.capacity}`,
           }),
         ];
+  // What a reclose actually has to beat. A bus fed by two mains that latched
+  // one after the other reads 18 against a rating of 28 and blew at 14, and
+  // without this the second main's absence is invisible in the arithmetic.
+  const held =
+    component.state === "tripped" && component.held < component.capacity
+      ? [
+          el("span", {
+            class: "gf-power-held",
+            text: `${component.held}/${component.capacity} closed`,
+          }),
+        ]
+      : [];
   const flag =
     component.state === "live"
       ? []
@@ -122,6 +134,7 @@ function renderComponent(component: PowerComponentView): HTMLElement {
         children: [
           el("span", { class: "gf-power-name", text: componentName(component) }),
           ...load,
+          ...held,
           ...flag,
         ],
       }),

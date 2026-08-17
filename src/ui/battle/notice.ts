@@ -7,8 +7,13 @@ const HOLD_MS = 2600;
  * A demoted line is guaranteed this much of a read even if it was replaced the
  * instant it appeared. An enemy turn that cuts a line, trips a bus and drops a
  * lift deck used to leave only the third of those on screen.
+ *
+ * It outlives the live slot on purpose, and by enough that a whole enemy batch
+ * is still readable once the batch has finished arriving: at 1.8s the trail
+ * retired while the turn that wrote it was still animating, and the acceptance
+ * play never saw more than two lines survive at once.
  */
-const SCROLLBACK_MS = 1800;
+const SCROLLBACK_MS = 6800;
 /** How far back the strip remembers. Past this the oldest line is dropped. */
 const SCROLLBACK_LINES = 5;
 

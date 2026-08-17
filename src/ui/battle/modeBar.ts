@@ -11,7 +11,7 @@ interface ModeCopy {
 }
 
 const CAMERA_KEYS: readonly [string, string][] = [
-  ["Q / E", "orbit"],
+  ["Q / E", "or middle-drag to orbit"],
   ["Wheel", "zoom"],
   ["WASD", "pan"],
 ];
@@ -93,13 +93,33 @@ export class ModeBar implements Component<HudMode> {
   private readonly askEl: HTMLElement;
   private readonly keysEl: HTMLElement;
   private readonly withdrawEl: HTMLElement;
+  private readonly orbitEl: HTMLElement;
   private mode: HudMode = "presenting";
   private detail: string | null = null;
 
-  constructor(options: { onWithdraw?: () => void } = {}) {
+  constructor(options: { onWithdraw?: () => void; onOrbit?: (direction: 1 | -1) => void } = {}) {
     this.nameEl = el("span", { class: "gf-mode-name" });
     this.askEl = el("p", { class: "gf-mode-ask" });
     this.keysEl = el("div", { class: "gf-mode-keys" });
+    // The bearing is a control, not a preference: at one fixed yaw the taller
+    // geometry hides whole columns of the board from the pointer, so a player
+    // who never finds Q/E cannot aim at them at all.
+    this.orbitEl = el("div", {
+      class: "gf-mode-orbit",
+      children: (["left", "right"] as const).map((side) =>
+        el("button", {
+          class: "gf-button is-quiet gf-mode-orbit-step",
+          attrs: { type: "button", "aria-label": `Orbit ${side}`, title: `Orbit ${side}` },
+          data: { orbit: side },
+          text: side === "left" ? "⟲" : "⟳",
+        }),
+      ),
+    });
+    for (const button of this.orbitEl.children) {
+      button.addEventListener("click", () => {
+        options.onOrbit?.((button as HTMLElement).dataset["orbit"] === "left" ? -1 : 1);
+      });
+    }
     // Every mode a player can get *into* with the mouse needs a way out with
     // the mouse. Escape and right-click both work; neither is visible.
     this.withdrawEl = el("button", {
@@ -111,7 +131,7 @@ export class ModeBar implements Component<HudMode> {
     this.el = el("div", {
       class: "gf-mode-bar",
       attrs: { role: "status", "aria-live": "polite" },
-      children: [this.nameEl, this.askEl, this.withdrawEl, this.keysEl],
+      children: [this.nameEl, this.askEl, this.withdrawEl, this.orbitEl, this.keysEl],
     });
     this.update("presenting");
   }

@@ -418,6 +418,7 @@ export function mockPowerRegisterView(): PowerLedgerView {
             sources: ["east main"],
             load: 14,
             capacity: 12,
+            held: 0,
             level: "over",
             state: "tripped",
             nodes: [
@@ -430,6 +431,7 @@ export function mockPowerRegisterView(): PowerLedgerView {
             sources: [],
             load: 4,
             capacity: 0,
+            held: 0,
             level: "over",
             state: "dead",
             nodes: [
@@ -453,6 +455,7 @@ export function mockPowerRegisterView(): PowerLedgerView {
             sources: ["gallery main"],
             load: 9,
             capacity: 10,
+            held: 10,
             level: "rated",
             state: "live",
             nodes: [
@@ -473,6 +476,7 @@ export function mockPowerRegisterView(): PowerLedgerView {
             sources: ["yard main"],
             load: 4,
             capacity: 10,
+            held: 10,
             level: "rest",
             state: "live",
             nodes: [

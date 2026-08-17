@@ -357,8 +357,18 @@ feeding are different problems, and only one of them has an answer.
 
 **The load line is the single most important addition in this document.** It is
 what makes the trip a decision the player can plan instead of a surprise they
-absorb. `LOAD load/capacity` per network, in copper at rest, `overload-500` at
-90% or above, `blood-300` above 100%. That respects UI_DESIGN §5's scarcity
+absorb. `LOAD load/capacity` per component, in copper at rest, `overload-500` at
+90% or above, `blood-300` above 100% — and **never copper on a component that
+has tripped** (acceptance finding A). A house with two mains latches them one
+after the other, and the group that results contains both: it read `LOAD 18/28
+TRIPPED` in the copper of a bus running quietly, which is a blown circuit
+painting its load as headroom and a rating that only exists once every main has
+been reclosed. The figures stay what the component is carrying against what it
+is rated for — that is the arithmetic the annunciator quotes — and the header
+adds the part of the rating still closed (`0/28 closed`), which is what a
+reclose has to beat. `solveGrid`'s trip mechanics are untouched; the component
+simply reports `held` beside `capacity`, and the latch, which the readout
+otherwise ignores, is the only thing that tells them apart. That respects UI_DESIGN §5's scarcity
 rule literally: amber still appears in exactly three places, copper is still
 reserved for machinery, and `overload-500` is already the colour of "flux-borne"
 state, which is precisely what a bus at its rating is.
@@ -375,6 +385,16 @@ That second clause is the e2 lesson operationalized. The register tells the
 player the state; the annunciator tells them the *verb that answers it*. A
 mechanic whose counterplay has to be inferred is a mechanic that measures well
 and plays badly.
+
+**The line names the source that latched in *this* settle** (acceptance finding
+B). It took the first tripped node in register order, which on a house running
+on two mains is whichever sorts first — so closing the west feeder onto a bus
+the east main had already left announced "East Main tripped" while the west main
+was the one going out. The latch is diffed against what it was before the order
+and only what is newly latched is named; where two blow together, both are.
+And the whole line has to survive being read: the scrollback wraps rather than
+clipping, because an ellipsis lands on the answering verb and leaves a sentence
+that looks finished (UI_DESIGN §8).
 
 **(c) Aiming a grid ability highlights the component it would change.** When a
 grid ability is staged, the tiles of every node whose energization the order

@@ -125,6 +125,8 @@ function order(h: Harness, abilityId: string, tile: { x: number; y: number }): s
 const NORTH_BUS = { x: 3, y: 1 };
 const WEST_BUS = { x: 2, y: 1 };
 const WEST_MAIN = { x: 1, y: 1 };
+const EAST_BUS = { x: 5, y: 1 };
+const GALLERY_TIE = { x: 4, y: 2 };
 
 describe("the annunciator names the cause and the verb that answers it", () => {
   it("answers a cut with the splice, and with the tie when one would carry it", () => {
@@ -146,6 +148,20 @@ describe("the annunciator names the cause and the verb that answers it", () => {
   it("answers a trip with the reclose, and prints the numbers that caused it", () => {
     expect(order(harness(), "bench-overdraw", WEST_BUS)).toBe(
       "west-main tripped — 14 against a rating of 12. Someone has to reclose it.",
+    );
+  });
+
+  // Acceptance finding B. With one main already latched, the line took the
+  // first tripped node in register order and named the main that blew a turn
+  // ago — "east-main tripped" while the west main was the one going out. The
+  // latch is diffed instead, so only what latched in this settle is named.
+  it("names the main that latched in this settle, not the one already down", () => {
+    const h = harness();
+    expect(order(h, "bench-overdraw", EAST_BUS)).toBe(
+      "east-main tripped — 12 against a rating of 10. Someone has to reclose it.",
+    );
+    expect(order(h, "bench-cross-tie", GALLERY_TIE)).toBe(
+      "west-main tripped — 18 against a rating of 12. Someone has to reclose it.",
     );
   });
 

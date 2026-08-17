@@ -715,6 +715,29 @@ nobody was standing in — and that is corrected (`docs/design/FLUX_GRID.md`
 §2.5a). The tie's arithmetic is therefore permanent rather than something the
 sergeant says once if a player happens to walk onto the landing.
 
+**The warning band is nearly unreachable here, and that is an authoring lesson
+rather than a bug.** The LOAD line has three colours — copper under 90% of the
+rating, `overload-500` from 90%, blood past 100% — and on this map the middle
+one almost never appears. Draws of 4/4/2 against a rating of 14 give a half
+10, 12 or 14 and nothing between; only exactly **14/14** lands in 90–99%, and
+only ever by hanging a load on it (Backfeed at +4 under Rated Draw). The tied
+bus is the same arithmetic doubled: 20, 26 or 28 of 28, and it reaches amber
+only through a Conduit. In ordinary play the house goes copper straight to
+blood, so the colour that means *this is about to blow* is the one the player
+never learns to read.
+
+Recorded as a guideline and **not fixed here**: the encounter lands at
+70.8/70.8% on both seed sets and retuning it to buy a colour would spend a
+measured balance landing on a legibility nicety. Every one-number change that
+puts the resting house inside 90–99% (rating 14 → 11, or a lamp 2 → 5) makes
+amber the house's *resting* colour, which destroys the warning rather than
+delivering it. **The guideline for the next grid map: choose draw and capacity
+so the sink set can actually sum into 90–99% of the rating.** A rating of 12
+against sinks of 4/3/3/2 reaches 11 and 12 of 12 by shedding or adding one
+machine, so the band is a state the map passes through rather than a state
+only an ability can produce. A band nothing can land on is a colour the palette
+is spending for nothing.
+
 **Siting, per §1.7's mandatory pair.** There is one tie and there are two
 reclose points, and all three are reachable from both approaches: the mains
 sit at mid-depth on opposite side walls rather than behind either force's

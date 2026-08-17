@@ -202,7 +202,10 @@ function forwardingIntents(): UiIntents {
   return out;
 }
 
-const hud = new BattleHud({ intents: forwardingIntents() });
+const hud = new BattleHud({
+  intents: forwardingIntents(),
+  onOrbit: (direction) => renderer.rig.orbit(direction),
+});
 
 const battlePort: BattlePort = {
   start: (
@@ -232,6 +235,7 @@ const battlePort: BattlePort = {
       ai: stubAiCommand,
     });
     controller = next;
+    hud.notice.clear();
     hud.el.classList.remove("is-hidden");
     next.start();
     console.info(
@@ -241,6 +245,7 @@ const battlePort: BattlePort = {
   end: () => {
     hud.actionMenu.menus.detach();
     hud.dialogue.detach();
+    hud.notice.clear();
     hud.el.classList.add("is-hidden");
     banner.classList.add("is-hidden");
     controller = null;
@@ -390,6 +395,10 @@ function startCampaign(campaignId: string): void {
       }
       opened.replaceState(loaded.campaign);
       runner?.openRoster();
+      // Reopening the file reported only when it failed, so a successful load
+      // was indistinguishable from a dead button — under a "Progress filed."
+      // toast that was still on screen from the save before it.
+      screens?.notify("File reopened.");
     },
     leaveCampaign: () => {
       closeCampaign();

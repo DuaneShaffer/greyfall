@@ -160,7 +160,9 @@ decide how many circuits it currently is, and an open tie makes a house into two
 of them. The register groups each connected component, heads it with what feeds
 it ("West Main", "West Main + East Main", or *Unfed*) and its own
 `LOAD load/capacity`, and lists that component's nodes underneath in the order
-above. Nodes conducting nothing — switched out, cut, wrecked — are grouped last
+above. **That header wraps rather than ellipsizing**: it is the one place the
+register names what feeds the bus, and `EAST MAIN + WEST…` hides the second
+source in exactly the line that exists to name it. Nodes conducting nothing — switched out, cut, wrecked — are grouped last
 as **Out of circuit**, with no arithmetic, because they are on no bus to have
 any. Groups run by their lowest node id, so the grouping is as stable as the
 ordering inside it and rows move only when the topology actually moves — which
@@ -184,6 +186,20 @@ anything but copper and dim:
 | under 90% of the rating | `copper-300` — a bus is machinery like any other |
 | 90% and over | `overload-500` — already the colour of flux-borne state, which is precisely what a bus at its rating is |
 | over 100% | `blood-300` |
+| tripped, whatever the ratio | never copper: a bus that has blown is not a bus running quietly |
+
+**A tripped bus never reads at rest, and says how much of its rating is still
+closed.** On a house running on two mains they can latch one after the other —
+the east one carrying both halves through a closed tie, the west one the moment
+the feeder is put back and it inherits the same bus — and the group then
+contains both of them. Its rating is their sum, so it read `LOAD 18/28
+TRIPPED` in copper: a blown circuit painting its load as headroom, and a number
+that is only true of a house whose every main has been reclosed. The figures
+stay what the component is carrying against what it is rated for, because that
+is the arithmetic the annunciator quotes; what goes is the claim that this is a
+bus at rest, and beside them the header prints `0/28 closed` — the part of that
+rating a reclose actually has to beat. On a bus holding all of its rating the
+clause is absent, so it appears exactly where it is load-bearing.
 
 Thresholds are integer comparisons against the same numbers printed beside
 them, so the colour can never disagree with the figure. §5's scarcity rule
@@ -226,6 +242,15 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   cursor, click confirms, right-click cancels, and every mode with a way in has a
   visible way out. This is a contract, not a nicety: it is the bug the interface
   shipped with.
+- **The camera's bearing is one of those things.** The rig turns in 90° steps on
+  **Q / E**, on **middle-drag** (one quarter per ~110px of travel), and on the
+  **⟲ / ⟳ pair in the mode bar**. Right-drag is deliberately not it: right-click
+  already means withdraw. This is not a convenience — at one fixed bearing the
+  taller geometry occludes whole columns of the board from the terrain raycast,
+  and on the Meter House the entire East Main could not be picked with the
+  pointer at all. The parity claim is measured rather than assumed: every tile
+  is reachable from at least one of the four bearings
+  (`tests/render/orbitReach.test.ts`).
 - **The cursor never rebuilds the list.** `MenuStack.setCursor` is a no-op when
   the index has not changed, and `refresh` patches in place unless the entries
   themselves changed. Rebuilding under a resting pointer destroys the node that
@@ -242,7 +267,11 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   while a notice was one machine answering a click; it stopped being fine when
   the strip became how the grid explains itself, because an enemy turn that
   cuts a span, trips a bus and drops a lift deck is three lines and the player
-  saw the third.
+  saw the third. A demoted line **wraps to two lines and is held ~6.8s** — long
+  enough that a whole enemy batch is still readable once the batch has finished
+  arriving, and wide enough that the closing clause survives. Clipping it was
+  worse than losing it: an ellipsis takes the answering verb off the end of
+  "Someone has to reclose it" and leaves a sentence that looks finished.
 - **Every order the player can send says what it would do before it is sent.**
   Aiming an ability marks the tiles it covers and, on a grid, the component it
   would flip; the forecast panel reports the whole order. Operate has no aim

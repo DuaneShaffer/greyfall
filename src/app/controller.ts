@@ -271,11 +271,31 @@ const sectionNodes = (section: GridRegisterSection): GridRegisterNode[] => [
   ...section.outOfCircuit,
 ];
 
-/** The name of the source that just latched open, off the register. */
-function trippedSourceName(state: GameState, gridId: string): string | null {
+/** Every source latched open on a grid right now, off the register. */
+function trippedSources(state: GameState, gridId: string): GridRegisterNode[] {
   const section = powerRegister(state).grids.find((entry) => entry.gridId === gridId);
-  if (section === undefined) return null;
-  return sectionNodes(section).find((node) => node.state === "tripped")?.name ?? section.name;
+  if (section === undefined) return [];
+  return sectionNodes(section).filter((node) => node.state === "tripped");
+}
+
+/**
+ * The source that latched open in *this* settle, named.
+ *
+ * Taking the first tripped node in register order names whichever main sorts
+ * first, which on a house running on two of them is the one that blew a turn
+ * ago: closing the west feeder onto a bus the east main had already left
+ * announced "East Main tripped" while the west main was the one going out. So
+ * the latch is diffed against what it was before the order, and only what is
+ * newly latched gets named.
+ */
+function trippedSourceName(state: GameState, before: GameState, gridId: string): string | null {
+  const now = trippedSources(state, gridId);
+  if (now.length === 0) {
+    return powerRegister(state).grids.find((entry) => entry.gridId === gridId)?.name ?? null;
+  }
+  const was = new Set(trippedSources(before, gridId).map((node) => node.objectId));
+  const fresh = now.filter((node) => !was.has(node.objectId));
+  return machineList((fresh.length === 0 ? now : fresh).map((node) => node.name));
 }
 
 /** The register's own row for an object, when it is a node of a declared grid. */
@@ -296,13 +316,17 @@ function registerNode(state: GameState, objectId: string): GridRegisterNode | nu
  * One line, always: the notice strip shows one at a time, so three lines that
  * overwrite each other are worse than one dense one.
  */
-function gridNotice(state: GameState, events: readonly BattleEvent[]): string | null {
+function gridNotice(
+  state: GameState,
+  events: readonly BattleEvent[],
+  before: GameState,
+): string | null {
   const trip = events.find(
     (event): event is Extract<BattleEvent, { type: "GridTripped" }> =>
       event.type === "GridTripped",
   );
   if (trip !== undefined) {
-    const name = trippedSourceName(state, trip.gridId);
+    const name = trippedSourceName(state, before, trip.gridId);
     return `${name ?? "The main"} tripped — ${trip.load} against a rating of ${trip.capacity}. Someone has to reclose it.`;
   }
 
@@ -355,8 +379,12 @@ function gridNotice(state: GameState, events: readonly BattleEvent[]): string | 
  * lever on it at all. Naming the switch that carries them says the cut is a
  * position to be fought over, not a fact of the map.
  */
-function powerChangeNotice(state: GameState, events: readonly BattleEvent[]): string | null {
-  const gridded = gridNotice(state, events);
+function powerChangeNotice(
+  state: GameState,
+  events: readonly BattleEvent[],
+  before: GameState,
+): string | null {
+  const gridded = gridNotice(state, events, before);
   if (gridded !== null) return gridded;
   const lost: string[] = [];
   const gained: string[] = [];
@@ -454,7 +482,7 @@ export class BattleController {
     if (this.started) return;
     this.started = true;
     this.renderer.buildScene(viewModelFromGameState(this.gameState));
-    this.consume(this.startupEvents, this.gameState);
+    this.consume(this.startupEvents, this.gameState, this.gameState);
     this.refresh();
     this.advance();
   }
@@ -761,6 +789,7 @@ export class BattleController {
   // --- command plumbing -----------------------------------------------------
 
   private dispatch(command: Command): boolean {
+    const before = this.gameState;
     const result = applyCommand(this.gameState, command);
     if (result.error !== null) {
       this.lastCommandError = result.error;
@@ -777,14 +806,18 @@ export class BattleController {
     // now rather than when the queue finally drains.
     this.ui.lockForecast();
     this.ui.resetMenus();
-    this.consume(result.events, result.state);
+    this.consume(result.events, result.state, before);
     // No refresh here: the HUD must not jump ahead of the animation it is
     // describing. `advance` redraws it once the queue is drained.
     this.advance();
     return true;
   }
 
-  private consume(events: readonly BattleEvent[], stateAfter: GameState): void {
+  private consume(
+    events: readonly BattleEvent[],
+    stateAfter: GameState,
+    stateBefore: GameState,
+  ): void {
     // Spawns are the only beats with no animation of their own; removal,
     // contact triggers and machine fire all present themselves now.
     const rebuilds = new Set(["UnitSpawned", "ObjectSpawned"]);
@@ -797,7 +830,7 @@ export class BattleController {
       if (event.type === "DialogueRequested") this.pendingDialogue.push(...event.lines);
     }
     if (!this.operating) {
-      const notice = powerChangeNotice(stateAfter, events);
+      const notice = powerChangeNotice(stateAfter, events, stateBefore);
       if (notice !== null) this.ui.notify?.(notice, "machine");
     }
     this.awaitingPresentation = renderEvents.length > 0;

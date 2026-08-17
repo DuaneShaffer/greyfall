@@ -3,6 +3,13 @@ import type { BattleRenderer } from "./scene.js";
 const PAN_SPEED = 6.5;
 const EDGE_MARGIN = 28;
 const EDGE_SPEED = 5;
+/**
+ * Horizontal travel that buys one 90° step. The rig orbits in quarters, so a
+ * drag counts pixels into steps rather than turning the yaw freely — the board
+ * reads from four bearings and from no other, and a continuous drag would put
+ * the billboards between them.
+ */
+const ORBIT_DRAG_PX = 110;
 
 export interface ControlsOptions {
   /** Disable edge panning when the pointer is over DOM UI. */
@@ -15,9 +22,15 @@ export interface ControlsOptions {
 }
 
 /**
- * Q/E orbit, WASD + arrows pan, wheel zoom, edge pan, pointer tile cursor.
- * Input that produces game commands belongs to `src/ui`; this is camera and
- * cursor only.
+ * Q/E or middle-drag orbit, WASD + arrows pan, wheel zoom, edge pan, pointer
+ * tile cursor. Input that produces game commands belongs to `src/ui`; this is
+ * camera and cursor only.
+ *
+ * Orbit is on the mouse because at one fixed bearing the taller geometry hides
+ * whole columns of the board from the terrain raycast — the Meter House's east
+ * main sits behind a height-3 wall and could not be aimed at with the pointer
+ * at all, which is UI_DESIGN §8's parity rule failing on 22 tiles. Middle-drag
+ * rather than right-drag: right-click already means withdraw.
  */
 export const attachControls = (
   renderer: BattleRenderer,
@@ -28,6 +41,8 @@ export const attachControls = (
   let pointerX = -1;
   let pointerY = -1;
   let pointerInside = false;
+  let orbitPointerId: number | null = null;
+  let orbitAnchorX = 0;
 
   const onKeyDown = (event: KeyboardEvent): void => {
     const key = event.key.toLowerCase();
@@ -49,6 +64,14 @@ export const attachControls = (
     pointerX = event.clientX;
     pointerY = event.clientY;
     pointerInside = true;
+    if (orbitPointerId === event.pointerId) {
+      const steps = Math.trunc((event.clientX - orbitAnchorX) / ORBIT_DRAG_PX);
+      if (steps === 0) return;
+      const direction = steps > 0 ? 1 : -1;
+      orbitAnchorX += direction * ORBIT_DRAG_PX;
+      renderer.rig.orbit(direction);
+      return;
+    }
     renderer.setHoveredTile(renderer.pickTile(event.clientX, event.clientY));
   };
 
@@ -58,8 +81,26 @@ export const attachControls = (
   };
 
   const onPointerDown = (event: PointerEvent): void => {
+    if (event.button === 1) {
+      // Without this the browser's own middle-click autoscroll takes the drag.
+      event.preventDefault();
+      orbitPointerId = event.pointerId;
+      orbitAnchorX = event.clientX;
+      element.setPointerCapture?.(event.pointerId);
+      return;
+    }
     if (event.button !== 0) return;
     renderer.selectTile(renderer.pickTile(event.clientX, event.clientY));
+  };
+
+  const onPointerUp = (event: PointerEvent): void => {
+    if (orbitPointerId !== event.pointerId) return;
+    orbitPointerId = null;
+    element.releasePointerCapture?.(event.pointerId);
+  };
+
+  const onAuxClick = (event: MouseEvent): void => {
+    if (event.button === 1) event.preventDefault();
   };
 
   const onResize = (): void => renderer.resize();
@@ -100,6 +141,9 @@ export const attachControls = (
   element.addEventListener("pointermove", onPointerMove);
   element.addEventListener("pointerleave", onPointerLeave);
   element.addEventListener("pointerdown", onPointerDown);
+  element.addEventListener("pointerup", onPointerUp);
+  element.addEventListener("pointercancel", onPointerUp);
+  element.addEventListener("auxclick", onAuxClick);
 
   return () => {
     removeFrameHook();
@@ -111,5 +155,8 @@ export const attachControls = (
     element.removeEventListener("pointermove", onPointerMove);
     element.removeEventListener("pointerleave", onPointerLeave);
     element.removeEventListener("pointerdown", onPointerDown);
+    element.removeEventListener("pointerup", onPointerUp);
+    element.removeEventListener("pointercancel", onPointerUp);
+    element.removeEventListener("auxclick", onAuxClick);
   };
 };

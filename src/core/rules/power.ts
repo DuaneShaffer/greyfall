@@ -46,11 +46,16 @@ export interface GridTrip {
 /**
  * One electrically joined piece of the grid as the switches currently stand.
  *
- * The trip latch is deliberately ignored here: a blown component keeps its
- * shape and still reads what it was carrying against what it is rated for.
- * Every number a player reads is a component's, never a grid's — a house split
- * in two by an open tie is two buses at 10 of 14, and summing them to 20 of 28
- * is an arithmetic claim about a circuit that does not exist.
+ * The trip latch is deliberately ignored by `capacity` and `load`: a blown
+ * component keeps its shape and still reads what it was carrying against what
+ * it is rated for. Every number a player reads is a component's, never a
+ * grid's — a house split in two by an open tie is two buses at 10 of 14, and
+ * summing them to 20 of 28 is an arithmetic claim about a circuit that does not
+ * exist.
+ *
+ * `held` is the half the latch does own, and it exists because a rating alone
+ * lies on a multi-source bus: two mains latched one after the other read 18
+ * against 28, which is true only of a house whose every main has been reclosed.
  */
 export interface GridComponent {
   /** Object ids in it, ascending. The lowest is the component's identity. */
@@ -58,6 +63,8 @@ export interface GridComponent {
   /** Sources feeding it, ascending. Empty means nothing does. */
   sources: string[];
   capacity: number;
+  /** Rating still closed: the sources in it that have not latched open. */
+  held: number;
   load: number;
   /** A source in it is latched open. */
   tripped: boolean;
@@ -257,15 +264,24 @@ export function solveGrid(state: GameState, grid: Grid): GridSolution {
   }
 
   // Readout numbers ignore the latch, so a tripped component still reads what
-  // it was carrying against what it is rated for: `LOAD 16/14 TRIPPED`.
+  // it was carrying against what it is rated for: `LOAD 16/14 TRIPPED`. What
+  // the latch does own is `held` — the rating that is actually standing behind
+  // the bus right now, and the number a second latching main would otherwise
+  // hide behind the first one's capacity.
   const liveSet = new Set(live);
   const components: GridComponent[] = componentsOver((node) => closed(node.objectId)).map(
     (component) => {
       const sorted = [...component].sort();
       const sources = sorted.filter((objectId) => roles.get(objectId)!.role === "source");
+      let held = 0;
+      for (const objectId of sources) {
+        const node = roles.get(objectId)!;
+        if (node.role === "source" && !latched.has(objectId)) held += node.capacity;
+      }
       return {
         nodes: sorted,
         sources,
+        held,
         ...meter(sorted),
         tripped: sources.some((objectId) => latched.has(objectId)),
         live: sorted.some((objectId) => liveSet.has(objectId)),
