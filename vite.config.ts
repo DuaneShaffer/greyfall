@@ -9,10 +9,11 @@ const root = import.meta.dirname;
  * the two sim sweeps — and runs everything else, golden replays included. The
  * full `npx vitest run` remains the gate; this lane is for the inner loop.
  */
+const SHARDED_JOBS = "{enforcer,machinist,conduit,saboteur,chemist,augmented,railrunner}";
+
 const FAST_LANE_SKIPS = [
-  "tests/art/sheet.*.test.ts",
-  "tests/art/figures.*.test.ts",
-  "tests/art/ingest.*.test.ts",
+  `tests/art/{sheet,figures}.${SHARDED_JOBS}.test.ts`,
+  "tests/art/ingest.{enforcer,saboteur}.test.ts",
   "tests/sim/sweeps.test.ts",
   "tests/sim/meterHouse.test.ts",
 ];
