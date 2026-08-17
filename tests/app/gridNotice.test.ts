@@ -213,6 +213,62 @@ describe("the player's own hand on the lever", () => {
   });
 });
 
+// Operate is the only order with no aim step, so it was the only one with no
+// forecast and no flip highlight — on a grid map, the commonest grid verb going
+// out blind.
+describe("the Operate cursor forecasts what it would do", () => {
+  const lastView = (h: Harness) => h.ui.renders.at(-1);
+
+  it("reads the component off the real recompute and marks it", () => {
+    const h = harness(operableMains);
+    order(h, "bench-isolate", WEST_MAIN);
+    runToHand(h);
+    h.controller.intents.previewOperable(HAND, "west-main");
+
+    expect(lastView(h)?.forecast?.abilityName).toBe("Operate — west-main");
+    expect(lastView(h)?.forecast?.effects).toEqual(["5 machines come back up"]);
+    expect(h.renderer.highlights.get("grid-flip")).toHaveLength(5);
+  });
+
+  it("reports an order that changes nothing on the grid as changing nothing", () => {
+    const h = harness(operableMains);
+    h.controller.intents.previewOperable(HAND, "west-main");
+    expect(lastView(h)?.forecast?.effects).toEqual(["No change on the grid"]);
+    expect(h.renderer.highlights.has("grid-flip")).toBe(false);
+  });
+
+  it("drops the forecast and the marks when the cursor leaves the menu", () => {
+    const h = harness(operableMains);
+    order(h, "bench-isolate", WEST_MAIN);
+    runToHand(h);
+    h.controller.intents.previewOperable(HAND, "west-main");
+    h.controller.intents.previewOperable(HAND, null);
+    expect(lastView(h)?.forecast).toBeNull();
+    expect(h.renderer.highlights.has("grid-flip")).toBe(false);
+  });
+});
+
+describe("the inspect panel answers for machinery too", () => {
+  it("names what the machine is, what it draws, and whether it is being fed", () => {
+    const h = harness();
+    h.controller.onTileHover({ x: 4, y: 1 });
+    expect(h.ui.renders.at(-1)?.inspected).toMatchObject({
+      kind: "object",
+      id: "press-west",
+      name: "press-west",
+      category: "Sink · draws 4",
+      power: "live",
+    });
+  });
+
+  it("goes back to the unit under the cursor", () => {
+    const h = harness();
+    h.controller.onTileHover({ x: 4, y: 1 });
+    h.controller.onTileHover({ x: 4, y: 0 });
+    expect(h.ui.renders.at(-1)?.inspected).toMatchObject({ id: HAND });
+  });
+});
+
 describe("the component a staged grid order would flip", () => {
   it("is marked in its own layer while the order is staged, and cleared with it", () => {
     const h = harness();
@@ -230,10 +286,23 @@ describe("the component a staged grid order would flip", () => {
     expect(h.renderer.highlights.has("grid-flip")).toBe(false);
   });
 
-  it("stays empty for an order that does not touch the graph", () => {
+  // The permanent verb is marked like the reversible ones: the order that
+  // cannot be undone is the last one that should go out unseen.
+  it("marks a demolition's component too", () => {
     const h = harness();
     h.controller.intents.selectAbility(HAND, "bench-demolish");
     h.controller.onTileClick(NORTH_BUS);
+    expect(h.renderer.highlights.get("grid-flip")).toEqual([
+      { x: 3, y: 2 },
+      { x: 3, y: 1 },
+      { x: 4, y: 1 },
+    ]);
+  });
+
+  it("stays empty for an order that does not touch the graph", () => {
+    const h = harness();
+    h.controller.intents.selectAbility(HAND, "bench-immolate");
+    h.controller.onTileClick({ x: 4, y: 0 });
     expect(h.renderer.highlights.has("grid-flip")).toBe(false);
   });
 });

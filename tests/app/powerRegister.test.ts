@@ -271,8 +271,18 @@ describe("what an order would flip", () => {
     ]);
   });
 
+  // Destroying a main is the one grid verb with no undo, and it was the only
+  // one with no preview.
+  it("marks what a demolition would take dark, permanently", () => {
+    expect(target(bench(), "bench-demolish", "north-bus")).toEqual([
+      "lift-deck",
+      "north-bus",
+      "press-west",
+    ]);
+  });
+
   it("marks nothing for an order that does not touch the graph", () => {
-    expect(target(bench(), "bench-demolish", "north-bus")).toEqual([]);
+    expect(target(bench(), "bench-immolate", "press-west")).toEqual([]);
   });
 
   it("leaves the state it was asked about untouched", () => {

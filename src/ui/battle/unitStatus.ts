@@ -1,5 +1,5 @@
 import { Component, chip, el, meter, plate, portrait, replaceChildren } from "../dom.js";
-import type { UnitView } from "../state.js";
+import type { ObjectInspectView, PowerNodeState, UnitView } from "../state.js";
 
 export type UnitPanelRole = "acting" | "inspect";
 
@@ -7,6 +7,20 @@ const ROLE_TITLE: Record<UnitPanelRole, string> = {
   acting: "Acting",
   inspect: "Inspecting",
 };
+
+const POWER_LABEL: Record<PowerNodeState, string> = {
+  live: "Live",
+  dead: "Dead",
+  open: "Open",
+  cut: "Cut",
+  destroyed: "Destroyed",
+  tripped: "Tripped",
+  "tie-open": "Tie Open",
+  "tie-closed": "Tie Closed",
+};
+
+const isObject = (view: UnitView | ObjectInspectView): view is ObjectInspectView =>
+  "kind" in view && view.kind === "object";
 
 const TEAM_STAMP: Record<string, string> = {
   player: "OURS",
@@ -20,7 +34,7 @@ const TEAM_STAMP: Record<string, string> = {
  * whatever the cursor is over. The plate says which is which — the panels are
  * otherwise identical, so the player learns one shape.
  */
-export class UnitStatusPanel implements Component<UnitView | null> {
+export class UnitStatusPanel implements Component<UnitView | ObjectInspectView | null> {
   readonly el: HTMLElement;
   private readonly role: UnitPanelRole;
 
@@ -35,15 +49,21 @@ export class UnitStatusPanel implements Component<UnitView | null> {
     this.update(null);
   }
 
-  update(unit: UnitView | null): void {
-    this.el.classList.toggle("is-empty", unit === null);
-    if (!unit) {
+  update(subject: UnitView | ObjectInspectView | null): void {
+    this.el.classList.toggle("is-empty", subject === null);
+    this.el.classList.toggle("is-machine", subject !== null && isObject(subject));
+    if (!subject) {
       replaceChildren(this.el, [
         plate(ROLE_TITLE[this.role]),
         el("p", { class: "gf-empty-note", text: "No unit selected." }),
       ]);
       return;
     }
+    if (isObject(subject)) {
+      this.updateObject(subject);
+      return;
+    }
+    const unit = subject;
     this.el.dataset["team"] = unit.team;
     const modifiers = unit.modifiers ?? [];
     replaceChildren(this.el, [
@@ -115,6 +135,57 @@ export class UnitStatusPanel implements Component<UnitView | null> {
 
   destroy(): void {
     this.el.remove();
+  }
+
+  /**
+   * A machine's readout, in the same panel and the same shape. Machinery is
+   * copper (ART_DIRECTION §2), so the panel says so through the plate stamp and
+   * its own class rather than by borrowing a team tint it does not have.
+   */
+  private updateObject(object: ObjectInspectView): void {
+    delete this.el.dataset["team"];
+    const power = object.power === null ? "Inert" : POWER_LABEL[object.power];
+    replaceChildren(this.el, [
+      plate(ROLE_TITLE[this.role], "MACHINE"),
+      el("header", {
+        class: "gf-unit-head",
+        children: [
+          el("div", {
+            class: "gf-unit-ident",
+            children: [
+              el("h2", { class: "gf-unit-name", text: object.name }),
+              el("p", { class: "gf-unit-job", text: object.category }),
+            ],
+          }),
+        ],
+      }),
+      el("div", {
+        class: "gf-unit-readout",
+        children: [
+          object.maxHp === null || object.hp === null
+            ? el("div", {
+                class: "gf-unit-bar",
+                children: [
+                  el("span", { class: "gf-field-label", text: "Integrity" }),
+                  el("span", { class: "gf-field-value", text: "Indestructible" }),
+                ],
+              })
+            : this.bar(
+                "Integrity",
+                `${object.hp} / ${object.maxHp}`,
+                meter("is-hp", object.hp, object.maxHp),
+              ),
+          el("div", {
+            class: "gf-unit-disposition",
+            children: [
+              el("span", { class: "gf-field-label", text: "Power" }),
+              el("span", { class: "gf-field-value", text: power }),
+            ],
+          }),
+        ],
+      }),
+      object.destroyed && el("p", { class: "gf-unit-downed", text: "Destroyed" }),
+    ]);
   }
 
   private statusChip(

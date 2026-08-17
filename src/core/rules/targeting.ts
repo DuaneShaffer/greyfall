@@ -1,4 +1,4 @@
-import type { AbilityRequirement, TileCoord } from "../../data/index.js";
+import type { AbilityRequirement, Effect, TileCoord } from "../../data/index.js";
 // `Targeting` is not re-exported from src/data/index.ts; take it from the schema.
 import type { Targeting } from "../../data/schemas/ability.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
@@ -113,6 +113,63 @@ export function aimedTile(state: GameState, target: TargetRef): TileCoord | unde
   if (target.kind === "tile") return target.tile;
   if (target.kind === "unit") return state.units.find((u) => u.id === target.unitId)?.position;
   return state.map.objects.find((o) => o.def.id === target.objectId)?.def.tiles[0];
+}
+
+/**
+ * The tiles that decide whether a target is in reach. A multi-tile object
+ * answers on **any** of its own tiles: the overlay lights all of them, and an
+ * order sent at the far end of a two-tile run must not be re-judged against the
+ * end the object happens to list first.
+ */
+export function targetReachTiles(state: GameState, target: TargetRef): TileCoord[] {
+  if (target.kind === "object") {
+    const obj = state.map.objects.find((o) => o.def.id === target.objectId);
+    return obj === undefined ? [] : obj.def.tiles;
+  }
+  const tile = aimedTile(state, target);
+  return tile === undefined ? [] : [tile];
+}
+
+const OBJECT_EFFECT_KINDS = new Set([
+  "setPower",
+  "damageObject",
+  "repairObject",
+  "addLoad",
+  "severLine",
+]);
+
+/** Whether one object-scoped effect has anything to do to this object at all. */
+function effectReaches(state: GameState, effect: Effect, obj: ObjectRuntime): boolean {
+  switch (effect.kind) {
+    // The isolator flag is the whole of what `setPower` writes: an object with
+    // no flag is not switched off, it is not electrical.
+    case "setPower":
+      return obj.powered !== null;
+    case "addLoad":
+      return gridNodeOf(state, obj.def.id) !== null;
+    case "severLine":
+      return gridNodeOf(state, obj.def.id)?.node.role === "line";
+    default:
+      return true;
+  }
+}
+
+/**
+ * Whether an object-verb ability would do nothing whatever to this object.
+ *
+ * Throw the Breaker offered a stack of drums as a target, forecast "Power
+ * switched", and spent the action and the charge on a wall. An order the rules
+ * cannot carry out must not be offered and must not be accepted — the same
+ * class of bug the aim-legality layer was built for.
+ */
+export function objectTargetIsInert(
+  state: GameState,
+  ability: ActionAbility,
+  obj: ObjectRuntime,
+): boolean {
+  const reaching = ability.effects.filter((effect) => OBJECT_EFFECT_KINDS.has(effect.kind));
+  if (reaching.length === 0) return false;
+  return reaching.every((effect) => !effectReaches(state, effect, obj));
 }
 
 /** Objects that decide `targetPowered`: the aimed-at one plus any covering the tile. */

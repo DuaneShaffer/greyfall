@@ -15,9 +15,9 @@ import type {
   TileCoord,
 } from "../data/index.js";
 import type { DerivedStats } from "./progression/stats.js";
-import { resolveArea } from "./rules/abilities.js";
+import { activateObject as fireObject, resolveArea } from "./rules/abilities.js";
 import { hitChance, inertAmountTarget, resolveAmount, unitAmountTarget } from "./rules/damage.js";
-import { objectMaxHp, setObjectPower } from "./rules/effects.js";
+import { damageObject, emptyOutcome, objectMaxHp, setObjectPower } from "./rules/effects.js";
 import {
   canCarryItem,
   carriedItemIds,
@@ -48,6 +48,7 @@ import { canAct, canMove, ctPerTick, effectiveStats, maxCharge, maxHp } from "./
 import {
   hasLos,
   isValidTargetKind,
+  objectTargetIsInert,
   targetableTiles as computeTargetable,
   unmetRequirement,
 } from "./rules/targeting.js";
@@ -226,6 +227,15 @@ export function objectEnergized(state: GameState, objectId: string): boolean {
  */
 export function objectSevered(state: GameState, objectId: string): boolean {
   return gridNodeRuntimeOf(state, objectId)?.severed === true;
+}
+
+/**
+ * What this object does on its grid (FLUX_GRID §1.2), or null for an object on
+ * no declared grid. Read-only and authored-topology only: a role never changes
+ * during a battle, so this is a lookup, not a solve.
+ */
+export function objectGridRole(state: GameState, objectId: string): GridRole | null {
+  return gridNodeOf(state, objectId)?.node.role ?? null;
 }
 
 // --- the power register ---------------------------------------------------
@@ -454,8 +464,12 @@ export function gridComponents(state: GameState, gridId: string): GridComponentN
   ];
 }
 
-/** Objects the effect touches, without asking the dice or the damage pipeline. */
-const GRID_EFFECT_KINDS = new Set(["setPower", "severLine", "addLoad"]);
+/**
+ * Objects the effect touches. `damageObject` is here because destroying a main
+ * is the one permanent grid verb, and it was the only one with no preview: the
+ * order that cannot be undone was the order the player could not see coming.
+ */
+const GRID_EFFECT_KINDS = new Set(["setPower", "severLine", "addLoad", "damageObject"]);
 
 /**
  * Which nodes an order would flip, asked of the same recompute the rules run:
@@ -483,15 +497,47 @@ export function gridFlipPreview(
   if (actor === undefined) return [];
   const ctx: Ctx = { state: sim, events: [] };
   const area = resolveArea(sim, actor, ability, target);
+  const outcome = emptyOutcome();
   for (const effect of ability.effects) {
     for (const objectId of area.objectIds) {
       if (effect.kind === "setPower") setObjectPower(ctx, objectId, effect.mode, unitId);
       else if (effect.kind === "severLine") severLine(ctx, objectId, effect.mode, unitId);
       else if (effect.kind === "addLoad") {
         attachLoad(ctx, objectId, effect.amount, effect.durationTurns, unitId);
+      } else if (effect.kind === "damageObject") {
+        const obj = objectById(sim, objectId);
+        if (obj === undefined) continue;
+        const amount = resolveAmount(sim, effect.amount, actor, inertAmountTarget(objectMaxHp(obj)));
+        damageObject(ctx, objectId, amount, unitId, outcome);
       }
     }
   }
+  const after = powerSnapshot(sim).energized;
+  return [...before.keys()].filter((id) => before.get(id) !== after.get(id)).sort(byId);
+}
+
+/**
+ * Which nodes working this machine's controls would flip, replayed against a
+ * throwaway clone the way a staged ability's are. Operate is the one order the
+ * player sends with no aim step, so it was also the one with no preview — and
+ * on a grid map it is the cheapest and commonest grid verb there is.
+ */
+export function objectOperationPreview(
+  state: GameState,
+  unitId: string,
+  objectId: string,
+): string[] {
+  if (state.content.map.grids.length === 0) return [];
+  const unit = unitById(state, unitId);
+  const object = objectById(state, objectId);
+  if (unit === undefined || object === undefined || object.def.operable === null) return [];
+
+  const before = powerSnapshot(state).energized;
+  const sim = cloneState(state);
+  const actor = unitById(sim, unitId);
+  const target = objectById(sim, objectId);
+  if (actor === undefined || target === undefined) return [];
+  fireObject({ state: sim, events: [] }, actor, target);
   const after = powerSnapshot(sim).energized;
   return [...before.keys()].filter((id) => before.get(id) !== after.get(id)).sort(byId);
 }
@@ -646,6 +692,9 @@ export function aimTarget(
   if (ability.targeting.validTargets.includes("object")) {
     for (const object of state.map.objects) {
       if (object.destroyed) continue;
+      // An order with nothing to do to this machine is not an order aimed at
+      // it: the tile stays unlit and the click refuses by name.
+      if (objectTargetIsInert(state, ability, object)) continue;
       if (object.def.tiles.some((covered) => coordEq(covered, tile))) {
         candidates.push({ kind: "object", objectId: object.def.id });
       }

@@ -32,6 +32,13 @@ export interface BattleIntents {
   confirmItemTarget(unitId: string, itemId: string, target: TargetRef): void;
   /** Player chose adjacent machinery to operate. -> ActivateObject command. */
   activateObject(unitId: string, objectId: string): void;
+  /**
+   * Cursor moved onto a machine in the Operate menu, or off the menu entirely.
+   * Operate is the only order with no aim step, so this is where it gets one:
+   * it forecasts the order and marks the component it would flip. Mutates
+   * nothing.
+   */
+  previewOperable(unitId: string, objectId: string | null): void;
   /** Backed out of targeting or a submenu without committing anything. */
   cancelSelection(unitId: string): void;
   /** End the turn, locking in facing. -> Wait command. */
@@ -92,6 +99,7 @@ export function noopIntents(): UiIntents {
     selectItem: sink,
     confirmItemTarget: sink,
     activateObject: sink,
+    previewOperable: sink,
     cancelSelection: sink,
     wait: sink,
     inspectUnit: sink,

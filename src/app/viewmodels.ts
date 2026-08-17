@@ -19,12 +19,16 @@ import {
   availableAbilities,
   battleClock,
   battleEncounter,
+  battleMap,
   forecast,
   getObject,
   getUnit,
   itemIdFromAbilityId,
   itemInfo,
   jobInfo,
+  objectEnergized,
+  objectGridRole,
+  objectOperationPreview,
   powerRegister,
   standHeight,
   statusInfo,
@@ -54,6 +58,7 @@ import {
   type ForecastTargetView,
   type ForecastView,
   type ItemEntryView,
+  type ObjectInspectView,
   type PartyView,
   type PowerLedgerView,
   type PowerLoadLevel,
@@ -388,6 +393,109 @@ export function forecastView(
   };
 }
 
+/** Two names read; more than two are a count, because machine names are long. */
+const machineList = (names: readonly string[]): string =>
+  names.length <= 2 ? names.join(" and ") : `${names.length} machines`;
+
+/**
+ * What working this machine's controls would do to the grid, per the real
+ * recompute. Operate is the only order the player sends with no aim step, so it
+ * was the only one with no forecast and no flip highlight — on a grid map that
+ * is the cheapest grid verb on the board going out blind.
+ */
+export function operateForecastView(
+  state: GameState,
+  unitId: string,
+  objectId: string,
+): ForecastView | null {
+  const actor = getUnit(state, unitId);
+  const object = getObject(state, objectId);
+  if (actor === null || object === null || object.def.operable === null) return null;
+
+  const lost: string[] = [];
+  const gained: string[] = [];
+  for (const flipped of objectOperationPreview(state, unitId, objectId)) {
+    const name = getObject(state, flipped)?.def.name ?? flipped;
+    (objectEnergized(state, flipped) ? lost : gained).push(name);
+  }
+  const effects: string[] = [];
+  if (lost.length > 0) effects.push(`${machineList(lost)} lose power`);
+  if (gained.length > 0) effects.push(`${machineList(gained)} come back up`);
+  if (effects.length === 0) effects.push("No change on the grid");
+
+  return {
+    attacker: {
+      unitId: actor.id,
+      name: actor.unit.name,
+      ...(actor.unit.portraitId === undefined ? {} : { portraitId: actor.unit.portraitId }),
+      jobName: jobName(state, actor.unit.jobId),
+    },
+    abilityId: "operate",
+    abilityName: `Operate — ${object.def.name}`,
+    chargeCost: 0,
+    castSpeed: null,
+    operate: { objectId },
+    targets: [],
+    effects,
+    aimedAt: { kind: "object", objectId },
+  };
+}
+
+/** How the inspect panel names a machine: its grid job first, then what it is. */
+function objectCategory(state: GameState, objectId: string, kind: string): string {
+  const role = objectGridRole(state, objectId);
+  if (role === null) return OBJECT_KIND_LABELS[kind] ?? kind;
+  const grid = battleMap(state).grids.find((candidate) =>
+    candidate.nodes.some((node) => node.objectId === objectId),
+  );
+  const node = grid?.nodes.find((candidate) => candidate.objectId === objectId);
+  if (node?.role === "source") return `Source · rated ${node.capacity}`;
+  if (node?.role === "sink") return `Sink · draws ${node.draw}`;
+  return role === "line" ? "Cable run" : "Breaker";
+}
+
+const OBJECT_KIND_LABELS: Record<string, string> = {
+  machine: "Machinery",
+  switch: "Switch",
+  lift: "Lift",
+  cell: "Flux cell",
+  wall: "Structure",
+  catwalk: "Catwalk",
+  turret: "Frame",
+};
+
+/** A machine under the cursor, for the inspect panel. */
+export function objectInspectView(state: GameState, objectId: string): ObjectInspectView | null {
+  const object = getObject(state, objectId);
+  if (object === null) return null;
+  const row = powerRegister(state)
+    .grids.flatMap((section) => [
+      ...section.components.flatMap((component) => component.nodes),
+      ...section.outOfCircuit,
+    ])
+    .find((node) => node.objectId === objectId);
+  const power: PowerNodeState | null =
+    row?.state ??
+    (object.powered === null
+      ? null
+      : object.destroyed
+        ? "destroyed"
+        : objectEnergized(state, objectId)
+          ? "live"
+          : "dead");
+  const destructible = object.def.integrity.destructible;
+  return {
+    kind: "object",
+    id: objectId,
+    name: object.def.name,
+    category: objectCategory(state, objectId, object.def.kind),
+    power,
+    hp: destructible ? object.hp : null,
+    maxHp: destructible ? object.def.integrity.hp : null,
+    destroyed: object.destroyed,
+  };
+}
+
 /** Stock the satchel would hold after this use, for the forecast's cost line. */
 function itemRemaining(state: GameState, unitId: string, itemId: string): number {
   const entry = usableItems(state, unitId).find((candidate) => candidate.itemId === itemId);
@@ -475,6 +583,8 @@ export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT
 export interface HudInputs {
   /** Unit under the cursor; falls back to the acting unit. */
   inspectedUnitId?: string | null;
+  /** Machine under the cursor. Takes the panel while it is set. */
+  inspectedObjectId?: string | null;
   /**
    * Who the HUD is about when nobody is acting — the closing frame of a battle.
    * The panels still have to report final numbers; they just cannot offer
@@ -494,9 +604,13 @@ export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleH
   if (action === null) return null;
   const inspectedId = inputs.inspectedUnitId ?? subjectId;
   const power = powerLedgerView(state);
+  const inspectedObject =
+    inputs.inspectedObjectId === undefined || inputs.inspectedObjectId === null
+      ? null
+      : objectInspectView(state, inputs.inspectedObjectId);
   return {
     action,
-    inspected: inspectedId === null ? null : unitView(state, inspectedId),
+    inspected: inspectedObject ?? (inspectedId === null ? null : unitView(state, inspectedId)),
     turnOrder: turnOrderView(state, inputs.turnOrderCount ?? DEFAULT_TURN_ORDER_COUNT),
     forecast: inputs.forecast ?? null,
     dialogue: inputs.dialogue ?? [],

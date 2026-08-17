@@ -145,8 +145,12 @@ export class ActionMenu implements Component<ActionMenuView> {
       id: OPERABLES_ID,
       title: "Operate",
       entries: operables.map((operable) => ({ id: operable.objectId, label: operable.name })),
+      onCursor: (entry) => this.intents.previewOperable(view.unit.id, entry.id),
       onSelect: (entry) => this.intents.activateObject(view.unit.id, entry.id),
-      onCancel: () => this.intents.cancelSelection(view.unit.id),
+      onCancel: () => {
+        this.intents.previewOperable(view.unit.id, null);
+        this.intents.cancelSelection(view.unit.id);
+      },
     };
   }
 

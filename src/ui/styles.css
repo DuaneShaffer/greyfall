@@ -671,6 +671,13 @@
   display: none;
 }
 
+/* The same panel, reading a machine. Machinery is copper and nothing else is
+   (ART_DIRECTION §2), so the name takes the copper the register's live rows
+   take and the card borrows no team tint it does not have. */
+.gf-unit-panel.is-machine .gf-unit-name {
+  color: var(--gf-operable-lit);
+}
+
 .gf-unit-head {
   display: flex;
   gap: var(--gf-s-2);

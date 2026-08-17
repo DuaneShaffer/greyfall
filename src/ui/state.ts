@@ -158,6 +158,8 @@ export interface ForecastView {
   castSpeed: number | null;
   /** Set when the pending action is a consumable rather than an ability. */
   item?: { itemId: string; remaining: number };
+  /** Set when the pending action is machinery being worked rather than an ability. */
+  operate?: { objectId: string };
   targets: ForecastTargetView[];
   /** Consequences aimed at nobody in the area: the caster's own step, a machine laid. */
   effects: string[];
@@ -265,11 +267,31 @@ export type HudMode =
   | "deploy"
   | "ended";
 
+/**
+ * A machine under the cursor. The inspect panel used to answer for units only,
+ * so the one thing on a grid map the player most needs to read — what this is,
+ * whether it is being fed, and how much of it is left — could be got at only by
+ * cross-referencing the register.
+ */
+export interface ObjectInspectView {
+  kind: "object";
+  /** The object id. Named `id` so the panel and the HUD read one shape. */
+  id: string;
+  name: string;
+  /** What it is: "Switchboard", "Cable run", "Source, rated 14". */
+  category: string;
+  /** The register's own word for its power state, or null when it is inert. */
+  power: PowerNodeState | null;
+  hp: number | null;
+  maxHp: number | null;
+  destroyed: boolean;
+}
+
 /** Everything the battle overlay draws for one moment of one battle. */
 export interface BattleHudView {
   action: ActionMenuView;
-  /** Unit under the cursor, or the acting unit when nothing is hovered. */
-  inspected: UnitView | null;
+  /** Unit or machine under the cursor, or the acting unit when nothing is hovered. */
+  inspected: UnitView | ObjectInspectView | null;
   turnOrder: TurnOrderView;
   forecast: ForecastView | null;
   dialogue: DialogueLine[];

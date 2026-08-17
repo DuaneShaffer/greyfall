@@ -32,6 +32,7 @@ import {
   gridFlipPreview,
   gridRestoringTies,
   objectEnergized,
+  objectOperationPreview,
   powerRegister,
   getUnit,
   itemAbilityId,
@@ -62,7 +63,7 @@ import type {
   TargetRef as UiTargetRef,
   UiIntents,
 } from "../ui/index.js";
-import { battleHudView, forecastView } from "./viewmodels.js";
+import { battleHudView, forecastView, operateForecastView } from "./viewmodels.js";
 
 export type ControllerPhase = "presenting" | "dialogue" | "player" | "ai" | "ended";
 
@@ -400,6 +401,9 @@ export class BattleController {
   private pendingDialogue: DialogueLine[] = [];
   private dialogueShown = false;
   private inspectedUnitId: string | null = null;
+  private inspectedObjectId: string | null = null;
+  /** The machine the Operate cursor is resting on, forecast but not sent. */
+  private previewedOperable: string | null = null;
   private awaitingPresentation = false;
   private aiTimer = 0;
   private moveTargets: TileCoord[] = [];
@@ -474,10 +478,17 @@ export class BattleController {
     if (this.currentPhase === "presenting") this.advance();
   }
 
+  /**
+   * The cursor over the field. A unit answers first, then the machinery
+   * standing on the tile: on a grid map the machines are the terrain, and
+   * "what is this and is it being fed" was a question only the register could
+   * answer, by name, for something the player was already pointing at.
+   */
   onTileHover(tile: TileCoord | null): void {
     if (this.currentPhase !== "player") return;
     const acting = activeUnit(this.gameState);
     const hovered = tile === null ? null : this.unitAt(tile);
+    this.inspectedObjectId = hovered !== null || tile === null ? null : this.objectAt(tile);
     this.inspectedUnitId = hovered?.id ?? acting?.id ?? null;
     this.refresh();
   }
@@ -564,6 +575,7 @@ export class BattleController {
         this.commitAct(unitId, abilityId, this.resolveUiTarget(unitId, abilityId, target));
       },
       activateObject: (unitId, objectId) => this.operate(unitId, objectId),
+      previewOperable: (unitId, objectId) => this.previewOperable(unitId, objectId),
       cancelSelection: () => {
         this.clearSelection();
         this.refresh();
@@ -641,7 +653,10 @@ export class BattleController {
    * run, so there is no second model of the graph on this side of the seam.
    */
   private markGridFlip(unitId: string, abilityId: string, target: TargetRef): void {
-    const flipped = gridFlipPreview(this.gameState, unitId, abilityId, target);
+    this.markFlipped(gridFlipPreview(this.gameState, unitId, abilityId, target));
+  }
+
+  private markFlipped(flipped: readonly string[]): void {
     if (flipped.length === 0) {
       this.renderer.clearHighlight(LAYER_GRID_FLIP);
       return;
@@ -653,6 +668,23 @@ export class BattleController {
       opacity: 0.42,
       yOffset: 0.05,
     });
+  }
+
+  /**
+   * The Operate cursor resting on a machine. It forecasts the order and marks
+   * the component it would flip, off the same recompute the rules run — the
+   * aim-time affordance every other order already had.
+   */
+  private previewOperable(unitId: string, objectId: string | null): void {
+    if (this.currentPhase !== "player") return;
+    this.previewedOperable = objectId;
+    if (objectId === null) {
+      this.renderer.clearHighlight(LAYER_GRID_FLIP);
+      this.refresh();
+      return;
+    }
+    this.markFlipped(objectOperationPreview(this.gameState, unitId, objectId));
+    this.refresh();
   }
 
   private beginWait(unitId: string, facing: Facing): void {
@@ -887,6 +919,7 @@ export class BattleController {
   private refresh(): void {
     const view = battleHudView(this.gameState, {
       inspectedUnitId: this.inspectedUnitId,
+      inspectedObjectId: this.inspectedObjectId,
       forecast: this.pendingForecast(),
       dialogue: this.pendingDialogue,
       turnOrderCount: this.turnOrderCount,
@@ -896,8 +929,11 @@ export class BattleController {
   }
 
   private pendingForecast(): ReturnType<typeof forecastView> {
-    if (this.selection.mode !== "target" || this.selection.pending === null) return null;
     const acting = activeUnit(this.gameState);
+    if (this.previewedOperable !== null && acting !== null) {
+      return operateForecastView(this.gameState, acting.id, this.previewedOperable);
+    }
+    if (this.selection.mode !== "target" || this.selection.pending === null) return null;
     if (acting === null) return null;
     return forecastView(
       this.gameState,
@@ -909,6 +945,7 @@ export class BattleController {
 
   private clearSelection(): void {
     this.selection = { mode: "none" };
+    this.previewedOperable = null;
     this.moveTargets = [];
     this.aimTargets = [];
     this.aimReach = [];
@@ -923,6 +960,14 @@ export class BattleController {
   private unitAt(tile: TileCoord): BattleUnit | null {
     return (
       allUnits(this.gameState).find((unit) => !unit.downed && sameTile(unit.position, tile)) ?? null
+    );
+  }
+
+  private objectAt(tile: TileCoord): string | null {
+    return (
+      allObjects(this.gameState).find((object) =>
+        object.def.tiles.some((covered) => sameTile(covered, tile)),
+      )?.def.id ?? null
     );
   }
 

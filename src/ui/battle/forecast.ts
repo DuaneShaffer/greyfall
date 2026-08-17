@@ -132,6 +132,10 @@ export class ForecastPanel implements Component<ForecastView | null> {
     const view = this.view;
     if (!view || this.locked) return;
     if (view.targets.length === 0 && view.effects.length === 0) return;
+    if (view.operate) {
+      this.intents.activateObject(view.attacker.unitId, view.operate.objectId);
+      return;
+    }
     if (view.item) {
       this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, view.aimedAt);
       return;
