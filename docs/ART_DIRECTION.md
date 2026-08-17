@@ -199,9 +199,26 @@ UI is palette-native, not a separate design system. Aliases only:
 | `ui.danger` | `blood-500` |
 | `ui.good` | `verdigris-300` |
 
-Panels are flat fills with a 1px `ui.edge` border and a 1px `ui.ink` drop
-line — no gradients, no rounded corners, no shadows with blur. The UI is a
-printed form from a standards bureau, not a glass surface.
+**Amended 2026-08-16 — the flat rule is retired; the constraints under it are
+not.** Panels were flat fills with a 1px `ui.edge` border and a 1px `ui.ink`
+drop line. That built a dashboard. `docs/UI_DESIGN.md` §12 replaces it with a
+layered construction — bezels, engraved rules, grain, bronze fittings, grey pulp
+record cards — and that section is now the binding account of UI chrome
+construction. What survives verbatim from the old rule, because it was never
+about flatness:
+
+- **No rounded corners.** Nothing in this interface has a radius.
+- **Blur is capped at 3px.** The UI shares a frame with pixel art at a fixed
+  orthographic scale; a soft shadow beside a 1px sprite outline reads as a
+  rendering error. Depth is value steps at hard edges, the way the sprites do it.
+- **Palette-native.** Every colour in `styles.css` is still a `PALETTE` value or
+  a documented alpha of one. Gradients interpolate *between palette steps*; they
+  do not introduce hues.
+- **Ornament spends no amber.** The chrome's precious metal is the **umber
+  ramp** (tarnished bronze), chosen precisely so that rule 1's 4% amber budget
+  and rule 5's copper-500 affordance both survive an ornate build untouched.
+  Bronze never bloom-glows; `amber-glow` appears on exactly two elements in the
+  whole interface (UI_DESIGN §12.6).
 
 ## 3. Sprite spec
 

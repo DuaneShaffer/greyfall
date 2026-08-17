@@ -1,11 +1,13 @@
-/* Greyfall UI — the Assay field form.
-   ART_DIRECTION §2 is law: every color below is a canonical `src/art/palette.ts`
-   value, panels are flat fills with hairline rules and a 1px ink drop line, and
-   amber is spent only where the UI reports something live — the cursor on the
-   open decision, a charge readout, the commit stamp.
-   Typography is three system stacks with three jobs (see docs/UI_DESIGN.md):
-   a condensed stamp face for plates and labels, a serif record face for prose,
-   a ledger face for tabular figures. No downloads, no CDN. */
+/* Greyfall UI — the Assay's field instrument.
+   docs/UI_DESIGN.md §12 is the construction spec and ART_DIRECTION §2 is still
+   the palette law: every colour below is a canonical `src/art/palette.ts` value
+   or a declared alpha of one. The interface is an iron case with bronze fittings
+   and grey pulp record cards tipped into it — light from the top, blur capped at
+   3px, no radii anywhere, and ornament drawn only from the umber ramp so the
+   amber budget and the copper affordance both survive it (§12.6).
+   Typography is three system stacks with three jobs: a condensed stamp face for
+   plates and labels, a serif record face for prose, a ledger face for tabular
+   figures. No downloads, no CDN. */
 
 :root {
   /* --- palette (src/art/palette.ts) ------------------------------------- */
@@ -19,7 +21,10 @@
 
   --gf-umber-900: #150e09; /* UMBER_900 */
   --gf-umber-700: #2c1d12; /* UMBER_700 */
+  --gf-umber-500: #4e3320; /* UMBER_500 */
+  --gf-umber-300: #7a5230; /* UMBER_300 */
 
+  --gf-operable-deep: #6b3a1e; /* COPPER_700 */
   --gf-operable: #a5622f; /* COPPER_500 — the operable affordance, reserved */
   --gf-operable-lit: #c98a4b; /* COPPER_300 */
 
@@ -30,7 +35,11 @@
   --gf-live-deep: #8c5411; /* AMBER_700 */
   --gf-live-body: #d98a1b; /* AMBER_500 */
   --gf-live: #f3b94a; /* AMBER_300 — UI.accent */
-  --gf-live-glow: #ffe7a8; /* AMBER_GLOW */
+  /* AMBER_GLOW — the bloom key. Referenced by exactly two rules in this file:
+     the cursor's leading edge and the commit stamp's hover face (§12.6), and
+     `tests/ui/styles.test.ts` holds that count. Everything else that wants to
+     look lit uses amber-300. */
+  --gf-live-glow: #ffe7a8;
 
   --gf-flux: #9b7be3; /* OVERLOAD_500 */
   --gf-flux-core: #efe4ff; /* OVERLOAD_100 */
@@ -41,6 +50,105 @@
   --gf-warn: #e8622a; /* HAZARD */
   --gf-player: #6fc3d9; /* STEEL_400 */
   --gf-player-deep: #2e7a94; /* STEEL_600 */
+
+  /* --- materials (UI_DESIGN §12.2) -------------------------------------- */
+  /* Bronze: the chrome's worked metal. Aliases into the umber ramp on purpose —
+     copper stays the machinery affordance and amber stays flux, so ornament
+     spends neither (UI_DESIGN §12.2). */
+  --gf-bronze-900: var(--gf-umber-900);
+  --gf-bronze-700: var(--gf-umber-700);
+  --gf-bronze-500: var(--gf-umber-500);
+  --gf-bronze-300: var(--gf-umber-300);
+
+  /* Grey pulp: the stock the Assay files on. Nothing in Greyfall is white. */
+  --gf-pulp: color-mix(in srgb, var(--gf-plate) 72%, var(--gf-bronze-700));
+  --gf-trough: color-mix(in srgb, var(--gf-ink) 78%, var(--gf-panel));
+
+  /* Ruled stock: the faint baseline grid and the margin rule that make a card
+     read as something written on rather than a lighter rectangle. */
+  --gf-ruled: repeating-linear-gradient(
+      180deg,
+      rgba(11, 13, 16, 0) 0 26px,
+      rgba(11, 13, 16, 0.3) 26px 27px,
+      rgba(179, 188, 197, 0.05) 27px 28px
+    ),
+    linear-gradient(90deg, rgba(11, 13, 16, 0) 0 21px, rgba(142, 32, 41, 0.32) 21px 22px, rgba(11, 13, 16, 0) 22px);
+
+  /* --- texture: generated, never a file --------------------------------- */
+  --gf-tex-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
+  --gf-tex-tooth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.6' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23t)' opacity='0.075'/%3E%3C/svg%3E");
+
+  /* One light, from directly above: a 4% crown on the top edge, gone by a third
+     of the way down. Every bevel in the interface agrees with this. */
+  --gf-sheen: linear-gradient(
+    177deg,
+    rgba(179, 188, 197, 0.055) 0,
+    rgba(179, 188, 197, 0.015) 26%,
+    rgba(11, 13, 16, 0) 46%,
+    rgba(11, 13, 16, 0.14) 100%
+  );
+
+  /* A rivet: dome lit from above, seated in its own shadow. */
+  --gf-rivet-bronze: radial-gradient(
+    circle at 50% 34%,
+    var(--gf-bronze-300) 0 18%,
+    var(--gf-bronze-500) 19% 44%,
+    var(--gf-bronze-700) 45% 64%,
+    rgba(11, 13, 16, 0.9) 65% 82%,
+    rgba(11, 13, 16, 0) 83%
+  );
+
+  /* Bronze corner straps, bottom two corners of an ornate plate. */
+  --gf-strap-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M1.5 0v20.5h20' fill='none' stroke='%237a5230' stroke-opacity='.62' stroke-width='1'/%3E%3Cpath d='M4.5 0v17.5h17' fill='none' stroke='%230b0d10' stroke-opacity='.8' stroke-width='1'/%3E%3Crect x='.5' y='16.5' width='5' height='5' fill='%232c1d12' stroke='%230b0d10' stroke-opacity='.7'/%3E%3C/svg%3E");
+  --gf-strap-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cpath d='M20.5 0v20.5H.5' fill='none' stroke='%237a5230' stroke-opacity='.62' stroke-width='1'/%3E%3Cpath d='M17.5 0v17.5H.5' fill='none' stroke='%230b0d10' stroke-opacity='.8' stroke-width='1'/%3E%3Crect x='16.5' y='16.5' width='5' height='5' fill='%232c1d12' stroke='%230b0d10' stroke-opacity='.7'/%3E%3C/svg%3E");
+
+  /* --- construction (UI_DESIGN §12.3–12.4) ------------------------------ */
+  /* L1 plate: proud of the case. Hard step first, 3px of blur at most. */
+  --gf-drop: 0 0 0 1px rgba(11, 13, 16, 0.9), 0 2px 0 rgba(11, 13, 16, 0.95),
+    0 3px 3px rgba(11, 13, 16, 0.55);
+  --gf-drop-soft: 0 1px 0 rgba(11, 13, 16, 0.9), 0 2px 3px rgba(11, 13, 16, 0.3);
+  /* The four-step edge: crown on top, shade below, and a vignette so a wide
+     plate does not read as a flat rectangle of one value. */
+  --gf-bezel:
+    inset 0 1px 0 rgba(120, 130, 142, 0.22), inset 0 -1px 0 rgba(11, 13, 16, 0.7),
+    inset 1px 0 0 rgba(120, 130, 142, 0.08), inset -1px 0 0 rgba(11, 13, 16, 0.5),
+    inset 0 0 0 1px rgba(122, 82, 48, 0.26), inset 0 0 16px rgba(11, 13, 16, 0.34);
+  /* L2 trough: cut in. Dark at the lip, light at the floor's far edge. */
+  --gf-inset:
+    inset 0 1px 2px rgba(11, 13, 16, 0.85), inset 0 -1px 0 rgba(120, 130, 142, 0.14),
+    inset 1px 0 1px rgba(11, 13, 16, 0.5);
+  /* L3 card: laid on a plate, with a cut edge and its own shadow. */
+  --gf-card-lift:
+    inset 0 1px 0 rgba(179, 188, 197, 0.11), inset 0 -1px 0 rgba(11, 13, 16, 0.6),
+    0 1px 3px rgba(11, 13, 16, 0.5);
+  /* L4 fitting: worked onto a plate. */
+  --gf-fitting: inset 0 1px 0 rgba(179, 188, 197, 0.13), inset 0 -1px 0 rgba(11, 13, 16, 0.7);
+
+  /* An engraved rule, not a hairline: 1px cut, 1px catching the light. */
+  --gf-groove: inset 0 -1px 0 rgba(120, 130, 142, 0.16), inset 0 -2px 0 rgba(11, 13, 16, 0.9);
+  --gf-groove-top: inset 0 1px 0 rgba(11, 13, 16, 0.9), inset 0 2px 0 rgba(120, 130, 142, 0.13);
+
+  --gf-bronze-face: linear-gradient(
+    180deg,
+    var(--gf-bronze-300) 0 1px,
+    var(--gf-bronze-500) 1px 24%,
+    color-mix(in srgb, var(--gf-bronze-500) 42%, var(--gf-bronze-700)) 24% 64%,
+    var(--gf-bronze-700) 64% 92%,
+    var(--gf-bronze-900) 92% 100%
+  );
+  --gf-bronze-sheen: linear-gradient(
+    104deg,
+    rgba(179, 188, 197, 0) 0 26%,
+    rgba(179, 188, 197, 0.09) 40%,
+    rgba(179, 188, 197, 0) 54%
+  );
+  --gf-live-face: linear-gradient(
+    180deg,
+    var(--gf-live-body) 0 1px,
+    var(--gf-live-deep) 1px 30%,
+    color-mix(in srgb, var(--gf-live-deep) 48%, var(--gf-live-ink)) 30% 70%,
+    var(--gf-live-ink) 70% 100%
+  );
 
   /* --- type ------------------------------------------------------------- */
   /* Stamped chrome: plate headers, labels, menu rows. Condensed where the
@@ -59,11 +167,16 @@
   --gf-t-200: 11.5px; /* labels, plate titles */
   --gf-t-300: 13px; /* base */
   --gf-t-400: 16px; /* panel subject */
-  --gf-t-500: 20px; /* screen title, dominant readout */
+  --gf-t-500: 20px; /* dominant readout */
+  --gf-t-600: 24px; /* screen title — the display register (§12.5) */
   --gf-t-700: 30px; /* end banner */
 
-  --gf-track-plate: 0.18em;
+  --gf-track-plate: 0.22em;
   --gf-track-label: 0.1em;
+
+  /* Type cut into metal, and type printed on card. */
+  --gf-engrave: 0 1px 0 rgba(11, 13, 16, 0.9), 0 -1px 0 rgba(179, 188, 197, 0.07);
+  --gf-engrave-live: 0 1px 0 rgba(11, 13, 16, 0.85), 0 -1px 0 rgba(243, 185, 74, 0.16);
 
   /* --- space (4pt) ------------------------------------------------------ */
   --gf-s-1: 4px;
@@ -73,8 +186,10 @@
   --gf-s-5: 24px;
   --gf-s-6: 32px;
 
-  --gf-hair: 1px solid var(--gf-rule);
-  --gf-drop: 0 1px 0 var(--gf-ink);
+  /* --- motion (§12.7): a cursor is a hand, not a colour change ----------- */
+  --gf-move: 90ms;
+  --gf-hover: 70ms;
+  --gf-press: 40ms;
 }
 
 .gf-root,
@@ -93,37 +208,77 @@
 }
 
 /* ============================================================ panel anatomy */
-/* Every surface in the game is the same object: a plate header (stamped, with
-   an optional right-hand stamp), a body, a hairline border, an ink drop line.
-   Weight — and therefore where the eye goes — is carried by `is-live`. */
+/* The plate stack (UI_DESIGN §12.3). Seven layers, all of them `background` and
+   `box-shadow` on the element itself — no ornament needs a wrapper node, which
+   is why the whole interface can be rebuilt in materials without touching the
+   DOM the components already build. */
 
 .gf-panel {
-  background: var(--gf-panel);
-  border: var(--gf-hair);
-  box-shadow: var(--gf-drop);
+  position: relative;
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-bezel), var(--gf-drop);
   border-radius: 0;
+}
+
+/* Ornate: the panels the player actually looks at (§12.8). Bronze straps on the
+   two bottom corners — the top two are under the nameplate, which carries its
+   own rivets. */
+/* Bronze corner straps, bolted over the plate's own foot. An overlay rather
+   than a background layer, because a footer or a trough would bury it. */
+.gf-panel.is-ornate::before,
+.gf-panel.gf-forecast::before,
+.gf-panel.gf-turn-order::before,
+.gf-dialogue::before,
+.gf-screen-head::before,
+.gf-end-banner-plate::before,
+.gf-order::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+  background-image: var(--gf-strap-bl), var(--gf-strap-br);
+  background-position: 0 100%, 100% 100%;
+  background-size: 18px 18px, 18px 18px;
+  background-repeat: no-repeat, no-repeat;
+  pointer-events: none;
 }
 
 .gf-panel > .gf-plate:first-child {
   margin-top: 0;
 }
 
+/* The nameplate: bronze, screwed on, title engraved into it. */
 .gf-plate {
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--gf-s-2);
   margin: 0;
-  padding: 3px var(--gf-s-2);
-  background: var(--gf-plate);
+  padding: 5px var(--gf-s-4) 5px var(--gf-s-5);
+  background-color: var(--gf-bronze-700);
+  background-image: var(--gf-rivet-bronze), var(--gf-rivet-bronze), var(--gf-bronze-sheen),
+    var(--gf-bronze-face);
+  background-position: 6px 50%, calc(100% - 6px) 50%, 0 0, 0 0;
+  background-size: 9px 9px, 9px 9px, 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
   border-bottom: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting);
   font-size: var(--gf-t-200);
   font-weight: 600;
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
   color: var(--gf-text);
+  text-shadow: var(--gf-engrave);
 }
 
+/* The one fact the panel carries about itself, punched into its own recess. */
 .gf-plate-stamp {
   font-family: var(--gf-face-ledger);
   font-size: var(--gf-t-100);
@@ -131,39 +286,84 @@
   color: var(--gf-dim);
   text-transform: none;
   white-space: nowrap;
+  padding: 0 5px;
+  background: rgba(11, 13, 16, 0.42);
+  box-shadow: var(--gf-inset);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
 }
 
 .gf-panel-body {
-  padding: var(--gf-s-2) var(--gf-s-2) var(--gf-s-3);
+  padding: var(--gf-s-2) var(--gf-s-3) var(--gf-s-3);
 }
 
 /* The live panel: whatever the player is deciding right now. Exactly one of
-   these should be on screen at a time. */
+   these on screen, and its amber is a lit band and a rim — never a fill (§12.6). */
 .gf-panel.is-live {
-  border-color: var(--gf-live-deep);
+  border-color: var(--gf-live-ink);
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 84, 17, 0.55), var(--gf-bezel),
+    var(--gf-drop);
 }
 
 .gf-panel.is-live > .gf-plate {
-  background: var(--gf-live-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-rivet-bronze), var(--gf-rivet-bronze), var(--gf-bronze-sheen),
+    var(--gf-live-face);
   color: var(--gf-live);
+  text-shadow: var(--gf-engrave-live);
 }
 
 .gf-panel.is-live > .gf-plate .gf-plate-stamp {
   color: var(--gf-live-body);
 }
 
-/* Subordinate panels: present, readable, not competing. */
+/* Subordinate panels: flush with the case rather than proud of it. Saying
+   "behind" with elevation reads better than saying it with transparency. */
 .gf-panel.is-quiet {
-  background: color-mix(in srgb, var(--gf-panel) 82%, transparent);
+  background-color: color-mix(in srgb, var(--gf-panel) 88%, var(--gf-ink));
+  box-shadow: var(--gf-bezel);
 }
 
 .gf-panel.is-quiet > .gf-plate {
-  background: transparent;
-  border-bottom: var(--gf-hair);
+  background-color: color-mix(in srgb, var(--gf-bronze-700) 62%, var(--gf-panel));
+  background-image: var(--gf-bronze-sheen),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--gf-bronze-500) 42%, var(--gf-bronze-700)) 0,
+      var(--gf-bronze-700) 60%,
+      var(--gf-bronze-900) 100%
+    );
+  background-position: 0 0, 0 0;
+  background-size: 100% 100%, 100% 100%;
   color: var(--gf-dim);
 }
 
 /* ============================================================ shared pieces */
+
+/* Grey pulp card: the filed record, laid on a plate (§12.2). The primitive and
+   the three elements that are records by nature share one rule. */
+.gf-card,
+.gf-detail-text,
+.gf-dialogue-body,
+.gf-end-banner-note {
+  background-color: var(--gf-pulp);
+  background-image: var(--gf-tex-tooth), var(--gf-ruled), var(--gf-sheen);
+  background-size: 90px 90px, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 6px, 0 0;
+  background-repeat: repeat, repeat, no-repeat;
+  box-shadow: var(--gf-card-lift);
+  border: 1px solid var(--gf-ink);
+  padding: var(--gf-s-3);
+}
+
+/* Everything in this interface that is a record of something is cut the same
+   way: the filing-card corner the portrait slot already wore. */
+/* Everything that is a record of something is cut the same way. */
+.gf-card,
+.gf-detail-text,
+.gf-end-banner-note {
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
 
 .gf-panel-title,
 .gf-menu-title,
@@ -176,9 +376,11 @@
 }
 
 .gf-screen-title {
-  font-size: var(--gf-t-500);
-  letter-spacing: 0.12em;
+  font-size: var(--gf-t-600);
+  letter-spacing: 0.16em;
   color: var(--gf-text);
+  text-shadow: var(--gf-engrave);
+  line-height: 1.15;
 }
 
 .gf-panel-subtitle {
@@ -188,8 +390,10 @@
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
   color: var(--gf-dim);
-  border-top: var(--gf-hair);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
   padding-top: var(--gf-s-1);
+  text-shadow: var(--gf-engrave);
 }
 
 .gf-screen-note,
@@ -240,67 +444,107 @@
   color: var(--gf-dim);
 }
 
-/* --- buttons: one loud, one quiet ----------------------------------------- */
+/* --- buttons: a struck stamp, and a bronze one ---------------------------- */
 
 .gf-button {
+  position: relative;
   font-family: var(--gf-face-stamp);
   font-size: var(--gf-t-200);
   font-weight: 700;
   color: var(--gf-ink);
-  background: var(--gf-live);
-  border: 1px solid var(--gf-live-glow);
+  background-color: var(--gf-live-body);
+  background-image: linear-gradient(
+    180deg,
+    var(--gf-live) 0,
+    var(--gf-live) 24%,
+    var(--gf-live-body) 66%,
+    var(--gf-live-deep) 100%
+  );
+  border: 1px solid var(--gf-live-ink);
   border-radius: 0;
-  box-shadow: var(--gf-drop);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 185, 74, 0.85), inset 0 -1px 0 rgba(74, 42, 6, 0.75),
+    var(--gf-drop);
   padding: 5px var(--gf-s-4);
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(243, 185, 74, 0.55);
   cursor: pointer;
+  transition:
+    transform var(--gf-press) ease-out,
+    box-shadow var(--gf-press) ease-out,
+    filter var(--gf-hover) ease-out;
 }
 
+/* One of exactly two places `amber-glow` is spent (§12.6). */
 .gf-button:hover {
-  background: var(--gf-live-glow);
+  background-image: linear-gradient(
+    180deg,
+    var(--gf-live-glow) 0,
+    var(--gf-live-glow) 30%,
+    var(--gf-live) 70%,
+    var(--gf-live-body) 100%
+  );
 }
 
 .gf-button:active {
-  transform: translateY(1px);
-  box-shadow: none;
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 3px rgba(74, 42, 6, 0.9), inset 0 -1px 0 rgba(243, 185, 74, 0.35);
 }
 
 .gf-button:disabled {
-  background: var(--gf-plate);
-  border-color: var(--gf-off);
+  background-color: var(--gf-plate);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gf-off) 48%, var(--gf-plate)) 0,
+    var(--gf-plate) 55%,
+    var(--gf-panel) 100%
+  );
+  border-color: var(--gf-ink);
   color: var(--gf-off);
   cursor: not-allowed;
-  box-shadow: none;
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
+  box-shadow: var(--gf-fitting);
 }
 
-/* Secondary: navigation and utilities. Keeps amber scarce. */
+/* Secondary: navigation and utilities, in bronze. Keeps amber scarce. */
 .gf-button.is-quiet {
   color: var(--gf-text);
-  background: var(--gf-plate);
-  border-color: var(--gf-off);
+  background-color: var(--gf-bronze-700);
+  background-image: var(--gf-bronze-sheen), var(--gf-bronze-face);
+  border-color: var(--gf-ink);
   font-weight: 600;
+  text-shadow: var(--gf-engrave);
+  box-shadow: var(--gf-fitting), var(--gf-drop-soft);
 }
 
 .gf-button.is-quiet:hover {
-  background: var(--gf-off);
-  border-color: var(--gf-dim);
-  color: var(--gf-live-glow);
+  background-image: var(--gf-bronze-sheen),
+    linear-gradient(
+      180deg,
+      var(--gf-bronze-300) 0,
+      color-mix(in srgb, var(--gf-bronze-300) 39%, var(--gf-bronze-500)) 26%,
+      color-mix(in srgb, var(--gf-bronze-500) 76%, var(--gf-bronze-700)) 70%,
+      var(--gf-bronze-700) 100%
+    );
+  color: var(--gf-live);
 }
 
 .gf-root :focus-visible,
 .gf-harness :focus-visible {
-  outline: 2px solid var(--gf-live-glow);
+  outline: 2px solid var(--gf-live);
   outline-offset: 1px;
 }
 
-/* --- meters: a plate with a trough and gauge ticks ------------------------ */
+/* --- meters: a gauge window, recessed behind a bezel ---------------------- */
 
 .gf-meter {
   position: relative;
-  height: 7px;
-  background: var(--gf-ink);
-  border: 1px solid var(--gf-rule);
+  height: 8px;
+  background: var(--gf-trough);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-inset);
   grid-column: 1 / -1;
 }
 
@@ -309,42 +553,55 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 calc(25% - 1px),
-    var(--gf-ink) calc(25% - 1px) 25%
-  );
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(25% - 1px),
+      rgba(11, 13, 16, 0.9) calc(25% - 1px) 25%
+    ),
+    linear-gradient(180deg, rgba(179, 188, 197, 0.14) 0 1px, rgba(11, 13, 16, 0) 1px);
 }
 
 .gf-meter-fill {
   height: 100%;
-  background: var(--gf-dim);
+  background-color: var(--gf-dim);
 }
 
 .gf-meter.is-hp .gf-meter-fill {
-  background: var(--gf-good-deep);
+  background-color: var(--gf-good-deep);
 }
 
 .gf-meter.is-hp.is-low .gf-meter-fill {
-  background: var(--gf-danger);
+  background-color: var(--gf-danger);
 }
 
 .gf-meter.is-charge .gf-meter-fill {
-  background: var(--gf-live-body);
+  background-color: var(--gf-live-body);
 }
 
 .gf-meter.is-ct .gf-meter-fill {
-  background: var(--gf-off);
+  background-color: var(--gf-off);
 }
 
 .gf-meter.is-ct.is-ready .gf-meter-fill {
-  background: var(--gf-live-body);
+  background-color: var(--gf-live-body);
+}
+
+/* Gauge glass, on top of whichever colour the fill took. */
+.gf-meter-fill {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.26) 0,
+    rgba(255, 255, 255, 0.06) 45%,
+    rgba(11, 13, 16, 0.28) 100%
+  );
 }
 
 /* --- portrait: a punched record card, not hatching ------------------------ */
 /* Real portraits are an open art workstream (ART_DIRECTION §4/A.9). Until they
    land this is a designed stand-in: a monogram plate with a job tab and a
-   team-tint rim, clipped like a filing-card corner. */
+   team-tint rim, clipped like a filing-card corner — the clip is now the
+   interface's shared "this is a record" motif (UI_DESIGN §12.3). */
 
 .gf-portrait {
   --gf-portrait-size: 40px;
@@ -355,9 +612,13 @@
   flex: none;
   display: grid;
   place-items: center;
-  background: var(--gf-plate);
+  background-color: var(--gf-pulp);
+  background-image: var(--gf-tex-tooth), var(--gf-sheen);
+  background-size: 90px 90px, 100% 100%;
   border: 1px solid var(--gf-portrait-rim);
-  box-shadow: inset 0 0 0 1px var(--gf-ink);
+  box-shadow:
+    inset 0 0 0 1px var(--gf-ink), inset 0 1px 0 rgba(179, 188, 197, 0.1),
+    var(--gf-drop-soft);
   clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
   overflow: hidden;
 }
@@ -367,8 +628,14 @@
   position: absolute;
   inset: 0;
   background:
-    repeating-linear-gradient(0deg, transparent 0 3px, rgba(11, 13, 16, 0.55) 3px 4px),
-    repeating-linear-gradient(90deg, transparent 0 3px, rgba(11, 13, 16, 0.35) 3px 4px);
+    radial-gradient(
+      ellipse at 50% 34%,
+      rgba(179, 188, 197, 0.12) 0,
+      rgba(11, 13, 16, 0) 58%,
+      rgba(11, 13, 16, 0.45) 100%
+    ),
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(11, 13, 16, 0.5) 3px 4px),
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(11, 13, 16, 0.3) 3px 4px);
   opacity: 0.7;
 }
 
@@ -387,7 +654,7 @@
   font-size: calc(var(--gf-portrait-size) * 0.4);
   letter-spacing: 0.04em;
   color: var(--gf-text);
-  text-shadow: 0 1px 0 var(--gf-ink);
+  text-shadow: var(--gf-engrave);
 }
 
 .gf-portrait-job {
@@ -403,8 +670,15 @@
   background: var(--gf-portrait-rim);
 }
 
+/* The dialogue plate: 128 x 160, the size art-src/PORTRAIT_BRIEFS.md paints to,
+   keeping the filing-card corner and the opaque card ground it assumes. */
 .gf-portrait.is-large {
-  --gf-portrait-size: 64px;
+  --gf-portrait-size: 80px;
+  height: 100px;
+}
+
+.gf-portrait.is-large .gf-portrait-initials {
+  font-size: 30px;
 }
 
 .gf-portrait.is-small {
@@ -426,9 +700,12 @@
 
 .gf-menu {
   min-width: 190px;
-  background: var(--gf-panel);
-  border: var(--gf-hair);
-  box-shadow: var(--gf-drop);
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-bezel), var(--gf-drop);
 }
 
 /* Stacked menus stay legible but stand down; only the top one takes input.
@@ -449,6 +726,8 @@
 .gf-menu-entry.is-inert.is-selected {
   background: transparent;
   border-color: transparent;
+  box-shadow: none;
+  transform: none;
 }
 
 .gf-menu-entry.is-inert.is-selected {
@@ -461,53 +740,91 @@
 }
 
 .gf-menu.is-active {
-  border-color: var(--gf-live-deep);
+  border-color: var(--gf-live-ink);
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 84, 17, 0.5), var(--gf-bezel),
+    var(--gf-drop);
 }
 
 .gf-menu-title {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 3px var(--gf-s-2);
-  background: var(--gf-plate);
+  padding: 5px var(--gf-s-4) 5px var(--gf-s-5);
+  background-position: 6px 50%, calc(100% - 6px) 50%, 0 0, 0 0;
+  background-size: 9px 9px, 9px 9px, 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+  background-color: var(--gf-bronze-700);
+  background-image: var(--gf-rivet-bronze), var(--gf-rivet-bronze), var(--gf-bronze-sheen),
+    var(--gf-bronze-face);
   border-bottom: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting);
   color: var(--gf-dim);
+  text-shadow: var(--gf-engrave);
 }
 
 .gf-menu.is-active .gf-menu-title {
-  background: var(--gf-live-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-rivet-bronze), var(--gf-rivet-bronze), var(--gf-bronze-sheen),
+    var(--gf-live-face);
   color: var(--gf-live);
+  text-shadow: var(--gf-engrave-live);
 }
 
+/* The list is cut into the plate, so rows sit in a trough and the cursor row
+   can rise out of it. */
 .gf-menu-list {
   list-style: none;
   margin: 0;
   padding: var(--gf-s-1) 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+/* A cut between rows: the trough is machined, not printed. */
+.gf-menu-entry + .gf-menu-entry {
+  border-top-color: rgba(11, 13, 16, 0.75);
 }
 
 .gf-menu-entry {
   display: grid;
-  grid-template-columns: 10px 1fr auto;
+  grid-template-columns: 12px 1fr auto;
   align-items: baseline;
   column-gap: var(--gf-s-2);
-  padding: 3px var(--gf-s-2);
+  padding: 4px var(--gf-s-3);
   border: 1px solid transparent;
   cursor: pointer;
   letter-spacing: 0.02em;
+  transition:
+    transform var(--gf-hover) ease-out,
+    box-shadow var(--gf-hover) ease-out,
+    background-color var(--gf-hover) ease-out;
 }
 
+/* Hover is the same gesture as the cursor, one weight down: a finger resting on
+   the row rather than the pointer arriving at it (mouse parity, §8). */
 .gf-menu-entry:hover:not(.is-disabled) {
-  background: var(--gf-plate);
+  background-color: rgba(120, 130, 142, 0.09);
+  box-shadow: inset 2px 0 0 var(--gf-bronze-300);
 }
 
+/* The cursor row lifts out of the trough: transform and shadow only, so no
+   layout property animates and `MenuStack.setCursor`'s no-op stays a no-op. */
 .gf-menu.is-active .gf-menu-entry.is-selected {
-  background: var(--gf-live-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-live-face);
   border-color: var(--gf-live-deep);
-  color: var(--gf-live-glow);
+  color: var(--gf-live);
+  text-shadow: var(--gf-engrave-live);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 185, 74, 0.4), inset 0 -1px 0 rgba(11, 13, 16, 0.8),
+    0 1px 0 rgba(11, 13, 16, 0.85);
+  transform: translateX(2px);
 }
 
 .gf-menu-entry.is-selected {
-  background: var(--gf-plate);
+  background-color: rgba(120, 130, 142, 0.12);
+  box-shadow: var(--gf-fitting);
 }
 
 .gf-menu-entry.is-disabled {
@@ -515,13 +832,35 @@
   cursor: not-allowed;
 }
 
+.gf-menu-entry:active:not(.is-disabled) {
+  transform: translateY(1px);
+}
+
+/* The pointer: it arrives and settles, it does not fade in. */
 .gf-menu-cursor {
   color: transparent;
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-400);
+  line-height: 1;
 }
 
 .gf-menu.is-active .gf-menu-entry.is-selected .gf-menu-cursor {
   color: var(--gf-live);
+  text-shadow:
+    0 1px 0 rgba(11, 13, 16, 0.9),
+    0 0 5px color-mix(in srgb, var(--gf-live-glow) 55%, transparent);
+  animation: gf-cursor-in var(--gf-move) cubic-bezier(0.22, 1.2, 0.4, 1) 1;
+}
+
+@keyframes gf-cursor-in {
+  0% {
+    transform: translateX(-7px);
+  }
+  70% {
+    transform: translateX(1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .gf-menu-detail {
@@ -568,8 +907,15 @@
 @media (prefers-reduced-motion: reduce) {
   .gf-menu-stack.is-refused .gf-menu.is-active,
   .gf-dialogue-prompt.is-ready,
-  .gf-notice.is-shown {
+  .gf-notice.is-shown,
+  .gf-menu.is-active .gf-menu-entry.is-selected .gf-menu-cursor {
     animation: none;
+  }
+
+  /* Every value change survives; only the travel goes. */
+  .gf-menu-entry,
+  .gf-button {
+    transition: none;
   }
 }
 
@@ -636,6 +982,7 @@
 /* --- the order column: the acting unit and its orders, as one object ------ */
 
 .gf-order {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -644,7 +991,13 @@
 
 .gf-order > .gf-unit-panel {
   border-bottom: none;
-  box-shadow: none;
+  box-shadow: var(--gf-bezel);
+}
+
+/* The column reads as one bolted object, so the straps belong to its foot and
+   not to the seam halfway down it. The menus grow a plate foot to carry them. */
+.gf-order .gf-menu {
+  padding-bottom: 10px;
 }
 
 .gf-order .gf-menu-stack {
@@ -682,8 +1035,9 @@
   display: flex;
   gap: var(--gf-s-2);
   align-items: center;
-  padding: var(--gf-s-2);
-  border-bottom: var(--gf-hair);
+  padding: var(--gf-s-2) var(--gf-s-3);
+  border-bottom: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove);
 }
 
 .gf-unit-ident {
@@ -692,6 +1046,7 @@
 
 .gf-unit-name {
   margin: 0;
+  text-shadow: var(--gf-engrave);
   font-size: var(--gf-t-400);
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -710,7 +1065,7 @@
 }
 
 .gf-unit-readout {
-  padding: var(--gf-s-2);
+  padding: var(--gf-s-2) var(--gf-s-3);
   display: grid;
   gap: 5px;
 }
@@ -720,16 +1075,24 @@
   grid-template-columns: 1fr auto;
   align-items: baseline;
   column-gap: var(--gf-s-2);
-  row-gap: 2px;
+  row-gap: 3px;
+}
+
+.gf-unit-bar > .gf-field-value {
+  padding: 0 5px;
+  background: rgba(11, 13, 16, 0.42);
+  box-shadow: var(--gf-inset);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
 }
 
 .gf-unit-disposition {
   display: grid;
   grid-template-columns: auto 1fr auto 1fr;
   gap: var(--gf-s-1);
-  margin-top: 2px;
-  border-top: var(--gf-hair);
-  padding-top: 5px;
+  margin-top: 4px;
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  padding-top: 6px;
 }
 
 .gf-chip-row {
@@ -738,8 +1101,9 @@
   flex-wrap: wrap;
   gap: var(--gf-s-1);
   margin: 0;
-  padding: var(--gf-s-2);
-  border-top: var(--gf-hair);
+  padding: var(--gf-s-2) var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
 }
 
 .gf-chip {
@@ -747,7 +1111,10 @@
   align-items: baseline;
   gap: 0;
   white-space: pre;
-  border: 1px solid var(--gf-off);
+  border: 1px solid var(--gf-ink);
+  box-shadow: inset 0 0 0 1px var(--gf-off), var(--gf-fitting);
+  background: rgba(11, 13, 16, 0.35);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.75);
   padding: 0 5px;
   font-size: var(--gf-t-100);
   letter-spacing: 0.06em;
@@ -763,21 +1130,25 @@
 .gf-chip.is-debuff {
   color: var(--gf-enemy);
   border-color: var(--gf-danger);
+  box-shadow: inset 0 0 0 1px var(--gf-danger), var(--gf-fitting);
 }
 
 .gf-chip.is-buff {
   color: var(--gf-good);
   border-color: var(--gf-good-deep);
+  box-shadow: inset 0 0 0 1px var(--gf-good-deep), var(--gf-fitting);
 }
 
 .gf-chip.is-flux {
   color: var(--gf-flux);
   border-color: var(--gf-flux);
+  box-shadow: inset 0 0 0 1px var(--gf-flux), var(--gf-fitting);
 }
 
 .gf-chip.is-mod {
   color: var(--gf-good);
   border-color: var(--gf-good-deep);
+  box-shadow: inset 0 0 0 1px var(--gf-good-deep), var(--gf-fitting);
 }
 
 .gf-chip.is-mod.is-loss {
@@ -787,13 +1158,17 @@
 
 .gf-chip.is-none {
   color: var(--gf-off);
-  border-color: var(--gf-rule);
+  border-color: var(--gf-ink);
+  box-shadow: inset 0 0 0 1px var(--gf-rule), var(--gf-fitting);
 }
 
 .gf-unit-downed {
   margin: 0;
-  padding: var(--gf-s-1) var(--gf-s-2);
-  background: var(--gf-danger-ink);
+  padding: var(--gf-s-1) var(--gf-s-3);
+  background-color: var(--gf-danger-ink);
+  background-image: linear-gradient(180deg, rgba(198, 74, 71, 0.22) 0, rgba(62, 13, 18, 0) 60%);
+  box-shadow: var(--gf-groove-top), inset 0 -1px 0 rgba(11, 13, 16, 0.8);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.85);
   color: var(--gf-enemy);
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
@@ -811,19 +1186,28 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
 }
 
 .gf-turn-entry {
   display: grid;
-  grid-template-columns: 16px 24px 1fr auto;
+  grid-template-columns: 16px 26px 1fr auto;
   align-items: center;
   gap: var(--gf-s-1);
-  padding: 3px var(--gf-s-2);
+  padding: 4px var(--gf-s-2);
   border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  transition: background-color var(--gf-hover) ease-out;
 }
 
 .gf-turn-entry:first-child {
   border-top: none;
+  box-shadow: none;
+}
+
+.gf-turn-entry:hover {
+  background-color: rgba(120, 130, 142, 0.08);
 }
 
 .gf-turn-index {
@@ -845,12 +1229,17 @@
 }
 
 .gf-turn-entry.is-now {
-  background: var(--gf-live-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-live-face);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 185, 74, 0.35), inset 0 -1px 0 rgba(11, 13, 16, 0.85),
+    inset 3px 0 0 var(--gf-live-deep);
 }
 
 .gf-turn-entry.is-now .gf-turn-index,
 .gf-turn-entry.is-now .gf-turn-name {
-  color: var(--gf-live-glow);
+  color: var(--gf-live);
+  text-shadow: var(--gf-engrave-live);
 }
 
 .gf-turn-entry.is-cast .gf-turn-detail {
@@ -885,6 +1274,9 @@
   color: var(--gf-dim);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  padding: 0 4px;
+  background: rgba(11, 13, 16, 0.4);
+  box-shadow: var(--gf-inset);
 }
 
 .gf-turn-entry.is-now .gf-turn-ticks {
@@ -908,6 +1300,22 @@
   list-style: none;
   margin: 0;
   padding: var(--gf-s-1) 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+/* A register is machinery reading itself, so its rules are copper rather than
+   the bronze the rest of the case is fitted in (UI_DESIGN 12.8). */
+.gf-power .gf-plate {
+  background-image: var(--gf-rivet-bronze), var(--gf-rivet-bronze), var(--gf-bronze-sheen),
+    linear-gradient(
+      180deg,
+      var(--gf-operable-deep) 0,
+      color-mix(in srgb, var(--gf-operable-deep) 48%, var(--gf-bronze-700)) 34%,
+      var(--gf-bronze-700) 78%,
+      var(--gf-bronze-900) 100%
+    );
+  color: var(--gf-operable-lit);
 }
 
 .gf-power-entry {
@@ -983,7 +1391,8 @@
 
 .gf-power-network + .gf-power-network,
 .gf-power-network + .gf-power-entry {
-  border-top: 1px solid var(--gf-rule);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: inset 0 1px 0 rgba(165, 98, 47, 0.28);
 }
 
 .gf-power-network-head {
@@ -991,9 +1400,12 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: var(--gf-s-2);
-  padding: 2px var(--gf-s-2);
+  padding: 3px var(--gf-s-2);
   font-size: var(--gf-t-100);
   color: var(--gf-dim);
+  background: rgba(107, 58, 30, 0.09);
+  box-shadow: inset 0 -1px 0 rgba(11, 13, 16, 0.7), inset 0 -2px 0 rgba(165, 98, 47, 0.22);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.7);
 }
 
 .gf-power-load {
@@ -1060,7 +1472,8 @@
 }
 
 .gf-power-component + .gf-power-component {
-  border-top: 1px dotted var(--gf-rule);
+  border-top: 1px dotted var(--gf-operable);
+  opacity: 1;
 }
 
 .gf-power-component-head {
@@ -1111,10 +1524,11 @@
 
 .gf-forecast-head {
   display: flex;
-  gap: var(--gf-s-2);
+  gap: var(--gf-s-3);
   align-items: flex-start;
-  padding: var(--gf-s-2);
-  border-bottom: var(--gf-hair);
+  padding: var(--gf-s-3);
+  border-bottom: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove);
 }
 
 .gf-forecast-ability {
@@ -1122,6 +1536,7 @@
   font-size: var(--gf-t-400);
   font-weight: 600;
   color: var(--gf-live);
+  text-shadow: var(--gf-engrave-live);
   letter-spacing: 0.04em;
   line-height: 1.15;
 }
@@ -1146,9 +1561,10 @@
 
 .gf-forecast-target {
   display: flex;
-  gap: var(--gf-s-2);
-  padding: var(--gf-s-2);
+  gap: var(--gf-s-3);
+  padding: var(--gf-s-3);
   border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
 }
 
 .gf-forecast-target:first-child {
@@ -1175,6 +1591,10 @@
   color: var(--gf-live);
   font-size: var(--gf-t-500);
   line-height: 1.1;
+  padding: 0 6px;
+  background: rgba(11, 13, 16, 0.5);
+  box-shadow: var(--gf-inset);
+  text-shadow: var(--gf-engrave-live);
 }
 
 .gf-forecast-damage .gf-field-value {
@@ -1191,7 +1611,9 @@
 }
 
 .gf-forecast-status {
-  border: 1px solid var(--gf-flux);
+  border: 1px solid var(--gf-ink);
+  box-shadow: inset 0 0 0 1px var(--gf-flux), var(--gf-fitting);
+  background: rgba(11, 13, 16, 0.35);
   padding: 0 4px;
   font-size: var(--gf-t-100);
   letter-spacing: 0.06em;
@@ -1201,7 +1623,7 @@
 
 .gf-forecast-status.is-none {
   color: var(--gf-off);
-  border-color: var(--gf-rule);
+  box-shadow: inset 0 0 0 1px var(--gf-rule), var(--gf-fitting);
 }
 
 /* What the order does that is not a number of damage: stat changes and their
@@ -1252,14 +1674,39 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--gf-s-2);
-  padding: var(--gf-s-2);
-  border-top: var(--gf-hair);
+  padding: var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  background: rgba(11, 13, 16, 0.3);
 }
 
 /* Committed: the panel keeps reporting what was sent, but cannot send again. */
 .gf-forecast.is-locked {
+  position: relative;
   border-color: var(--gf-rule);
-  opacity: 0.75;
+  box-shadow: var(--gf-bezel), var(--gf-drop);
+  opacity: 0.82;
+}
+
+/* The stamp the Assay actually owns: struck, rotated, and over the record it
+   closed (UI_DESIGN 12.2, punched lead). */
+.gf-forecast.is-locked::after {
+  content: "FILED";
+  position: absolute;
+  right: var(--gf-s-3);
+  bottom: 40px;
+  padding: 2px var(--gf-s-2);
+  transform: rotate(-7deg);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-300);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(198, 74, 71, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(198, 74, 71, 0.4), inset 0 0 0 3px rgba(11, 13, 16, 0),
+    inset 0 0 0 4px rgba(198, 74, 71, 0.25);
+  pointer-events: none;
 }
 
 .gf-forecast.is-locked .gf-forecast-ability {
@@ -1276,21 +1723,36 @@
   display: flex;
   align-items: center;
   gap: var(--gf-s-3);
-  padding: 4px var(--gf-s-2);
-  background: var(--gf-panel);
-  border: var(--gf-hair);
-  box-shadow: var(--gf-drop);
-  min-height: 26px;
+  padding: 5px var(--gf-s-3);
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  border-top: 2px solid var(--gf-bronze-300);
+  box-shadow: var(--gf-bezel), var(--gf-drop);
+  min-height: 28px;
 }
 
+/* The mode is the one word the case is always showing: a struck tab, lit in
+   whatever the mode's own colour is. */
 .gf-mode-name {
   font-size: var(--gf-t-200);
   font-weight: 700;
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
   color: var(--gf-ink);
-  background: var(--gf-dim);
-  padding: 1px var(--gf-s-2);
+  background-color: var(--gf-dim);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0,
+    rgba(255, 255, 255, 0) 48%,
+    rgba(11, 13, 16, 0.3) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -1px 0 rgba(11, 13, 16, 0.5),
+    0 1px 0 rgba(11, 13, 16, 0.9);
+  padding: 2px var(--gf-s-3);
   white-space: nowrap;
 }
 
@@ -1348,7 +1810,7 @@
 }
 
 .gf-mode-orbit-step {
-  padding: 1px var(--gf-s-2);
+  padding: 2px var(--gf-s-2);
   font-size: var(--gf-t-200);
   line-height: 1.1;
   min-width: 22px;
@@ -1372,7 +1834,18 @@
   font-family: var(--gf-face-ledger);
   font-weight: 700;
   color: var(--gf-text);
-  margin-right: 3px;
+  margin-right: 4px;
+  padding: 1px 4px;
+  background-color: var(--gf-plate);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gf-off) 48%, var(--gf-plate)) 0,
+    var(--gf-plate) 55%,
+    var(--gf-panel) 100%
+  );
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
 }
 
 /* --- notice: refusals and acknowledgements, non-modal --------------------- */
@@ -1385,10 +1858,15 @@
 
 .gf-notice {
   margin: 0;
-  padding: 3px var(--gf-s-3);
-  background: var(--gf-panel);
-  border: 1px solid var(--gf-off);
-  box-shadow: var(--gf-drop);
+  padding: 4px var(--gf-s-4);
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  box-shadow:
+    inset 0 0 0 1px var(--gf-off), var(--gf-fitting), var(--gf-drop);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
   font-size: var(--gf-t-200);
   letter-spacing: 0.04em;
   color: var(--gf-text);
@@ -1401,13 +1879,13 @@
 }
 
 .gf-notice.is-refusal {
-  border-color: var(--gf-danger);
+  box-shadow: inset 0 0 0 1px var(--gf-danger), var(--gf-fitting), var(--gf-drop);
   color: var(--gf-enemy);
   animation: gf-shake 90ms steps(2, end) 3;
 }
 
 .gf-notice.is-machine {
-  border-color: var(--gf-operable);
+  box-shadow: inset 0 0 0 1px var(--gf-operable), var(--gf-fitting), var(--gf-drop);
   color: var(--gf-operable-lit);
 }
 
@@ -1419,16 +1897,26 @@
 
 /* ================================================================ dialogue */
 
+/* The record of a person, in the case that carries it: an ornate iron plate, a
+   bronze-framed portrait plate, and the line itself typeset on grey pulp
+   (UI_DESIGN 12.2). */
 .gf-dialogue {
+  position: relative;
   display: flex;
-  gap: var(--gf-s-3);
-  align-items: flex-start;
-  background: var(--gf-panel);
-  border: 1px solid var(--gf-live-deep);
-  box-shadow: var(--gf-drop);
-  padding: var(--gf-s-3);
-  min-height: 96px;
+  gap: var(--gf-s-4);
+  align-items: stretch;
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 84, 17, 0.5), var(--gf-bezel),
+    var(--gf-drop);
+  padding: var(--gf-s-3) var(--gf-s-4);
+  min-height: 186px;
   cursor: pointer;
+  transition: box-shadow var(--gf-hover) ease-out;
 }
 
 .gf-dialogue.is-hidden {
@@ -1436,45 +1924,80 @@
 }
 
 .gf-dialogue:hover {
-  border-color: var(--gf-live);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 185, 74, 0.6), var(--gf-bezel),
+    var(--gf-drop);
+}
+
+/* The portrait plate, in its bronze surround. The slot is 128 x 160 with the
+   filing-card corner and an opaque ground, which is the geometry
+   art-src/PORTRAIT_BRIEFS.md paints to. */
+.gf-dialogue-portrait {
+  flex: none;
+  padding: 3px;
+  background-color: var(--gf-bronze-700);
+  background-image: var(--gf-bronze-sheen), var(--gf-bronze-face);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting), var(--gf-drop-soft);
+  align-self: flex-start;
 }
 
 .gf-dialogue-portrait .gf-portrait {
-  --gf-portrait-size: 64px;
+  --gf-portrait-size: 128px;
+  height: 160px;
+  box-shadow: inset 0 0 0 1px var(--gf-ink), inset 0 1px 0 rgba(179, 188, 197, 0.1);
 }
 
+.gf-dialogue-portrait .gf-portrait-initials {
+  font-size: 44px;
+}
+
+/* The line is typeset on pulp, laid on the plate and cut like a record. */
 .gf-dialogue-body {
   flex: 1;
   min-width: 0;
   position: relative;
-  padding-right: var(--gf-s-6);
+  padding: var(--gf-s-4) var(--gf-s-6) var(--gf-s-4) var(--gf-s-5);
+  background-position: 0 0, 0 12px, 0 0;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
 }
 
+/* The name is a bronze tab pinned to the card, not a chip printed on it. */
 .gf-dialogue-speaker {
   display: inline-block;
-  background: var(--gf-plate);
-  border: 1px solid var(--gf-off);
+  position: relative;
+  top: calc(var(--gf-s-4) * -1 - 1px);
+  margin-left: calc(var(--gf-s-4) * -1);
+  background-color: var(--gf-bronze-700);
+  background-image: var(--gf-rivet-bronze), var(--gf-bronze-sheen), var(--gf-bronze-face);
+  background-position: calc(100% - 5px) 50%, 0 0, 0 0;
+  background-size: 7px 7px, 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
   color: var(--gf-text);
-  padding: 0 var(--gf-s-2);
+  padding: 3px var(--gf-s-5) 3px var(--gf-s-3);
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
   font-size: var(--gf-t-200);
   font-weight: 600;
+  text-shadow: var(--gf-engrave);
+  box-shadow: var(--gf-fitting), var(--gf-drop-soft);
 }
 
 .gf-dialogue-text {
   font-family: var(--gf-face-record);
   font-size: 17px;
   line-height: 1.6;
-  margin: var(--gf-s-2) 0 0;
+  margin: 0;
   max-width: 68ch;
   color: var(--gf-text);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.55);
 }
 
 .gf-dialogue-advance {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: var(--gf-s-3);
+  bottom: var(--gf-s-2);
   display: flex;
   align-items: center;
   gap: var(--gf-s-2);
@@ -1493,7 +2016,10 @@
   height: 20px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--gf-live-deep);
+  border: 1px solid var(--gf-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-live-face);
+  box-shadow: var(--gf-fitting), var(--gf-drop-soft);
   color: var(--gf-live);
   font-size: 11px;
   line-height: 1;
@@ -1511,8 +2037,8 @@
 
 .gf-dialogue-count {
   position: absolute;
-  right: 0;
-  top: 2px;
+  right: var(--gf-s-3);
+  top: var(--gf-s-2);
   font-family: var(--gf-face-ledger);
   font-size: var(--gf-t-100);
   color: var(--gf-dim);
@@ -1539,12 +2065,22 @@
   min-height: 100%;
 }
 
+/* A between-battle page opens on a header plate: the one place the interface is
+   allowed to be big (UI_DESIGN 12.5), with a bronze crown, an engraved title and
+   a filing serial punched on the right. */
 .gf-screen-head {
   display: flex;
-  align-items: baseline;
-  gap: var(--gf-s-3);
-  border-bottom: 1px solid var(--gf-off);
-  padding-bottom: var(--gf-s-2);
+  align-items: center;
+  gap: var(--gf-s-4);
+  position: relative;
+  padding: var(--gf-s-3) var(--gf-s-4);
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  border-top: 2px solid var(--gf-bronze-300);
+  box-shadow: var(--gf-bezel), var(--gf-drop);
 }
 
 .gf-screen-head .gf-portrait {
@@ -1607,7 +2143,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--gf-s-4);
-  border-top: 1px solid var(--gf-off);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
   padding-top: var(--gf-s-3);
 }
 
@@ -1628,7 +2165,8 @@
   gap: var(--gf-s-3);
   align-items: center;
   padding: var(--gf-s-3);
-  border-bottom: var(--gf-hair);
+  border-bottom: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove);
 }
 
 .gf-detail-body {
@@ -1639,6 +2177,7 @@
 
 .gf-detail-title {
   margin: 0;
+  text-shadow: var(--gf-engrave);
   font-size: var(--gf-t-400);
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1671,6 +2210,7 @@
   color: var(--gf-enemy);
 }
 
+/* Prose is a filed note laid on the plate, cut like every other record. */
 .gf-detail-text {
   margin: 0;
   font-family: var(--gf-face-record);
@@ -1678,6 +2218,8 @@
   line-height: 1.55;
   max-width: 60ch;
   color: var(--gf-text);
+  padding: var(--gf-s-2) var(--gf-s-3);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.5);
 }
 
 .gf-ledger {
@@ -1685,8 +2227,9 @@
   grid-template-columns: auto 1fr;
   gap: 2px var(--gf-s-3);
   margin: 0;
-  padding: var(--gf-s-2) 0 0;
-  border-top: var(--gf-hair);
+  padding: var(--gf-s-2) var(--gf-s-2) var(--gf-s-2);
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
 }
 
 .gf-ledger dt {
@@ -1713,7 +2256,9 @@
 }
 
 .gf-delta {
-  border: 1px solid var(--gf-off);
+  border: 1px solid var(--gf-ink);
+  box-shadow: inset 0 0 0 1px var(--gf-off), var(--gf-fitting);
+  background: rgba(11, 13, 16, 0.35);
   padding: 0 5px;
   font-family: var(--gf-face-ledger);
   font-size: var(--gf-t-100);
@@ -1736,11 +2281,13 @@
   display: grid;
   grid-template-columns: 1fr auto;
   border-top: 1px solid var(--gf-ink);
-  padding: var(--gf-s-1) 0;
+  box-shadow: var(--gf-groove-top);
+  padding: var(--gf-s-2) 0;
 }
 
 .gf-ability:first-child {
   border-top: none;
+  box-shadow: none;
 }
 
 .gf-ability-cost {
@@ -1773,17 +2320,24 @@
   padding: 0;
 }
 
+.gf-deploy-slots {
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
 .gf-deploy-slot {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: baseline;
   gap: var(--gf-s-2);
   border-top: 1px solid var(--gf-ink);
-  padding: 2px var(--gf-s-2);
+  box-shadow: var(--gf-groove-top);
+  padding: 3px var(--gf-s-2);
 }
 
 .gf-deploy-slot:first-child {
   border-top: none;
+  box-shadow: none;
 }
 
 .gf-deploy-slot .gf-field-label {
@@ -1797,7 +2351,9 @@
 }
 
 .gf-deploy-slot.is-placing {
-  background: var(--gf-live-ink);
+  background-color: var(--gf-live-ink);
+  background-image: var(--gf-live-face);
+  box-shadow: inset 3px 0 0 var(--gf-live-deep), var(--gf-fitting);
 }
 
 .gf-deploy-actions {
@@ -1809,26 +2365,48 @@
 /* --- filed records: the battle's results, the chapter's close ------------- */
 /* A win banks and buries. The banking is a ledger; the burying is the page. */
 
+/* The verdict: struck into a double-ruled cartouche, which is what a bureau
+   does to a finding it has closed. */
 .gf-results .gf-screen-title {
   font-size: var(--gf-t-700);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   line-height: 1.1;
+  padding: var(--gf-s-2) var(--gf-s-4);
+  color: var(--gf-live);
+  background: rgba(11, 13, 16, 0.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 185, 74, 0.5), inset 0 0 0 3px rgba(11, 13, 16, 0.9),
+    inset 0 0 0 4px rgba(243, 185, 74, 0.28), var(--gf-inset);
+  text-shadow: var(--gf-engrave-live);
 }
 
 /* The loss banner's colour, and the only place it is spent here. */
 .gf-results.is-loss .gf-screen-title {
   color: var(--gf-enemy);
+  box-shadow:
+    inset 0 0 0 1px rgba(198, 74, 71, 0.55), inset 0 0 0 3px rgba(11, 13, 16, 0.9),
+    inset 0 0 0 4px rgba(198, 74, 71, 0.3), var(--gf-inset);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.85);
 }
 
 .gf-results .gf-screen-head {
-  border-bottom-color: var(--gf-dim);
+  border-top-color: var(--gf-live-deep);
 }
 
 .gf-record-serial {
   font-family: var(--gf-face-ledger);
   font-size: var(--gf-t-100);
   letter-spacing: 0.06em;
-  color: var(--gf-off);
+  color: var(--gf-ink);
+  font-weight: 700;
+  padding: 3px var(--gf-s-3) 3px var(--gf-s-5);
+  background-color: var(--gf-off);
+  background-image:
+    radial-gradient(circle at 12px 50%, rgba(11, 13, 16, 0.95) 0 3px, rgba(11, 13, 16, 0) 3.5px),
+    linear-gradient(180deg, var(--gf-dim) 0, var(--gf-off) 45%, var(--gf-plate) 100%);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting), var(--gf-drop-soft);
+  text-shadow: 0 1px 0 rgba(179, 188, 197, 0.35);
 }
 
 .gf-record .gf-plate-stamp {
@@ -1848,11 +2426,13 @@
   align-items: baseline;
   column-gap: var(--gf-s-3);
   border-top: 1px solid var(--gf-ink);
-  padding: var(--gf-s-1) 0;
+  box-shadow: var(--gf-groove-top);
+  padding: var(--gf-s-2) 0;
 }
 
 .gf-record-row:first-child {
   border-top: none;
+  box-shadow: none;
 }
 
 .gf-record-name {
@@ -1891,8 +2471,10 @@
 /* --- the fallen ----------------------------------------------------------- */
 /* Set apart from the living: its own panel, a blood rule, and room to read. */
 
+/* Set apart with a blood strap down its edge, and its record on pulp. */
 .gf-fallen {
-  border-left: 2px solid var(--gf-danger);
+  border-left: 3px solid var(--gf-danger);
+  box-shadow: inset 4px 0 0 rgba(11, 13, 16, 0.8), var(--gf-bezel), var(--gf-drop);
 }
 
 .gf-fallen-roll {
@@ -1945,7 +2527,8 @@
 .gf-fallen-note {
   margin: var(--gf-s-3) 0 0;
   padding-top: var(--gf-s-2);
-  border-top: var(--gf-hair);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
   font-family: var(--gf-face-record);
   font-size: 13px;
   line-height: 1.5;
@@ -1978,7 +2561,21 @@
 
 .gf-harness {
   min-height: 100vh;
-  background: var(--gf-ink);
+  background-color: var(--gf-ink);
+  background-image: var(--gf-tex-grain),
+    radial-gradient(
+      ellipse 120% 90% at 50% 0%,
+      rgba(120, 130, 142, 0.075) 0,
+      rgba(11, 13, 16, 0) 62%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(120, 130, 142, 0.028) 0 1px,
+      rgba(11, 13, 16, 0) 1px 34px
+    );
+  background-size: 140px 140px, 100% 100%, 100% 100%;
+  background-repeat: repeat, no-repeat, repeat;
+  background-attachment: fixed;
   color: var(--gf-text);
   font-family: var(--gf-face-stamp);
   font-size: var(--gf-t-300);
@@ -2134,9 +2731,16 @@
 }
 
 .gf-end-banner-plate {
-  background: var(--gf-panel);
-  border: 1px solid var(--gf-live-deep);
-  box-shadow: var(--gf-drop);
+  position: relative;
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  border-top: 2px solid var(--gf-bronze-300);
+  box-shadow:
+    inset 0 0 0 1px rgba(140, 84, 17, 0.5), var(--gf-bezel),
+    var(--gf-drop);
   padding: var(--gf-s-5) var(--gf-s-6);
   text-align: center;
   max-width: 44rem;
@@ -2144,24 +2748,38 @@
 
 .gf-end-banner-result {
   margin: 0;
+  padding: var(--gf-s-2) var(--gf-s-4);
   font-size: var(--gf-t-700);
   font-weight: 700;
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--gf-live);
   line-height: 1.1;
+  background: rgba(11, 13, 16, 0.42);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 185, 74, 0.5), inset 0 0 0 3px rgba(11, 13, 16, 0.9),
+    inset 0 0 0 4px rgba(243, 185, 74, 0.28), var(--gf-inset);
+  text-shadow: var(--gf-engrave-live);
 }
 
 .gf-end-banner.is-loss .gf-end-banner-plate {
-  border-color: var(--gf-danger);
+  border-top-color: var(--gf-danger);
+  box-shadow:
+    inset 0 0 0 1px rgba(142, 32, 41, 0.6), var(--gf-bezel),
+    var(--gf-drop);
 }
 
 .gf-end-banner.is-loss .gf-end-banner-result {
   color: var(--gf-enemy);
+  box-shadow:
+    inset 0 0 0 1px rgba(198, 74, 71, 0.55), inset 0 0 0 3px rgba(11, 13, 16, 0.9),
+    inset 0 0 0 4px rgba(198, 74, 71, 0.3), var(--gf-inset);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.85);
 }
 
 .gf-end-banner-note {
-  margin: var(--gf-s-3) auto 0;
+  margin: var(--gf-s-4) auto 0;
+  padding: var(--gf-s-3);
   font-family: var(--gf-face-record);
   font-size: 15px;
   line-height: 1.6;
@@ -2183,7 +2801,20 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: var(--gf-s-2);
   padding: var(--gf-s-3);
-  background: var(--gf-ink);
+  background-color: var(--gf-ink);
+  background-image: var(--gf-tex-grain),
+    radial-gradient(
+      ellipse 120% 90% at 50% 0%,
+      rgba(120, 130, 142, 0.075) 0,
+      rgba(11, 13, 16, 0) 62%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(120, 130, 142, 0.028) 0 1px,
+      rgba(11, 13, 16, 0) 1px 34px
+    );
+  background-size: 140px 140px, 100% 100%, 100% 100%;
+  background-repeat: repeat, no-repeat, repeat;
   pointer-events: auto;
 }
 
@@ -2214,7 +2845,13 @@
 }
 
 .gf-between.is-field .gf-screen-head {
-  border-bottom-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-left: 0;
+}
+
+.gf-between.is-field .gf-screen-head::before {
+  display: none;
 }
 
 .gf-between.is-field .gf-deploy-rail {
@@ -2228,9 +2865,13 @@
   display: flex;
   align-items: center;
   gap: var(--gf-s-2);
-  background: var(--gf-panel);
-  border: var(--gf-hair);
-  box-shadow: var(--gf-drop);
+  background-color: var(--gf-panel);
+  background-image: var(--gf-tex-grain), var(--gf-sheen);
+  background-size: 140px 140px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  border: 1px solid var(--gf-ink);
+  border-top: 2px solid var(--gf-bronze-300);
+  box-shadow: var(--gf-bezel), var(--gf-drop);
   padding: var(--gf-s-2) var(--gf-s-3);
 }
 
@@ -2241,6 +2882,7 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   margin-right: auto;
+  text-shadow: var(--gf-engrave);
 }
 
 /* The page fills the frame it was given. Screens used to draw at their content
@@ -2285,7 +2927,8 @@
   display: flex;
   align-items: center;
   gap: var(--gf-s-3);
-  border-top: var(--gf-hair);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
   padding-top: var(--gf-s-2);
 }
 
@@ -2296,13 +2939,19 @@
 
 .gf-toast {
   margin: 0;
-  border: 1px solid var(--gf-off);
-  box-shadow: var(--gf-drop);
-  padding: var(--gf-s-1) var(--gf-s-3);
-  background: var(--gf-panel);
+  border: 1px solid var(--gf-ink);
+  box-shadow: inset 0 0 0 1px var(--gf-off), var(--gf-fitting), var(--gf-drop);
+  padding: 3px var(--gf-s-3) 3px var(--gf-s-5);
+  background-color: var(--gf-pulp);
+  background-image:
+    radial-gradient(circle at 13px 50%, rgba(11, 13, 16, 0.95) 0 3px, rgba(11, 13, 16, 0) 3.5px),
+    var(--gf-tex-tooth), var(--gf-sheen);
+  background-size: 100% 100%, 90px 90px, 100% 100%;
+  background-repeat: no-repeat, repeat, no-repeat;
   color: var(--gf-text);
   font-size: var(--gf-t-200);
   letter-spacing: 0.03em;
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.6);
 }
 
 .gf-toast.is-hidden {
@@ -2320,7 +2969,20 @@
   display: flex;
   flex-direction: column;
   overflow: auto;
-  background: var(--gf-ink);
+  background-color: var(--gf-ink);
+  background-image: var(--gf-tex-grain),
+    radial-gradient(
+      ellipse 120% 90% at 50% 0%,
+      rgba(120, 130, 142, 0.075) 0,
+      rgba(11, 13, 16, 0) 62%
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(120, 130, 142, 0.028) 0 1px,
+      rgba(11, 13, 16, 0) 1px 34px
+    );
+  background-size: 140px 140px, 100% 100%, 100% 100%;
+  background-repeat: repeat, no-repeat, repeat;
   pointer-events: auto;
 }
 
@@ -2378,8 +3040,9 @@
    is exactly the half a one-line ellipsis takes. */
 .gf-notice-line {
   margin: 0;
-  padding: 0 var(--gf-s-2);
-  border-left: 1px solid var(--gf-off);
+  padding: 1px var(--gf-s-2);
+  background: rgba(11, 13, 16, 0.42);
+  border-left: 2px solid var(--gf-off);
   font-size: var(--gf-t-100);
   letter-spacing: var(--gf-track-label);
   color: var(--gf-dim);
