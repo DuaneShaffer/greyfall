@@ -23,6 +23,7 @@ import {
   activeUnit,
   affectedTiles,
   aimTarget,
+  allCharges,
   allObjects,
   allUnits,
   applyCommand,
@@ -64,7 +65,12 @@ import type {
   TargetRef as UiTargetRef,
   UiIntents,
 } from "../ui/index.js";
-import { battleHudView, forecastView, operateForecastView } from "./viewmodels.js";
+import {
+  battleHudView,
+  chargeLandingTiles,
+  forecastView,
+  operateForecastView,
+} from "./viewmodels.js";
 
 export type ControllerPhase = "presenting" | "dialogue" | "player" | "ai" | "ended";
 
@@ -153,6 +159,18 @@ const LAYER_AFFECTED = "affected";
  * a bus about to change state is exactly flux-borne (FLUX_GRID §2.5c).
  */
 const LAYER_GRID_FLIP = "grid-flip";
+/**
+ * A unit charging a cast, marked on the tile it is standing on, and — when the
+ * player asks about that unit — the tiles the cast is already aimed at.
+ *
+ * FFT's level of telegraph and deliberately not Into the Breach's: both layers
+ * are read off charges the enemy has *committed*, which are already named in the
+ * turn order. Nothing here reports an intent nobody has staged. Both take
+ * OVERLOAD_500, the flux colour a charge is painted in everywhere else
+ * (UI_DESIGN §5).
+ */
+const LAYER_CHARGING = "charging";
+const LAYER_CHARGE_LANDING = "charge-landing";
 
 /**
  * Seconds between AI commands, so enemy turns are watchable. The animations
@@ -929,6 +947,12 @@ export class BattleController {
   private setPhase(phase: ControllerPhase): void {
     // Nobody is holding a cursor over the field outside the player's own turn.
     if (phase !== "player") this.clearMovePreview();
+    // Nothing is charging on a closed field, for the same reason nothing is
+    // queued on one.
+    if (phase === "ended") {
+      this.renderer.clearHighlight(LAYER_CHARGING);
+      this.renderer.clearHighlight(LAYER_CHARGE_LANDING);
+    }
     this.currentPhase = phase;
     this.ui.setBusy(phase !== "player");
     this.announceMode();
@@ -1002,7 +1026,41 @@ export class BattleController {
       turnOrderCount: this.turnOrderCount,
     });
     if (view !== null) this.ui.render(view);
+    this.markCharges();
     this.announceMode();
+  }
+
+  /**
+   * The two charge cues, off the same committed charges the turn order lists: a
+   * mark under every caster mid-cast, and the landing tiles of the one the player
+   * is reading. Selection clears do not touch either — a charge in flight is a
+   * fact about the field, not a thing the player staged.
+   */
+  private markCharges(): void {
+    const charging = allCharges(this.gameState);
+    const tiles = charging
+      .map((charge) => getUnit(this.gameState, charge.actorId))
+      .filter((unit): unit is BattleUnit => unit !== null && !unit.downed)
+      .map((unit) => ({ ...unit.position }));
+    if (tiles.length === 0) this.renderer.clearHighlight(LAYER_CHARGING);
+    else {
+      this.renderer.setHighlight(LAYER_CHARGING, tiles, palette.overloadViolet, {
+        opacity: 0.62,
+        yOffset: 0.06,
+        // A mark on the tile rather than a wash over it: the tile itself is
+        // still whatever the move or aim overlay is saying about it.
+        inset: 0.33,
+      });
+    }
+    const asked = this.inspectedUnitId;
+    const landing = asked === null ? [] : chargeLandingTiles(this.gameState, asked);
+    if (landing.length === 0) this.renderer.clearHighlight(LAYER_CHARGE_LANDING);
+    else {
+      this.renderer.setHighlight(LAYER_CHARGE_LANDING, landing, palette.overloadViolet, {
+        opacity: 0.3,
+        yOffset: 0.052,
+      });
+    }
   }
 
   private pendingForecast(): ReturnType<typeof forecastView> {

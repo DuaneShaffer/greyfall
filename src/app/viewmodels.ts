@@ -13,6 +13,7 @@ import {
   activatableObjects,
   activeTurnState,
   activeUnit,
+  affectedTiles,
   allCharges,
   allUnits,
   attackAngleAgainst,
@@ -45,7 +46,7 @@ import {
   type GameState,
   type TargetRef,
 } from "../core/index.js";
-import type { DamageType, DialogueLine, StatKey } from "../data/index.js";
+import type { DamageType, DialogueLine, StatKey, TileCoord } from "../data/index.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
@@ -115,9 +116,44 @@ const modifierViews = (unit: BattleUnit): StatModView[] => {
   return out;
 };
 
+/**
+ * The cast this unit has committed to, and when it lands — FFT's telegraph and
+ * no more than it: a charge already sent, never an intent nobody has staged.
+ *
+ * The tick count is read off the same preview the turn order lists, so the card
+ * and the queue can never disagree about when the thing resolves. Charges are
+ * rare, so the preview is only asked for when this unit actually has one.
+ */
+export function chargingView(
+  state: GameState,
+  unitId: string,
+): { abilityName: string; ticksUntil: number | null } | null {
+  const charge = allCharges(state).find((pending) => pending.actorId === unitId);
+  if (charge === undefined) return null;
+  const entry = turnOrderPreview(state, CHARGE_LOOKAHEAD).find(
+    (candidate) => candidate.kind === "charge" && candidate.id === charge.id,
+  );
+  const ability = abilityInfo(state, unitId, charge.abilityId);
+  return {
+    abilityName: ability?.name ?? charge.abilityId,
+    ticksUntil: entry === undefined ? null : Math.max(0, entry.clock - battleClock(state)),
+  };
+}
+
+/** Deep enough that a cast in flight is always in the preview it is read from. */
+const CHARGE_LOOKAHEAD = 24;
+
+/** Where a charging unit's cast would land, for the field paint (UI_DESIGN §8b). */
+export function chargeLandingTiles(state: GameState, unitId: string): TileCoord[] {
+  const charge = allCharges(state).find((pending) => pending.actorId === unitId);
+  if (charge === undefined) return [];
+  return affectedTiles(state, charge.actorId, charge.abilityId, charge.target);
+}
+
 export function unitView(state: GameState, unitId: string): UnitView | null {
   const unit = getUnit(state, unitId);
   if (unit === null) return null;
+  const charging = chargingView(state, unitId);
   return {
     id: unit.id,
     name: unit.unit.name,
@@ -135,6 +171,7 @@ export function unitView(state: GameState, unitId: string): UnitView | null {
     statuses: statusViews(state, unit),
     modifiers: modifierViews(unit),
     disposition: unit.unit.disposition,
+    ...(charging === null ? {} : { charging }),
     downed: unit.downed,
   };
 }
@@ -341,6 +378,9 @@ export function forecastView(
         unitId: entry.unitId,
         name: victim.unit.name,
         ...(victim.unit.portraitId === undefined ? {} : { portraitId: victim.unit.portraitId }),
+        jobName: jobName(state, victim.unit.jobId),
+        hp: victim.hp,
+        maxHp: unitMaxHp(state, victim.id) ?? victim.hp,
         hitChancePercent: entry.hitChance,
         damage:
           amount === 0 && kind === "damage"
@@ -363,6 +403,10 @@ export function forecastView(
     targets.push({
       unitId: entry.objectId,
       name: object.def.name,
+      jobName: objectCategory(state, entry.objectId, object.def.kind),
+      ...(object.def.integrity.destructible
+        ? { hp: object.hp, maxHp: object.def.integrity.hp }
+        : {}),
       hitChancePercent: entry.hitChance,
       damage:
         amount === 0 && kind === "damage"
@@ -381,7 +425,12 @@ export function forecastView(
       name: attacker.unit.name,
       ...(attacker.unit.portraitId === undefined ? {} : { portraitId: attacker.unit.portraitId }),
       jobName: jobName(state, attacker.unit.jobId),
+      hp: attacker.hp,
+      maxHp: unitMaxHp(state, attacker.id) ?? attacker.hp,
     },
+    // An aimed order is only ever built from a staged target, so this panel is
+    // always the confirm moment; the Operate preview below is the one that is not.
+    armed: true,
     abilityId: ability.id,
     abilityName: ability.name,
     chargeCost: ability.chargeCost,
@@ -429,7 +478,12 @@ export function operateForecastView(
       name: actor.unit.name,
       ...(actor.unit.portraitId === undefined ? {} : { portraitId: actor.unit.portraitId }),
       jobName: jobName(state, actor.unit.jobId),
+      hp: actor.hp,
+      maxHp: unitMaxHp(state, actor.id) ?? actor.hp,
     },
+    // Operate has no aim step, so there is nothing staged to confirm: the
+    // machine under the menu cursor is a preview, and it stays a side panel.
+    armed: false,
     abilityId: "operate",
     abilityName: `Operate — ${object.def.name}`,
     chargeCost: 0,
@@ -692,6 +746,7 @@ export function partyView(state: GameState): PartyView {
       hp: unit.hp,
       maxHp: unitMaxHp(state, unit.id) ?? unit.hp,
       standing: unit.standingEarned,
+      disposition: unit.unit.disposition,
       note: unit.downed ? "Downed" : "Deployed",
     });
   }

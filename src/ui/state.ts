@@ -78,6 +78,13 @@ export interface UnitView {
   /** Timed stat changes in force; empty for a unit carrying none. */
   modifiers?: StatModView[];
   disposition: Disposition;
+  /**
+   * A cast this unit has committed to and is charging. FFT's level of telegraph
+   * exactly: a charge already sent is a visible fact, and nothing here reports
+   * an intent nobody has committed. `ticksUntil` is null when the queue the
+   * turn order previews does not reach it.
+   */
+  charging?: { abilityName: string; ticksUntil: number | null };
   downed: boolean;
 }
 
@@ -134,6 +141,11 @@ export interface ForecastTargetView {
   unitId: string;
   name: string;
   portraitId?: string;
+  /** The target's job, or a machine's category: what the facing panel reads. */
+  jobName?: string;
+  /** Condition before the order lands; absent for a target with no integrity. */
+  hp?: number;
+  maxHp?: number;
   hitChancePercent: number;
   damage: {
     kind: "damage" | "heal";
@@ -150,7 +162,21 @@ export interface ForecastTargetView {
 }
 
 export interface ForecastView {
-  attacker: { unitId: string; name: string; portraitId?: string; jobName: string };
+  attacker: {
+    unitId: string;
+    name: string;
+    portraitId?: string;
+    jobName: string;
+    hp?: number;
+    maxHp?: number;
+  };
+  /**
+   * True at the confirm moment: a target is staged and the stamp is the next
+   * thing the player presses. The panel takes the bottom of the frame for it and
+   * faces the two parties across the numbers (UI_DESIGN §8a). False for a
+   * cursor-rest preview — the Operate cursor has no aim step to have staged.
+   */
+  armed: boolean;
   abilityId: string;
   abilityName: string;
   chargeCost: number;
@@ -311,6 +337,8 @@ export interface RosterEntryView {
   hp: number;
   maxHp: number;
   standing: number;
+  /** Measured, not hidden: every place a unit is read prints these. */
+  disposition?: Disposition;
   /** Job level in the unit's current job; 1–8. */
   jobLevel?: number;
   /** Roster-level notes: "Deployed", "Reserve", "Downed". */

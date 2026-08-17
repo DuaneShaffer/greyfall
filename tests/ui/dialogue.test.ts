@@ -84,6 +84,31 @@ describe("DialogueBox", () => {
     expect(dialogue.el.querySelector(".gf-dialogue-count")?.textContent).toBe("2 / 2");
   });
 
+  it("dominates the frame for a scene and stays a card for a callout", () => {
+    const dialogue = box();
+    dialogue.update(LINES);
+    expect(dialogue.el.classList.contains("is-scene")).toBe(true);
+
+    // One line is a shout across the yard, not a scene.
+    dialogue.update([{ speaker: "Watch Sergeant", text: "The cell is going up." }]);
+    expect(dialogue.el.classList.contains("is-scene")).toBe(false);
+  });
+
+  it("gives the frame back the moment the last line is out", () => {
+    const dialogue = box();
+    dialogue.update(LINES);
+    for (let i = 0; i < 4; i += 1) dialogue.advance();
+    expect(dialogue.el.classList.contains("is-scene")).toBe(false);
+    expect(dialogue.el.classList.contains("is-hidden")).toBe(true);
+  });
+
+  it("shows the whole 4:5 plate rather than the head chip", () => {
+    const dialogue = box();
+    dialogue.update(LINES);
+    const slot = dialogue.el.querySelector(".gf-dialogue-portrait .gf-portrait");
+    expect(slot?.classList.contains("is-large")).toBe(true);
+  });
+
   it("stays hidden with no lines", () => {
     const dialogue = box();
     dialogue.update([]);

@@ -1,5 +1,6 @@
-import { Component, el, labelledValue, plate, portrait, replaceChildren } from "../dom.js";
+import { Child, Component, el, labelledValue, meter, plate, portrait, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
+import type { TargetRef } from "../intents.js";
 import { ForecastTargetView, ForecastView, formatDamageRange, formatSigned } from "../state.js";
 
 const FACING_LABELS: Record<NonNullable<ForecastTargetView["relativeFacing"]>, string> = {
@@ -14,34 +15,57 @@ function costLine(view: ForecastView): string {
   return `Charge ${view.chargeCost} · ${view.castSpeed === null ? "Immediate" : `Cast ${view.castSpeed}`}`;
 }
 
+/** What the order is aimed at when nobody is standing in it. */
+function aimLabel(aimedAt: TargetRef): string {
+  if (aimedAt.kind === "tile") return `Tile ${aimedAt.tile.x}, ${aimedAt.tile.y}`;
+  if (aimedAt.kind === "object") return "Machinery";
+  return "The caster";
+}
+
 /**
  * The commit-or-back-out panel: who, at what odds, for how much.
  *
+ * Two shapes, one contract. Resting — an Operate cursor forecasting the machine
+ * it is on — it is the compact panel answering the order column from the other
+ * corner. **Armed**, with a target staged and the stamp the next thing the
+ * player presses, it takes the bottom of the frame and faces the two parties
+ * across the numbers, the way FFT hands its bottom bar to the confirmation and
+ * Tactics Ogre Reborn frames a target (UI_DESIGN §8a).
+ *
  * `lock()` is what the controller calls the instant an action is sent. The
  * numbers stay on screen — they are the record of what was ordered — but the
- * stamp goes dead, so a panel describing an action already in flight can never
- * be committed a second time.
+ * stamp goes dead and the panel stands down to its compact shape: the takeover
+ * exists to ask a question, and once the order is away there is no question and
+ * no reason to hold the field under a bar.
  */
 export class ForecastPanel implements Component<ForecastView | null> {
   readonly el: HTMLElement;
   private readonly intents: UiIntents;
   private view: ForecastView | null = null;
   private readonly body: HTMLElement;
+  private readonly stampEl: HTMLElement;
   private commitButton: HTMLButtonElement | null = null;
   private locked = false;
 
   constructor(options: { intents?: Partial<UiIntents> } = {}) {
     this.intents = withIntents(options.intents);
     this.body = el("div", { class: "gf-forecast-body" });
+    const plateEl = plate("Forecast", "");
+    this.stampEl = plateEl.querySelector(".gf-plate-stamp") as HTMLElement;
     this.el = el("section", {
       class: "gf-panel is-live gf-forecast is-empty",
       attrs: { "aria-label": "Action forecast" },
-      children: [plate("Forecast"), this.body],
+      children: [plateEl, this.body],
     });
   }
 
   get isLocked(): boolean {
     return this.locked;
+  }
+
+  /** True while the panel is holding the bottom of the frame for a decision. */
+  get isArmed(): boolean {
+    return this.el.classList.contains("is-armed");
   }
 
   update(view: ForecastView | null): void {
@@ -56,16 +80,66 @@ export class ForecastPanel implements Component<ForecastView | null> {
     this.el.classList.remove("is-locked");
     if (!view) {
       this.commitButton = null;
+      this.el.classList.remove("is-armed");
+      this.stampEl.textContent = "";
       replaceChildren(this.body, [el("p", { class: "gf-empty-note", text: "No action selected." })]);
       return;
     }
+    this.draw(view, view.armed);
+  }
+
+  /** Commits the pending action against what it is actually aimed at. */
+  confirm(): void {
+    const view = this.view;
+    if (!view || this.locked) return;
+    if (view.targets.length === 0 && view.effects.length === 0) return;
+    if (view.operate) {
+      this.intents.activateObject(view.attacker.unitId, view.operate.objectId);
+      return;
+    }
+    if (view.item) {
+      this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, view.aimedAt);
+      return;
+    }
+    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, view.aimedAt);
+  }
+
+  /**
+   * The order is away: keep the numbers, kill the stamp, and give the field
+   * back. The committed record lives in the compact panel — the same corner it
+   * occupies at rest — so the presentation the numbers describe is not playing
+   * underneath a bar that is no longer asking anything.
+   */
+  lock(): void {
+    const view = this.view;
+    if (view === null) return;
+    if (this.isArmed) this.draw(view, false);
+    this.locked = true;
+    this.el.classList.add("is-locked");
+    if (this.commitButton !== null) {
+      this.commitButton.disabled = true;
+      this.commitButton.textContent = "Committed";
+    }
+  }
+
+  /** Empty the panel whether or not it is holding a committed record. */
+  clear(): void {
+    this.locked = false;
+    this.update(null);
+  }
+
+  destroy(): void {
+    this.el.remove();
+  }
+
+  private draw(view: ForecastView, armed: boolean): void {
     // An action aimed at nothing has nothing to commit. Offering the stamp
     // anyway is the panel claiming an outcome it cannot produce — but an
     // ability whose whole payload is a machine laid on an empty tile has an
     // outcome and no rows, and refusing it was the same lie in reverse.
     const empty = view.targets.length === 0 && view.effects.length === 0;
     const commit = el("button", {
-      class: "gf-button",
+      class: "gf-button gf-forecast-commit",
       attrs: { type: "button", ...(empty ? { disabled: true } : {}) },
       text: "Commit",
     });
@@ -82,7 +156,18 @@ export class ForecastPanel implements Component<ForecastView | null> {
       if (this.locked) return;
       this.intents.cancelSelection(view.attacker.unitId);
     });
-    replaceChildren(this.body, [
+    const footer = el("footer", { class: "gf-forecast-footer", children: [commit, withdraw] });
+    this.el.classList.toggle("is-armed", armed);
+    this.stampEl.textContent = armed ? "CONFIRM" : "";
+    replaceChildren(
+      this.body,
+      armed ? this.stage(view, empty, footer) : this.compact(view, empty, footer),
+    );
+  }
+
+  /** The resting shape: a side panel reporting the order it is previewing. */
+  private compact(view: ForecastView, empty: boolean, footer: HTMLElement): Child[] {
+    return [
       el("header", {
         class: "gf-forecast-head",
         children: [
@@ -102,16 +187,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
           }),
         ],
       }),
-      ...(view.effects.length === 0
-        ? []
-        : [
-            el("ul", {
-              class: "gf-forecast-effects is-ability",
-              children: view.effects.map((line) =>
-                el("li", { class: "gf-forecast-effect", text: line }),
-              ),
-            }),
-          ]),
+      ...this.abilityEffects(view),
       empty
         ? el("p", { class: "gf-empty-note", text: "Nothing in the area. Pick another tile." })
         : view.targets.length === 0
@@ -120,64 +196,137 @@ export class ForecastPanel implements Component<ForecastView | null> {
               class: "gf-forecast-targets",
               children: view.targets.map((target) => this.renderTarget(target)),
             }),
-      el("footer", {
-        class: "gf-forecast-footer",
-        children: [commit, withdraw],
+      footer,
+    ];
+  }
+
+  /**
+   * The confirm takeover: actor on one side, target on the other, the exchange
+   * between them, and the stamp under it. Everything the compact panel says is
+   * still said — the extra rows of an area order run underneath rather than
+   * being folded away, because a panel never hides what it can do.
+   */
+  private stage(view: ForecastView, empty: boolean, footer: HTMLElement): Child[] {
+    const primary = view.targets[0];
+    const rest = view.targets.slice(1);
+    return [
+      el("div", {
+        class: "gf-forecast-stage",
+        children: [
+          this.party("actor", {
+            name: view.attacker.name,
+            detail: view.attacker.jobName,
+            ...(view.attacker.portraitId === undefined ? {} : { portraitId: view.attacker.portraitId }),
+            ...(view.attacker.hp === undefined ? {} : { hp: view.attacker.hp }),
+            ...(view.attacker.maxHp === undefined ? {} : { maxHp: view.attacker.maxHp }),
+          }),
+          el("div", {
+            class: "gf-forecast-exchange",
+            children: [
+              el("h2", { class: "gf-forecast-ability", text: view.abilityName }),
+              el("p", { class: "gf-forecast-cost", text: costLine(view) }),
+              ...(primary === undefined ? [] : this.numbers(primary)),
+              empty
+                ? el("p", { class: "gf-empty-note", text: "Nothing in the area. Pick another tile." })
+                : null,
+            ],
+          }),
+          primary === undefined
+            ? el("div", {
+                class: "gf-forecast-party is-target is-none",
+                children: [
+                  el("h3", { class: "gf-forecast-party-name", text: aimLabel(view.aimedAt) }),
+                  el("p", {
+                    class: "gf-empty-note",
+                    text: "Nobody in the area — the order stands.",
+                  }),
+                ],
+              })
+            : this.party("target", {
+                name: primary.name,
+                detail: primary.jobName ?? (this.isObject(primary) ? "Machinery" : ""),
+                ...(primary.portraitId === undefined ? {} : { portraitId: primary.portraitId }),
+                ...(primary.hp === undefined ? {} : { hp: primary.hp }),
+                ...(primary.maxHp === undefined ? {} : { maxHp: primary.maxHp }),
+                machine: this.isObject(primary),
+              }),
+        ],
       }),
-    ]);
+      ...this.abilityEffects(view),
+      ...(rest.length === 0
+        ? []
+        : [
+            el("ul", {
+              class: "gf-forecast-targets",
+              children: rest.map((target) => this.renderTarget(target)),
+            }),
+          ]),
+      footer,
+    ];
   }
 
-  /** Commits the pending action against what it is actually aimed at. */
-  confirm(): void {
-    const view = this.view;
-    if (!view || this.locked) return;
-    if (view.targets.length === 0 && view.effects.length === 0) return;
-    if (view.operate) {
-      this.intents.activateObject(view.attacker.unitId, view.operate.objectId);
-      return;
-    }
-    if (view.item) {
-      this.intents.confirmItemTarget(view.attacker.unitId, view.item.itemId, view.aimedAt);
-      return;
-    }
-    this.intents.confirmTarget(view.attacker.unitId, view.abilityId, view.aimedAt);
+  /** One facing panel of the takeover: who this is, and what shape they are in. */
+  private party(
+    side: "actor" | "target",
+    subject: {
+      name: string;
+      detail: string;
+      portraitId?: string;
+      hp?: number;
+      maxHp?: number;
+      machine?: boolean;
+    },
+  ): HTMLElement {
+    const hp =
+      subject.hp === undefined || subject.maxHp === undefined
+        ? null
+        : el("div", {
+            class: "gf-unit-bar gf-forecast-party-hp",
+            children: [
+              el("span", { class: "gf-field-label", text: subject.machine === true ? "Integrity" : "HP" }),
+              el("span", { class: "gf-field-value", text: `${subject.hp} / ${subject.maxHp}` }),
+              meter("is-hp", subject.hp, subject.maxHp),
+            ],
+          });
+    return el("div", {
+      class: `gf-forecast-party is-${side}${subject.machine === true ? " is-object" : ""}`,
+      children: [
+        subject.machine === true
+          ? null
+          : portrait(subject.portraitId, subject.name, { jobName: subject.detail }),
+        el("div", {
+          class: "gf-forecast-party-ident",
+          children: [
+            el("h3", { class: "gf-forecast-party-name", text: subject.name }),
+            subject.detail === ""
+              ? null
+              : el("p", { class: "gf-forecast-party-job", text: subject.detail }),
+          ],
+        }),
+        hp,
+      ],
+    });
   }
 
-  /** The order is away: keep the numbers, kill the stamp. */
-  lock(): void {
-    if (this.view === null) return;
-    this.locked = true;
-    this.el.classList.add("is-locked");
-    if (this.commitButton !== null) {
-      this.commitButton.disabled = true;
-      this.commitButton.textContent = "Committed";
-    }
+  /** Consequences that belong to the order rather than to anyone standing in it. */
+  private abilityEffects(view: ForecastView): Child[] {
+    if (view.effects.length === 0) return [];
+    return [
+      el("ul", {
+        class: "gf-forecast-effects is-ability",
+        children: view.effects.map((line) => el("li", { class: "gf-forecast-effect", text: line })),
+      }),
+    ];
   }
 
-  /** Empty the panel whether or not it is holding a committed record. */
-  clear(): void {
-    this.locked = false;
-    this.update(null);
-  }
-
-  destroy(): void {
-    this.el.remove();
+  /** Machinery has no facing and no portrait: it reads as a machine, in copper. */
+  private isObject(target: ForecastTargetView): boolean {
+    return target.relativeFacing === null && target.portraitId === undefined;
   }
 
   private renderTarget(target: ForecastTargetView): HTMLElement {
-    const damage = target.damage;
-    const damageLabel = damage?.kind === "heal" ? "Recovery" : "Damage";
-    const damageText =
-      damage === null
-        ? "—"
-        : `${formatDamageRange(damage)}${damage.damageType ? ` ${damage.damageType}` : ""}`;
-    // Machinery has no facing and no portrait: it reads as a machine, in copper.
-    const isObject = target.relativeFacing === null && target.portraitId === undefined;
-    // An order that deals no damage prints no damage row: "Damage —" beside a
-    // three-turn buff reads as "this does nothing".
-    const silent = target.statuses.length === 0 && target.effects.length === 0;
     return el("li", {
-      class: `gf-forecast-target${isObject ? " is-object" : ""}`,
+      class: `gf-forecast-target${this.isObject(target) ? " is-object" : ""}`,
       data: { unit: target.unitId },
       children: [
         portrait(target.portraitId, target.name),
@@ -185,41 +334,57 @@ export class ForecastPanel implements Component<ForecastView | null> {
           class: "gf-forecast-numbers",
           children: [
             el("h3", { class: "gf-forecast-target-name", text: target.name }),
-            labelledValue("Hit", `${target.hitChancePercent}%`, "gf-forecast-hit"),
-            ...(damage === null ? [] : [labelledValue(damageLabel, damageText, "gf-forecast-damage")]),
-            el("ul", {
-              class: "gf-forecast-statuses",
-              children: silent
-                ? [el("li", { class: "gf-forecast-status is-none", text: "No further effect" })]
-                : target.statuses.map((status) =>
-                    el("li", {
-                      class: "gf-forecast-status",
-                      text: `${status.name} ${status.chancePercent}%`,
-                    }),
-                  ),
-            }),
-            ...(target.effects.length === 0
-              ? []
-              : [
-                  el("ul", {
-                    class: "gf-forecast-effects",
-                    children: target.effects.map((line) =>
-                      el("li", { class: "gf-forecast-effect", text: line }),
-                    ),
-                  }),
-                ]),
-            el("p", {
-              class: "gf-forecast-modifiers",
-              text: [
-                target.relativeFacing ? FACING_LABELS[target.relativeFacing] : null,
-                target.heightAdvantage === 0 ? null : `Height ${formatSigned(target.heightAdvantage)}`,
-              ]
-                .filter((part): part is string => part !== null)
-                .join(" · "),
-            }),
+            ...this.numbers(target),
           ],
         }),
       ],
     });
+  }
+
+  /** What lands on one target: the odds, the amount, and everything else. */
+  private numbers(target: ForecastTargetView): Child[] {
+    const damage = target.damage;
+    const damageLabel = damage?.kind === "heal" ? "Recovery" : "Damage";
+    const damageText =
+      damage === null
+        ? "—"
+        : `${formatDamageRange(damage)}${damage.damageType ? ` ${damage.damageType}` : ""}`;
+    // An order that deals no damage prints no damage row: "Damage —" beside a
+    // three-turn buff reads as "this does nothing".
+    const silent = target.statuses.length === 0 && target.effects.length === 0;
+    return [
+      labelledValue("Hit", `${target.hitChancePercent}%`, "gf-forecast-hit"),
+      ...(damage === null ? [] : [labelledValue(damageLabel, damageText, "gf-forecast-damage")]),
+      el("ul", {
+        class: "gf-forecast-statuses",
+        children: silent
+          ? [el("li", { class: "gf-forecast-status is-none", text: "No further effect" })]
+          : target.statuses.map((status) =>
+              el("li", {
+                class: "gf-forecast-status",
+                text: `${status.name} ${status.chancePercent}%`,
+              }),
+            ),
+      }),
+      ...(target.effects.length === 0
+        ? []
+        : [
+            el("ul", {
+              class: "gf-forecast-effects",
+              children: target.effects.map((line) =>
+                el("li", { class: "gf-forecast-effect", text: line }),
+              ),
+            }),
+          ]),
+      el("p", {
+        class: "gf-forecast-modifiers",
+        text: [
+          target.relativeFacing ? FACING_LABELS[target.relativeFacing] : null,
+          target.heightAdvantage === 0 ? null : `Height ${formatSigned(target.heightAdvantage)}`,
+        ]
+          .filter((part): part is string => part !== null)
+          .join(" · "),
+      }),
+    ];
   }
 }

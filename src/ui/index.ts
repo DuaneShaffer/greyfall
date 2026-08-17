@@ -1,5 +1,6 @@
 export * from "./dom.js";
 export * from "./intents.js";
+export * from "./portraits.js";
 export * from "./menu.js";
 export * from "./state.js";
 export { ActionMenu } from "./battle/actionMenu.js";

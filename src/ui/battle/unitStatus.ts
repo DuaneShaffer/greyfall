@@ -77,7 +77,12 @@ export class UnitStatusPanel implements Component<UnitView | ObjectInspectView |
             children: [
               el("h2", { class: "gf-unit-name", text: unit.name }),
               el("p", { class: "gf-unit-job", text: `${unit.jobName} · Level ${unit.level}` }),
-              el("p", { class: "gf-unit-facing", text: `Facing ${unit.facing}` }),
+              // Facing is the acting unit's to change, so it is printed where it
+              // is actionable. A hovered unit's absolute facing is on its sprite,
+              // and the angle that decides a hit is on the forecast.
+              this.role === "acting"
+                ? el("p", { class: "gf-unit-facing", text: `Facing ${unit.facing}` })
+                : null,
             ],
           }),
         ],
@@ -91,44 +96,64 @@ export class UnitStatusPanel implements Component<UnitView | ObjectInspectView |
             `${unit.charge} / ${unit.maxCharge}`,
             meter("is-charge", unit.charge, unit.maxCharge),
           ),
-          this.bar("CT", `${unit.ct} / 100`, meter("is-ct", unit.ct, 100)),
+          // A committed charge is a fact about this unit, and the card is where
+          // the player is already looking when they ask what it is doing.
+          unit.charging === undefined
+            ? null
+            : el("div", {
+                class: "gf-unit-charging",
+                children: [
+                  el("span", { class: "gf-field-label", text: "Charging" }),
+                  el("span", { class: "gf-field-value", text: unit.charging.abilityName }),
+                  el("span", {
+                    class: "gf-unit-charging-when",
+                    text:
+                      unit.charging.ticksUntil === null
+                        ? "Resolves later"
+                        : unit.charging.ticksUntil === 0
+                          ? "Resolves now"
+                          : `Resolves in ${unit.charging.ticksUntil}`,
+                  }),
+                ],
+              }),
+          // Three figures the player reads rather than watches. CT had a meter of
+          // its own until the queue beside it started printing the same fact in
+          // ticks; what is left is the number, punched beside the pair the Assay
+          // files on everyone.
           el("div", {
-            class: "gf-unit-disposition",
+            class: "gf-unit-gauges",
             children: [
-              el("span", { class: "gf-field-label", text: "Resolve" }),
-              el("span", { class: "gf-field-value", text: String(unit.disposition.resolve) }),
-              el("span", { class: "gf-field-label", text: "Attunement" }),
-              el("span", { class: "gf-field-value", text: String(unit.disposition.attunement) }),
+              this.gauge("CT", String(unit.ct)),
+              this.gauge("Resolve", String(unit.disposition.resolve)),
+              this.gauge("Attunement", String(unit.disposition.attunement)),
             ],
           }),
         ],
       }),
-      el("ul", {
-        class: "gf-chip-row gf-unit-statuses",
-        children:
-          unit.statuses.length === 0 && modifiers.length === 0
-            ? [el("li", { class: "gf-chip is-none gf-unit-status", text: "No status effects" })]
-            : [
-                ...unit.statuses.map((status) =>
-                  this.statusChip(
-                    status.name,
-                    status.category,
-                    status.remainingTurns,
-                    "gf-unit-status",
-                  ),
+      // Nothing in force draws no row. "No status effects" was a chip, a rule and
+      // a strip of padding spent saying that a list is empty, which an empty list
+      // says by being absent — and the room it cost is room the figures above it
+      // now use.
+      unit.statuses.length === 0 && modifiers.length === 0
+        ? null
+        : el("ul", {
+            class: "gf-chip-row gf-unit-statuses",
+            children: [
+              ...unit.statuses.map((status) =>
+                this.statusChip(status.name, status.category, status.remainingTurns, "gf-unit-status"),
+              ),
+              // Timed stat changes used to be invisible: the number moved and
+              // nothing on screen said why or for how long.
+              ...modifiers.map((mod) =>
+                this.statusChip(
+                  mod.label,
+                  mod.direction === "loss" ? "mod is-loss" : "mod",
+                  mod.remainingTurns,
+                  "gf-unit-modifier",
                 ),
-                // Timed stat changes used to be invisible: the number moved and
-                // nothing on screen said why or for how long.
-                ...modifiers.map((mod) =>
-                  this.statusChip(
-                    mod.label,
-                    mod.direction === "loss" ? "mod is-loss" : "mod",
-                    mod.remainingTurns,
-                    "gf-unit-modifier",
-                  ),
-                ),
-              ],
-      }),
+              ),
+            ],
+          }),
       unit.downed && el("p", { class: "gf-unit-downed", text: "Downed" }),
     ]);
   }
@@ -175,13 +200,7 @@ export class UnitStatusPanel implements Component<UnitView | ObjectInspectView |
                 `${object.hp} / ${object.maxHp}`,
                 meter("is-hp", object.hp, object.maxHp),
               ),
-          el("div", {
-            class: "gf-unit-disposition",
-            children: [
-              el("span", { class: "gf-field-label", text: "Power" }),
-              el("span", { class: "gf-field-value", text: power }),
-            ],
-          }),
+          el("div", { class: "gf-unit-gauges", children: [this.gauge("Power", power)] }),
         ],
       }),
       object.destroyed && el("p", { class: "gf-unit-downed", text: "Destroyed" }),
@@ -202,6 +221,17 @@ export class UnitStatusPanel implements Component<UnitView | ObjectInspectView |
     node.classList.add(className);
     node.title = remainingTurns === null ? "Until removed" : `${remainingTurns} turns remaining`;
     return node;
+  }
+
+  /** One punched figure: what it is over what it reads. */
+  private gauge(label: string, value: string): HTMLElement {
+    return el("div", {
+      class: "gf-gauge",
+      children: [
+        el("span", { class: "gf-gauge-label", text: label }),
+        el("span", { class: "gf-gauge-value", text: value }),
+      ],
+    });
   }
 
   private bar(label: string, value: string, bar: HTMLElement): HTMLElement {

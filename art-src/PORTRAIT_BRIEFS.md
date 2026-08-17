@@ -113,11 +113,32 @@ shipping at 2× the master spec with mips, so a portrait stays crisp if the
 dialogue box ever renders larger than 128 px. That is a downstream derivation,
 not a delivery: nobody paints it.
 
+**It now does render larger, and 2× is exactly the size it renders at.** Story
+dialogue (any trigger of two or more lines) dominates the frame while it plays and
+draws the plate at **256 × 320** — a clean 2× of the in-game slot, still 4:5,
+still cut at the filing-card corner, and no crop or landmark changes with it
+(`UI_DESIGN` §13.4). A single-line callout keeps the 128 × 160 card. On a short
+window the scene plate steps down proportionally (30vh, height 1.25×) rather than
+clipping: **the contract is the ratio and the landmarks, not the pixel count.**
+
 **The chip is a crop, not an asset.** §4 cuts (32, 16, 64, 64) out of the
 128×160 and halves it to 32×32 for the turn-order bar and unit lists. In master
 terms that is **(128, 64, 256, 256)**. Everything that identifies the character
 must fall inside that square. A portrait whose read lives in a collar badge at
 the bottom of the frame is a portrait with no chip.
+
+**And the game now takes it as a crop, literally.** `src/ui/portraits.ts` holds
+one asset per character; every square slot cuts that rect out of the delivered
+plate in CSS, as fractions of the slot size, so the turn-order chip, the panel
+head and the record head are the same crop at three sizes and cannot drift from
+the dialogue portrait. Nothing but the plate is delivered.
+
+**Where it appears, as shipped.** One file per character —
+`art/portraits/<portraitId>.png`, the 2× plate — globbed at build time by
+`src/app/portraitArt.ts` and filed against the id the data already carries. Every
+slot that misses falls back to the monogram record card, which is a shipped
+fallback and not a gap: most units on a field are unnamed and will never be
+painted.
 
 ## Framing, locked across the cast
 
@@ -961,9 +982,13 @@ What a portrait intake needs instead: `decodePNG`, `resampleRGBA` to 128 × 160
 quantizer — every pixel's nearest palette family, reported, never repaired — an
 amber-area measurement, and the chip cut at (32, 16, 64, 64) → 32 × 32.
 
-Two UI follow-ups this set implies, recorded and not done here: the dialogue
-portrait slot is currently a 64 × 64 square (`.gf-dialogue-portrait
-.gf-portrait`) and portraits are 4:5, so `is-large` becomes a 4:5 box showing
-the whole plate while the small sizes show the chip; and the stand-in's hatch
-overlay and monogram (`src/ui/dom.ts`, `src/ui/styles.css`) come out when real
-art lands.
+Two UI follow-ups this set implied, both now done: the dialogue slot is a 4:5 box
+showing the whole plate (128 × 160 for a callout, 256 × 320 for a scene) while
+every square slot shows the chip crop; and the stand-in's photostat overlay and
+monogram come off automatically for any character with a plate on file
+(`.gf-portrait.is-painted`, `src/ui/dom.ts` → `src/ui/portraits.ts`) while staying
+put for everyone without one.
+
+Content follow-up 1 is also done: `maren-voss`, `quill` and `dray` (on the
+`watch-sergeant` roster slot) are in `data/units/*.json` and these briefs are the
+spec for those three names.

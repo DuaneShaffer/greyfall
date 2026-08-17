@@ -67,10 +67,16 @@ export class TurnOrderStrip implements Component<TurnOrderView> {
           class: "gf-turn-labels",
           children: [
             el("span", { class: "gf-turn-name", text: entry.name }),
-            el("span", {
-              class: "gf-turn-detail",
-              text: entry.kind === "cast" ? `Charging · ${entry.abilityName ?? "Ability"}` : entry.jobName,
-            }),
+            // A queue row is a name and a number. The job was a second line on
+            // every row that the chip's job tab and the inspect card both
+            // already carried; a charging cast is the one thing the row is the
+            // only place to read, so it keeps its line.
+            entry.kind === "cast"
+              ? el("span", {
+                  class: "gf-turn-detail",
+                  text: `Charging · ${entry.abilityName ?? "Ability"}`,
+                })
+              : null,
           ],
         }),
         el("span", {

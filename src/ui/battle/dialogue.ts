@@ -12,6 +12,18 @@ export interface DialogueOptions {
 const ADVANCE_KEYS = new Set(["Enter", " "]);
 
 /**
+ * What separates a scene from a shout across the yard, decided off what
+ * `data/encounters/*.json` actually contains: trigger dialogue carries no
+ * importance flag, but it does carry a line count, and the split is clean. Every
+ * single-line trigger in the campaign is a battlefield callout — "Down the rail,
+ * now", "The cell is going up", "The west main just went out" — and every
+ * exchange of two or more is a scene with a speaker turn in it. So a scene
+ * dominates the frame and a callout stays a card, and the rule is a count rather
+ * than a schema change nobody would fill in twice.
+ */
+const isScene = (lines: readonly unknown[]): boolean => lines.length > 1;
+
+/**
  * Speaker plate plus per-character reveal. The caller pumps `tick(deltaMs)`
  * (rAF in the browser, explicit steps in tests) so nothing here reads a clock.
  */
@@ -100,6 +112,10 @@ export class DialogueBox implements Component<DialogueLine[]> {
     this.revealed = 0;
     this.elapsed = 0;
     this.el.classList.toggle("is-hidden", lines.length === 0);
+    // If the dialogue matters it commands the frame until it does not: a scene
+    // gets the big card, the big portrait plate and a scrim over the field, and
+    // gives all of it back the moment the last line is out.
+    this.el.classList.toggle("is-scene", isScene(lines));
     this.render();
   }
 
@@ -141,6 +157,7 @@ export class DialogueBox implements Component<DialogueLine[]> {
 
   close(): void {
     this.el.classList.add("is-hidden");
+    this.el.classList.remove("is-scene");
     this.intents.endDialogue();
     this.options.onFinished?.();
   }
@@ -175,8 +192,9 @@ export class DialogueBox implements Component<DialogueLine[]> {
     this.countEl.textContent =
       this.lines.length > 1 ? `${this.index + 1} / ${this.lines.length}` : "";
     this.advanceEl.classList.toggle("is-ready", !this.isRevealing);
+    // The one slot that shows the whole 4:5 plate rather than the head chip.
     this.portraitSlot.replaceChildren(
-      portrait(line.portraitId, line.speaker, { size: "large" }),
+      portrait(line.portraitId, line.speaker, { size: "large", crop: "plate" }),
     );
   }
 }

@@ -689,6 +689,33 @@
   display: none;
 }
 
+/* A delivered plate (src/ui/portraits.ts) takes the card's face and the monogram
+   stand-in stops being drawn. One asset serves every slot: the 4:5 slots show
+   the whole plate, and the square ones cut the head chip out of it — the rect
+   art-src/PORTRAIT_BRIEFS.md fixes, (32, 16, 64, 64) of the 128 x 160, expressed
+   as fractions of the slot so a 22px queue chip and an 80px record head are the
+   same crop at two sizes. The chip is a crop, not a second asset. */
+.gf-portrait.is-painted {
+  background-image: var(--gf-portrait-art);
+  background-repeat: no-repeat;
+  image-rendering: auto;
+}
+
+.gf-portrait.is-painted::before,
+.gf-portrait.is-painted .gf-portrait-initials {
+  display: none;
+}
+
+.gf-portrait.is-painted.is-chip {
+  background-size: calc(var(--gf-portrait-size) * 2) calc(var(--gf-portrait-size) * 2.5);
+  background-position: calc(var(--gf-portrait-size) * -0.5) calc(var(--gf-portrait-size) * -0.25);
+}
+
+.gf-portrait.is-painted.is-plate {
+  background-size: 100% 100%;
+  background-position: 0 0;
+}
+
 /* ==================================================================== menus */
 
 .gf-menu-stack {
@@ -699,7 +726,7 @@
 }
 
 .gf-menu {
-  min-width: 190px;
+  min-width: 240px;
   background-color: var(--gf-panel);
   background-image: var(--gf-tex-grain), var(--gf-sheen);
   background-size: 140px 140px, 100% 100%;
@@ -926,19 +953,134 @@
      3. the queue (right) and the inspect card (top-left) — reference only
      4. the mode bar (bottom) — what the game is asking for, always announced */
 
+/* Scale: a form is read at desk distance, a field instrument at arm's length.
+   The battle frame overrides the type tokens rather than having each panel
+   override its own sizes — every component in here already reads them, so one
+   block moves the whole HUD together and the between-battle pages keep §2's
+   scale, which is the distance they are actually read at. Reading text goes up
+   about a quarter; the figures the player decides on go up by half. The density
+   that made the old frame unreadable came out in *rows*, not in points: a CT
+   meter the queue was already printing in ticks, a job line on every queue row,
+   an absolute facing on a card that is not the actor's. */
 .gf-battle-hud {
+  --gf-t-100: 12px; /* serials, tick columns */
+  --gf-t-200: 14px; /* labels, plate titles */
+  --gf-t-300: 16px; /* base */
+  --gf-t-400: 20px; /* panel subject */
+  --gf-t-500: 28px; /* the figure the decision turns on */
+  --gf-t-600: 34px; /* the takeover's ability name */
+  --gf-t-700: 44px; /* the hit chance, the biggest figure in the frame */
+  font-size: var(--gf-t-300);
   display: grid;
-  grid-template-columns: minmax(260px, 22vw) minmax(0, 1fr) minmax(210px, 16vw);
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(330px, 24vw) minmax(0, 1fr) minmax(286px, 20vw);
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto auto;
   grid-template-areas:
     "inspect notice   clock"
     "inspect .        clock"
     "order   forecast clock"
+    "stage   stage    clock"
     "dialog  dialog   dialog"
     "mode    mode     mode";
   gap: var(--gf-s-2) var(--gf-s-3);
   align-items: start;
   min-height: 66vh;
+}
+
+/* One step down on a short window. The frame's job is to be readable at arm's
+   length, and 1000px of height is what the reference viewport gives it; at 800
+   the left column has to hold an inspect card, an acting card and a menu, and the
+   honest answer is a smaller step rather than a clipped card. Still well above
+   §2's desk-distance scale in every slot. */
+@media (max-height: 900px) {
+  .gf-battle-hud {
+    /* Four px between rows rather than eight: twenty px of the frame back, spent
+       on the cards rather than on the air between them. */
+    gap: var(--gf-s-1) var(--gf-s-3);
+    --gf-t-100: 11px;
+    --gf-t-200: 13px;
+    --gf-t-300: 15px;
+    --gf-t-400: 18px;
+    --gf-t-500: 24px;
+    --gf-t-600: 28px;
+    --gf-t-700: 36px;
+  }
+
+  .gf-unit-head .gf-portrait {
+    --gf-portrait-size: 46px;
+  }
+
+  .gf-turn-entry .gf-portrait {
+    --gf-portrait-size: 28px;
+  }
+
+  /* And the left column gives up rows rather than points. What goes is what the
+     frame says twice: the acting unit's absolute facing (its sprite, and the
+     facing prompt when it matters) and the vertical air around figures that are
+     still 24px. The hovered card is the one that has to
+     be smallest — it is reference, it appears over the field, and the acting card
+     under it is the one being decided from. */
+  .gf-battle-hud .gf-unit-facing {
+    display: none;
+  }
+
+  .gf-battle-hud .gf-unit-head {
+    padding: var(--gf-s-2) var(--gf-s-3);
+  }
+
+  .gf-battle-hud .gf-unit-readout {
+    padding: var(--gf-s-2) var(--gf-s-3);
+    gap: var(--gf-s-1);
+  }
+
+  .gf-battle-hud .gf-unit-readout .gf-meter {
+    height: 9px;
+  }
+
+  .gf-battle-hud .gf-gauge {
+    padding: 1px var(--gf-s-1) 3px;
+  }
+
+  .gf-battle-hud .gf-unit-panel.is-inspect .gf-unit-head .gf-portrait {
+    --gf-portrait-size: 38px;
+  }
+
+  .gf-battle-hud .gf-unit-panel.is-inspect .gf-unit-bar > .gf-field-value {
+    font-size: var(--gf-t-400);
+  }
+
+  .gf-battle-hud .gf-unit-panel.is-inspect .gf-unit-readout .gf-meter {
+    height: 6px;
+  }
+
+  .gf-battle-hud .gf-unit-panel.is-inspect .gf-gauge-value {
+    font-size: var(--gf-t-300);
+  }
+
+  .gf-battle-hud .gf-order .gf-menu-entry {
+    padding: 3px var(--gf-s-3);
+  }
+
+  .gf-battle-hud .gf-panel-title .gf-plate-title {
+    font-size: var(--gf-t-200);
+  }
+
+  /* One line, not two: the ability and when it lands read across. */
+  .gf-battle-hud .gf-unit-charging {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--gf-s-2);
+  }
+
+  .gf-battle-hud .gf-unit-charging-when {
+    margin-left: auto;
+  }
+}
+
+/* The nameplates head panels whose figures grew; a 14px title over a 28px
+   readout reads as a caption on somebody else's panel. */
+.gf-battle-hud .gf-plate-title {
+  font-size: var(--gf-t-300);
 }
 
 .gf-battle-hud > .gf-unit-panel.is-inspect {
@@ -966,6 +1108,28 @@
   justify-self: end;
 }
 
+/* The confirm moment: the forecast stops being a side panel and takes the whole
+   foot of the frame, so the two parties and the numbers between them are the
+   only thing being read (UI_DESIGN §8a). It goes back to the corner the instant
+   the order is sent. */
+.gf-battle-hud > .gf-forecast.is-armed {
+  grid-area: stage;
+  align-self: end;
+  justify-self: stretch;
+  width: 100%;
+  max-width: none;
+}
+
+/* And the orders stand down for it, the way FFT's bottom bar replaces the menu
+   while it asks. Nothing is lost: the actor's name, job and condition are in the
+   bar's own panel, Withdraw is beside the stamp, and the menu comes back with
+   the frame the moment the order is sent or withdrawn. Without this the bar is a
+   sixth row on a frame that has no room for one, and the mode bar — the thing
+   that says what the game is waiting for — goes off the bottom. */
+.gf-battle-hud:has(> .gf-forecast.is-armed) > .gf-order {
+  display: none;
+}
+
 .gf-battle-hud > .gf-notice-slot {
   grid-area: notice;
   justify-self: center;
@@ -986,7 +1150,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-width: 340px;
+  max-width: 420px;
 }
 
 .gf-order > .gf-unit-panel {
@@ -1016,8 +1180,8 @@
 /* --- unit panel ----------------------------------------------------------- */
 
 .gf-unit-panel {
-  min-width: 240px;
-  max-width: 340px;
+  min-width: 300px;
+  max-width: 420px;
 }
 
 .gf-unit-panel.is-empty {
@@ -1033,15 +1197,19 @@
 
 .gf-unit-head {
   display: flex;
-  gap: var(--gf-s-2);
+  gap: var(--gf-s-3);
   align-items: center;
-  padding: var(--gf-s-2) var(--gf-s-3);
+  padding: var(--gf-s-3);
   border-bottom: 1px solid var(--gf-ink);
   box-shadow: var(--gf-groove);
 }
 
 .gf-unit-ident {
   min-width: 0;
+}
+
+.gf-unit-head .gf-portrait {
+  --gf-portrait-size: 56px;
 }
 
 .gf-unit-name {
@@ -1065,9 +1233,9 @@
 }
 
 .gf-unit-readout {
-  padding: var(--gf-s-2) var(--gf-s-3);
+  padding: var(--gf-s-3);
   display: grid;
-  gap: 5px;
+  gap: var(--gf-s-2);
 }
 
 .gf-unit-bar {
@@ -1078,21 +1246,95 @@
   row-gap: 3px;
 }
 
+/* The number, not the label: a condition readout is the one thing on this card
+   the player reads across the room, so it takes the display step and the punched
+   recess, and the label beside it stays a label. */
 .gf-unit-bar > .gf-field-value {
-  padding: 0 5px;
+  padding: 0 var(--gf-s-2);
+  font-size: var(--gf-t-500);
+  line-height: 1.05;
+  color: var(--gf-text);
   background: rgba(11, 13, 16, 0.42);
   box-shadow: var(--gf-inset);
   text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
 }
 
-.gf-unit-disposition {
+.gf-unit-bar > .gf-field-label {
+  align-self: end;
+  padding-bottom: 3px;
+}
+
+.gf-unit-readout .gf-meter {
+  height: 12px;
+}
+
+/* A committed charge, on the card the player is already reading. Flux colour,
+   because a cast in flight is flux-borne state and the queue paints it the same
+   way (UI_DESIGN §5). */
+.gf-unit-charging {
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr;
-  gap: var(--gf-s-1);
+  grid-template-columns: auto 1fr;
+  gap: var(--gf-s-2);
+  align-items: baseline;
   margin-top: 4px;
+  padding: 4px 0 0;
   border-top: 1px solid var(--gf-ink);
   box-shadow: var(--gf-groove-top);
-  padding-top: 6px;
+}
+
+.gf-unit-charging .gf-field-value {
+  color: var(--gf-flux);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-300);
+  font-weight: 600;
+}
+
+.gf-unit-charging-when {
+  grid-column: 1 / -1;
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gf-dim);
+}
+
+/* Three figures the player reads rather than watches, cut into the plate as one
+   strip: the clock, and the pair the Assay files on everyone (UI_DESIGN §6). */
+.gf-unit-gauges {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 1px;
+  margin-top: var(--gf-s-1);
+  background: var(--gf-ink);
+  box-shadow: var(--gf-inset);
+}
+
+.gf-gauge {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  padding: 3px var(--gf-s-1) var(--gf-s-1);
+  background: var(--gf-trough);
+}
+
+.gf-gauge-label {
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  color: var(--gf-dim);
+}
+
+.gf-gauge-value {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-400);
+  line-height: 1.1;
+  color: var(--gf-text);
+  text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
+}
+
+.gf-unit-panel.is-machine .gf-gauge-value {
+  color: var(--gf-operable-lit);
 }
 
 .gf-chip-row {
@@ -1179,7 +1421,7 @@
 /* --- turn order: a numbered queue, one Now ------------------------------- */
 
 .gf-turn-order {
-  min-width: 200px;
+  min-width: 268px;
 }
 
 .gf-turn-list {
@@ -1192,10 +1434,10 @@
 
 .gf-turn-entry {
   display: grid;
-  grid-template-columns: 16px 26px 1fr auto;
+  grid-template-columns: 20px 34px 1fr auto;
   align-items: center;
-  gap: var(--gf-s-1);
-  padding: 4px var(--gf-s-2);
+  gap: var(--gf-s-2);
+  padding: 5px var(--gf-s-2);
   border-top: 1px solid var(--gf-ink);
   box-shadow: var(--gf-groove-top);
   transition: background-color var(--gf-hover) ease-out;
@@ -1212,7 +1454,7 @@
 
 .gf-turn-index {
   font-family: var(--gf-face-ledger);
-  font-size: var(--gf-t-100);
+  font-size: var(--gf-t-200);
   color: var(--gf-off);
 }
 
@@ -1225,7 +1467,7 @@
 }
 
 .gf-turn-entry .gf-portrait {
-  --gf-portrait-size: 22px;
+  --gf-portrait-size: 34px;
 }
 
 .gf-turn-entry.is-now {
@@ -1254,7 +1496,9 @@
 }
 
 .gf-turn-name {
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-300);
+  font-weight: 600;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1270,11 +1514,11 @@
 
 .gf-turn-ticks {
   font-family: var(--gf-face-ledger);
-  font-size: var(--gf-t-100);
+  font-size: var(--gf-t-300);
   color: var(--gf-dim);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 0 4px;
+  padding: 0 var(--gf-s-1);
   background: rgba(11, 13, 16, 0.4);
   box-shadow: var(--gf-inset);
 }
@@ -1324,7 +1568,7 @@
   justify-content: space-between;
   gap: var(--gf-s-2);
   padding: 2px var(--gf-s-2);
-  font-size: var(--gf-t-100);
+  font-size: var(--gf-t-200);
 }
 
 .gf-power-name {
@@ -1413,6 +1657,8 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   flex: none;
+  font-size: var(--gf-t-200);
+  font-weight: 700;
 }
 
 /* Copper at rest — the bus is machinery like any other. */
@@ -1514,8 +1760,8 @@
 /* --- forecast: the consequence, and the one stamp that commits it -------- */
 
 .gf-forecast {
-  min-width: 300px;
-  max-width: 380px;
+  min-width: 340px;
+  max-width: 460px;
 }
 
 .gf-forecast.is-empty {
@@ -1553,6 +1799,186 @@
   font-size: var(--gf-t-100);
 }
 
+/* --- the confirm takeover: two parties, and the numbers between them ------ */
+/* FFT hands its bottom bar to the confirmation; Tactics Ogre Reborn faces the
+   two panels across the figures. Same construction language as everything else:
+   the parties are plate, the exchange between them is a trough cut into it, and
+   the stamp is struck under the middle. */
+
+.gf-forecast-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 1.1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.gf-forecast-party {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gf-s-4);
+  padding: var(--gf-s-3) var(--gf-s-4);
+  min-width: 0;
+}
+
+/* Facing inward: the actor reads left-to-right from the outer edge, the target
+   right-to-left from theirs, and the exchange is what they are looking at. */
+.gf-forecast-party.is-target {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.gf-forecast-party-ident {
+  flex: 1;
+  min-width: 0;
+}
+
+.gf-forecast-party-name {
+  margin: 0;
+  font-size: var(--gf-t-400);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-shadow: var(--gf-engrave);
+}
+
+.gf-forecast-party.is-object .gf-forecast-party-name {
+  color: var(--gf-operable-lit);
+}
+
+.gf-forecast-party-job {
+  margin: 0;
+  font-size: var(--gf-t-200);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  color: var(--gf-dim);
+}
+
+.gf-forecast-party-hp {
+  flex: none;
+  white-space: nowrap;
+}
+
+.gf-forecast-party-hp > .gf-field-value {
+  white-space: nowrap;
+}
+
+.gf-forecast-party .gf-portrait {
+  --gf-portrait-size: 56px;
+}
+
+.gf-forecast-party.is-none {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--gf-s-1);
+  text-align: right;
+}
+
+/* The exchange is a gauge window: every figure in it is punched, not printed. */
+.gf-forecast-exchange {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  padding: var(--gf-s-3) var(--gf-s-4);
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+  border-left: 1px solid var(--gf-ink);
+  border-right: 1px solid var(--gf-ink);
+}
+
+.gf-forecast-exchange .gf-forecast-ability {
+  text-align: center;
+}
+
+.gf-forecast.is-armed .gf-forecast-ability {
+  font-size: var(--gf-t-500);
+}
+
+/* The parties are named, not shouted: 20px, on one line, because the figure the
+   decision turns on is in the middle and a 28px name wrapping to two lines beside
+   it competes with the thing it is standing next to. */
+.gf-forecast.is-armed .gf-forecast-party-name {
+  font-size: var(--gf-t-400);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gf-forecast.is-armed .gf-forecast-party-hp > .gf-field-value {
+  font-size: var(--gf-t-400);
+}
+
+.gf-forecast-exchange .gf-forecast-hit {
+  gap: var(--gf-s-3);
+}
+
+/* The one figure the whole decision turns on, and the largest thing in the
+   frame while the stamp is up. */
+.gf-forecast-exchange .gf-forecast-hit .gf-field-value {
+  font-size: var(--gf-t-700);
+  line-height: 1.05;
+  padding: 0 var(--gf-s-3);
+}
+
+.gf-forecast-exchange .gf-forecast-hit .gf-field-label,
+.gf-forecast-exchange .gf-forecast-damage .gf-field-label {
+  font-size: var(--gf-t-200);
+}
+
+.gf-forecast-exchange .gf-forecast-damage .gf-field-value {
+  font-size: var(--gf-t-500);
+}
+
+.gf-forecast-exchange .gf-forecast-statuses,
+.gf-forecast-exchange .gf-forecast-effects {
+  justify-content: center;
+  justify-items: center;
+}
+
+/* Narrower than the reference frame, the two panels give up the record card's
+   size before they give up a name. */
+@media (max-width: 1440px) {
+  .gf-forecast-party {
+    gap: var(--gf-s-3);
+  }
+
+  .gf-forecast-party .gf-portrait {
+    --gf-portrait-size: 44px;
+  }
+}
+
+.gf-forecast.is-armed .gf-forecast-footer {
+  justify-content: center;
+  gap: var(--gf-s-5);
+}
+
+.gf-forecast.is-armed .gf-forecast-commit {
+  min-width: 168px;
+}
+
+/* An area order's remaining rows run underneath the stage rather than folding
+   away: the panel never hides what the order does (UI_DESIGN §8). They are rows,
+   so they keep a row's measure instead of stretching a name and a figure to
+   opposite ends of the frame. */
+.gf-forecast.is-armed .gf-forecast-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, max-content));
+  justify-content: center;
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+}
+
+.gf-forecast.is-armed .gf-forecast-target {
+  border-top: none;
+  box-shadow: none;
+}
+
+.gf-forecast.is-armed .gf-forecast-numbers {
+  flex: 0 1 auto;
+  min-width: 300px;
+}
+
 .gf-forecast-targets {
   list-style: none;
   margin: 0;
@@ -1578,7 +2004,7 @@
 
 .gf-forecast-target-name {
   margin: 0 0 2px;
-  font-size: var(--gf-t-300);
+  font-size: var(--gf-t-400);
   font-weight: 600;
   letter-spacing: 0.03em;
 }
@@ -1598,7 +2024,7 @@
 }
 
 .gf-forecast-damage .gf-field-value {
-  font-size: var(--gf-t-300);
+  font-size: var(--gf-t-400);
 }
 
 .gf-forecast-statuses {
@@ -1614,8 +2040,8 @@
   border: 1px solid var(--gf-ink);
   box-shadow: inset 0 0 0 1px var(--gf-flux), var(--gf-fitting);
   background: rgba(11, 13, 16, 0.35);
-  padding: 0 4px;
-  font-size: var(--gf-t-100);
+  padding: 1px var(--gf-s-1);
+  font-size: var(--gf-t-200);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gf-flux);
@@ -1639,7 +2065,7 @@
 
 .gf-forecast-effect {
   font-family: var(--gf-face-ledger);
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-300);
   color: var(--gf-good);
   padding-left: var(--gf-s-2);
   position: relative;
@@ -1663,7 +2089,7 @@
 
 .gf-forecast-modifiers {
   margin: var(--gf-s-1) 0 0;
-  font-size: var(--gf-t-100);
+  font-size: var(--gf-t-200);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--gf-dim);
@@ -1731,13 +2157,13 @@
   border: 1px solid var(--gf-ink);
   border-top: 2px solid var(--gf-bronze-300);
   box-shadow: var(--gf-bezel), var(--gf-drop);
-  min-height: 28px;
+  min-height: 38px;
 }
 
 /* The mode is the one word the case is always showing: a struck tab, lit in
    whatever the mode's own colour is. */
 .gf-mode-name {
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-300);
   font-weight: 700;
   letter-spacing: var(--gf-track-plate);
   text-transform: uppercase;
@@ -1782,7 +2208,7 @@
 .gf-mode-ask {
   flex: 1;
   min-width: 0;
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-300);
   color: var(--gf-text);
   letter-spacing: 0.03em;
   white-space: nowrap;
@@ -1791,8 +2217,8 @@
 }
 
 .gf-mode-withdraw {
-  padding: 2px var(--gf-s-3);
-  font-size: var(--gf-t-100);
+  padding: 3px var(--gf-s-3);
+  font-size: var(--gf-t-200);
 }
 
 .gf-mode-withdraw[hidden] {
@@ -1810,10 +2236,10 @@
 }
 
 .gf-mode-orbit-step {
-  padding: 2px var(--gf-s-2);
-  font-size: var(--gf-t-200);
+  padding: 3px var(--gf-s-2);
+  font-size: var(--gf-t-300);
   line-height: 1.1;
-  min-width: 22px;
+  min-width: 28px;
 }
 
 .gf-mode-keys {
@@ -1851,14 +2277,14 @@
 /* --- notice: refusals and acknowledgements, non-modal --------------------- */
 
 .gf-notice-slot {
-  min-height: 24px;
+  min-height: 30px;
   display: flex;
   justify-content: center;
 }
 
 .gf-notice {
   margin: 0;
-  padding: 4px var(--gf-s-4);
+  padding: var(--gf-s-1) var(--gf-s-4);
   background-color: var(--gf-panel);
   background-image: var(--gf-tex-grain), var(--gf-sheen);
   background-size: 140px 140px, 100% 100%;
@@ -1867,7 +2293,7 @@
   box-shadow:
     inset 0 0 0 1px var(--gf-off), var(--gf-fitting), var(--gf-drop);
   text-shadow: 0 1px 0 rgba(11, 13, 16, 0.8);
-  font-size: var(--gf-t-200);
+  font-size: var(--gf-t-300);
   letter-spacing: 0.04em;
   color: var(--gf-text);
   opacity: 0;
@@ -1922,6 +2348,66 @@
 .gf-dialogue.is-hidden {
   display: none;
 }
+
+/* --- a scene, which dominates the frame until it does not ------------------ */
+/* Multi-line trigger dialogue is a scene; a single line is a shout across the
+   yard (`isScene` in battle/dialogue.ts records why the count is the rule). A
+   scene puts a scrim over the field, stands the rest of the case down, and
+   doubles the card and its portrait plate. It is all one class, so the frame
+   comes back whole the moment the last line is out. */
+.gf-battle-hud:has(> .gf-dialogue.is-scene:not(.is-hidden))::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: rgba(11, 13, 16, 0.68);
+  pointer-events: none;
+}
+
+.gf-battle-hud:has(> .gf-dialogue.is-scene:not(.is-hidden)) > *:not(.gf-dialogue) {
+  opacity: 0.3;
+  transition: opacity var(--gf-hover) ease-out;
+}
+
+/* The scene leaves the grid and lies over the foot of the case: a card this size
+   in the dialogue row would push the mode bar off the bottom of a 1000px frame,
+   and every panel it would have displaced is at 0.3 opacity behind it anyway.
+   Nothing else in the HUD moves when a scene opens or closes — which is the
+   other half of getting out of the way. */
+.gf-dialogue.is-scene {
+  position: fixed;
+  z-index: 1;
+  left: var(--gf-s-3);
+  right: var(--gf-s-3);
+  bottom: var(--gf-s-3);
+  min-height: min(346px, 42vh);
+  gap: var(--gf-s-5);
+  padding: var(--gf-s-4) var(--gf-s-5);
+}
+
+/* 256 x 320 — a clean 2x of the in-game plate, still 4:5, still cut at the
+   corner, and exactly the resolution PORTRAIT_BRIEFS ships the texture at. It
+   gives that up for height rather than for aspect on a short window: the crop
+   contract is the ratio, not the pixel count. */
+.gf-dialogue.is-scene .gf-dialogue-portrait .gf-portrait {
+  --gf-portrait-size: min(256px, 30vh);
+  height: calc(var(--gf-portrait-size) * 1.25);
+}
+
+.gf-dialogue.is-scene .gf-dialogue-portrait .gf-portrait-initials {
+  font-size: calc(var(--gf-portrait-size) * 0.34);
+}
+
+.gf-dialogue.is-scene .gf-dialogue-speaker {
+  font-size: var(--gf-t-500);
+  padding: 4px var(--gf-s-6) 4px var(--gf-s-4);
+}
+
+.gf-dialogue.is-scene .gf-dialogue-text {
+  font-size: 25px;
+  line-height: 1.6;
+}
+
 
 .gf-dialogue:hover {
   box-shadow:
@@ -1986,8 +2472,8 @@
 
 .gf-dialogue-text {
   font-family: var(--gf-face-record);
-  font-size: 17px;
-  line-height: 1.6;
+  font-size: 21px;
+  line-height: 1.58;
   margin: 0;
   max-width: 68ch;
   color: var(--gf-text);

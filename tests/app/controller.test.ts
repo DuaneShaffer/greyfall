@@ -683,3 +683,94 @@ describe("the move preview", () => {
     expect(h.renderer.movePreview).toBeNull();
   });
 });
+
+/**
+ * FFT's telegraph and no more of it: a cast the enemy has *committed* is a
+ * visible fact — a mark under the caster, the landing tiles when the player asks
+ * about that unit, and the card saying what lands and when. Nothing here reports
+ * an intent nobody has staged, which is the Into the Breach line the owner drew.
+ */
+describe("a charging cast on the field", () => {
+  /** A conduit whose only order is a cast slow enough to still be in flight. */
+  function chargeHarness(): Harness {
+    const base = testContent();
+    const rigBurst = base.abilities["rig-burst"];
+    if (rigBurst === undefined || rigBurst.slot !== "action") {
+      throw new Error("bench rig-burst missing");
+    }
+    // castSpeed 4 needs 25 ticks; the enemy's next turn is ten away, so the
+    // charge is still pending while somebody else has the floor.
+    const slow = { ...rigBurst, id: "slow-burst", name: "Slow Burst", castSpeed: 4 };
+    const encounter = yardEncounter(base, {
+      id: "e-charge-telegraph",
+      enemies: [enemyAt(enforcer("mark", "Mark"), { x: 5, y: 0 }, "south")],
+      triggers: [],
+    });
+    const content = {
+      ...testContent([encounter]),
+      abilities: { ...base.abilities, "slow-burst": slow },
+    };
+    const caster: Unit = { ...VALE, learnedAbilityIds: ["slow-burst"] };
+    const battle = createBattle(content, "e-charge-telegraph", [caster], [
+      { unitId: "vale", position: { x: 1, y: 4 }, facing: "north" },
+    ]);
+    const renderer = fakeRenderer();
+    const ui = fakeUi();
+    const controller = new BattleController({
+      state: battle.state,
+      events: battle.events,
+      renderer: renderer.port,
+      ui: ui.port,
+      ai: stubAiCommand,
+    });
+    return { controller, renderer, ui };
+  }
+
+  it("marks the caster, paints the landing tiles on request, and dates the cast", () => {
+    const h = chargeHarness();
+    h.controller.start();
+    runUntilPlayer(h, "vale");
+    expect(h.renderer.highlights.has("charging")).toBe(false);
+
+    h.controller.intents.selectAbility("vale", "slow-burst");
+    h.controller.intents.confirmTarget("vale", "slow-burst", {
+      kind: "object",
+      objectId: "yard-cell",
+    });
+    expect(h.controller.state.charges).toHaveLength(1);
+
+    // The mark is on the caster's tile, and it is a mark rather than a wash: the
+    // tile is still whatever the move or aim overlay is saying about it.
+    expect(h.renderer.highlights.get("charging")).toEqual([{ x: 1, y: 4 }]);
+    // Landing tiles are the answer to a question the player asked, not a
+    // permanent overlay of everything in flight.
+    expect(h.renderer.highlights.has("charge-landing")).toBe(false);
+
+    h.controller.intents.inspectUnit("vale");
+    expect(h.renderer.highlights.get("charge-landing")?.length).toBeGreaterThan(0);
+    expect(h.ui.latest()?.inspected).toMatchObject({
+      charging: { abilityName: "Slow Burst" },
+    });
+    const ticks = (h.ui.latest()?.inspected as { charging?: { ticksUntil: number | null } })
+      ?.charging?.ticksUntil;
+    expect(ticks).toBeGreaterThan(0);
+
+    // A charge in flight is a fact about the field, so backing out of a
+    // selection does not unpaint it.
+    h.controller.intents.cancelSelection("vale");
+    expect(h.renderer.highlights.get("charging")).toEqual([{ x: 1, y: 4 }]);
+  });
+
+  it("names the cast in the queue it will resolve in", () => {
+    const h = chargeHarness();
+    h.controller.start();
+    runUntilPlayer(h, "vale");
+    h.controller.intents.selectAbility("vale", "slow-burst");
+    h.controller.intents.confirmTarget("vale", "slow-burst", {
+      kind: "object",
+      objectId: "yard-cell",
+    });
+    const cast = h.ui.latest()?.turnOrder.entries.find((entry) => entry.kind === "cast");
+    expect(cast).toMatchObject({ unitId: "vale", abilityName: "Slow Burst" });
+  });
+});

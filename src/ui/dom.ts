@@ -1,6 +1,8 @@
 // Minimal DOM helpers. The UI layer is vanilla TypeScript over a DOM overlay:
 // tactics menus are finite and keyboard-driven, so a framework buys nothing.
 
+import { portraitAsset } from "./portraits.js";
+
 export type Child = Node | string | null | undefined | false;
 
 export interface ElOptions {
@@ -161,12 +163,21 @@ export interface PortraitOptions {
   jobName?: string | undefined;
   team?: string | undefined;
   size?: "small" | "large" | undefined;
+  /**
+   * Which part of the painted plate a slot shows. Square slots show the head
+   * chip — `CHIP_RECT` out of the plate, per PORTRAIT_BRIEFS' "the chip is a
+   * crop, not an asset" — and the 4:5 slots show the whole plate.
+   */
+  crop?: "chip" | "plate" | undefined;
 }
 
 /**
- * Painted portraits are the open art workstream (ART_DIRECTION §4, A.9). Until
- * they land every portrait slot draws the same designed stand-in: a monogram
- * record card with a job tab and a team-tint rim.
+ * Every portrait slot in the game, at four sizes. When a painted plate has been
+ * filed against the `portraitId` (`src/ui/portraits.ts`) the slot shows it,
+ * cropped per `options.crop`; until then it draws the designed stand-in
+ * (UI_DESIGN §9) — a monogram record card with a job tab and a team-tint rim.
+ * The fallback is not a placeholder to be removed: half this cast will never
+ * have a face, and an unpainted row must still read as a filed record.
  */
 export function portrait(
   portraitId: string | undefined,
@@ -180,10 +191,17 @@ export function portrait(
     .slice(0, 2)
     .toUpperCase();
   const sizeClass = options.size === undefined ? "" : ` is-${options.size}`;
+  const asset = portraitAsset(portraitId);
+  // The 4:5 slots show the whole plate; the square ones show the head chip.
+  const crop = options.crop ?? (options.size === "large" ? "plate" : "chip");
   return el("div", {
-    class: `gf-portrait${sizeClass}`,
+    class: `gf-portrait${sizeClass}${asset === null ? "" : ` is-painted is-${crop}`}`,
     data: { portrait: portraitId ?? "unknown", ...(options.team === undefined ? {} : { team: options.team }) },
-    attrs: { "aria-label": name, role: "img" },
+    attrs: {
+      "aria-label": name,
+      role: "img",
+      ...(asset === null ? {} : { style: `--gf-portrait-art: url("${asset.plate}")` }),
+    },
     children: [
       el("span", { class: "gf-portrait-initials", text: initials }),
       options.jobName === undefined || options.jobName === ""

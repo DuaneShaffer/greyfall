@@ -37,6 +37,7 @@ import { CampaignSession } from "./campaign.js";
 import { CampaignRunner, type BattlePort } from "./campaignRunner.js";
 import { CONTENT, UNITS, campaignById, campaignList } from "./content.js";
 import { BattleController, type RendererPort, type UiPort } from "./controller.js";
+import { loadPortraitArt } from "./portraitArt.js";
 import { loadCampaign, migrateSaves, saveCampaign } from "./save.js";
 import { stubAiCommand } from "./stubAi.js";
 
@@ -53,6 +54,14 @@ const overlayHost: HTMLElement = uiRoot;
 // the key for the campaign it names before anything reads one.
 
 migrateSaves();
+
+// Whatever portrait art has been delivered, filed before anything draws a slot.
+// Silence means every slot is drawing the monogram record card, which is the
+// designed fallback and not a missing asset.
+const paintedPortraits = loadPortraitArt();
+if (paintedPortraits.length > 0) {
+  console.info(`[greyfall] portraits filed: ${paintedPortraits.join(", ")}`);
+}
 
 let session: CampaignSession | null = null;
 let screens: BetweenBattleScreens | null = null;

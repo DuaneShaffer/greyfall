@@ -14,7 +14,10 @@ canonical name in a comment beside each.
 *The chrome* — is how it is built out of materials, and supersedes the flat
 construction §4 and §1 originally described.** Where the two disagree about a
 fill, a border or a shadow, §12 wins; where they disagree about what a panel
-*says* or *does*, §1–11 win, always.
+*says* or *does*, §1–11 win, always. **Section 13 — *The frame at arm's length* —
+is the composition and the scale**: it supersedes §2's type sizes *inside the
+battle frame only*, and it is where the confirm takeover, dialogue dominance, the
+charge telegraph and the portrait registry are specified.
 
 ---
 
@@ -46,7 +49,10 @@ CSS file and no font payload.
 Monospace is **not** the interface font. It is a column alignment tool, used
 where numbers stack.
 
-**Scale** (fixed `px`; this is product UI, not a marketing page — no fluid type):
+**Scale** (fixed `px`; this is product UI, not a marketing page — no fluid type).
+These are the *page* sizes, and they are what the between-battle screens use; the
+battle frame redefines the same tokens one to two steps larger, because it is read
+across a room rather than at a desk (§13.1):
 
 | Token | Size | Role |
 |---|---|---|
@@ -297,6 +303,22 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   nothing to act on — an isolator thrown at a stack of drums — is not lit, is
   refused by name, and costs nothing. A stamp that commits and then does
   nothing is worse than a stamp that is not offered.
+- **The confirm moment takes the frame.** With a target staged and the stamp
+  armed, the forecast is not a side panel: it is a bar across the foot of the
+  frame with the two parties facing each other across the numbers, and the orders
+  stand down for it (§13.3). A preview nobody staged — the Operate cursor — stays
+  the compact panel.
+- **A committed order's numbers live in the corner, not on the stage.** On commit
+  the panel stands back down to the compact side panel, keeping every figure and
+  losing the stamp: the takeover exists to ask a question, and the animation the
+  numbers describe is playing where the bar was (§13.3).
+- **A committed charge is a visible fact; an intent is not.** A charging unit is
+  marked on the field, its landing tiles paint when the player asks about it, and
+  the inspect card says what is charging and when it lands — all off charges the
+  rules have already accepted (§13.5).
+- **Story dialogue commands the frame while it runs.** Multi-line trigger
+  dialogue is a scene and dominates; a single line is a callout and stays a card
+  (§13.4).
 - **A panel never offers what it cannot do — and never hides what it can.** A
   forecast with no targets says so and its stamp is dead; a committed forecast
   keeps its numbers and loses its stamp, and holds them through the redraw that
@@ -322,8 +344,10 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
 
 ## 9. Placeholder portraits
 
-Painted portraits are the open art workstream (ART_DIRECTION §4, A.9). Until they
-land, `portrait()` draws a designed stand-in rather than hatching: a monogram
+Painted portraits are the open art workstream (ART_DIRECTION §4, A.9). They land
+in the `portraitId`-keyed registry `portrait()` reads first
+(`src/ui/portraits.ts`, §13.6); until a character has one — and most never
+will — `portrait()` draws a designed stand-in rather than hatching: a monogram
 record card — initials in the stamp face, a job-initial tab, a 1px team-tint rim,
 a punched corner, and a faint photostat grid. Sizes are `small` (22–24px, queue
 rows), default (40px, panels) and `large` (64px, dialogue and records). When real
@@ -650,3 +674,205 @@ because a register is a machine reading itself.
   nameplate spends copper-700 on purpose, because a register is an instrument.
   The affordance colours themselves — copper-500 and copper-300 — barely move,
   and nothing in the chrome names them.
+
+---
+
+# 13. The frame at arm's length
+
+The chrome pass (§12) fixed what the interface is made of. This one fixes what
+it *composes into*: how large it is, how much of it there is, and what happens to
+the frame at the two moments the game is asking for something — a target being
+confirmed, and a scene being played. **Sections 1–11 remain binding on what each
+panel says; §12 remains binding on how it is built. Where §2's type scale and
+§13.1 disagree about a size inside the battle frame, §13.1 wins; everywhere else
+§2 stands.**
+
+The finding this answers, in the owner's words: *"everything reads as too
+small."* It was measured against the genre — FFT and Tactics Ogre Reborn use
+large, chunky type and few words, and a status panel there is a name, three big
+numbers and two bars. Ours was eleven small dense rows. Density was half the
+problem, so half the fix is subtraction.
+
+## 13.1 One scale, declared in one block
+
+`.gf-battle-hud` **redefines the `--gf-t-*` tokens for the battle frame** rather
+than each panel overriding its own sizes. Every component in there already reads
+the tokens, so one block moves the whole HUD together, and the between-battle
+pages — read at page distance, not across a room — keep §2's scale.
+
+| Token | §2 (page) | Battle frame | Role in the frame |
+|---|---|---|---|
+| `--gf-t-100` | 10px | **12px** | tick columns, key hints, serials |
+| `--gf-t-200` | 11.5px | **14px** | labels, nameplates, chips |
+| `--gf-t-300` | 13px | **16px** | base: menu rows, notices, queue names |
+| `--gf-t-400` | 16px | **20px** | panel subject, party names, gauge figures |
+| `--gf-t-500` | 20px | **28px** | HP and Charge — the condition figures |
+| `--gf-t-600` | 24px | **34px** | the ability being confirmed |
+| `--gf-t-700` | 30px | **44px** | the hit chance on the confirm stage |
+
+Reading text is up about a quarter; the figures a decision turns on are up by
+half or more. The rule behind the split: **a figure the player decides on is a
+display number, a word that labels it is not.** HP reads at 28px with its label
+at 14px beside it, and the hit chance at the confirm moment is the largest thing
+in the frame.
+
+The side columns widen to hold it (`minmax(330px, 24vw)` and
+`minmax(286px, 20vw)`), and the sprites are untouched: this is DOM chrome over a
+fixed orthographic board, so growing the panels costs board area and nothing
+else.
+
+**On a window shorter than 900px the frame takes one step down** (base 15px, HP
+24px, hit 36px) and the left column gives up padding and the acting unit's
+absolute facing. That is still well above §2's scale in every slot. The step
+exists because 1280×800 has to hold an inspect card, an acting card and a menu in
+one column, and a smaller step is a better answer than a clipped card.
+
+## 13.2 What was cut, and why cutting was the point
+
+Type got bigger by *subtraction*, not by scrolling. Each of these was a row
+saying something the frame said somewhere else:
+
+- **The CT meter on the unit panels.** The queue beside it prints the same fact
+  in ticks, per unit, ordered. What is left of CT is a figure in the gauge strip.
+- **"No status effects."** A chip, a rule and a strip of padding spent saying a
+  list is empty, which an empty list says by being absent.
+- **The job line on every turn-order row.** The chip's job tab and the inspect
+  card both already carry it. A charging cast keeps its line, because the queue
+  is the only place that fact appears.
+- **`Facing north` on the inspect card.** Facing is the *acting* unit's to
+  change, so it is printed where it is actionable; a hovered unit's facing is on
+  its sprite and the angle that decides a hit is on the forecast.
+
+Two bars, one gauge strip of three figures, and chips only when something is in
+force. `tests/ui/screens.test.ts` holds the meter count, so the CT bar cannot
+come back by accident.
+
+## 13.3 The confirm takeover (§8, extended)
+
+**When a target is staged and the stamp is the next thing the player presses, the
+forecast stops being a side panel and takes the foot of the frame.** A wide bar:
+the actor on one side, the target on the other — record card, name, job, HP with
+its meter — and the exchange between them: the ability, its cost, the hit chance
+at 44px, the damage, the status rolls, the facing and height that produced the
+number. `COMMIT` is the amber stamp, `Withdraw` beside it. The reference is
+Tactics Ogre Reborn's targeting frame; the mechanism is FFT's, which hands its
+bottom bar to the confirmation.
+
+Four rules make it honest rather than decorative:
+
+1. **`ForecastView.armed` is a view-model fact, not a CSS state.** It is true
+   only for an order built from a staged target. Operate has no aim step, so its
+   cursor-rest preview is `armed: false` and stays the compact side panel — the
+   panel never takes the frame for something the player has not chosen.
+2. **The orders stand down for it.** The bar and the order column cannot both
+   have the foot of a 1000px frame, and the actor's name, job and condition have
+   moved into the bar. The menu comes back with the frame the moment the order is
+   sent or withdrawn. Nothing is lost: Withdraw is beside the stamp and in the
+   mode bar, and right-click still cancels.
+3. **The stage stops at the clock column.** The queue is what the player is
+   deciding *against*; a bar that covered it would answer one question by hiding
+   another.
+4. **An area order's other targets run underneath the stage**, at row measure —
+   the primary faces the actor, the rest are listed. A panel never hides what its
+   order does.
+
+**Where a committed order's numbers live.** On commit the panel keeps every
+figure, loses the stamp (`Committed`, and the `FILED` mark), and **stands back
+down to the compact side panel**. The takeover exists to ask a question; once the
+order is away there is no question, and a full-width bar over the field would
+cover the animation the numbers are describing. So: armed → bar, committed →
+corner, and the record holds there until a new order is staged (§8's rule,
+unchanged).
+
+## 13.4 Dialogue dominance, and the line that decides it
+
+**If the dialogue matters it commands the frame until it does not.** A scene gets
+a scrim over the field, the rest of the case at 0.3 opacity, a card at 42vh, a
+portrait plate at 2× the in-game size, and the speaker's name on a bronze tab at
+28px. When the last line is out, the class comes off and every one of those goes
+with it.
+
+**The rule for what counts, decided from what `data/encounters/*.json` actually
+contains: a trigger with two or more lines is a scene; a single line is a
+callout.** The data carries no importance flag, but the split is clean without
+one — every single-line trigger in the campaign is a shout across the yard
+("Down the rail, now", "The cell is going up", "The west main just went out"),
+and every exchange of two or more has a speaker turn in it. So the rule is a
+count (`isScene` in `src/ui/battle/dialogue.ts`) rather than a schema field
+nobody would fill in twice. If a one-line scene ever needs the big card, that is
+the moment to add the field — and the rule is written down here so it is a
+decision rather than a discovery.
+
+**The scene card leaves the grid** (`position: fixed`, bottom-anchored) rather
+than taking a row. A card that size in the dialogue row pushes the mode bar off
+the bottom of a 1000px frame; and every panel it would have displaced is behind
+it at 0.3 anyway. Nothing else in the HUD moves when a scene opens or closes,
+which is the other half of getting out of the way. Every advance affordance —
+click the card, Enter, Space, the prompt's nudge — and the no-camera-steal rule
+are untouched.
+
+## 13.5 The charge telegraph: FFT's level, not Into the Breach's
+
+A cast the enemy has **committed** is a visible fact; an intent nobody has staged
+is not reported anywhere. That line is deliberate — full intent telegraphs make a
+tactics game a puzzle game — and it is drawn at "committed", so everything here
+reads off `state.charges`, which the turn order was already naming.
+
+Three cues, one source:
+
+1. **A mark under the caster.** An `OVERLOAD_500` tile mark (inset, not a wash)
+   on every charging unit's tile, so the tile underneath is still whatever the
+   move or aim overlay is saying about it. Flux colour, because a cast in flight
+   is flux-borne state (§5) and the queue paints it the same way.
+2. **The landing tiles, when the player asks.** Selecting or hovering the
+   charging unit — on the field or on its turn-order row — paints the cast's
+   affected tiles from `affectedTiles` on the charge's own target. It is the
+   answer to a question, not a permanent overlay of everything in flight.
+3. **The inspect card dates it**: `Charging · Cinder Oil` and `Resolves in 3`,
+   with the tick count read off the same `turnOrderPreview` the queue lists, so
+   the card and the queue can never disagree.
+
+Selection clears do not unpaint the mark: a charge in flight is a fact about the
+field, not something the player staged. A closed field clears both layers, for
+the same reason it empties the queue.
+
+## 13.6 Portrait chips: the plumbing, ahead of the paint
+
+`src/ui/portraits.ts` is a `portraitId`-keyed registry, and `portrait()` reads it
+before it draws anything. When a plate has been filed the slot shows it; when it
+has not, the monogram record card of §9 is drawn — **and that is a shipped
+fallback, not a placeholder**, because a third of the units on a field will never
+be painted.
+
+**One asset per character, never two.** The briefs are explicit that the 32×32
+head chip is a crop rather than a delivery, so every square slot cuts
+`CHIP_RECT` — (32, 16, 64, 64) of the 128×160 — out of the same plate in CSS,
+expressed as fractions of the slot size, and the 4:5 slots show the whole plate.
+A 34px queue chip and an 80px record head are then the same crop at two sizes and
+cannot drift from the dialogue portrait.
+
+`src/app/portraitArt.ts` globs `art/portraits/<portraitId>.png` at build time and
+files whatever is there, the same way `content.ts` globs `data/`. The directory is
+empty today; the console says which plates were filed when it is not. Named cast
+who were missing an id have one (`maren-voss`, `quill`, and `dray` on the
+`watch-sergeant` roster slot, per PORTRAIT_BRIEFS' follow-up 1).
+
+## 13.7 Resolve and Attunement, everywhere a unit is read
+
+They are measured, not hidden (`CREATIVE_BIBLE`; the Assay files them). They now
+print on the acting panel, the inspect card, the unit sheet **and the roster
+record** — the last of which was the hole. On the battle cards they sit in the
+gauge strip beside CT, which is where a static trait belongs next to a clock.
+
+## 13.8 What was verified, and where
+
+Captured off the real app over CDP at the reference **1600×1000** and again at
+**1280×800**, on the Marshaling Yard: the resting orders frame, the confirm
+takeover armed, a scene dominating, and a charging unit's landing tiles with the
+card dating the cast. `docs/media/battle-ui/`.
+
+Measured on every frame, at both sizes: the mode bar's bottom is inside the
+viewport, the inspect card does not collide with the order column, and the
+document never scrolls horizontally. Those three are the frame's fit contract —
+a panel that grew until it pushed the thing that says what the game is waiting
+for off the bottom would be a worse interface than the small one.

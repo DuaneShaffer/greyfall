@@ -39,7 +39,10 @@ describe("UnitStatusPanel", () => {
     expect(text).toContain("Resolve");
     expect(text).toContain("72");
     expect(text).toContain("Attunement");
-    expect(panel.el.querySelectorAll(".gf-meter").length).toBe(3);
+    // Two meters, not three: CT is a figure in the gauge strip now, because the
+    // queue beside this card already prints the same fact in ticks.
+    expect(panel.el.querySelectorAll(".gf-meter").length).toBe(2);
+    expect(panel.el.querySelector(".gf-unit-gauges")?.textContent).toContain("CT");
   });
 
   it("lists statuses with their remaining turns", () => {
@@ -77,6 +80,31 @@ describe("UnitStatusPanel", () => {
     const panel = new UnitStatusPanel();
     panel.update(null);
     expect(panel.el.classList.contains("is-empty")).toBe(true);
+  });
+
+  it("says what a unit is charging and when it lands", () => {
+    const panel = new UnitStatusPanel({ role: "inspect" });
+    panel.update(mockEnemyView());
+    const charging = panel.el.querySelector(".gf-unit-charging")?.textContent ?? "";
+    expect(charging).toContain("Charging");
+    expect(charging).toContain("Overload Cell");
+    expect(charging).toContain("Resolves in 18");
+  });
+
+  it("prints Resolve and Attunement on the inspect card too, not just the actor's", () => {
+    const inspect = new UnitStatusPanel({ role: "inspect" });
+    inspect.update(mockEnemyView());
+    const pair = inspect.el.querySelector(".gf-unit-gauges")?.textContent ?? "";
+    expect(pair).toContain("Resolve");
+    expect(pair).toContain("55");
+    expect(pair).toContain("Attunement");
+    expect(pair).toContain("45");
+  });
+
+  it("prints nothing about charging for a unit that is not", () => {
+    const panel = new UnitStatusPanel();
+    panel.update(mockUnitView());
+    expect(panel.el.querySelector(".gf-unit-charging")).toBeNull();
   });
 });
 
@@ -123,6 +151,11 @@ describe("RosterScreen", () => {
     const detail = screen.el.querySelector(".gf-roster-detail")?.textContent ?? "";
     expect(detail).toContain("Standing");
     expect(detail).toContain("320");
+    // Measured, not hidden: the record prints the pair the Assay filed.
+    expect(detail).toContain("Resolve");
+    expect(detail).toContain("Attunement");
+    expect(screen.el.querySelector(".gf-detail-resolve")?.textContent).toBe("72");
+    expect(screen.el.querySelector(".gf-detail-attunement")?.textContent).toBe("38");
   });
 
   it("carries the chapter's dead beside the living, and never in the list", () => {

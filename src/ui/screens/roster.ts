@@ -162,6 +162,19 @@ export class RosterScreen implements Component<PartyView> {
                     el("dt", { text: `${member.jobName} level` }),
                     el("dd", { text: String(member.jobLevel) }),
                   ]),
+              // Resolve and Attunement are measured, not hidden: everywhere a
+              // unit is read, the record prints what the Assay filed.
+              ...(member.disposition === undefined
+                ? []
+                : [
+                    el("dt", { text: "Resolve" }),
+                    el("dd", { class: "gf-detail-resolve", text: String(member.disposition.resolve) }),
+                    el("dt", { text: "Attunement" }),
+                    el("dd", {
+                      class: "gf-detail-attunement",
+                      text: String(member.disposition.attunement),
+                    }),
+                  ]),
             ],
           }),
           el("p", { class: "gf-hint", text: "Enter opens the unit's record, kit, and jobs." }),

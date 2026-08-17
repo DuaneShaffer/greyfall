@@ -296,6 +296,7 @@ export function mockEnemyView(overrides: Partial<UnitView> = {}): UnitView {
       { id: "mod-1", label: "Phys -3", remainingTurns: 2, direction: "loss" as const },
     ],
     disposition: { resolve: 55, attunement: 45 },
+    charging: { abilityName: "Overload Cell", ticksUntil: 18 },
     ...overrides,
   });
 }
@@ -364,7 +365,17 @@ export function mockActionMenuView(overrides: Partial<ActionMenuView> = {}): Act
 
 export function mockForecastView(overrides: Partial<ForecastView> = {}): ForecastView {
   return {
-    attacker: { unitId: "rowen", name: "Rowen Corvane", portraitId: "rowen", jobName: "Enforcer" },
+    attacker: {
+      unitId: "rowen",
+      name: "Rowen Corvane",
+      portraitId: "rowen",
+      jobName: "Enforcer",
+      hp: 41,
+      maxHp: 58,
+    },
+    // The confirm moment is the one the panel is mostly in; `armed: false` is
+    // the Operate cursor's resting preview.
+    armed: true,
     abilityId: "pin",
     abilityName: "Pin",
     chargeCost: 0,
@@ -373,6 +384,9 @@ export function mockForecastView(overrides: Partial<ForecastView> = {}): Forecas
       {
         unitId: "provocateur-a",
         name: "Provocateur",
+        jobName: "Provocateur",
+        hp: 33,
+        maxHp: 44,
         hitChancePercent: 82,
         damage: { kind: "damage", min: 24, max: 31, damageType: "kinetic" },
         statuses: [{ name: "Stunned", chancePercent: 35 }],
@@ -507,10 +521,10 @@ export function mockPartyView(overrides: Partial<PartyView> = {}): PartyView {
     deployedLimit: 4,
     fallen: mockFallen,
     members: [
-      { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, note: "Deployed" },
-      { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, note: "Deployed" },
-      { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, note: "Deployed" },
-      { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, note: "Downed" },
+      { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, disposition: { resolve: 72, attunement: 38 }, note: "Deployed" },
+      { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, disposition: { resolve: 61, attunement: 30 }, note: "Deployed" },
+      { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, disposition: { resolve: 44, attunement: 78 }, note: "Deployed" },
+      { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, disposition: { resolve: 58, attunement: 26 }, note: "Downed" },
     ],
     ...overrides,
   };
