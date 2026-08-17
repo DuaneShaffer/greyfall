@@ -14,6 +14,10 @@ import {
   mockUnitSheetView,
   mockUnitView,
 } from "../../src/ui/mock.js";
+import {
+  CampaignSelectScreen,
+  type CampaignSelectView,
+} from "../../src/ui/screens/campaignSelect.js";
 import { DeploymentScreen } from "../../src/ui/screens/deployment.js";
 import { EquipmentScreen } from "../../src/ui/screens/equipment.js";
 import { BattleResultsScreen, ChapterCloseScreen } from "../../src/ui/screens/results.js";
@@ -147,6 +151,85 @@ describe("RosterScreen", () => {
     screen.menus.handleKey(key("ArrowDown"));
     screen.menus.handleKey(key("Enter"));
     expect(calls.at(-1)).toEqual({ name: "openLearning", args: ["rowen"] });
+  });
+});
+
+describe("CampaignSelectScreen", () => {
+  const view = (): CampaignSelectView => ({
+    campaigns: [
+      {
+        campaignId: "foundry-chapter",
+        name: "The Foundry Chapter",
+        description: "Rowen Corvane's commission into the House Watch.",
+        encounterCount: 5,
+        file: { engagementsClosed: 2 },
+      },
+      {
+        campaignId: "works-skirmishes",
+        name: "The Works - Skirmishes",
+        description: "Standing engagements in the Corvane works.",
+        encounterCount: 1,
+        file: null,
+      },
+    ],
+  });
+
+  it("lists every campaign and says which has a record on file", () => {
+    const screen = new CampaignSelectScreen();
+    screen.update(view());
+    const entries = [...screen.el.querySelectorAll<HTMLElement>(".gf-menu-entry")];
+    expect(entries.map((node) => node.dataset["entry"])).toEqual([
+      "foundry-chapter",
+      "works-skirmishes",
+    ]);
+    expect(entries[0]?.textContent).toContain("The Foundry Chapter");
+    expect(entries[0]?.textContent).toContain("Filed");
+    expect(entries[1]?.textContent).toContain("New file");
+  });
+
+  it("puts the description, the engagement count, and the record beside the list", () => {
+    const screen = new CampaignSelectScreen();
+    screen.update(view());
+    const detail = screen.el.querySelector(".gf-campaign-detail")?.textContent ?? "";
+    expect(detail).toContain("Rowen Corvane's commission");
+    expect(detail).toContain("5 engagements");
+    expect(detail).toContain("2 of 5 closed");
+    expect(screen.el.querySelector(".gf-campaign-detail .gf-plate-stamp")?.textContent).toBe(
+      "FILED",
+    );
+  });
+
+  it("reads the record of whichever campaign the cursor is on", () => {
+    const screen = new CampaignSelectScreen();
+    screen.update(view());
+    screen.menus.handleKey(key("ArrowDown"));
+    const detail = screen.el.querySelector(".gf-campaign-detail")?.textContent ?? "";
+    expect(detail).toContain("Standing engagements");
+    expect(detail).toContain("1 engagement");
+    expect(detail).not.toContain("1 engagements");
+    expect(detail).toContain("Nothing on file");
+    expect(screen.el.querySelector(".gf-campaign-detail .gf-plate-stamp")?.textContent).toBe("NEW");
+  });
+
+  it("hands the picked campaign's id back, from the keyboard and the mouse", () => {
+    const picked: string[] = [];
+    const screen = new CampaignSelectScreen({ onPick: (id) => picked.push(id) });
+    screen.update(view());
+
+    screen.menus.handleKey(key("Enter"));
+    expect(picked).toEqual(["foundry-chapter"]);
+
+    screen.el
+      .querySelector<HTMLElement>('.gf-menu-entry[data-entry="works-skirmishes"]')!
+      .click();
+    expect(picked).toEqual(["foundry-chapter", "works-skirmishes"]);
+  });
+
+  it("cannot be escaped out of: it is the only way into a campaign", () => {
+    const screen = new CampaignSelectScreen();
+    screen.update(view());
+    screen.menus.handleKey(key("Escape"));
+    expect(screen.menus.depth).toBe(1);
   });
 });
 

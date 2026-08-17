@@ -2219,3 +2219,37 @@
 .gf-toast.is-hidden {
   visibility: hidden;
 }
+
+/* ================================================== the campaign register */
+/* The page the game opens on, before any campaign owns the overlay. Same page
+   shape as the between-battle screens (UI_DESIGN §10) over its own ground. */
+
+.gf-campaign-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  background: var(--gf-ink);
+  pointer-events: auto;
+}
+
+.gf-campaign-boot.is-hidden {
+  display: none;
+}
+
+.gf-campaign-select {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+}
+
+.gf-campaign-detail {
+  min-width: 0;
+}
+
+.gf-campaign-detail .gf-detail-title {
+  margin: 0 0 var(--gf-s-2);
+}

@@ -56,6 +56,8 @@ export interface BetweenBattleHandlers {
   onFormationClosed?(): void;
   save?(): void;
   load?(): void;
+  /** Close this campaign's file and go back to the register. */
+  leaveCampaign?(): void;
 }
 
 const REPLAY_MENU_ID = "replay-engagements";
@@ -431,6 +433,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     if (replay) children.push(button("Return to…", () => this.openReplayMenu(replay)));
     if (handlers.save) children.push(button("Save", handlers.save));
     if (handlers.load) children.push(button("Load", handlers.load));
+    if (handlers.leaveCampaign) children.push(button("Campaigns", handlers.leaveCampaign));
     this.moveOut.addEventListener("click", () => handlers.beginDeployment());
     children.push(this.moveOutReason, this.moveOut);
     replaceChildren(this.bar, children);

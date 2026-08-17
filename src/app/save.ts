@@ -1,12 +1,21 @@
 // Persistence for the between-battle layer. `CampaignState` is already plain
 // JSON with every collection in a stable order, so a save is a versioned
-// envelope around it and nothing more — no migration machinery until there is
-// a second version to migrate from.
+// envelope around it and nothing more.
+//
+// One key per campaign: a chapter and a skirmish are separate files, and
+// opening one must never be able to overwrite the other's record.
 
 import { CAMPAIGN_STATE_VERSION, type CampaignState } from "../core/index.js";
 
 export const SAVE_VERSION = 1;
-export const SAVE_KEY = "greyfall.campaign";
+export const SAVE_KEY_PREFIX = "greyfall.campaign";
+
+/** The single key every campaign shared before saves were filed per campaign. */
+export const LEGACY_SAVE_KEY = "greyfall.campaign";
+
+export function saveKeyFor(campaignId: string): string {
+  return `${SAVE_KEY_PREFIX}.${campaignId}`;
+}
 
 export interface SaveEnvelope {
   saveVersion: number;
@@ -80,17 +89,39 @@ export function decodeSave(text: string): LoadOutcome {
 }
 
 export function saveCampaign(campaign: CampaignState, storage: SaveStorage = defaultStorage()): void {
-  storage.setItem(SAVE_KEY, encodeSave(campaign));
+  storage.setItem(saveKeyFor(campaign.campaignId), encodeSave(campaign));
 }
 
-export function loadCampaign(storage: SaveStorage = defaultStorage()): LoadOutcome {
-  const text = storage.getItem(SAVE_KEY);
+export function loadCampaign(
+  campaignId: string,
+  storage: SaveStorage = defaultStorage(),
+): LoadOutcome {
+  const text = storage.getItem(saveKeyFor(campaignId));
   if (text === null) return { ok: false, reason: "No save found" };
   return decodeSave(text);
 }
 
-export function clearCampaign(storage: SaveStorage = defaultStorage()): void {
-  storage.removeItem(SAVE_KEY);
+export function clearCampaign(campaignId: string, storage: SaveStorage = defaultStorage()): void {
+  storage.removeItem(saveKeyFor(campaignId));
+}
+
+/**
+ * Move a save written under the old shared key to the key for the campaign it
+ * actually names. Returns that campaign id, or null when there was nothing to
+ * move. Idempotent, and deliberately conservative: a legacy blob that will not
+ * decode, or one whose campaign already has a file of its own, is left exactly
+ * where it is rather than discarded.
+ */
+export function migrateSaves(storage: SaveStorage = defaultStorage()): string | null {
+  const legacy = storage.getItem(LEGACY_SAVE_KEY);
+  if (legacy === null) return null;
+  const decoded = decodeSave(legacy);
+  if (!decoded.ok) return null;
+  const key = saveKeyFor(decoded.campaign.campaignId);
+  if (storage.getItem(key) !== null) return null;
+  storage.setItem(key, legacy);
+  storage.removeItem(LEGACY_SAVE_KEY);
+  return decoded.campaign.campaignId;
 }
 
 /** Pretty-printed blob for the export-to-file path. */

@@ -25,11 +25,17 @@ interface Harness {
   deployRequests: number;
   confirmRequests: number;
   replayRequests: string[];
+  leaveRequests: number;
 }
 
 function harness(): Harness {
   const campaign = chapter();
-  const h = { deployRequests: 0, confirmRequests: 0, replayRequests: [] } as unknown as Harness;
+  const h = {
+    deployRequests: 0,
+    confirmRequests: 0,
+    replayRequests: [],
+    leaveRequests: 0,
+  } as unknown as Harness;
   h.session = new CampaignSession({
     campaign,
     content: CONTENT,
@@ -47,6 +53,9 @@ function harness(): Harness {
       h.confirmRequests += 1;
     },
     replayEncounter: (encounterId) => void h.replayRequests.push(encounterId),
+    leaveCampaign: () => {
+      h.leaveRequests += 1;
+    },
   });
   h.screens.attach(document);
   h.screens.showRoster();
@@ -170,6 +179,26 @@ describe("BetweenBattleScreens", () => {
     expect(entry).toBeDefined();
     entry!.click();
     expect(h.replayRequests).toEqual(["e1-marshaling-yard"]);
+  });
+
+  it("offers a way back to the campaign register", () => {
+    const campaigns = [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].find(
+      (node) => node.textContent === "Campaigns",
+    );
+    expect(campaigns).toBeDefined();
+    campaigns!.click();
+    expect(h.leaveRequests).toBe(1);
+  });
+
+  it("leaves the register button off the bar when there is nowhere to go back to", () => {
+    const bare = new BetweenBattleScreens(h.session, {
+      beginDeployment: () => undefined,
+      confirmDeployment: () => undefined,
+    });
+    const labels = [...bare.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].map(
+      (node) => node.textContent,
+    );
+    expect(labels).not.toContain("Campaigns");
   });
 
   it("picks a fielded unit up for re-placement, and withdraws it on demand", () => {

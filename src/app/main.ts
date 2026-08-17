@@ -1,8 +1,12 @@
-// Browser entry: load the chapter, open the between-battle layer, and run the
-// campaign loop — roster, formation, battle, results, roster.
+// Browser entry: open the campaign register, then run the campaign the player
+// picks — roster, formation, battle, results, roster.
 //
 // This module is the only place Three.js, the DOM, and the core all meet; the
 // battle controller and the campaign runner each see them through ports.
+//
+// The renderer, HUD, and end banner are built once and outlive every campaign;
+// the session, the between-battle screens, and the runner belong to whichever
+// campaign is open and are rebuilt when another one is.
 
 import "../ui/styles.css";
 import {
@@ -18,9 +22,11 @@ import { BattleRenderer, attachControls, palette } from "../render/index.js";
 import { viewModelFromGameState } from "../render/adapter.js";
 import {
   BattleHud,
+  CampaignSelectScreen,
   el,
   noopIntents,
   type BattleHudView,
+  type CampaignSelectView,
   type HudMode,
   type MenuDef,
   type NoticeTone,
@@ -29,35 +35,28 @@ import {
 import { BetweenBattleScreens } from "./betweenBattles.js";
 import { CampaignSession } from "./campaign.js";
 import { CampaignRunner, type BattlePort } from "./campaignRunner.js";
-import { CONTENT, UNITS, openingCampaign } from "./content.js";
+import { CONTENT, UNITS, campaignById, campaignList } from "./content.js";
 import { BattleController, type RendererPort, type UiPort } from "./controller.js";
-import { loadCampaign, saveCampaign } from "./save.js";
+import { loadCampaign, migrateSaves, saveCampaign } from "./save.js";
 import { stubAiCommand } from "./stubAi.js";
 
 const canvas = document.getElementById("battle-canvas");
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error("#battle-canvas missing");
-const overlayHost = document.getElementById("ui-root");
-if (!(overlayHost instanceof HTMLElement)) throw new Error("#ui-root missing");
+const uiRoot = document.getElementById("ui-root");
+if (!(uiRoot instanceof HTMLElement)) throw new Error("#ui-root missing");
+// A narrowed `const` loses its narrowing inside a hoisted function declaration,
+// and mounting a campaign's screens happens inside one.
+const overlayHost: HTMLElement = uiRoot;
 
-// --- chapter ----------------------------------------------------------------
+// --- the open campaign ------------------------------------------------------
+// Saves are filed per campaign; a file written before that was true is moved to
+// the key for the campaign it names before anything reads one.
 
-const campaign = openingCampaign();
-const restored = loadCampaign();
-const campaignState =
-  restored.ok && restored.campaign.campaignId === campaign.id
-    ? restored.campaign
-    : createCampaign(campaign, UNITS);
+migrateSaves();
 
-const session = new CampaignSession({
-  campaign,
-  content: CONTENT,
-  state: campaignState,
-  onChange: (next) => {
-    saveCampaign(next);
-    screens.refresh();
-  },
-  onError: (error) => screens.notify(error.message),
-});
+let session: CampaignSession | null = null;
+let screens: BetweenBattleScreens | null = null;
+let runner: CampaignRunner | null = null;
 
 // --- battle layer -----------------------------------------------------------
 
@@ -267,10 +266,12 @@ function clearFieldPreview(): void {
 
 /** Rebuild the preview battle only when the staged formation actually moved. */
 function showFieldPreview(): void {
-  const pending = session.deployment;
-  const view = session.deploymentView();
+  const active = session;
+  if (active === null) return;
+  const pending = active.deployment;
+  const view = active.deploymentView();
   if (pending === null || view === null) return;
-  const placements = session.deploymentPlacements();
+  const placements = active.deploymentPlacements();
   const signature = `${pending.encounterId}|${pending.assignments.join(",")}`;
   if (signature !== previewSignature) {
     previewSignature = signature;
@@ -279,9 +280,9 @@ function showFieldPreview(): void {
       const preview = createBattle(
         CONTENT,
         pending.encounterId,
-        session.deployedParty(),
+        active.deployedParty(),
         placements,
-        session.carriedItems(),
+        active.carriedItems(),
       );
       renderer.buildScene(viewModelFromGameState(preview.state));
     } catch (error) {
@@ -306,7 +307,8 @@ function onTileSelected(tile: TileCoord | null): void {
     controller.onTileClick(tile);
     return;
   }
-  if (tile === null || screens.current !== "formation") return;
+  if (tile === null || session === null || screens === null) return;
+  if (screens.current !== "formation") return;
   const view = session.deploymentView();
   const index = view?.slots.findIndex((slot) => slot.tile.x === tile.x && slot.tile.y === tile.y);
   if (index === undefined || index === -1) {
@@ -316,33 +318,103 @@ function onTileSelected(tile: TileCoord | null): void {
   screens.formation.pickTile(index);
 }
 
-// --- between-battle layer ---------------------------------------------------
+// --- the campaign register --------------------------------------------------
 
-const screens: BetweenBattleScreens = new BetweenBattleScreens(session, {
-  beginDeployment: () => void runner.beginDeployment(),
-  confirmDeployment: () => void runner.confirmDeployment(),
-  replayEncounter: (encounterId) => void runner.replayEncounter(encounterId),
-  onFormationChanged: (placing) => {
-    placingUnitId = placing;
-    showFieldPreview();
-  },
-  onFormationClosed: () => clearFieldPreview(),
-  save: () => {
-    saveCampaign(session.state);
-    screens.notify("Chapter saved.");
-  },
-  load: () => {
-    const loaded = loadCampaign();
-    if (!loaded.ok) {
-      screens.notify(loaded.reason);
-      return;
-    }
-    session.replaceState(loaded.campaign);
-    runner.openRoster();
-  },
+const picker = new CampaignSelectScreen({ onPick: (campaignId) => startCampaign(campaignId) });
+const pickerHost = el("section", {
+  class: "gf-root gf-campaign-boot",
+  children: [picker.el],
 });
 
-const runner = new CampaignRunner({ session, battle: battlePort, screens });
+function registerView(): CampaignSelectView {
+  return {
+    campaigns: campaignList().map((campaign) => {
+      const filed = loadCampaign(campaign.id);
+      return {
+        campaignId: campaign.id,
+        name: campaign.name,
+        description: campaign.description,
+        encounterCount: campaign.encounterIds.length,
+        file: filed.ok
+          ? { engagementsClosed: filed.campaign.completedEncounterIds.length }
+          : null,
+      };
+    }),
+  };
+}
+
+function showRegister(): void {
+  picker.update(registerView());
+  pickerHost.classList.remove("is-hidden");
+  picker.attach(document);
+}
+
+/** Open a campaign on its own record, or on a fresh one if it has none. */
+function startCampaign(campaignId: string): void {
+  const campaign = campaignById(campaignId);
+  closeCampaign();
+  const filed = loadCampaign(campaign.id);
+  picker.menus.detach();
+  pickerHost.classList.add("is-hidden");
+
+  const opened = new CampaignSession({
+    campaign,
+    content: CONTENT,
+    state: filed.ok ? filed.campaign : createCampaign(campaign, UNITS),
+    onChange: (next) => {
+      saveCampaign(next);
+      screens?.refresh();
+    },
+    onError: (error) => screens?.notify(error.message),
+  });
+  session = opened;
+
+  screens = new BetweenBattleScreens(opened, {
+    beginDeployment: () => void runner?.beginDeployment(),
+    confirmDeployment: () => void runner?.confirmDeployment(),
+    replayEncounter: (encounterId) => void runner?.replayEncounter(encounterId),
+    onFormationChanged: (placing) => {
+      placingUnitId = placing;
+      showFieldPreview();
+    },
+    onFormationClosed: () => clearFieldPreview(),
+    save: () => {
+      saveCampaign(opened.state);
+      screens?.notify("Progress filed.");
+    },
+    load: () => {
+      const loaded = loadCampaign(campaign.id);
+      if (!loaded.ok) {
+        screens?.notify(loaded.reason);
+        return;
+      }
+      opened.replaceState(loaded.campaign);
+      runner?.openRoster();
+    },
+    leaveCampaign: () => {
+      closeCampaign();
+      showRegister();
+    },
+  });
+  overlayHost.append(screens.el);
+  screens.attach(document);
+
+  runner = new CampaignRunner({ session: opened, battle: battlePort, screens });
+  runner.start();
+}
+
+/** File the open campaign's record and tear its layer down. */
+function closeCampaign(): void {
+  const active = session;
+  if (active === null) return;
+  saveCampaign(active.state);
+  battlePort.end();
+  clearFieldPreview();
+  screens?.destroy();
+  session = null;
+  screens = null;
+  runner = null;
+}
 
 bannerContinue.addEventListener("click", () => {
   const final = controller?.state;
@@ -353,9 +425,8 @@ bannerContinue.addEventListener("click", () => {
 });
 
 overlayHost.classList.add("gf-root", "is-overlay");
-overlayHost.append(hud.el, banner, screens.el);
+overlayHost.append(hud.el, banner, pickerHost);
 hud.el.classList.add("is-hidden");
-screens.attach(document);
 
 /**
  * Camera keys are the player's whenever nothing on screen is listening for
@@ -366,7 +437,8 @@ screens.attach(document);
 const uiOwnsKeyboard = (): boolean => {
   if (hud.dialogue.isOpen) return true;
   if (!banner.classList.contains("is-hidden")) return true;
-  if (!screens.el.classList.contains("is-hidden")) return true;
+  if (!pickerHost.classList.contains("is-hidden")) return true;
+  if (screens !== null && !screens.el.classList.contains("is-hidden")) return true;
   return controller?.phase === "player";
 };
 
@@ -376,34 +448,44 @@ renderer.start();
 renderer.addFrameHook((delta) => {
   controller?.tick(delta);
   hud.tick(delta * 1000);
-  screens.tick(delta * 1000);
+  screens?.tick(delta * 1000);
 });
 
 window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "x") controller?.skipPresentation();
 });
 
-runner.start();
+showRegister();
 
 /**
- * Debug seam. Agents and humans drive the running chapter from the devtools
+ * Debug seam. Agents and humans drive the running campaign from the devtools
  * console (and over CDP) through this handle; nothing in the app reads it.
+ * `session` and `runner` are getters because both are null until a campaign is
+ * picked and are replaced when another one is.
  */
 declare global {
   interface Window {
     greyfall?: {
       renderer: BattleRenderer;
       hud: BattleHud;
-      session: CampaignSession;
-      runner: CampaignRunner;
+      readonly session: CampaignSession | null;
+      readonly runner: CampaignRunner | null;
       controller: () => BattleController | null;
+      campaigns: () => string[];
+      start: (campaignId: string) => void;
     };
   }
 }
 window.greyfall = {
   renderer,
   hud,
-  session,
-  runner,
+  get session() {
+    return session;
+  },
+  get runner() {
+    return runner;
+  },
   controller: () => controller,
+  campaigns: () => campaignList().map((campaign) => campaign.id),
+  start: (campaignId: string) => startCampaign(campaignId),
 };

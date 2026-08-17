@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { changeJob, equipItem, learnAbility } from "../../src/core/index.js";
 import {
-  SAVE_KEY,
+  changeJob,
+  equipItem,
+  learnAbility,
+  type CampaignState,
+} from "../../src/core/index.js";
+import {
+  LEGACY_SAVE_KEY,
   SAVE_VERSION,
   clearCampaign,
   decodeSave,
@@ -10,9 +15,13 @@ import {
   importSave,
   loadCampaign,
   memoryStorage,
+  migrateSaves,
   saveCampaign,
+  saveKeyFor,
 } from "../../src/app/save.js";
 import { BENCH, benchState } from "./fixtures.js";
+
+const BENCH_ID = "bench-chapter";
 
 describe("save round trip", () => {
   it("restores a campaign byte-identically", () => {
@@ -38,11 +47,11 @@ describe("save round trip", () => {
     const storage = memoryStorage();
     const state = benchState();
     saveCampaign(state, storage);
-    const first = loadCampaign(storage);
+    const first = loadCampaign(BENCH_ID, storage);
     expect(first.ok).toBe(true);
     if (!first.ok) return;
     saveCampaign(first.campaign, storage);
-    expect(storage.getItem(SAVE_KEY)).toBe(encodeSave(state));
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBe(encodeSave(state));
   });
 
   it("exports pretty JSON that imports back", () => {
@@ -57,15 +66,111 @@ describe("save round trip", () => {
 
 describe("save storage", () => {
   it("reports a missing save rather than throwing", () => {
-    const outcome = loadCampaign(memoryStorage());
+    const outcome = loadCampaign(BENCH_ID, memoryStorage());
     expect(outcome).toEqual({ ok: false, reason: "No save found" });
+  });
+
+  it("reports a campaign that has never been filed, even beside one that has", () => {
+    const storage = memoryStorage();
+    saveCampaign(benchState(), storage);
+    expect(loadCampaign("works-skirmishes", storage)).toEqual({
+      ok: false,
+      reason: "No save found",
+    });
   });
 
   it("clears", () => {
     const storage = memoryStorage();
     saveCampaign(benchState(), storage);
-    clearCampaign(storage);
-    expect(loadCampaign(storage).ok).toBe(false);
+    clearCampaign(BENCH_ID, storage);
+    expect(loadCampaign(BENCH_ID, storage).ok).toBe(false);
+  });
+});
+
+/**
+ * The bug this key layout exists to make impossible: two campaigns sharing one
+ * key meant opening the second silently overwrote the first one's record.
+ */
+describe("one file per campaign", () => {
+  const skirmish = (): CampaignState =>
+    benchState({ id: "works-skirmishes", name: "Skirmishes", encounterIds: ["s1-meter-house"] });
+
+  it("keeps each campaign under its own key", () => {
+    const storage = memoryStorage();
+    saveCampaign(benchState(), storage);
+    saveCampaign(skirmish(), storage);
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBe(encodeSave(benchState()));
+    expect(storage.getItem(saveKeyFor("works-skirmishes"))).toBe(encodeSave(skirmish()));
+  });
+
+  it("never lets one campaign's save touch another's, in either direction", () => {
+    const storage = memoryStorage();
+    const chapter = benchState();
+    saveCampaign(chapter, storage);
+
+    saveCampaign(skirmish(), storage);
+    const afterSkirmish = loadCampaign(BENCH_ID, storage);
+    expect(afterSkirmish.ok).toBe(true);
+    if (afterSkirmish.ok) expect(afterSkirmish.campaign).toEqual(chapter);
+
+    let advanced = skirmish();
+    advanced = { ...advanced, encounterIndex: 1, completedEncounterIds: ["s1-meter-house"] };
+    saveCampaign(advanced, storage);
+    saveCampaign(chapter, storage);
+    const afterChapter = loadCampaign("works-skirmishes", storage);
+    expect(afterChapter.ok).toBe(true);
+    if (afterChapter.ok) expect(afterChapter.campaign.completedEncounterIds).toEqual([
+      "s1-meter-house",
+    ]);
+  });
+});
+
+describe("migrating the shared save key", () => {
+  it("moves a legacy save to the key for the campaign it names", () => {
+    const state = benchState();
+    const storage = memoryStorage({ [LEGACY_SAVE_KEY]: encodeSave(state) });
+
+    expect(migrateSaves(storage)).toBe(BENCH_ID);
+    expect(storage.getItem(LEGACY_SAVE_KEY)).toBeNull();
+
+    const loaded = loadCampaign(BENCH_ID, storage);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) expect(loaded.campaign).toEqual(state);
+  });
+
+  it("is idempotent", () => {
+    const storage = memoryStorage({ [LEGACY_SAVE_KEY]: encodeSave(benchState()) });
+    expect(migrateSaves(storage)).toBe(BENCH_ID);
+    const migrated = storage.getItem(saveKeyFor(BENCH_ID));
+
+    expect(migrateSaves(storage)).toBeNull();
+    expect(migrateSaves(storage)).toBeNull();
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBe(migrated);
+  });
+
+  it("does nothing when there was never a legacy save", () => {
+    const storage = memoryStorage();
+    expect(migrateSaves(storage)).toBeNull();
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBeNull();
+  });
+
+  it("refuses to overwrite a per-campaign save that already exists", () => {
+    const legacy = benchState();
+    let current = benchState();
+    current = { ...current, encounterIndex: 1, completedEncounterIds: ["e1-marshaling-yard"] };
+    const storage = memoryStorage({
+      [LEGACY_SAVE_KEY]: encodeSave(legacy),
+      [saveKeyFor(BENCH_ID)]: encodeSave(current),
+    });
+
+    expect(migrateSaves(storage)).toBeNull();
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBe(encodeSave(current));
+  });
+
+  it("leaves a legacy blob it cannot read exactly where it is", () => {
+    const storage = memoryStorage({ [LEGACY_SAVE_KEY]: "{not json" });
+    expect(migrateSaves(storage)).toBeNull();
+    expect(storage.getItem(LEGACY_SAVE_KEY)).toBe("{not json");
   });
 });
 

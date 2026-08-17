@@ -60,12 +60,21 @@ export const UNITS: Record<string, Unit> = parseDir("units", Unit);
 
 export const CAMPAIGNS: Record<string, Campaign> = parseDir("campaigns", Campaign);
 
-export const OPENING_CAMPAIGN_ID = "foundry-chapter";
+/**
+ * Everything the player can open, by name and then by id so the order never
+ * depends on the locale or on what the content workstream added last.
+ */
+export function campaignList(): Campaign[] {
+  return Object.values(CAMPAIGNS).sort((a, b) => {
+    if (a.name !== b.name) return a.name < b.name ? -1 : 1;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+}
 
-export function openingCampaign(): Campaign {
-  const campaign = CAMPAIGNS[OPENING_CAMPAIGN_ID];
+export function campaignById(campaignId: string): Campaign {
+  const campaign = CAMPAIGNS[campaignId];
   if (campaign === undefined) {
-    throw new Error(`missing data/campaigns/${OPENING_CAMPAIGN_ID}.json`);
+    throw new Error(`missing data/campaigns/${campaignId}.json`);
   }
   return campaign;
 }
