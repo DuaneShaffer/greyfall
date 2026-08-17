@@ -196,7 +196,9 @@ reaction/support/movement slots, JP-analog earned in battle (working name:
 
 ## 7. Resolve & Attunement
 
-The hidden stat pair, replacing Brave/Faith:
+The measured stat pair, replacing Brave/Faith (measured, not hidden: the
+Assay files Attunement on a license and sergeants grade Resolve in the yard,
+so the player reads both on the record — ruled 2026-08-17):
 
 - **Resolve** — grit under fire. Scales physical steadiness: reaction-ability
   trigger rates, resistance to fear/suppression effects. Low-Resolve units
