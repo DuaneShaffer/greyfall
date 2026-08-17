@@ -22,3 +22,11 @@ The README screenshots (`docs/media/*.png`) must track the game's real look:
 after landing any change that affects what the battle screen looks like (UI
 chrome or layout, rendering, sprites, terrain, bloom/post), run `npm run
 shots` from a clean tree and commit the refreshed images with the change.
+
+Iterate with `npm run test:fast`. It drops the per-job sprite conformance
+shards and the two balance sweeps — `tests/sim/sweeps.test.ts` and
+`tests/sim/meterHouse.test.ts`, which are minutes of battles whose numbers are
+aggregates over whole seed sets and so cannot be parallelised — and runs
+everything else, every golden replay included, in a quarter of the time. It is
+an inner-loop tool and never the gate: the full `npx vitest run` must pass
+before any commit.

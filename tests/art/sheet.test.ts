@@ -1,8 +1,9 @@
+import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { EXTERNAL_JOBS, externalArt, hasExternalArt } from "../../src/art/external.js";
+import { EXTERNAL_JOBS } from "../../src/art/external.js";
 import { JOB_IDS } from "../../src/art/jobs.js";
 import { jobFrame } from "../../src/art/jobs.js";
-import { TRANSPARENT, createGrid, gridGet, opaqueCount } from "../../src/art/pixel.js";
+import { TRANSPARENT, createGrid, gridGet } from "../../src/art/pixel.js";
 import {
   SHEET_MANIFEST,
   buildJobSheet,
@@ -11,7 +12,6 @@ import {
   cellUV,
   flipRows,
   sheetCell,
-  sheetKey,
   sheetTextureLevels,
 } from "../../src/art/sheet.js";
 import {
@@ -20,12 +20,12 @@ import {
   DRAWN_VIEWS,
   DRAWN_FRAMES_PER_JOB,
   SHEET_LAYOUT,
-  SPRITE_ANCHOR,
   SPRITE_HEIGHT,
   SPRITE_TEXTURE_CELL,
   SPRITE_WIDTH,
   sheetRowIndex,
 } from "../../src/art/sprites.js";
+import { SHARDED_JOBS } from "./sheetSuite.js";
 
 describe("manifest", () => {
   it("covers every drawn frame exactly once", () => {
@@ -116,14 +116,6 @@ describe("assembly", () => {
     }
   });
 
-  it("builds a non-empty sheet for every job and team", () => {
-    for (const jobId of JOB_IDS) {
-      for (const team of ["player", "enemy", "neutral"] as const) {
-        expect(opaqueCount(buildJobSheet(jobId, team)), sheetKey(jobId, team)).toBeGreaterThan(2000);
-      }
-    }
-  });
-
   it("is deterministic", () => {
     expect(buildJobSheet("saboteur", "neutral").data).toEqual(
       buildJobSheet("saboteur", "neutral").data,
@@ -131,44 +123,12 @@ describe("assembly", () => {
   });
 });
 
-describe("external masters", () => {
-  it("derives the sheet from delivered art where there is any", () => {
-    expect(EXTERNAL_JOBS.length).toBeGreaterThan(0);
-    for (const jobId of EXTERNAL_JOBS) {
-      expect(hasExternalArt(jobId)).toBe(true);
-      const sheet = buildJobSheet(jobId, "player");
-      const composited = jobFrame({
-        jobId,
-        team: "player",
-        state: "idle",
-        view: "se",
-        frame: 0,
-      });
-      let same = 0;
-      for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
-        for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-          if (gridGet(sheet, x, y) === gridGet(composited, x, y)) same += 1;
-        }
-      }
-      // The delivered art is not the compositor's placeholder for this job.
-      expect(same / (SPRITE_WIDTH * SPRITE_HEIGHT), jobId).toBeLessThan(0.9);
-    }
-  });
-
-  it("keeps the audit available at load, violations and all", () => {
-    for (const jobId of EXTERNAL_JOBS) {
-      const art = externalArt(jobId);
-      expect(art, jobId).not.toBeNull();
-      if (!art) continue;
-      // Reports, never repairs: a rejected master still loads and still says so.
-      expect(art.summary).toContain(jobId);
-      expect(art.reports.se.figureBottom, jobId).toBe(SPRITE_ANCHOR.y - 1);
-    }
-  });
-
-  it("caches, so a sheet is deterministic", () => {
-    for (const jobId of EXTERNAL_JOBS) {
-      expect(buildJobSheet(jobId, "enemy").data).toEqual(buildJobSheet(jobId, "enemy").data);
+describe("per-job shards", () => {
+  it("covers every job on the roster", () => {
+    expect([...SHARDED_JOBS]).toEqual([...JOB_IDS]);
+    expect([...SHARDED_JOBS]).toEqual([...EXTERNAL_JOBS]);
+    for (const jobId of SHARDED_JOBS) {
+      expect(existsSync(new URL(`./sheet.${jobId}.test.ts`, import.meta.url)), jobId).toBe(true);
     }
   });
 });

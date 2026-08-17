@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
+    "test:fast": "GREYFALL_TEST_FAST=1 vitest run",
     "typecheck": "tsc --noEmit",
     "shots": "node tools/screenshots.mjs"
   },
