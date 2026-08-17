@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { objectArtFor } from "../src/art/objects.js";
 import {
   Ability,
   Encounter,
@@ -230,6 +231,46 @@ describe("content cross-references", () => {
           expect(declared.has(edge.a) && declared.has(edge.b), `${map.id}/${grid.id}: dangling edge`).toBe(true);
         }
         expect(grid.nodes.some((n) => n.role === "source"), `${map.id}/${grid.id}: no source`).toBe(true);
+      }
+    }
+  });
+
+  /**
+   * The legibility bug `art-src/OBJECT_BRIEFS.md` opens with: `switch-board` was
+   * the authored word for **both** the mains that feed a floor and the boards
+   * that merely open a branch of it, and the renderer drew neither. The mains now
+   * say what they are, and because `src/render` reads `spriteId` the word has to
+   * keep meaning it — a board wearing `flux-main` would be drawn as a main.
+   */
+  it("gives a delivered spriteId only to the role its art was drawn for", () => {
+    const painted: string[] = [];
+    for (const map of maps.values()) {
+      const roleOf = new Map(map.grids.flatMap((g) => g.nodes.map((n) => [n.objectId, n.role] as const)));
+      for (const obj of map.objects) {
+        const art = objectArtFor(obj.spriteId);
+        if (art === null) continue;
+        painted.push(`${map.id}/${obj.id}`);
+        expect(roleOf.get(obj.id), `${map.id}/${obj.id}: ${obj.spriteId} is a source's art`).toBe("source");
+        expect(obj.operable, `${map.id}/${obj.id}: ${art.id} paints a copper-500 handle`).not.toBeNull();
+        // The face art *is* the massing: 64 shipped columns over two tiles is the
+        // ground plane's own 32 texels per world unit, and a footprint the art was
+        // not drawn for would stretch the painting.
+        const xs = new Set(obj.tiles.map((t) => t.x));
+        const ys = new Set(obj.tiles.map((t) => t.y));
+        const along = Math.max(xs.size, ys.size);
+        const across = Math.min(xs.size, ys.size);
+        expect([along, across], `${map.id}/${obj.id} footprint`).toEqual([art.along, art.across]);
+      }
+    }
+    expect(painted).toEqual(["meter-house/west-main", "meter-house/east-main"]);
+    // And nothing that is a source is still hiding behind a switchboard's word.
+    for (const map of maps.values()) {
+      for (const grid of map.grids) {
+        for (const node of grid.nodes) {
+          if (node.role !== "source") continue;
+          const obj = map.objects.find((o) => o.id === node.objectId)!;
+          expect(obj.spriteId, `${map.id}/${obj.id}`).not.toBe("switch-board");
+        }
       }
     }
   });

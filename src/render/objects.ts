@@ -1,8 +1,17 @@
 import * as THREE from "three";
+import { objectArtFor, type ObjectArtSpec, type ObjectFaceId, type ObjectPowerState } from "../art/objects.js";
 import type { GameMap, GridRole, MapObjectKind } from "../data/schemas/map.js";
 import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./grid.js";
-import { markBloomEligible } from "./layers.js";
+import { markBloomEligible, markBloomOnly } from "./layers.js";
+import {
+  BOX_FACE_SLOTS,
+  boxYaw,
+  faceShade,
+  objectCarrierTexture,
+  objectFaceTexture,
+} from "./objectTextures.js";
 import { objectColor, palette } from "./palette.js";
+import { emissiveKeyMaterial } from "./sprites.js";
 import type { MapObjectView } from "./viewmodel.js";
 
 /** Share of a cut run's length that opens as a gap, split across both ends. */
@@ -19,9 +28,11 @@ const SEVERED_FADE = 0.5;
  * switch a breaker is) is built out of what it does on the bus, because that is
  * what the player has to tell apart across the floor (FLUX_GRID §2.5).
  *
- * The assemblies below are deliberately cheap placeholder boxes on the massing
- * of art-src/OBJECT_BRIEFS.md wave 1 — a main at 1.5 world units, a trough at
- * 0.25, a hoist at 1.75 — so the object masters drop straight over them.
+ * The assemblies below are cheap placeholder boxes on the massing of
+ * art-src/OBJECT_BRIEFS.md wave 1 — a main at 1.5 world units, a trough at 0.25,
+ * a hoist at 1.75 — and a delivered `spriteId` replaces the one it answers with
+ * the painted faces at the same massing (`buildPainted`, D.6). The main has
+ * landed; the trough and the hoist still stand here.
  */
 const KIND_OVER_ROLE: ReadonlySet<MapObjectKind> = new Set<MapObjectKind>([
   "lift",
@@ -66,7 +77,11 @@ const footprintOf = (map: GameMap, view: MapObjectView): Footprint => {
   };
 };
 
-/** A map object's primitive assembly plus its powered/destroyed visual state. */
+/**
+ * A map object's assembly plus its powered/destroyed visual state: painted faces
+ * on a box where its `spriteId` has delivered art (D.6), the placeholder
+ * primitive where it has not.
+ */
 export class ObjectVisual {
   readonly group = new THREE.Group();
   readonly objectId: string;
@@ -75,6 +90,15 @@ export class ObjectVisual {
   private readonly poweredMaterials: THREE.MeshLambertMaterial[] = [];
   private readonly seamMaterials = new Set<THREE.MeshLambertMaterial>();
   private readonly baseColors = new Map<THREE.MeshLambertMaterial, number>();
+  /**
+   * The painted faces, when this object's `spriteId` has delivered art: which
+   * face each material carries, so a state change re-points the maps instead of
+   * repainting a colour. Empty on every object still drawn as a primitive.
+   */
+  private readonly paintedBody: { material: THREE.MeshLambertMaterial; face: ObjectFaceId }[] = [];
+  private readonly paintedHalo: { material: THREE.MeshBasicMaterial; face: ObjectFaceId }[] = [];
+  private paintedArt: ObjectArtSpec | null = null;
+  private paintedState: ObjectPowerState | null = null;
   private readonly baseY: number;
   /** The footprint's longer side — the direction a run runs, and parts along. */
   private readonly runAxis: "x" | "z";
@@ -152,6 +176,7 @@ export class ObjectVisual {
   }
 
   private applyPaint(): void {
+    this.refreshPaintedFaces();
     const seamRubble = new THREE.Color(objectColor.destroyed);
     const bodyRubble = new THREE.Color(objectColor.rubble);
     // A cut span carries no light at all, so its seams go the whole way to the
@@ -181,6 +206,7 @@ export class ObjectVisual {
       this.setPowered(this.view.powered);
       return;
     }
+    this.refreshPaintedFaces();
     const seam = new THREE.Color(objectColor.overloadingSeam);
     const core = new THREE.Color(objectColor.overloading);
     for (const material of this.seamMaterials) {
@@ -214,11 +240,18 @@ export class ObjectVisual {
     if (this.view.destroyed || this.cut || this.overload > 0 || this.view.powered !== true) return;
     const pulse = 0.75 + 0.25 * Math.sin(timeSeconds * 2.2 + this.glowPhase);
     for (const material of this.poweredMaterials) material.emissiveIntensity = pulse;
+    // §6's 2-frame pulse, on the painted carrier's own light rather than on the
+    // whole face: the seam is what breathes, and on a painted box the seam is a
+    // mask over the frame, not a mesh beside it.
+    for (const { material } of this.paintedBody) {
+      if (material.emissiveMap !== null) material.emissiveIntensity = pulse;
+    }
   }
 
   dispose(): void {
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();
+    for (const { material } of this.paintedHalo) material.dispose();
   }
 
   private mat(color: number, options?: { powered?: boolean; emissive?: number }): THREE.MeshLambertMaterial {
@@ -266,6 +299,14 @@ export class ObjectVisual {
   }
 
   private build(view: MapObjectView, footprint: Footprint): void {
+    // The map author's word for what a thing *is* outranks both the grid role and
+    // the kind, but only where it has been answered with paint. Everything else
+    // falls through to the primitive it already had.
+    const art = objectArtFor(view.spriteId);
+    if (art !== null) {
+      this.buildPainted(art, footprint);
+      return;
+    }
     if (view.gridRole !== null && !KIND_OVER_ROLE.has(view.kind)) {
       this.buildGridRole(view.gridRole, view.tiles.length, footprint);
       return;
@@ -392,6 +433,98 @@ export class ObjectVisual {
         );
         break;
       }
+    }
+  }
+
+  /**
+   * A delivered object, wearing its painted faces on the primitive massing the
+   * placeholder already stood at: one box on the map's footprint, the brief's
+   * height, and a face texture per side.
+   *
+   * Two meshes over one geometry. The first is the object as the player sees it:
+   * three `MeshLambertMaterial`s across six slots, each carrying one painting and
+   * a `color` that is nothing but §5's face shade, so the paint is the texture's
+   * and the shading is the engine's exactly as the shared spec promises the
+   * artist. The second exists only in the bloom pass and
+   * only to be blurred: `emissiveKeyMaterial` discards every texel that is not one
+   * of §2's three bloom-eligible colours, which is how the amber column gets the
+   * halo the brief told the artist *not* to paint.
+   */
+  private buildPainted(art: ObjectArtSpec, footprint: Footprint): void {
+    this.paintedArt = art;
+    const along = this.runAxis === "x" ? footprint.spanX : footprint.spanZ;
+    const across = this.runAxis === "x" ? footprint.spanZ : footprint.spanX;
+    // Built long-axis-on-z and turned; see BOX_FACE_SLOTS.
+    const geometry = new THREE.BoxGeometry(across, art.heightUnits, along);
+    this.geometries.push(geometry);
+
+    const paint = new Map<ObjectFaceId, THREE.MeshLambertMaterial>();
+    const halo = new Map<ObjectFaceId, THREE.Material>();
+    for (const face of new Set(BOX_FACE_SLOTS)) {
+      const texture = objectFaceTexture(art.id, face, "powered");
+      const material = new THREE.MeshLambertMaterial({ map: texture });
+      // The only thing the body's colour carries is §5's face shade. Everything
+      // else the player sees on this box is the delivered painting.
+      material.color.setScalar(faceShade(face, this.runAxis));
+      this.materials.push(material);
+      this.baseColors.set(material, material.color.getHex());
+      this.paintedBody.push({ material, face });
+      paint.set(face, material);
+
+      const key = emissiveKeyMaterial(texture);
+      this.paintedHalo.push({ material: key, face });
+      halo.set(face, key);
+    }
+
+    const body = new THREE.Mesh(
+      geometry,
+      BOX_FACE_SLOTS.map((face) => paint.get(face) as THREE.MeshLambertMaterial),
+    );
+    const glow = new THREE.Mesh(
+      geometry,
+      BOX_FACE_SLOTS.map((face) => halo.get(face) as THREE.Material),
+    );
+    markBloomOnly(glow);
+    for (const mesh of [body, glow]) {
+      mesh.position.set(0, art.heightUnits / 2, 0);
+      mesh.rotation.y = boxYaw(this.runAxis);
+      this.group.add(mesh);
+    }
+  }
+
+  /**
+   * Re-point every painted face at §6's state table. The amber carrier ramp is
+   * the readout, so a state swaps five palette steps and leaves the cast frame
+   * alone — identical shapes, dead, which is the whole reason §6 draws the
+   * unpowered state as the powered one with the light taken out. The carrier's
+   * emissive map goes with it, and is `null` in exactly the states §6 gives no
+   * halo, so "no halo, no pulse" is one branch rather than a special case.
+   */
+  private refreshPaintedFaces(): void {
+    if (this.paintedArt === null) return;
+    const state: ObjectPowerState = this.view.destroyed
+      ? "destroyed"
+      : this.overload > 0
+        ? "overloading"
+        : this.view.powered === true
+          ? "powered"
+          : "unpowered";
+    const changed = state !== this.paintedState;
+    this.paintedState = state;
+    for (const { material, face } of this.paintedBody) {
+      const carrier = objectCarrierTexture(this.paintedArt.id, face, state);
+      if (changed) {
+        material.map = objectFaceTexture(this.paintedArt.id, face, state);
+        material.emissiveMap = carrier;
+        material.needsUpdate = true;
+      }
+      material.emissive.setHex(carrier === null ? 0x000000 : 0xffffff);
+      material.emissiveIntensity = carrier === null ? 0 : 1;
+    }
+    if (!changed) return;
+    for (const { material, face } of this.paintedHalo) {
+      material.map = objectFaceTexture(this.paintedArt.id, face, state);
+      material.needsUpdate = true;
     }
   }
 

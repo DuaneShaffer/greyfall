@@ -4,8 +4,11 @@
 
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
+import { OBJECT_ART } from "../../src/art/objects.js";
+import { FACE_SHADE } from "../../src/art/palette.js";
 import type { GridRole } from "../../src/data/schemas/map.js";
 import type { GameMap } from "../../src/data/schemas/map.js";
+import { BASE_LAYER, BLOOM_LAYER } from "../../src/render/layers.js";
 import { ObjectVisual } from "../../src/render/objects.js";
 import { palette } from "../../src/render/palette.js";
 import type { MapObjectView } from "../../src/render/viewmodel.js";
@@ -158,5 +161,154 @@ describe("kinds that outrank their role", () => {
     expect(signature(built({ kind: "cell", gridRole: "sink" }))).toBe(
       signature(built({ kind: "cell" })),
     );
+  });
+});
+
+// The legibility bug OBJECT_BRIEFS exists to fix: `data/maps/*.json` authors
+// object identity in `spriteId` and nothing in `src/render` read it, so a main
+// and a switchboard — the same word in the file — landed on the same primitive.
+// A delivered `spriteId` now buys painted faces; an undelivered one changes
+// nothing at all.
+describe("spriteId with delivered art", () => {
+  const MAIN = { spriteId: "flux-main", gridRole: "source" as const };
+
+  const layersOf = (which: number): THREE.Layers => {
+    const layers = new THREE.Layers();
+    layers.set(which);
+    return layers;
+  };
+  const BASE_ONLY = layersOf(BASE_LAYER);
+  const BLOOM_ONLY = layersOf(BLOOM_LAYER);
+
+  /** The object as the player sees it: the mesh the beauty pass draws. */
+  const box = (visual: ObjectVisual): THREE.Mesh =>
+    meshes(visual).find((mesh) => mesh.layers.test(BASE_ONLY)) as THREE.Mesh;
+
+  const paintOf = (visual: ObjectVisual): THREE.MeshLambertMaterial[] =>
+    box(visual).material as unknown as THREE.MeshLambertMaterial[];
+
+  it("dresses a main's box instead of assembling the placeholder", () => {
+    const painted = built(MAIN);
+    const placeholder = built({ gridRole: "source" });
+    // Two meshes over one box: the object, and the bloom pass's halo key.
+    expect(meshes(painted)).toHaveLength(2);
+    expect(meshes(placeholder).length).toBeGreaterThan(2);
+  });
+
+  it("stands it at the brief's height on the map's footprint", () => {
+    const box3 = size(built(MAIN));
+    expect(box3.y).toBeCloseTo(OBJECT_ART["flux-main"].heightUnits, 5);
+    // RUN_Z is two tiles north-south, so the long axis is z.
+    expect(box3.z).toBeCloseTo(2, 5);
+    expect(box3.x).toBeCloseTo(1, 5);
+    // Still taller than the boards it has to be told apart from.
+    expect(box3.y).toBeGreaterThan(size(built({ gridRole: "breaker" })).y);
+  });
+
+  it("puts the right painting in each of the box's six slots", () => {
+    const materials = paintOf(built(MAIN));
+    expect(materials).toHaveLength(6);
+    const sizes = materials.map((m) => {
+      const texture = m.map as THREE.DataTexture;
+      return [texture.image.width, texture.image.height];
+    });
+    const long = [64, 48];
+    const end = [32, 48];
+    const top = [32, 64];
+    // three's slot order is +x, -x, +y, -y, +z, -z, and the box is built with the
+    // long axis on local z.
+    expect(sizes).toEqual([long, long, top, top, end, end]);
+  });
+
+  it("turns the mesh, not the paint, for an east-west main", () => {
+    const alongZ = built(MAIN);
+    const alongX = built({
+      ...MAIN,
+      tiles: [
+        { x: 1, y: 4 },
+        { x: 2, y: 4 },
+      ],
+    });
+    expect(box(alongZ).rotation.y).toBe(0);
+    expect(box(alongX).rotation.y).toBeCloseTo(Math.PI / 2, 5);
+    const turned = size(alongX);
+    expect(turned.x).toBeCloseTo(2, 5);
+    expect(turned.z).toBeCloseTo(1, 5);
+    // The top cell lands on the same slot at both orientations, so the paint is
+    // the same three textures either way.
+    expect(paintOf(alongX).map((m) => m.map)).toEqual(paintOf(alongZ).map((m) => m.map));
+  });
+
+  it("shades the faces the engine's way, and warns the artist by doing it", () => {
+    const alongZ = paintOf(built(MAIN)).map((m) => m.color.getHex());
+    const alongX = paintOf(
+      built({
+        ...MAIN,
+        tiles: [
+          { x: 1, y: 4 },
+          { x: 2, y: 4 },
+        ],
+      }),
+    ).map((m) => m.color.getHex());
+    const grey = (factor: number) => new THREE.Color().setScalar(factor).getHex();
+    // Long face on ±x when the run is north-south: east/west, 62%.
+    expect(alongZ[0]).toBe(grey(FACE_SHADE.sideEastWest));
+    expect(alongZ[4]).toBe(grey(FACE_SHADE.sideNorthSouth));
+    expect(alongZ[2]).toBe(grey(FACE_SHADE.top));
+    // Turn the main and the same painting is shown at the other side shade —
+    // exactly what the brief warns the artist to keep its value range mid for.
+    expect(alongX[0]).toBe(grey(FACE_SHADE.sideNorthSouth));
+    expect(alongX[4]).toBe(grey(FACE_SHADE.sideEastWest));
+  });
+
+  it("shares one texture per face and state across every main on the board", () => {
+    const a = paintOf(built(MAIN));
+    const b = paintOf(built({ ...MAIN, id: "node-b" }));
+    for (let i = 0; i < a.length; i += 1) expect(a[i]?.map).toBe(b[i]?.map);
+    // Materials are per object: the collapse ramp mutates their colour.
+    expect(a[0]).not.toBe(b[0]);
+  });
+
+  it("swaps the carrier column to the dead grey when the main goes out", () => {
+    const visual = built(MAIN);
+    const live = paintOf(visual).map((m) => m.map);
+    visual.setPowered(false);
+    const dead = paintOf(visual).map((m) => m.map);
+    expect(dead).not.toEqual(live);
+    visual.setPowered(true);
+    expect(paintOf(visual).map((m) => m.map)).toEqual(live);
+  });
+
+  it("moves the readout to the overload ramp and then to rubble", () => {
+    const visual = built(MAIN);
+    const live = paintOf(visual).map((m) => m.map);
+    visual.setOverload(0.5);
+    const straining = paintOf(visual).map((m) => m.map);
+    expect(straining).not.toEqual(live);
+    visual.setDestroyed(true);
+    expect(paintOf(visual).map((m) => m.map)).not.toEqual(straining);
+    // The wreck still collapses: the paint is a state, not a replacement for one.
+    expect(size(visual).y).toBeLessThan(OBJECT_ART["flux-main"].heightUnits);
+  });
+
+  it("keeps the halo out of the beauty pass and the body out of the bloom pass", () => {
+    const all = meshes(built(MAIN));
+    const halo = all.filter((mesh) => mesh.layers.test(BLOOM_ONLY));
+    expect(halo).toHaveLength(1);
+    expect(halo[0]?.layers.test(BASE_ONLY)).toBe(false);
+    expect(box(built(MAIN)).layers.test(BLOOM_ONLY)).toBe(false);
+    // The brief tells the artist to paint no glow and no halo; the halo key is the
+    // engine's half of that bargain, keyed on the three colours §2 lets it bloom.
+    const keys = halo[0]?.material as unknown as THREE.MeshBasicMaterial[];
+    expect(keys).toHaveLength(6);
+    for (const key of keys) expect(key.map).not.toBeNull();
+  });
+
+  it("leaves every spriteId without art on the primitive it already had", () => {
+    for (const spriteId of ["switch-board", "gantry-grate", "hydraulic-press", "machine"]) {
+      const named = built({ spriteId, gridRole: "source" });
+      const anonymous = built({ gridRole: "source" });
+      expect(signature(named), spriteId).toBe(signature(anonymous));
+    }
   });
 });

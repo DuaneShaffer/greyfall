@@ -1434,3 +1434,82 @@ the one texture with an animated `offset`, stepping the whole surface one texel
 and back on the same 30-tick beat, which puts the shimmer bands at two heights
 without touching a pixel of the delivery. `WATER_SHIMMER_TICKS` is what the second
 frame replaces when it lands.
+
+### D.6 Map-object texturing, as built (binding)
+
+§6 fixed the object state language and `art-src/OBJECT_BRIEFS.md` fixed the
+delivery format; neither said how a painted face reaches a primitive. Wave 1's
+first object — the flux main — landed, the pipeline was built, and these are the
+decisions it forced. Binding on `src/render/{objects,objectTextures}.ts` and
+`src/art/{objects,objectSheet,objectset}.ts`. The delivery's own report card is
+`art-src/INTAKE_LOG.md` Part C.
+
+**`spriteId` is the key, and it finally buys something.** `data/maps/*.json`
+authors object identity in `spriteId` and until this pass nothing in `src/render`
+read it, so the two grid roles a player most needs to tell apart — the main whose
+capacity feeds the floor and the board that merely opens a branch of it — were
+the same word in the file and the same primitive on the board. `objectArtFor`
+answers a `spriteId` with a face set or with `null`, and `null` falls through to
+the primitive the object already had, unchanged. An object gains art by being
+named, not by being special-cased.
+
+**Objects wear paint; they do not become billboards.** One `BoxGeometry` on the
+map's footprint at the brief's height, six material slots, three paintings. Only
+units billboard: a main blocks movement and line of sight, units walk around it
+and stand beside it, and a card turning to face the camera would break both the
+occlusion the tactical read depends on and the height the player counts off the
+strata lines.
+
+**The box is built long-axis-on-z and turned, rather than the paint being
+turned.** The top cell is drawn *across* by *along* — 32 × 64 for a 1 × 2
+footprint — and `BoxGeometry`'s `+y` slot is the one face whose `u` runs across
+and `v` along. Building every object in one local orientation and putting
+`rotation.y = π/2` on the mesh for an east–west run means that lands at every
+orientation, with no second painting and no rotated copy of the first. The face
+shade follows the *world* normal after that turn, which is the brief's warning
+made concrete: a main whose run is north–south presents its long side east–west
+and is shown at 62%, and the same painting on a main turned the other way is
+shown at 78%.
+
+**One ruler, the ground plane's: 32 texels per world unit.** A long side is
+`along × 32` by `heightUnits × 32`; an end is `across × 32` by the same height; a
+top is `across × 32` by `along × 32`. `OBJECT_ART` therefore states a footprint
+and a height and every face size is derived from them, asserted rather than
+carried twice. Filtering follows the tile faces and the sprite sheet —
+`NearestFilter` magnifying, trilinear minifying, chains supplied not generated —
+but object faces **clamp**: a machine face is laid once, not three hundred times,
+so `RepeatWrapping` and the wrap-seam measurement of D.5 do not apply to this set.
+
+**A state is a substitution over the amber ramp, and only the powered painting is
+stored.** §6's unpowered row is the powered painting with the light taken out and
+*nothing else moved*, which is the whole reason the player learns that the seam is
+the power indicator. So one painting per face ships and `faceInState` maps five
+palette steps — recess, seam, core, halo — into whichever state the object is in.
+`OBJECT_STATE_PAINT` names the seam, the core and the halo; a painted seam
+additionally has the channel it sits in, so `FACE_STATE_PAINT` adds the **recess**
+and follows the state's own darkest step there. Nothing else on the face is
+repainted by a state: the cast frame is the cast frame in every one of them, and
+the collapse ramp still darkens the body on top.
+
+**A painted carrier is a light, and that takes an emissive map.** This is the one
+place a diffuse texture cannot say what §6 says. On the primitives the amber seam
+was a mesh of its own carrying an emissive, which is why it blazed; painting the
+same seam into a face the engine is also shading at 62% gives a main a dull ochre
+stripe instead of a live bus. So a painted face carries a second small texture —
+the carrier's own pixels, seam and core and halo, in the state's colours — as
+`emissiveMap`, and `emissiveIntensity` is where §6's 2-frame 30-tick pulse lives.
+The mask is `null` in exactly the states §6 gives no halo, so "no halo, no pulse"
+is one branch and not a special case. The recess is excluded: a recess is a
+shadow, and a shadow does not emit.
+
+**The halo is still light, not paint.** The brief tells the artist to paint no
+glow and no halo because D.2's chain keys on `amber-glow` alone. The engine's half
+of that bargain is a second mesh over the same box, on `BLOOM_LAYER` only, wearing
+`emissiveKeyMaterial` — the same shader the unit sheets use, which discards every
+texel that is not one of §2's three bloom-eligible colours. No mask texture and no
+threshold: the keying is exact, and it follows the state swap for free, so an
+overloading main halos on `overload-100` without a line of extra code.
+
+**Textures are shared, materials are not.** Three paintings per state per object
+are cached for the session like a job sheet is; the materials over them are
+per-object, because the collapse and severed ramps mutate their colour.

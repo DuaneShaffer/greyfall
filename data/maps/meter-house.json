@@ -1035,7 +1035,7 @@
       "id": "west-main",
       "kind": "machine",
       "name": "West Main",
-      "spriteId": "switch-board",
+      "spriteId": "flux-main",
       "tiles": [
         {
           "x": 1,
@@ -1785,7 +1785,7 @@
       "id": "east-main",
       "kind": "machine",
       "name": "East Main",
-      "spriteId": "switch-board",
+      "spriteId": "flux-main",
       "tiles": [
         {
           "x": 14,

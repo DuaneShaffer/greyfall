@@ -6,7 +6,7 @@ Nothing below was fixed by hand; where the delivery diverges from its brief, the
 divergence is written down and the art ships as drawn.
 
 Part A is the six field sprites (§1–§5). Part B is the Wave 1 terrain texture set
-(§B.1–§B.5).
+(§B.1–§B.5). Part C is the Wave 1 map objects (§C.1–§C.5).
 
 # Part A — field sprites
 
@@ -473,3 +473,215 @@ The three strata still come from light alone: one set of nine textures serves th
 Rise, the Works and the Underveins, and the Underveins board (Tallow Row) reads
 darker than the Works boards with no per-stratum art, exactly as §1 and D.4 say it
 should.
+
+# Part C — Wave 1 map objects
+
+The brief is `art-src/OBJECT_BRIEFS.md`; the binding spec is `ART_DIRECTION` §6
+and D.6. First delivery of the set: `art-src/flux_main.png` (576 × 328), the
+three faces of the **flux main** — long side, short end, top — on transparent
+ground, with corner guide brackets and a swatch row below them.
+
+Regenerate the numbers with:
+
+```
+npx tsx tools/ingest-objects.ts --dry                            # report only
+npx tsx tools/ingest-objects.ts                                  # rewrite src/art/masters/objects.ts
+npx tsx tools/ingest-objects.ts --dry --png .art-review/objects/masters   # + 8x previews, all four states
+```
+
+`tests/art/objects.test.ts` re-runs the whole path against the delivered PNG,
+compares it byte for byte with the committed grids, and pins every number in
+§C.3. `tests/render/objects.test.ts` pins the `spriteId` wiring and
+`tests/content.test.ts` pins which map objects are allowed to wear it.
+
+## C.1 Verdict against the brief
+
+**The cleanest delivery this project has taken in.** Every other intake in this
+file proceeded past a non-empty `ambiguous` list and said so; this one does not
+have to. The art arrived **palette-exact at exactly 4×** — nine colours, all of
+them values the brief lists, every 4 × 4 block uniform, alpha strictly 0 or 255 —
+so the 4:1 box filter is lossless, `movedCount` is **0 of 6656 pixels**, and the
+`ambiguous` list is **empty** rather than merely short. C.8.2's bar is met
+literally for the first time.
+
+| Face | Read | Colours (ceiling 8) | Amber | `copper-500` | Verdict |
+|---|---|---|---|---|---|
+| `long` 64 × 48 | **Right.** Braced cast frame in `copper-700` over a `soot-700` plinth, two stacks of insulator bells and bus risers either side of the carrier column, plinth drawers along the base | 8 — **exactly at the ceiling** | 96 px, **3.13%** of the face, one continuous column, full 48 rows | 26 px, one cluster, rows 33–40 | **Ship** |
+| `end` 32 × 48 | **Right.** The braced end of the same frame, a triangular truss over the plinth drawer. Reads as the short side of the long face and not as another object | 4 | none | none | **Ship** |
+| `top` 32 × 64 | **Right.** The bell stacks seen from above either side of the bus channel, with the riser head breaking the surface | 7 | 16 px, 0.78% | none | **Ship, minor** |
+
+Three things the table cannot carry:
+
+- **The identity read works, and it is the whole point of the set.** At default
+  zoom on the Meter House a main is separable from a switchboard without
+  hovering, on all three of the cues §1 ordered: it stands 1.5 world units
+  against the boards' ~1.0, it is the only object on the board with a
+  full-height amber column, and it is massive at the base where a board is a
+  thin cabinet. Verified in live GL — `.art-review/objects/` (gitignored).
+- **The `copper-500` rule holds by measurement, not by inspection.** `#a5622f`
+  appears on exactly one face, as exactly one connected cluster of 26 pixels,
+  and nowhere else on the object. That is §6's most load-bearing rule and it is
+  the first delivery in which it is checkable rather than asserted.
+- **`copper-300` appears nowhere**, and unlike the terrain set that is a real
+  finding rather than a construction: the copper ramp is *in* this object's
+  quantization target on purpose, so a stray specular would have landed and the
+  audit would have rejected it. The rail head keeps its reservation.
+
+## C.2 Cell location in the delivered sheet
+
+The three crop rects are **hand-measured off this one file and declared** in
+`src/art/objectSheet.ts`, the same honesty `tileSheet.ts` uses. What keeps them
+honest is different from the terrain set's, because the sheet is different: there
+are no frame rules and no inset lines to read, and there is no need for them.
+
+| Check | Method | Result |
+|---|---|---|
+| Size | The rect must equal the brief's 4× size for that face, or the cut throws | 256 × 192, 128 × 192, 128 × 256 — exact on all three |
+| Fence | The 1px ring just outside the rect must be fully transparent | 0 opaque pixels on all four edges of all three cells |
+| Fill | The rect's own opaque bounding box must *be* the rect | flush on all three; no slack |
+| Alpha | Values strictly between the two modes are counted, never resolved by guess | **0** partial-alpha pixels |
+| Accounting | Every opaque pixel on the sheet belongs to a cell, to the declared swatch row, or is reported | 177 px unaccounted — the six corner guide brackets, and nothing else |
+
+Found automatically, without being told where the cells are (opaque-run sweep):
+
+| Axis | Runs |
+|---|---|
+| columns | 4–12, 16–415, 420–428, 432–559, 564–572 |
+| rows | 4–12, 16–271, 276–284, 288–311 |
+
+Declared:
+
+| Face | Crop rect | Delivered aspect | Nominal |
+|---|---|---|---|
+| `long` | 256 × 192 @ (16,16) | 1.333 | 1.333 |
+| `end` | 128 × 192 @ (288,16) | 0.667 | 0.667 |
+| `top` | 128 × 256 @ (432,16) | 0.500 | 0.500 |
+
+**Every cell is at nominal aspect**, which the terrain set was not on a single
+face. Nothing is stretched to reach its master size.
+
+The swatch row (216 × 24 at (180,288), nine 24 px squares) is declared as
+*reference and not a cell*, which lets the intake cross-check it: the nine
+swatched colours are **exactly** the nine the three cells use, with none missing
+and none spare. `soot-800`, `soot-700`, `soot-500`, `copper-700`, `copper-500`,
+`amber-700`, `amber-500`, `amber-300`, `amber-glow` — the brief's list minus
+`soot-900`, the whole umber ramp and `copper-300`, none of which the painting
+needed.
+
+## C.3 Audit, per face
+
+One resample, not the terrain flow's two: the delivered cells are already at
+exactly the brief's 4× size, so landing on a nominal master first would be a
+no-op. Quantization targets **this object's own ramp** — soot + umber + the full
+copper ramp + amber — and `fitMasterToCanvas` is deliberately not used, because it
+measures a figure and stands it on an anchor row and a machine face has neither.
+
+| Face | Shipped | Colours | Amber / budget | Amber share | Column rows | Column cols | `copper-500` | `copper-300` | Reserved | Off-ramp | Quantized | Ambiguous | Glow off core |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `long` | 64×48 | **8** | 96 / 122 | 3.13% | **48/48** | 31, 32 | 26 px ×1, rows 33–40 | 0 | 0 | 0 | 0/3072 | **0** | 3 |
+| `end` | 32×48 | 4 | 0 / 61 | 0.00% | 0/48 | — | none | 0 | 0 | 0 | 0/1536 | **0** | 0 |
+| `top` | 32×64 | 7 | 16 / 81 | 0.78% | 4/64 | 14–17 | none | 0 | 0 | 0 | 0/2048 | **0** | 0 |
+
+**What each column costs downstream:**
+
+- **Colours 4–8 against a ceiling of 8.** Nothing is over. The long face is
+  *exactly* at it, which is worth knowing before Wave 2 revises it: there is no
+  headroom for a tenth colour anywhere on this object.
+- **Amber 3.13% against 4%.** The brief costed the column at "about 3% of a
+  64 × 48 face" and it came in at 3.13. The carrier is **two** game pixels wide,
+  not one — a 1px `amber-700` recess beside a 1px `amber-500` body — which is
+  what makes it 3.13 rather than 1.6, and it is inside budget, so nothing is
+  wrong with it. Recorded so the cable trough's filament is not drawn two pixels
+  wide by analogy: that brief costs one, over a nine-tile run, deliberately.
+- **The column is continuous over all 48 rows and confined to two columns.**
+  Measured, not eyeballed: every row of the long face carries amber and every
+  amber pixel on the face is in column 31 or 32, dead centre of the two-tile run.
+- **`copper-500` present on exactly the one face the brief gives a control, as
+  one cluster.** The audit tests presence against the spec's `control` flag in
+  both directions, so a handle on the end cap would fail and a missing handle on
+  the long face would fail.
+- **Amber, reserved ramps and off-ramp are all zero where they should be.** The
+  overload, vein-glass, blood, steel and bone families are not in the target, so
+  a machine cannot acquire a signal colour by accident; the end cap carries no
+  amber at all and the audit would reject one there under a `powered: null`
+  authoring.
+- **Three `amber-glow` pixels sit off the core.** See §C.4 item 1. The only
+  warning in the whole delivery.
+
+**The states, as generated.** Only the powered painting is stored; §6's other
+three are a substitution over five palette steps (D.6). Measured on the long face:
+96 amber pixels move in every state and **not one non-amber pixel moves in any of
+them** — the cast frame, the plinth and the `copper-500` handle are identical in
+all four, which is exactly what "identical shapes, dead" has to mean for the
+player to learn that the seam is the power indicator. `amber-glow` count by state:
+3 powered, 0 unpowered, 0 destroyed, 0 overloading (12 `overload-100` instead).
+The handle does not go out with the light — it is an affordance, not a readout.
+
+## C.4 What the owner should regenerate, in priority order
+
+Nothing here blocks. The face set ships as drawn and the identity read works.
+
+1. **The long face's value separation, for the shades the engine actually
+   shows.** `copper-700` frame and `soot-700` panels sit close in value, and
+   `soot-500` — the brief's "worked edges" — is only 377 of 3072 pixels, 12% of
+   the face. At 62% face shade in the Works' fog the insulator stacks stop
+   reading past mid range and the long side flattens to a dark mass; the column
+   and the silhouette carry the object on their own. More `#4a545f` on the worked
+   edges, or one lighter step in the panels, and the stacks would survive the
+   shade. This is the only note with a visible cost.
+2. **The reclose handle is drawn at knee height.** Rows 33–40 of 48 put it 0.25
+   to 0.47 world units above the plinth; a field sprite is about 1.25 world units
+   tall, so a figure standing beside it would be reaching down past its own knee.
+   Rows ~22–30 (0.55–0.80 units) is hand height. The audit only checks "lower
+   half" — it cannot see a figure — so this one is a human note.
+3. **The top face's riser head does not line up with the column.** The long
+   face's carrier is dead centre of the run (columns 31–32 of 64); the top's only
+   amber is a 4 × 4 lamp at rows 5–8 of 64, about a tenth of the way along it.
+   Whichever way the engine turns the object, the two do not meet. Cheap to fix
+   and it is the only continuity error between the three cells.
+4. **Three `amber-glow` pixels are drawn off the core.** The brief puts the halo
+   colour "on the core pixels only", and the column's `amber-300` core is drawn as
+   nine intermittent ticks rather than a continuous 1px line, so the three glow
+   pixels land between ticks with no core touching them. It reads well — the bloom
+   turns them into three tap points up the column — so this is a note about the
+   brief and the art disagreeing, not about the result.
+5. **Optional: one warm tick on the end cap.** The end carries no amber, so from
+   the two of four bearings where a main presents its end to the camera, its only
+   warm mark is the top-face lamp. §1 asked for the column on the long face and
+   the corner camera always shows one long face, so this is not a divergence — but
+   a single `amber-500` terminal pixel would make "is it running?" answerable from
+   every bearing.
+
+## C.5 Engine decisions the intake had to make
+
+The renderer read no `spriteId` and had no object textures before this pass. The
+decisions are recorded in full as `ART_DIRECTION` D.6, because they are binding
+rather than a report; in brief:
+
+- **`spriteId` is the key, and `null` means "keep the primitive".** Objects
+  without delivered art are untouched — verified on Foundry Floor Nine, whose
+  presses, gantries and switchboards are pixel-for-pixel the primitives they were.
+- **One box, six slots, three paintings, built long-axis-on-z and turned.** The
+  top cell lands on the one face whose UVs run across-by-along at every
+  orientation, with no rotated copy of the painting.
+- **A state is a substitution over the amber ramp; only the powered face ships.**
+- **A painted carrier needs an emissive map, because a painted seam is texels
+  inside a face the engine is already shading.** This was found in live GL: the
+  first build painted the column and stopped there, and a main's bus read as a
+  dull ochre stripe at 62% shade where the placeholder's emissive seam bars had
+  blazed. The mask is the carrier's seam, core and halo only — a recess is a
+  shadow and does not emit — and it is `null` in the two states §6 gives no halo,
+  which is where "no halo, no pulse" lives.
+- **The halo is still the bloom pass's**, via the same `emissiveKeyMaterial` the
+  unit sheets use, so the brief's "paint no glow" holds and an overloading main
+  halos on `overload-100` with no extra code.
+
+**Content follow-up, done.** `OBJECT_BRIEFS`' recorded follow-up was that the two
+mains should say what they are. `meter-house.json`'s `west-main` and `east-main`
+— the two objects `meter-house-grid` declares `role: "source"` — now carry
+`spriteId: "flux-main"`. The four other `switch-board` uses are untouched: two are
+the map's `breaker` switchboards, and `foundry-floor-nine`'s `floor-nine-mains`
+and `refinery-three`'s `switchboard-main` are on no grid at all and are not
+sources, whatever their names suggest. `tests/content.test.ts` now fails if a
+delivered `spriteId` lands on anything but a source, if a source is still wearing
+`switch-board`, or if a footprint does not match the massing the art was drawn for.
