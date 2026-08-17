@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { GameMap } from "../../src/data/schemas/map.js";
 import type { Facing, TileCoord } from "../../src/data/schemas/common.js";
-import { walkAnimation, type Walker } from "../../src/render/scene.js";
+import { snapAnimation, walkAnimation, type Walker } from "../../src/render/scene.js";
 import type { UnitView } from "../../src/render/viewmodel.js";
 
 const flatMap = (size = 8): GameMap => ({
@@ -111,5 +111,48 @@ describe("walk animation", () => {
 
     expect(enemy.duration).toBeLessThan(player.duration);
     expect(march.duration).toBeLessThanOrEqual(1);
+  });
+});
+
+// The undo's presentation (COMBAT_RULES §10b): a rolled-back walk did not
+// happen, so there is no step to play and nowhere to interpolate from.
+describe("undo snap", () => {
+  const raised = (): GameMap => {
+    const map = flatMap();
+    map.tiles[1 + 3 * 8] = { height: 2, terrain: "plain" };
+    return map;
+  };
+
+  it("stands the unit on the tile at once, snapshot and all", () => {
+    const map = raised();
+    const view = unitView("player", { x: 4, y: 4 });
+    const walker = spyWalker();
+
+    const animation = snapAnimation(map, { x: 1, y: 3 }, "west", walker, view);
+
+    expect(animation.duration).toBe(0);
+    animation.finish();
+    expect(walker.walked).toBe(0);
+    expect(walker.rested).toBe(1);
+    expect(walker.facings).toEqual(["west"]);
+    expect(view.position).toEqual({ x: 1, y: 3 });
+    expect(view.facing).toBe("west");
+    // The snapshot carries the height too: the move preview measures its offset
+    // off this record, so a stale one hangs the next preview in the air.
+    expect(view.elevation).toBe(2);
+  });
+
+  it("is skip-safe and idempotent, like every other event", () => {
+    const map = flatMap();
+    const view = unitView("player", { x: 0, y: 0 });
+    const walker = spyWalker();
+
+    const animation = snapAnimation(map, { x: 2, y: 2 }, "south", walker, view);
+    animation.update(0);
+    animation.finish();
+    animation.finish();
+
+    expect(view.position).toEqual({ x: 2, y: 2 });
+    expect(new Set(walker.positions.map((p) => p.join(",")))).toHaveLength(1);
   });
 });

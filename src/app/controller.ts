@@ -429,6 +429,22 @@ function powerChangeNotice(
   return `${machineList(lost)} lost power.${lever}${rest}`;
 }
 
+/**
+ * Beats the renderer cannot animate its way to, so the scene is rebuilt from
+ * state instead.
+ *
+ * Spawns are the only ones with no animation of their own; removal, contact
+ * triggers and machine fire all present themselves. An undone move joins them
+ * only when core says the walk had consequences: the rollback may have put a
+ * mine back in the ground, taken a spawn away, or flipped power back, and no
+ * `RenderEvent` describes any of that — the event carries the flag exactly so
+ * this decision can be made here (COMBAT_RULES §10b).
+ */
+const needsSceneRebuild = (event: BattleEvent): boolean => {
+  if (event.type === "UnitSpawned" || event.type === "ObjectSpawned") return true;
+  return event.type === "UnitMoveUndone" && event.revertedConsequences;
+};
+
 const facingToward = (from: TileCoord, to: TileCoord): Facing => {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -651,6 +667,7 @@ export class BattleController {
     return {
       beginMove: (unitId) => this.beginMove(unitId),
       confirmMove: (unitId, tile) => this.dispatch({ kind: "move", unitId, to: tile }),
+      undoMove: (unitId) => this.undoMove(unitId),
       selectAbility: (unitId, abilityId) => this.selectAbility(unitId, abilityId),
       confirmTarget: (unitId, abilityId, target) =>
         this.commitAct(unitId, abilityId, this.resolveUiTarget(unitId, abilityId, target)),
@@ -706,6 +723,16 @@ export class BattleController {
       opacity: 0.3,
     });
     this.refresh();
+  }
+
+  /**
+   * The walk taken back. It goes out through `dispatch` like any other order —
+   * the rollback is core's, and the only thing owed here is saying it landed,
+   * since a full restore leaves a frame that looks like nothing was ordered.
+   */
+  private undoMove(unitId: string): void {
+    if (this.currentPhase !== "player") return;
+    if (this.dispatch({ kind: "undoMove", unitId })) this.ui.notify?.("Move withdrawn.");
   }
 
   private selectAbility(unitId: string, abilityId: string): void {
@@ -878,10 +905,7 @@ export class BattleController {
     stateAfter: GameState,
     stateBefore: GameState,
   ): void {
-    // Spawns are the only beats with no animation of their own; removal,
-    // contact triggers and machine fire all present themselves now.
-    const rebuilds = new Set(["UnitSpawned", "ObjectSpawned"]);
-    if (events.some((event) => rebuilds.has(event.type))) {
+    if (events.some(needsSceneRebuild)) {
       this.renderer.buildScene(viewModelFromGameState(stateAfter));
     }
     const renderEvents = toRenderEventList(events, stateAfter);

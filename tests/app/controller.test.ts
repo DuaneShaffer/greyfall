@@ -1,6 +1,12 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it } from "vitest";
-import { activeUnit, createBattle, getObject, type GameState } from "../../src/core/index.js";
+import {
+  activeUnit,
+  canUndoMove,
+  createBattle,
+  getObject,
+  type GameState,
+} from "../../src/core/index.js";
 import type { TileCoord, Unit } from "../../src/data/index.js";
 import { BattleController } from "../../src/app/controller.js";
 import { stubAiCommand } from "../../src/app/stubAi.js";
@@ -772,5 +778,174 @@ describe("a charging cast on the field", () => {
     });
     const cast = h.ui.latest()?.turnOrder.entries.find((entry) => entry.kind === "cast");
     expect(cast).toMatchObject({ unitId: "vale", abilityName: "Slow Burst" });
+  });
+});
+
+// COMBAT_RULES §10b through the loop: the row is offered only while the rules
+// hold the slot open, the order goes out through the one dispatch path, and the
+// renderer is told which of its two answers to give.
+describe("taking the move back", () => {
+  let h: Harness;
+  beforeEach(() => {
+    h = harness();
+    h.controller.start();
+    runUntilPlayer(h, "rowen");
+  });
+
+  const undoRow = (): boolean | undefined => h.ui.latest()?.action.canUndoMove;
+
+  it("offers nothing to undo before the unit has walked", () => {
+    expect(undoRow()).toBeUndefined();
+  });
+
+  it("offers the undo after a move and puts the unit back when it is taken", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 0, y: 3 });
+    expect(undoRow()).toBe(true);
+    const scenes = h.renderer.scenes.length;
+
+    h.controller.intents.undoMove("rowen");
+
+    expect(h.controller.lastError).toBeNull();
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 0, y: 4 });
+    // A walk that set nothing off is a sprite put back, not a scene rebuilt.
+    expect(h.renderer.scenes).toHaveLength(scenes);
+    expect(h.renderer.events.at(-1)).toEqual({
+      kind: "unitSnapped",
+      unitId: "rowen",
+      tile: { x: 0, y: 4 },
+      facing: "north",
+    });
+    expect(h.ui.notices.at(-1)).toBe("Move withdrawn.");
+    // The order is spent and gone; the move is back on the table.
+    expect(undoRow()).toBeUndefined();
+    expect(h.ui.latest()?.action.canMove).toBe(true);
+    expect(h.controller.phase).toBe("player");
+  });
+
+  it("walks again after an undo, preview and all", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    h.controller.intents.undoMove("rowen");
+
+    h.controller.intents.beginMove("rowen");
+    h.controller.onTileHover({ x: 1, y: 3 });
+    expect(h.renderer.movePreview).toEqual({ unitId: "rowen", tile: { x: 1, y: 3 } });
+
+    h.controller.onTileClick({ x: 1, y: 3 });
+    h.controller.onTileClick({ x: 1, y: 3 });
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 1, y: 3 });
+  });
+
+  it("withdraws the order the same way every other order is sent", () => {
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    const locks = h.ui.forecastLocks;
+    const resets = h.ui.menuResets;
+
+    h.controller.intents.undoMove("rowen");
+
+    expect(h.ui.forecastLocks).toBe(locks + 1);
+    expect(h.ui.menuResets).toBeGreaterThan(resets);
+  });
+
+  it("holds it through the facing prompt and drops it when the wait is sent", () => {
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    expect(undoRow()).toBe(true);
+
+    // Wait is not spent until the facing is picked, so nothing is illegal yet.
+    h.controller.intents.wait("rowen", "north");
+    expect(undoRow()).toBe(true);
+
+    const from = h.ui.renders.length;
+    h.ui.facingPrompt?.onPick("north");
+    expect(h.ui.renders.slice(from).every((view) => view.action.canUndoMove !== true)).toBe(true);
+    expect(canUndoMove(h.controller.state, "rowen")).toBe(false);
+  });
+});
+
+/**
+ * A yard whose trigger flips a machine, and an enemy within reach of one step,
+ * so a walk can be made consequential and a walk can be made to be followed by
+ * an action.
+ */
+function consequenceHarness(): Harness {
+  const encounter = yardEncounter(testContent(), {
+    id: "e-undo-consequences",
+    enemies: [enemyAt(enforcer("mark", "Mark"), { x: 2, y: 4 }, "west")],
+    triggers: [
+      {
+        id: "lights-out",
+        when: { kind: "unitEntersTiles", tiles: [{ x: 0, y: 3 }] },
+        once: true,
+        actions: [{ kind: "setPower", objectId: "freight-lift", powered: false }],
+      },
+    ],
+  });
+  const battle = createBattle(testContent([encounter]), encounter.id, [rowen()], [
+    { unitId: "rowen", position: { x: 0, y: 4 }, facing: "north" },
+  ]);
+  const renderer = fakeRenderer();
+  const ui = fakeUi();
+  const controller = new BattleController({
+    state: battle.state,
+    events: battle.events,
+    renderer: renderer.port,
+    ui: ui.port,
+    ai: stubAiCommand,
+  });
+  return { controller, renderer, ui };
+}
+
+describe("taking back a move that set something off", () => {
+  it("rebuilds the scene from state rather than snapping a sprite", () => {
+    const h = consequenceHarness();
+    h.controller.start();
+    runUntilPlayer(h, "rowen");
+
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    expect(getObject(h.controller.state, "freight-lift")?.powered).toBe(false);
+    const scenes = h.renderer.scenes.length;
+    const events = h.renderer.events.length;
+
+    h.controller.intents.undoMove("rowen");
+
+    // The rollback put a machine back on the bus, and no RenderEvent describes
+    // that: the flag is the renderer's instruction to rebuild.
+    expect(h.renderer.scenes).toHaveLength(scenes + 1);
+    expect(h.renderer.events).toHaveLength(events);
+    expect(h.renderer.scenes.at(-1)?.objects.find((object) => object.id === "freight-lift")?.powered).toBe(
+      true,
+    );
+    expect(getObject(h.controller.state, "freight-lift")?.powered).toBe(true);
+    expect(h.controller.unitSnapshot("rowen")?.position).toEqual({ x: 0, y: 4 });
+    expect(h.ui.notices.at(-1)).toBe("Move withdrawn.");
+    expect(h.ui.latest()?.action.canUndoMove).toBeUndefined();
+  });
+
+  it("stops offering it once the unit has acted", () => {
+    const h = consequenceHarness();
+    h.controller.start();
+    runUntilPlayer(h, "rowen");
+
+    // A step that closes on whichever tile the enemy walked up to.
+    h.controller.intents.beginMove("rowen");
+    const mark = h.controller.unitSnapshot("mark")!.position;
+    const step = (h.renderer.highlights.get("move-range") ?? []).find(
+      (tile) => Math.abs(tile.x - mark.x) + Math.abs(tile.y - mark.y) === 1,
+    );
+    expect(step).toBeDefined();
+    h.controller.intents.confirmMove("rowen", step!);
+    expect(h.ui.latest()?.action.canUndoMove).toBe(true);
+
+    h.controller.intents.selectAbility("rowen", "basic-attack");
+    h.controller.intents.confirmTarget("rowen", "basic-attack", { kind: "unit", unitId: "mark" });
+
+    expect(h.controller.lastError).toBeNull();
+    expect(h.ui.latest()?.action.canUndoMove).toBeUndefined();
+
+    // And the rules agree with the menu: the order is refused by name.
+    h.controller.intents.undoMove("rowen");
+    expect(h.controller.lastError?.code).toBe("nothing-to-undo");
   });
 });

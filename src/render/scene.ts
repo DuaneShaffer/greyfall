@@ -156,6 +156,32 @@ export function walkAnimation(
   };
 }
 
+/**
+ * Stand a unit on a tile instantly, snapshot and all. This is the undo's
+ * presentation: a rolled-back walk did not happen, so there is nothing to
+ * interpolate along and no step to play (COMBAT_RULES §10b). Writing the
+ * snapshot back is the load-bearing half — the move preview measures its offset
+ * off the unit's recorded tile, so a snap that skipped it would leave the next
+ * preview hanging off the tile the unit no longer stands on.
+ */
+export function snapAnimation(
+  map: GameMap,
+  tile: TileCoord,
+  facing: Facing,
+  visual: Walker,
+  view: UnitView,
+): Animation {
+  const position = worldPositionOf(map, tile);
+  return instantAnimation(() => {
+    visual.setWorldPosition(position.x, position.y, position.z);
+    visual.setFacing(facing);
+    visual.rest();
+    view.position = { ...tile };
+    view.elevation = standingHeight(map, tile);
+    view.facing = facing;
+  });
+}
+
 /** The part of an object's visual the network-level events drive. */
 export interface GridNodeVisual {
   setOverload(amount: number): void;
@@ -620,6 +646,12 @@ export class BattleRenderer {
         const view = findUnitView(viewModel, event.unitId);
         if (!visual || !view) return null;
         return walkAnimation(map, event.path, event.facing, visual, view);
+      }
+      case "unitSnapped": {
+        const visual = this.units.get(event.unitId);
+        const view = findUnitView(viewModel, event.unitId);
+        if (!visual || !view) return null;
+        return snapAnimation(map, event.tile, event.facing, visual, view);
       }
       case "unitFaced": {
         const visual = this.units.get(event.unitId);

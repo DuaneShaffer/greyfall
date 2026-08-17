@@ -871,6 +871,11 @@ Captured off the real app over CDP at the reference **1600×1000** and again at
 takeover armed, a scene dominating, and a charging unit's landing tiles with the
 card dating the cast. `docs/media/battle-ui/`.
 
+The orders with a walk still open to be taken back are captured at 1600×1000 on
+Floor Nine (`undo-move-1600x1000.png`): "Undo move / Take the step back" sitting
+under a spent Move as an ordinary row, cursor on it, reached by either hand
+(COMBAT_RULES §10b).
+
 Measured on every frame, at both sizes: the mode bar's bottom is inside the
 viewport, the inspect card does not collide with the order column, and the
 document never scrolls horizontally. Those three are the frame's fit contract —

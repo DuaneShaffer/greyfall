@@ -191,6 +191,21 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
         },
       ];
     }
+    // The undo's own presentation, and the flag decides which half does it: a
+    // walk that set nothing off is a sprite put back, and one that took a mine,
+    // a spawn or a bus with it is beyond anything an event can put back — the
+    // caller rebuilds from state and this stays silent (COMBAT_RULES §10b).
+    case "UnitMoveUndone":
+      return event.revertedConsequences
+        ? []
+        : [
+            {
+              kind: "unitSnapped",
+              unitId: event.unitId,
+              tile: { ...event.to },
+              facing: event.facing,
+            },
+          ];
     case "UnitFacingChanged":
       return [{ kind: "unitFaced", unitId: event.unitId, facing: event.facing }];
     case "AbilityUsed":

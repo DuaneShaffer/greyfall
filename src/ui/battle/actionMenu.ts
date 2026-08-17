@@ -13,8 +13,12 @@ const ROOT_ID = "action-root";
 const SKILLSETS_ID = "action-skillsets";
 const OPERABLES_ID = "action-operables";
 const ITEMS_ID = "action-items";
+const UNDO_ID = "undo-move";
 
-/** Move / Act / Item / Wait, with Act opening the unit's skillsets. */
+/**
+ * Move / Act / Item / Wait, with Act opening the unit's skillsets, and a row for
+ * taking the walk back for as long as the rules hold it open.
+ */
 export class ActionMenu implements Component<ActionMenuView> {
   readonly el: HTMLElement;
   readonly menus: MenuStack;
@@ -53,6 +57,12 @@ export class ActionMenu implements Component<ActionMenuView> {
         disabled: !view.canMove,
         ...(view.canMove ? {} : { disabledReason: view.moveBlockedReason ?? "Move already spent" }),
       },
+      // Directly under the order it answers, and only while the rules would
+      // take it: an order that is not offered needs no greyed row explaining
+      // itself (UI_DESIGN §8).
+      ...(view.canUndoMove === true
+        ? [{ id: UNDO_ID, label: "Undo move", note: "Take the step back" }]
+        : []),
       {
         id: "act",
         label: "Act",
@@ -98,6 +108,10 @@ export class ActionMenu implements Component<ActionMenuView> {
     if (!view) return;
     if (entry.id === "move") {
       this.intents.beginMove(view.unit.id);
+      return;
+    }
+    if (entry.id === UNDO_ID) {
+      this.intents.undoMove(view.unit.id);
       return;
     }
     if (entry.id === "wait") {

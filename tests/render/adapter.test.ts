@@ -267,6 +267,44 @@ describe("beats that used to be scene rebuilds", () => {
     }
   });
 
+  /**
+   * The undo's two answers (COMBAT_RULES §10b). The flag is the whole decision:
+   * a walk that set nothing off is a sprite put back, and one that set something
+   * off is beyond any RenderEvent, so this stays silent and `src/app` rebuilds
+   * the scene from state.
+   */
+  it("puts a bare undone walk back with a snap and no travel", () => {
+    expect(
+      toRenderEvents(
+        {
+          type: "UnitMoveUndone",
+          unitId: "rowen",
+          from: { x: 0, y: 3 },
+          to: { x: 0, y: 4 },
+          facing: "north",
+          revertedConsequences: false,
+        },
+        state,
+      ),
+    ).toEqual([{ kind: "unitSnapped", unitId: "rowen", tile: { x: 0, y: 4 }, facing: "north" }]);
+  });
+
+  it("animates nothing when the undo took back more than the walk", () => {
+    expect(
+      toRenderEvents(
+        {
+          type: "UnitMoveUndone",
+          unitId: "rowen",
+          from: { x: 0, y: 3 },
+          to: { x: 0, y: 4 },
+          facing: "north",
+          revertedConsequences: true,
+        },
+        state,
+      ),
+    ).toEqual([]);
+  });
+
   it("is idempotent and terminal-state complete", () => {
     const events: BattleEvent[] = [
       attack,

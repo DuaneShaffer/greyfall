@@ -128,6 +128,58 @@ describe("ActionMenu", () => {
     expect(item?.title).toBe("Action already spent");
   });
 
+  // COMBAT_RULES §10b: offered only while the walk is open, a normal row while it
+  // is, and both hands reach it (UI_DESIGN §8).
+  it("keeps the undo out of the orders until a walk is open to be taken back", () => {
+    const menu = new ActionMenu();
+    menu.update(mockActionMenuView());
+    expect(entry(menu, "undo-move")).toBeNull();
+  });
+
+  it("offers the undo under Move as a normal row, and says what it does", () => {
+    const menu = new ActionMenu();
+    menu.update(mockActionMenuView({ canMove: false, canUndoMove: true }));
+
+    const undo = entry(menu, "undo-move");
+    expect(undo?.classList.contains("is-disabled")).toBe(false);
+    expect(undo?.querySelector(".gf-menu-label")?.textContent).toBe("Undo move");
+    expect(undo?.querySelector(".gf-menu-note")?.textContent).toBe("Take the step back");
+    const ids = [...menu.el.querySelectorAll(".gf-menu-entry")].map((node) =>
+      node.getAttribute("data-entry"),
+    );
+    expect(ids.indexOf("undo-move")).toBe(ids.indexOf("move") + 1);
+  });
+
+  it("sends the undo from the keyboard", () => {
+    const { intents, calls } = recordingIntents();
+    const menu = new ActionMenu({ intents });
+    menu.update(mockActionMenuView({ canMove: false, canUndoMove: true }));
+
+    // Move is spent, so the cursor rests on the row under it.
+    menu.menus.handleKey(key("Enter"));
+    expect(calls).toEqual([{ name: "undoMove", args: ["rowen"] }]);
+  });
+
+  it("sends the undo from the mouse", () => {
+    const { intents, calls } = recordingIntents();
+    const menu = new ActionMenu({ intents });
+    menu.update(mockActionMenuView({ canUndoMove: true }));
+
+    const undo = entry(menu, "undo-move")!;
+    undo.dispatchEvent(new MouseEvent("mouseenter"));
+    undo.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(calls).toEqual([{ name: "undoMove", args: ["rowen"] }]);
+  });
+
+  it("takes the row away again the moment the undo is illegal", () => {
+    const menu = new ActionMenu();
+    menu.update(mockActionMenuView({ canMove: false, canUndoMove: true }));
+    expect(entry(menu, "undo-move")).not.toBeNull();
+
+    menu.update(mockActionMenuView({ canMove: false }));
+    expect(entry(menu, "undo-move")).toBeNull();
+  });
+
   it("Escape backs out of a skillset and reports the cancel", () => {
     const { intents, calls } = recordingIntents();
     const menu = new ActionMenu({ intents });

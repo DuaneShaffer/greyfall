@@ -21,6 +21,7 @@ import {
   battleClock,
   battleEncounter,
   battleMap,
+  canUndoMove,
   forecast,
   getObject,
   getUnit,
@@ -249,6 +250,9 @@ export function actionMenuView(state: GameState, unitId: string): ActionMenuView
     ...(actSpent || heldBack
       ? { actBlockedReason: heldBack ? "Cannot act" : "Action already spent" }
       : {}),
+    // Asked of core, never inferred from the turn flags: the undo slot is the
+    // whole rule, and it is cleared by every command a move is not.
+    ...(canUndoMove(state, unitId) ? { canUndoMove: true } : {}),
     operables,
     items: satchelViews(state, unitId),
   };

@@ -22,6 +22,8 @@ export interface BattleIntents {
   beginMove(unitId: string): void;
   /** Player confirmed a destination tile. -> MoveUnit command. */
   confirmMove(unitId: string, tile: TileCoord): void;
+  /** Player took the walk back. -> UndoMove command (COMBAT_RULES §10b). */
+  undoMove(unitId: string): void;
   /** Player picked an ability from a skillset menu; targeting begins. */
   selectAbility(unitId: string, abilityId: string): void;
   /** Player confirmed the target of the pending ability. -> UseAbility command. */
@@ -94,6 +96,7 @@ export function noopIntents(): UiIntents {
   return {
     beginMove: sink,
     confirmMove: sink,
+    undoMove: sink,
     selectAbility: sink,
     confirmTarget: sink,
     selectItem: sink,

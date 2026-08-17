@@ -29,6 +29,11 @@ export type RenderEvent =
   /** Walk a unit along `path` (path[0] is the current tile). */
   | { kind: "unitMoved"; unitId: string; path: TileCoord[]; facing: Facing }
   | { kind: "unitFaced"; unitId: string; facing: Facing }
+  /**
+   * Put a unit on a tile with no travel between: an undone move is not a walk
+   * backwards, it is the walk never having happened (COMBAT_RULES §10b).
+   */
+  | { kind: "unitSnapped"; unitId: string; tile: TileCoord; facing: Facing }
   /** The actor's own swing/cast, emitted ahead of the hits it causes. */
   | { kind: "unitActed"; unitId: string; pose: ActorPose }
   | {

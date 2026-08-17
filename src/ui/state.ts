@@ -135,6 +135,13 @@ export interface ActionMenuView {
   operables?: OperableView[];
   /** The satchel, shared by the whole force; empty hides the Item entry. */
   items?: ItemEntryView[];
+  /**
+   * A walk is open to be taken back (COMBAT_RULES §10b). Absent is the normal
+   * case, and the row is offered only while the rules would accept it — the
+   * order is never greyed, because "nothing to undo" is not a refusal the
+   * player needs explaining.
+   */
+  canUndoMove?: boolean;
 }
 
 export interface ForecastTargetView {
