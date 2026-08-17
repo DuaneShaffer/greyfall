@@ -8,6 +8,11 @@ import type { GameState, TargetRef } from "../state/types.js";
  */
 export type Command =
   | { kind: "move"; unitId: string; to: TileCoord }
+  // Rewinds the whole battle to the instant before this turn's `move`, side
+  // effects included (COMBAT_RULES §10b). Player comfort only: the AI never
+  // emits it, and a replay reproduces the same battle whether the move/undo
+  // pair is logged or elided.
+  | { kind: "undoMove"; unitId: string }
   | { kind: "act"; unitId: string; abilityId: string; target: TargetRef }
   | { kind: "useItem"; unitId: string; itemId: string; target: TargetRef }
   | { kind: "activateObject"; unitId: string; objectId: string }
@@ -29,6 +34,7 @@ export type CommandErrorCode =
   | "unit-downed"
   | "already-moved"
   | "already-acted"
+  | "nothing-to-undo"
   | "move-prevented"
   | "action-prevented"
   | "unreachable"

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "leg-up",
+  "name": "Leg Up",
+  "description": "Nobody gets onto a condemned gantry alone. Boot in a workmate's hands, hands on the lip, and you are up where the building did not intend you.",
+  "jobId": "saboteur",
+  "standingCost": 350,
+  "slot": "movement",
+  "passive": {
+    "allyVaultHeight": 2
+  }
+}

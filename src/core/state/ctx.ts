@@ -17,10 +17,15 @@ export function emit(ctx: Ctx, event: BattleEvent): void {
   ctx.events.push(event);
 }
 
-/** Clone everything but the immutable content snapshot, which is shared. */
+/**
+ * Clone everything but the immutable content snapshot, which is shared. The
+ * undo slot is carried by reference too: it is written whole and read whole,
+ * never mutated in place, and deep-copying a whole spare battle on every
+ * command would cost what the slot exists to make cheap.
+ */
 export function cloneState(state: GameState): GameState {
-  const { content, ...rest } = state;
-  return { ...structuredClone(rest), content };
+  const { content, moveUndo, ...rest } = state;
+  return { ...structuredClone(rest), content, moveUndo };
 }
 
 export function nextOrdinal(state: GameState): number {

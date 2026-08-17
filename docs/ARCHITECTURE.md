@@ -65,7 +65,10 @@ units + RNG seed) plus an ordered command log. That gives us for free:
 - **Save/load** — serialize `GameState` to JSON (versioned envelope).
 - **Replay** — initial state + command log re-produces the identical battle;
   golden-replay tests catch rule regressions.
-- **Undo in tools/debug** — keep prior states.
+- **Undo in tools/debug** — keep prior states. The player-facing one-step undo
+  (`COMBAT_RULES` §10b) is the same trick made a rule: `GameState.moveUndo`
+  holds the pre-move battle, and `{ kind: "undoMove" }` restores it wholesale.
+  It is still plain JSON, and it is still one snapshot deep.
 - **AI and player parity** — the AI emits the same `Command` type the input
   layer does; the core cannot tell who is playing.
 

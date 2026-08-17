@@ -28,6 +28,17 @@ export type BattleEvent =
   | { type: "ClockAdvanced"; clock: number }
   | { type: "UnitMoved"; unitId: string; from: TileCoord; to: TileCoord; path: TileCoord[] }
   | { type: "UnitForcedMove"; unitId: string; from: TileCoord; to: TileCoord }
+  // The whole battle is back where it stood before the move. `revertedConsequences`
+  // says the move had set something off besides itself, so a renderer holding
+  // derived scene state has to rebuild from `GameState` rather than snap a sprite.
+  | {
+      type: "UnitMoveUndone";
+      unitId: string;
+      from: TileCoord;
+      to: TileCoord;
+      facing: Facing;
+      revertedConsequences: boolean;
+    }
   | { type: "UnitFacingChanged"; unitId: string; facing: Facing }
   | { type: "AbilityUsed"; unitId: string; abilityId: string; target: TargetRef; tiles: TileCoord[] }
   // Precedes the `AbilityUsed` the item resolves through; `remaining` is what

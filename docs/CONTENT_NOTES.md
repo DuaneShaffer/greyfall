@@ -277,6 +277,7 @@ biggest gap between this kit and its bible fantasy.
 | Bring the House | action | 1100 / **7**, cast 15 | radius 3, phys 8 + shove 2 + object phys 14 |
 | Light Hands | support | 500 | evade +6, speed +1 |
 | Catwalk Sense | movement | 400 | ignoresHazardTiles, jump +1, move +1 |
+| Leg Up | movement | 350 | allyVaultHeight 2 |
 
 **Saboteur damage is all `base: "phys"`, never `mag`.** Explosives are not
 attunement — a charge does the same thing to a licensed Conduit and to a
@@ -318,11 +319,46 @@ is a Shaped Charge left after it.
 | Shoulder Off | reaction (targetedByAction) | 550 | push 1 + Fouled 30% |
 | Yard Legs | support | 600 | speed +1, evade +3 |
 | Rail Dash | movement | 500 | railMoveMultiplier 3 |
+| Right of Way | movement | 450 | moveThroughEnemiesOnRail, deckVaultHeight 2 |
 
 The Railrunner has the lowest damage per hit of any melee job by design. Its
 output is positional: Coupling Hook drags a target off a ledge or onto a
 hazard, Running Coupling drags a whole line of them, and Rail Dash turns a
 rail map's Move 5 into an effective 15 along the track (COMBAT_RULES §10).
+
+### The movement tech pair (Leg Up, Right of Way)
+
+Two purchasable passives that buy **access** where the four older ones buy
+**stats** — the survey's #8 (`GENRE_SURVEY` §2.11), landed on the two jobs whose
+fantasy is traversal. The rules are COMBAT_RULES §10a; the content decisions are
+these:
+
+- **Neither carries a `statMods`, deliberately.** Catwalk Sense and Hydraulic
+  Stride are stat passives with a rider; these two are the opposite trade, and
+  a Saboteur choosing Leg Up over Catwalk Sense is giving up +1/+1 for a route
+  that did not exist. That has to be a real cost or the movement slot stops
+  being a choice. In a bare duel they are the weaker pick and the sim says so
+  (a level-3 Saboteur's arena win rate is unchanged by swapping in Leg Up,
+  because in an arena there is nothing to climb); on a vertical or rail-crossed
+  map they are the reason to be that job on that map.
+- **Priced under their stat-carrying rivals.** Leg Up 350 against Catwalk
+  Sense's 400; Right of Way 450 against Rail Dash's 500. Both sit inside
+  `PROGRESSION` §2's 100–1100 band and under its 450 median, which is where a
+  conditional effect belongs.
+- **Leg Up is the Saboteur's, not the Enforcer's, because the fiction is a
+  crew.** The survey's own image is a boost off a workmate's shoulders on a
+  gantry, and the Saboteur is who is on the gantry. It reads as the same hand
+  that knows which grating holds — Catwalk Sense's flavour, one rung further up.
+  Ally-only, and same-team only: a bystander is walked past, not climbed.
+- **Right of Way is rail-conditional on purpose.** The Enforcer already owns
+  unconditional pass-through (Press Through, 500, with move +1); the Railrunner
+  gets the terrain-keyed half for less, which is the job's whole thesis — "on a
+  rail map a demon, in a bare courtyard merely quick" (bible §6). The deck vault
+  is the other half of the same fiction: she rides hooks and lifts, so a deck
+  edge two above the floor is a step and not a wall.
+- **Nobody starts with either.** No shipped roster unit slots them and no
+  encounter changes; `tests/content.test.ts` holds that line, and the golden
+  replays are byte-identical across the change.
 
 ### Augmented — every strength on credit
 | Ability | Slot | Standing / Charge / HP | Effect |

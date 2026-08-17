@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { getObject } from "../../../src/core/index.js";
 import type { TileCoord } from "../../../src/data/index.js";
-import { buildContext, chooseCommand } from "../../../src/core/ai/index.js";
+import { buildContext, chooseCommand, WEIGHTS } from "../../../src/core/ai/index.js";
 import { distanceField } from "../../../src/core/ai/field.js";
 import { moveProfile, reachableTiles } from "../../../src/core/rules/movement.js";
 import { advanceTo } from "../fixtures.js";
-import { at, conduit, medic, playTurn, unit, watchman, yardBattle } from "./fixtures.js";
+import { at, conduit, medic, playBattle, playTurn, unit, watchman, yardBattle } from "./fixtures.js";
 
 /** The four tiles the yard cell flares onto when it goes up. */
 const BLAST: TileCoord[] = [
@@ -231,5 +231,47 @@ describe("job expression", () => {
     expect(field[command.to.y * map.width + command.to.x]).toBeLessThan(
       field[0 * map.width + 5] ?? Number.MAX_SAFE_INTEGER,
     );
+  });
+});
+
+describe("the AI's vocabulary", () => {
+  /**
+   * `undoMove` is player comfort and the AI is deliberately unaware of it: it
+   * has nothing to take back, since it never commits a move it has not already
+   * scored. Nothing gates the command by team — this is the gate.
+   */
+  it("never asks the engine to undo a move", () => {
+    const played = playBattle(
+      yardBattle([
+        at(watchman("brute"), "enemy", { x: 5, y: 0 }, "south"),
+        at(conduit("sparks"), "enemy", { x: 4, y: 1 }, "south"),
+        at(watchman("mark"), "player", { x: 1, y: 4 }, "north"),
+        at(medic("mercy"), "player", { x: 0, y: 5 }, "north"),
+      ]),
+    );
+    expect(played.commands.length).toBeGreaterThan(10);
+    expect(played.commands.some((command) => command.kind === "undoMove")).toBe(false);
+  });
+
+  /**
+   * Reachability has one implementation: `rules/movement`. The AI reads the same
+   * `MoveProfile` the command layer validates against, so a purchased movement
+   * passive widens what the AI will consider by the same rule it widens the
+   * player's overlay.
+   */
+  it("resolves movement passives through the rules' own profile", () => {
+    const runner = watchman("runner", "Runner", { movementAbilityId: "right-of-way" });
+    const state = advanceTo(
+      yardBattle([
+        at(runner, "enemy", { x: 3, y: 5 }, "north"),
+        at(watchman("mark"), "player", { x: 1, y: 1 }, "south"),
+      ]),
+      "runner",
+    );
+    const actor = unit(state, "runner");
+    const ctx = buildContext(state, actor, WEIGHTS);
+    expect(ctx.move).toEqual(moveProfile(state, actor));
+    expect(ctx.move.moveThroughEnemiesOnRail).toBe(true);
+    expect(ctx.move.deckVaultHeight).toBe(2);
   });
 });

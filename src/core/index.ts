@@ -30,6 +30,7 @@ export type {
   ActiveTurn,
   BattleContent,
   BattleResult,
+  BattleSnapshot,
   BattleUnit,
   ChargedAction,
   ConsumableItem,
@@ -39,6 +40,7 @@ export type {
   GridRuntime,
   MapState,
   MovementAbility,
+  MoveUndoSlot,
   ObjectRuntime,
   ReactionAbility,
   SupportAbility,
@@ -68,6 +70,7 @@ export {
   battleEncounter,
   battleMap,
   battleResult,
+  canUndoMove,
   forecast,
   getObject,
   getUnit,
@@ -118,7 +121,8 @@ export {
   itemIdFromAbilityId,
 } from "./rules/items.js";
 export type { AttackAngle } from "./rules/grid.js";
-export type { ReachableTile } from "./rules/movement.js";
+export { isDecked } from "./rules/grid.js";
+export { moveProfile, type MoveProfile, type ReachableTile } from "./rules/movement.js";
 
 export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";
 

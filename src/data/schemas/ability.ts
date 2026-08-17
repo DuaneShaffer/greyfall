@@ -88,6 +88,12 @@ const MovementAbility = AbilityBase.extend({
       railMoveMultiplier: z.int().positive(),
       ignoresHazardTiles: z.boolean(),
       moveThroughEnemies: z.boolean(),
+      // Movement tech (COMBAT_RULES §10a): the vault allowances add to Jump for
+      // one *upward* step under their own condition, and the rail waiver is the
+      // terrain-conditional half of `moveThroughEnemies`.
+      allyVaultHeight: z.int().positive(),
+      deckVaultHeight: z.int().positive(),
+      moveThroughEnemiesOnRail: z.boolean(),
     })
     .partial(),
 });

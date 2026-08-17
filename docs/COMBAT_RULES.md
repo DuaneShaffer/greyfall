@@ -284,10 +284,12 @@ An edge from tile A to orthogonally adjacent tile B is usable when:
 - B is in bounds and its terrain is not `impassable` or `void`.
 - No undestroyed object with `blocksMovement` covers B, unless that object
   provides an active walkable surface (see §11).
-- `|standHeight(B) - standHeight(A)| <= Jump`.
-- B is not occupied by a hostile standing unit (`moveThroughEnemies` waives
-  this). Allies and neutrals (§18) may be walked through but not stopped on.
-  Downed units do not occupy anything.
+- `|standHeight(B) - standHeight(A)| <= Jump` (§10a's vault allowances raise the
+  ceiling for one upward step under their own conditions).
+- B is not occupied by a hostile standing unit (`moveThroughEnemies` waives this
+  outright, `moveThroughEnemiesOnRail` waives it on rail — §10a). Allies and
+  neutrals (§18) may be walked through but not stopped on. Downed units do not
+  occupy anything.
 
 Tile entry cost, in the scaled units the Railrunner multiplier defines
 (`railMultiplier` defaults to 1, and the move budget is `Move * railMultiplier`):
@@ -317,6 +319,97 @@ the ability's area, `forward` follows the actor's own facing — which is what a
 self-targeted ability needs, since its aimed tile is the tile it is standing on.
 `moveSelf` does not change facing; the actor has already turned to face what it
 aimed at.
+
+## 10a. Movement tech: what a route may pass through and over
+
+Three optional flags on a `movement` passive change the edge rules above and
+nothing else. All three default off, so a unit carrying no movement ability —
+which is every unit in every shipped encounter — paths exactly as §10 describes.
+`docs/design/GENRE_SURVEY.md` §2.11 is the design rationale.
+
+| Flag | What it changes |
+|---|---|
+| `allyVaultHeight: N` | An **upward** step *leaving* a tile a same-team unit is standing on may clear `Jump + N`. |
+| `deckVaultHeight: N` | An **upward** step *onto* a tile whose stand height comes from an object's deck (§11) may clear `Jump + N`. |
+| `moveThroughEnemiesOnRail` | A hostile-occupied tile may be passed through while that tile's terrain is `rail`. |
+
+Rules the flags do **not** bend:
+
+- **Descents are always plain Jump.** A boost off a workmate's shoulders lifts
+  you; it does not catch you. `rise <= 0` never consults a vault allowance.
+- **Passing through is not stopping.** The destination rule is unchanged: no
+  standing unit may be stood on, whoever it belongs to. A vault's launch tile
+  and a rail body's tile come back from `reachableTiles` with `canStop: false`.
+- **Nothing is free.** Terrain entry cost is unchanged; a vault or a
+  run-through still spends the tiles it crosses out of the Move budget.
+- **The ally must be an ally.** `allyVaultHeight` reads same-team only — a
+  neutral bystander (§18) is walked past, not climbed.
+
+Allowances add when a unit somehow carries both. A single movement slot means
+shipped content never does; the additive rule is stated so the arithmetic is
+not a surprise if that ever changes.
+
+One consequence worth stating: reachability has exactly one implementation
+(`core/rules/movement.moveField`), and the AI's candidate stand-tiles, the
+player's move overlay, and the command layer's `unreachable` check all read it.
+A purchased movement passive therefore widens what the AI will consider by the
+same rule it widens what the player may click.
+
+## 10b. Undoing a move
+
+A unit that has moved and not yet acted may take the move back:
+`{ kind: "undoMove", unitId }`. It is legal when, and only when:
+
+1. the battle has not resolved (`state.result === null`), and
+2. the engine is holding an undo slot for that unit.
+
+The slot is written by an accepted `move` and cleared by **every** other
+command, which is what carries the rest of the rule without a second list of
+conditions: acted, waited, ended the turn, already undone, or someone else's
+turn — in each case there is no slot and the command is rejected
+`nothing-to-undo`. A command naming the wrong unit is rejected
+`not-active-unit`. Depth is one move, always the current one.
+
+**It is a full rollback, and that is a ruling, not an implementation
+convenience.** The slot holds the whole battle as it stood before the move, so
+undo restores position, facing, the turn's move flag, and *everything the walk
+set off*: a detonated mine is back in the ground with the damage unpaid, fired
+triggers are unfired, spawned reinforcements are gone, flipped power is flipped
+back, the clock and turn counter are where they were, and the RNG stream is
+rewound to the draw it was on. A unit its own walk killed comes back up.
+Re-walking the same path therefore re-rolls identically.
+
+The free scout this creates is **intended**. It costs nothing here because the
+game has no fog of war and nothing on the board is hidden from the player that
+the interface is not already obliged to show; a scout-and-undo that surfaces
+something is a bug report about the overlay, not an exploit. What genuinely is
+discovered by walking into it — an unmarked mine, a scripted beat — is
+discovered, and the knowledge is the player's to keep. The *state* keeps
+nothing. That asymmetry is the point: the player learns the twist and then has
+to solve the board with it.
+
+Two boundaries, both deliberate:
+
+- **A resolved battle is final.** If the move won or lost the battle, undo is
+  rejected `battle-over`. The result screen is a presentation edge, not a turn,
+  and `PROGRESSION` §3's "a win banks and buries" is not something a button
+  should be able to re-roll.
+- **The AI never emits it.** Nothing gates the command by team; the AI simply
+  has nothing to take back, since it commits no move it has not already scored.
+  `tests/core/ai/decisions.test.ts` asserts a whole AI-vs-AI battle never
+  produces one.
+
+Events: one `UnitMoveUndone`, carrying the unit's position before and after and
+its restored facing, plus `revertedConsequences` — true when the rolled-back
+move had emitted anything beyond its own `UnitMoved`/`UnitFacingChanged`. A
+renderer holding derived scene state must rebuild from `GameState` when that
+flag is set, since the rollback may have taken back a corpse, a spawn, or a
+power state; when it is false, snapping the sprite back is sufficient.
+
+Replay semantics: `undoMove` is an ordinary deterministic command, so a log
+containing the `move`/`undoMove` pair replays to the identical battle. Because
+the pair is a no-op on state, a recorder may also elide it; both logs reproduce
+the same battle, and the goldens keep the minimal form by never recording one.
 
 ## 11. Height and standable surfaces
 

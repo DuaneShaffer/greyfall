@@ -117,6 +117,14 @@ export function activeTurnState(state: GameState): ActiveTurn | null {
   return state.activeTurn;
 }
 
+/**
+ * Whether `undoMove` would be accepted for this unit right now — the button's
+ * enabled state, and the same test the command layer applies (COMBAT_RULES §10b).
+ */
+export function canUndoMove(state: GameState, unitId: string): boolean {
+  return state.result === null && state.moveUndo?.unitId === unitId;
+}
+
 /** False when a status such as Stunned is holding the unit still. */
 export function unitCanMove(state: GameState, unitId: string): boolean {
   const unit = unitById(state, unitId);

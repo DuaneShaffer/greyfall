@@ -156,6 +156,22 @@ export interface ActiveTurn {
 
 export type BattleResult = "win" | "loss";
 
+/** Everything about a battle except the content snapshot, which never changes. */
+export type BattleSnapshot = Omit<GameState, "content" | "moveUndo">;
+
+/**
+ * The one-step undo slot (COMBAT_RULES §10b). Holds the whole pre-move battle
+ * as it stood before the accepted `move`, so `undoMove` is a wholesale restore
+ * rather than a hand-written inverse of everything a walk can set off. Any
+ * command other than a `move` clears it, which is what keeps the depth at one.
+ */
+export interface MoveUndoSlot {
+  unitId: string;
+  /** True when the move produced events beyond its own `UnitMoved`/facing pair. */
+  consequential: boolean;
+  state: BattleSnapshot;
+}
+
 /** The whole battle. JSON-serializable; nothing here is a class or a closure. */
 export interface GameState {
   version: 2;
@@ -177,4 +193,6 @@ export interface GameState {
   firedTriggerIds: string[];
   result: BattleResult | null;
   nextOrdinal: number;
+  /** Pre-move rollback for `undoMove`; never itself part of a snapshot. */
+  moveUndo: MoveUndoSlot | null;
 }

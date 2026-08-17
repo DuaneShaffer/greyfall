@@ -1,6 +1,14 @@
 import { getAbility, knownActionAbilityIds } from "../state/content.js";
 import { cloneState, emit, type Ctx } from "../state/ctx.js";
-import type { ActionAbility, BattleUnit, ConsumableItem, GameState, TargetRef } from "../state/types.js";
+import type {
+  ActionAbility,
+  BattleUnit,
+  ConsumableItem,
+  GameState,
+  MoveUndoSlot,
+  TargetRef,
+} from "../state/types.js";
+import type { BattleEvent } from "../events/types.js";
 import {
   activateObject as fireObject,
   awardStanding,
@@ -156,7 +164,78 @@ function validateAct(
   return error === null ? { ability, error: null } : { ability: null, error };
 }
 
-function validate(state: GameState, cmd: Command, unit: BattleUnit): CommandError | null {
+/**
+ * The undo slot's own legality, which is the whole rule (COMBAT_RULES §10b):
+ * the slot is written only by an accepted `move` and cleared by every other
+ * command, so "has not acted, has not ended the turn, has not already undone"
+ * is carried by the slot existing at all. Deliberately *not* checked: whether
+ * the move set anything off, and whether the mover survived it — a full
+ * rollback un-downs a unit its own walk killed. A resolved battle is the one
+ * hard boundary: the result screen is a presentation edge, not a turn.
+ */
+function undoableMove(
+  state: GameState,
+  cmd: Extract<Command, { kind: "undoMove" }>,
+): { slot: MoveUndoSlot; error: null } | { slot: null; error: CommandError } {
+  if (state.result !== null) {
+    return { slot: null, error: commandError("battle-over", "the battle is already decided") };
+  }
+  const slot = state.moveUndo;
+  if (slot === null) {
+    return { slot: null, error: commandError("nothing-to-undo", "no move is open to undo") };
+  }
+  if (slot.unitId !== cmd.unitId) {
+    return {
+      slot: null,
+      error: commandError("not-active-unit", `${cmd.unitId} is not the unit that moved`),
+    };
+  }
+  return { slot, error: null };
+}
+
+/**
+ * Restore the battle wholesale. No `settle` pass follows: the snapshot was
+ * already settled by the command that produced it and nothing has happened
+ * since that is not being taken back, so re-running triggers here would only
+ * risk re-firing a repeatable one against a state it has already answered.
+ */
+function applyUndoMove(state: GameState, cmd: Extract<Command, { kind: "undoMove" }>): CommandResult {
+  const { slot, error } = undoableMove(state, cmd);
+  if (slot === null) return { state, events: [], error };
+
+  const restored: GameState = { ...structuredClone(slot.state), content: state.content, moveUndo: null };
+  const back = unitById(restored, slot.unitId);
+  if (back === undefined) {
+    return { state, events: [], error: commandError("unknown-unit", `no unit ${slot.unitId}`) };
+  }
+  const from = unitById(state, slot.unitId)?.position ?? back.position;
+  return {
+    state: restored,
+    events: [
+      {
+        type: "UnitMoveUndone",
+        unitId: slot.unitId,
+        from: { ...from },
+        to: { ...back.position },
+        facing: back.facing,
+        revertedConsequences: slot.consequential,
+      },
+    ],
+    error: null,
+  };
+}
+
+/** Events a bare walk emits; anything else means the move set something off. */
+function isPlainMoveEvent(event: BattleEvent, unitId: string): boolean {
+  if (event.type === "UnitMoved") return event.unitId === unitId;
+  return event.type === "UnitFacingChanged" && event.unitId === unitId;
+}
+
+function validate(
+  state: GameState,
+  cmd: Exclude<Command, { kind: "undoMove" }>,
+  unit: BattleUnit,
+): CommandError | null {
   const turn = state.activeTurn;
   switch (cmd.kind) {
     case "move": {
@@ -233,6 +312,8 @@ function finish(ctx: Ctx, turnEnded: boolean): void {
  * fired along the way.
  */
 export function applyCommand(state: GameState, cmd: Command): CommandResult {
+  if (cmd.kind === "undoMove") return applyUndoMove(state, cmd);
+
   const actor = resolveActor(state, cmd);
   if (actor.unit === null) return { state, events: [], error: actor.error };
   const error = validate(state, cmd, actor.unit);
@@ -242,6 +323,10 @@ export function applyCommand(state: GameState, cmd: Command): CommandResult {
   const unit = unitById(ctx.state, cmd.unitId);
   const turn = ctx.state.activeTurn;
   if (unit === undefined || turn === null) return { state, events: [], error: actor.error };
+
+  // Anything but a walk closes the window: one move deep, and no snapshot ever
+  // outlives the turn that took it.
+  ctx.state.moveUndo = null;
 
   let turnEnded = false;
   switch (cmd.kind) {
@@ -315,5 +400,13 @@ export function applyCommand(state: GameState, cmd: Command): CommandResult {
   }
 
   finish(ctx, turnEnded);
+  if (cmd.kind === "move" && ctx.events.some((e) => e.type === "UnitMoved" && e.unitId === unit.id)) {
+    const { content: _content, moveUndo: _moveUndo, ...rest } = state;
+    ctx.state.moveUndo = {
+      unitId: unit.id,
+      consequential: !ctx.events.every((e) => isPlainMoveEvent(e, unit.id)),
+      state: structuredClone(rest),
+    };
+  }
   return { state: ctx.state, events: ctx.events, error: null };
 }

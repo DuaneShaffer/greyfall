@@ -138,6 +138,27 @@ describe("content cross-references", () => {
     expect(rated.standingCost).toBeLessThanOrEqual(600);
   });
 
+  /**
+   * The movement tech (COMBAT_RULES §10a) is purchasable vocabulary, not a
+   * default: it belongs to the two jobs whose fantasy is traversal, and no
+   * shipped roster starts with either, so every authored encounter plays exactly
+   * as it did before the rule existed.
+   */
+  it("puts the vault and the run-through on the two traversal jobs and on nobody's sheet", () => {
+    const tech = { "leg-up": "saboteur", "right-of-way": "railrunner" } as const;
+    for (const [abilityId, jobId] of Object.entries(tech)) {
+      const ability = abilities.get(abilityId);
+      expect(ability, `missing ${abilityId}`).toBeDefined();
+      expect(ability!.slot).toBe("movement");
+      expect(ability!.jobId).toBe(jobId);
+      expect(jobs.get(jobId)!.learnableAbilityIds).toContain(abilityId);
+      for (const unit of units.values()) {
+        expect(unit.movementAbilityId, `${unit.id} starts with ${abilityId}`).not.toBe(abilityId);
+        expect(unit.learnedAbilityIds, `${unit.id} starts with ${abilityId}`).not.toContain(abilityId);
+      }
+    }
+  });
+
   it("units reference existing jobs, abilities, and items", () => {
     for (const unit of units.values()) expectUnitRefs(unit, unit.id);
   });

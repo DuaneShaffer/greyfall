@@ -102,6 +102,7 @@ export function createBattle(
     firedTriggerIds: [],
     result: null,
     nextOrdinal: 0,
+    moveUndo: null,
   };
 
   const taken: TileCoord[] = [];

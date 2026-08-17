@@ -4,6 +4,7 @@ import {
   areEnemies,
   coordEq,
   inBounds,
+  isDecked,
   isStandable,
   neighbors,
   standHeight,
@@ -28,6 +29,12 @@ export interface MoveProfile {
   /** Skips the water cost multiplier. */
   ignoresHazardTiles: boolean;
   moveThroughEnemies: boolean;
+  /** Added to Jump for an upward step leaving a tile an ally is standing on. */
+  allyVaultHeight: number;
+  /** Added to Jump for an upward step onto an object's deck (catwalk, lift). */
+  deckVaultHeight: number;
+  /** Hostile-occupied tiles may be passed through while the tile is rail. */
+  moveThroughEnemiesOnRail: boolean;
 }
 
 function movementPassive(state: GameState, unit: BattleUnit): MovementAbility["passive"] | undefined {
@@ -47,7 +54,44 @@ export function moveProfile(state: GameState, unit: BattleUnit): MoveProfile {
     railMultiplier: passive?.railMoveMultiplier ?? 1,
     ignoresHazardTiles: passive?.ignoresHazardTiles ?? false,
     moveThroughEnemies: passive?.moveThroughEnemies ?? false,
+    allyVaultHeight: passive?.allyVaultHeight ?? 0,
+    deckVaultHeight: passive?.deckVaultHeight ?? 0,
+    moveThroughEnemiesOnRail: passive?.moveThroughEnemiesOnRail ?? false,
   };
+}
+
+/**
+ * Height a unit may clear on one step. Descents are always plain Jump — a boost
+ * lifts you, it does not catch you. Vault allowances stack when a unit somehow
+ * carries both; a single movement slot means shipped content never does.
+ */
+function stepClearance(
+  state: GameState,
+  unit: BattleUnit,
+  profile: MoveProfile,
+  from: TileCoord,
+  to: TileCoord,
+  rise: number,
+): number {
+  if (rise <= 0) return profile.jump;
+  let clearance = profile.jump;
+  if (profile.allyVaultHeight > 0) {
+    const boost = unitAt(state, from);
+    if (boost !== undefined && boost.id !== unit.id && boost.team === unit.team) {
+      clearance += profile.allyVaultHeight;
+    }
+  }
+  if (profile.deckVaultHeight > 0 && isDecked(state, to)) clearance += profile.deckVaultHeight;
+  return clearance;
+}
+
+/** Whether a standing hostile on `tile` stops this unit from passing through it. */
+function hostileBlocks(state: GameState, unit: BattleUnit, tile: TileCoord, profile: MoveProfile): boolean {
+  const occupant = unitAt(state, tile);
+  if (occupant === undefined || !areEnemies(occupant, unit)) return false;
+  if (profile.moveThroughEnemies) return false;
+  if (profile.moveThroughEnemiesOnRail && tileAt(state.content.map, tile)?.terrain === "rail") return false;
+  return true;
 }
 
 /**
@@ -101,9 +145,9 @@ export function moveField(state: GameState, unit: BattleUnit): Map<number, MoveN
     for (const next of neighbors(from)) {
       if (!inBounds(map, next)) continue;
       if (!isStandable(state, next)) continue;
-      if (Math.abs(standHeight(state, next) - fromHeight) > profile.jump) continue;
-      const occupant = unitAt(state, next);
-      if (occupant !== undefined && areEnemies(occupant, unit) && !profile.moveThroughEnemies) continue;
+      const rise = standHeight(state, next) - fromHeight;
+      if (Math.abs(rise) > stepClearance(state, unit, profile, from, next, rise)) continue;
+      if (hostileBlocks(state, unit, next, profile)) continue;
       const cost = node.cost + stepCost(state, next, profile);
       if (cost > budget) continue;
       const index = tileIndex(map, next);

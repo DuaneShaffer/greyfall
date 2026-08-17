@@ -1086,6 +1086,15 @@ CT-neutral; both fully forecastable.
 
 *Verdict: **recommend**, ranked #8 — the cheapest real delight in the document.*
 
+*Landed* as pathing vocabulary rather than as two action abilities: three
+`movement` passive flags (`allyVaultHeight`, `deckVaultHeight`,
+`moveThroughEnemiesOnRail`) and two purchasable passives, Leg Up (Saboteur) and
+Right of Way (Railrunner). Rules: `COMBAT_RULES` §10a; content reasoning:
+`CONTENT_NOTES` §4. The vault became "launch off an ally's tile" — the sketch's
+own fiction — because allies were already passable and the height ceiling was
+the only thing actually stopping it. Run-through-as-damage (a `line` area
+resolved from the path) is *not* built and is still open.
+
 ### 2.12 Final Fantasy Tactics Advance — laws (a reframe, not an import)
 
 Named here because it is FFT-family and because the reframed version is
@@ -1376,6 +1385,11 @@ value per hour.
    information, so stepping and stepping back reveals nothing and cannot be
    abused. The turn is not committed until `wait`/`endTurn` (§6), so this is a
    controller-level snapshot-and-restore, not an engine change. *C1.*
+   *Landed* as an engine command instead — `{ kind: "undoMove" }` — because the
+   walk can detonate a mine or fire a trigger, and the owner's ruling is that
+   undo takes those back too. A controller-level restore could not have; the
+   engine holds the pre-move state. `COMBAT_RULES` §10b, including why the free
+   scout is intended and why a resolved battle is final.
 2. **Preview the turn cost.** §6 prices a turn at 100 / 80 / 60 CT for
    moved-and-acted / one / neither, which is a real decision the interface never
    shows. Stage an order and the queue previews itself as it would be after

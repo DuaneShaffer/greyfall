@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "right-of-way",
+  "name": "Right of Way",
+  "description": "Freight has the right of way and on the line you are freight. Anyone standing on it steps aside, and a hook deck is a step, not a wall.",
+  "jobId": "railrunner",
+  "standingCost": 450,
+  "slot": "movement",
+  "passive": {
+    "moveThroughEnemiesOnRail": true,
+    "deckVaultHeight": 2
+  }
+}

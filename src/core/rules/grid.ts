@@ -81,6 +81,13 @@ export function standHeight(state: GameState, c: TileCoord): number {
   return height;
 }
 
+/** True when the tile is stood on an object's deck rather than on its terrain. */
+export function isDecked(state: GameState, c: TileCoord): boolean {
+  const terrain = tileAt(state.content.map, c);
+  if (terrain === undefined) return false;
+  return standHeight(state, c) > terrain.height;
+}
+
 /** True when an active object on this tile blocks movement without decking it. */
 export function objectBlocksMovement(state: GameState, c: TileCoord): boolean {
   for (const obj of objectsAt(state, c)) {
