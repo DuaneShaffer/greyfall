@@ -242,6 +242,21 @@ describe("CampaignSession — formation", () => {
     }
   });
 
+  it("squares every deployed unit up to its nearest enemy, not a fixed compass point", () => {
+    const h = harness();
+    h.session.beginDeployment(ENCOUNTER_ID);
+    // The yard's one provocateur stands at (4,0): due east of the (0,4) tile
+    // on the tie-break, north-of-east from the rest of the line.
+    const byTile = new Map(
+      h.session.deploymentPlacements().map((p) => [`${p.position.x},${p.position.y}`, p.facing]),
+    );
+    expect(byTile.get("0,4")).toBe("east");
+    expect(byTile.get("1,4")).toBe("north");
+    expect(byTile.get("0,5")).toBe("north");
+    expect(byTile.get("1,5")).toBe("north");
+    expect(byTile.size).toBeGreaterThanOrEqual(4);
+  });
+
   it("toggles a unit off its tile and back onto a free one", () => {
     const h = harness();
     h.session.beginDeployment(ENCOUNTER_ID);

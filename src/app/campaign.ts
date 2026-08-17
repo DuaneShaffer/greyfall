@@ -28,7 +28,7 @@ import {
   type ProgressionError,
   type ProgressionResult,
 } from "../core/index.js";
-import type { Campaign, Encounter, GameMap, Unit } from "../data/index.js";
+import type { Campaign, Encounter, Facing, GameMap, TileCoord, Unit } from "../data/index.js";
 import type {
   BattleResultsView,
   ChapterCloseView,
@@ -68,6 +68,24 @@ export interface PendingDeployment {
   /** Unit id per deployment tile index, or null for an empty tile. */
   assignments: (string | null)[];
 }
+
+/** Deployed units start squared up to the closest of the enemy's positions. */
+const facingTowardNearest = (from: TileCoord, targets: TileCoord[]): Facing => {
+  let best: TileCoord | null = null;
+  let bestDistance = Infinity;
+  for (const target of targets) {
+    const distance = Math.abs(target.x - from.x) + Math.abs(target.y - from.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = target;
+    }
+  }
+  if (best === null) return "north";
+  const dx = best.x - from.x;
+  const dy = best.y - from.y;
+  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "east" : "west";
+  return dy >= 0 ? "south" : "north";
+};
 
 export class CampaignSession {
   readonly campaign: Campaign;
@@ -287,11 +305,12 @@ export class CampaignSession {
   /** The staged formation as core `Deployment`s, in tile order. */
   deploymentPlacements(): Deployment[] {
     if (this.pending === null) return [];
+    const enemyTiles = this.pending.encounter.enemies.map((placed) => placed.position);
     const out: Deployment[] = [];
     this.pending.assignments.forEach((unitId, index) => {
       const tile = this.pending?.map.deploymentTiles[index];
       if (unitId === null || tile === undefined) return;
-      out.push({ unitId, position: { ...tile }, facing: "north" });
+      out.push({ unitId, position: { ...tile }, facing: facingTowardNearest(tile, enemyTiles) });
     });
     return out;
   }
