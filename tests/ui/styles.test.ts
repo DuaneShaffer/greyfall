@@ -30,6 +30,9 @@ describe("the register header names what feeds the bus", () => {
   });
 });
 
+/** The live line's measure, which the trail underneath it has to match. */
+const LINE_MEASURE_CH = 60;
+
 describe("the annunciator's scrollback", () => {
   it("keeps a demoted line's closing clause instead of clipping it", () => {
     const line = rule(".gf-notice-line {");
@@ -40,7 +43,14 @@ describe("the annunciator's scrollback", () => {
   });
 
   it("is as wide as the slot whose lines it is holding", () => {
-    expect(rule(".gf-notice-log")).not.toContain("max-width: 46ch");
+    // At 46ch the trail was narrower than the line above it, so the measure is
+    // the thing to pin — in whatever property declares it, not one spelling.
+    const log = rule(".gf-notice-log");
+    const measures = [...log.matchAll(/(?:max-)?(?:width|inline-size):\s*(\d+(?:\.\d+)?)ch/g)].map(
+      (match) => Number(match[1]),
+    );
+    expect(measures.length, "the log declares no measure at all").toBeGreaterThan(0);
+    expect(Math.min(...measures)).toBeGreaterThanOrEqual(LINE_MEASURE_CH);
   });
 });
 

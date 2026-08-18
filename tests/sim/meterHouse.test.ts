@@ -11,7 +11,7 @@
  * Set GREYFALL_METER=1 to print the table the report reads.
  */
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { simContent } from "../../src/sim/content.js";
 import {
   ALT_ENCOUNTER_SEEDS,
@@ -27,6 +27,8 @@ const FULL = process.env["GREYFALL_SIM"] === "full";
 const SMOKE_SEEDS = 8;
 const WIN_BAND = FULL ? ([0.4, 0.83] as const) : ([0.25, 0.95] as const);
 const AGREEMENT = FULL ? 0.25 : 0.5;
+/** vite.config's testTimeout governs tests, not the hook the battles run in. */
+const RUN_BUDGET_MS = FULL ? 900_000 : 300_000;
 
 function run(seeds: readonly number[]): SweepBattle[] {
   return encounterRuns(simContent(), [ENCOUNTER], seeds, { commandCap: 4000 });
@@ -53,20 +55,27 @@ function summarize(label: string, battles: readonly SweepBattle[]) {
   return { row, c };
 }
 
+type Summary = ReturnType<typeof summarize>;
+
 describe("s1-meter-house on two disjoint seed sets", () => {
-  const primary = run(FULL ? PRIMARY_ENCOUNTER_SEEDS : PRIMARY_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
-  const alt = run(FULL ? ALT_ENCOUNTER_SEEDS : ALT_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
-  const p = summarize("primary", primary);
-  const a = summarize("alt", alt);
+  let primary: SweepBattle[];
+  let alt: SweepBattle[];
+  let p: Summary;
+  let a: Summary;
+
+  beforeAll(() => {
+    primary = run(FULL ? PRIMARY_ENCOUNTER_SEEDS : PRIMARY_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
+    alt = run(FULL ? ALT_ENCOUNTER_SEEDS : ALT_ENCOUNTER_SEEDS.slice(0, SMOKE_SEEDS));
+    p = summarize("primary", primary);
+    a = summarize("alt", alt);
+  }, RUN_BUDGET_MS);
 
   it(
     FULL
-      ? "lands inside the measured 40-83% band on both sets and pooled"
-      : "stays inside the smoke band on both partial sets and pooled",
+      ? "lands inside the measured 40-83% band on both sets"
+      : "stays inside the smoke band on both partial sets",
     () => {
-      const pooled = [...primary, ...alt];
-      const pooledRate = encounterReports(pooled)[0]!.winRate;
-      for (const rate of [p.row.winRate, a.row.winRate, pooledRate]) {
+      for (const rate of [p.row.winRate, a.row.winRate]) {
         expect(rate).toBeGreaterThanOrEqual(WIN_BAND[0]);
         expect(rate).toBeLessThanOrEqual(WIN_BAND[1]);
       }

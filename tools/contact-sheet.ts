@@ -2,8 +2,8 @@
 // itself lives in `src/art/png.ts` (the intake path needs it); this file is
 // only the paper: an RGBA canvas, a blitter, and a 3x5 label font.
 
-import { INDEXED_PALETTE, type PixelGrid } from "../../src/art/pixel.js";
-import { encodePNG, type RGBAImage } from "../../src/art/png.js";
+import { INDEXED_PALETTE, type PixelGrid } from "../src/art/pixel.js";
+import { encodePNG, type RGBAImage } from "../src/art/png.js";
 
 export { encodePNG };
 export type { RGBAImage };

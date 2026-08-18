@@ -123,9 +123,11 @@ describe("toRenderEvents", () => {
     ]);
   });
 
-  it("is idempotent: the same event maps to the same terminal state twice", () => {
+  it("reads the terminal state it is handed without writing to it", () => {
     const event: BattleEvent = { type: "UnitDowned", unitId: "provocateur-a" };
-    expect(toRenderEvents(event, state)).toEqual(toRenderEvents(event, state));
+    const before = structuredClone(state);
+    toRenderEvents(event, state);
+    expect(state).toEqual(before);
   });
 
   it("focuses the camera when a turn opens", () => {

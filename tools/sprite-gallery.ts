@@ -1,17 +1,22 @@
 // Eyeball rig. Renders the roster to PNGs so the art can be judged at size
-// instead of asserted at. Skipped unless SPRITE_DUMP=1 so `vitest run` stays
-// a spec check; the images go wherever SPRITE_DUMP_DIR points.
+// instead of asserted at.
+//
+//   npm run gallery
+//   SPRITE_DUMP_DIR=.art-review/intake SPRITE_DUMP_TAG=intake npm run gallery
+//   npm run gallery -- roster heads          # only the named sheets
+//
+// It asserts nothing, so it is a tool and not a test: it writes PNGs for a
+// person to look at. `npx vitest run` stays a spec check.
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, it } from "vitest";
-import { hasExternalArt } from "../../src/art/external.js";
-import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "../../src/art/jobs.js";
-import { buildJobSheet, sheetCell } from "../../src/art/sheet.js";
-import { importExternalMaster, propRegion } from "../../src/art/intake.js";
-import { decodePNG, encodePNG as encodeSpritePNG } from "../../src/art/png.js";
-import { deriveExternalFrame } from "../../src/art/segments.js";
-import { INDEXED_PALETTE, mirrorGrid, type PixelGrid } from "../../src/art/pixel.js";
+import { hasExternalArt } from "../src/art/external.js";
+import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "../src/art/jobs.js";
+import { buildJobSheet, sheetCell } from "../src/art/sheet.js";
+import { importExternalMaster, propRegion } from "../src/art/intake.js";
+import { decodePNG, encodePNG as encodeSpritePNG } from "../src/art/png.js";
+import { deriveExternalFrame } from "../src/art/segments.js";
+import { INDEXED_PALETTE, mirrorGrid, type PixelGrid } from "../src/art/pixel.js";
 import {
   ANIMATIONS,
   ANIM_STATES,
@@ -20,10 +25,9 @@ import {
   SPRITE_WIDTH,
   type AnimState,
   type DrawnView,
-} from "../../src/art/sprites.js";
-import { createImage, drawGrid, drawText, encodePNG, fillRect } from "./png.js";
+} from "../src/art/sprites.js";
+import { createImage, drawGrid, drawText, encodePNG, fillRect } from "./contact-sheet.js";
 
-const DUMP = process.env.SPRITE_DUMP === "1";
 const OUT = process.env.SPRITE_DUMP_DIR ?? "/tmp/sprites-craft";
 const TAG = process.env.SPRITE_DUMP_TAG ?? "new";
 
@@ -65,8 +69,8 @@ function contactSheet(rows: readonly (readonly Cell[])[], scale: number, title: 
 const idle = (jobId: JobId, view: DrawnView, frame = 0): PixelGrid =>
   jobFrame({ jobId, team: "player", state: "idle", view, frame });
 
-describe.runIf(DUMP)("sprite gallery", () => {
-  it("writes a per-job idle comparison at 1x and 3x", () => {
+const SHEETS: Record<string, () => void> = {
+  "per-job": () => {
     for (const jobId of JOB_IDS) {
       const cells: Cell[] = [];
       for (const view of ["se", "ne"] as const) {
@@ -78,9 +82,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       write(`${jobId}-${TAG}-3x.png`, contactSheet([cells], 3, `${jobId} ${TAG} 3x`));
       write(`${jobId}-${TAG}-6x.png`, contactSheet([cells], 6, `${jobId} ${TAG} 6x`));
     }
-  });
+  },
 
-  it("writes a full roster gallery of idle, walk and attack", () => {
+  "gallery": () => {
     const states: readonly AnimState[] = ["idle", "walk", "attack"];
     for (const view of ["se", "ne"] as const) {
       const rows: Cell[][] = [];
@@ -95,9 +99,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       }
       write(`gallery-${view}-${TAG}-3x.png`, contactSheet(rows, 3, `roster ${view} ${TAG}`));
     }
-  });
+  },
 
-  it("writes a roster line-up at 1x and 3x", () => {
+  "roster": () => {
     for (const scale of [1, 3, 6]) {
       const rows: Cell[][] = [
         JOB_IDS.map((jobId) => ({ grid: idle(jobId, "se"), label: jobId.slice(0, 7) })),
@@ -105,9 +109,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       ];
       write(`roster-${TAG}-${scale}x.png`, contactSheet(rows, scale, `roster ${TAG} ${scale}x`));
     }
-  });
+  },
 
-  it("writes a head close-up", () => {
+  "heads": () => {
     const scale = 5;
     const w = 32;
     const h = 44;
@@ -133,9 +137,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       });
     });
     write(`heads-${TAG}-5x.png`, img);
-  });
+  },
 
-  it("writes the ingest proof: generated master vs frames derived from it", () => {
+  "ingest": () => {
     for (const jobId of ["enforcer", "saboteur"] as const) {
       const art = JOB_ART[jobId];
       const shot = (view: DrawnView): PixelGrid =>
@@ -178,9 +182,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       }
       write(`ingest-${jobId}-${TAG}-3x.png`, contactSheet(rows, 3, `${jobId}: generated vs ingested+derived`));
     }
-  });
+  },
 
-  it("writes the verification sheet: every job as the renderer will see it", () => {
+  "verify": () => {
     // Pulled out of the shipped sheet rather than the compositor, so a job with
     // a delivered master shows the delivered art. The amber line is the ground
     // line: every figure's feet must sit on it and nothing but contact shadow
@@ -235,9 +239,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       );
     });
     write(`verify-${TAG}-${scale}x.png`, img);
-  });
+  },
 
-  it("writes the shipped roster: what the renderer actually hands the camera", () => {
+  "shipped": () => {
     // `roster-*` above is the compositor's placeholder. This one is pulled out of
     // the shipped sheet, so it is the delivered masters where there are any —
     // the sheet to check identity markers and feet against.
@@ -276,9 +280,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       }
       write(`shipped-${jobId}-${TAG}-6x.png`, contactSheet(rows, 6, `${jobId} shipped, 6x`));
     }
-  });
+  },
 
-  it("writes every state of the jobs with delivered masters", () => {
+  "external": () => {
     for (const jobId of JOB_IDS.filter(hasExternalArt)) {
       const sheet = buildJobSheet(jobId, "player");
       const rows: Cell[][] = [];
@@ -305,9 +309,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       }
       write(`external-${jobId}-${TAG}-3x.png`, contactSheet(rows, 3, `${jobId} delivered master`));
     }
-  });
+  },
 
-  it("writes an enemy-tint line-up", () => {
+  "teams": () => {
     const rows: Cell[][] = [
       JOB_IDS.map((jobId) => ({
         grid: jobFrame({ jobId, team: "enemy", state: "idle", view: "se", frame: 0 }),
@@ -319,9 +323,9 @@ describe.runIf(DUMP)("sprite gallery", () => {
       })),
     ];
     write(`teams-${TAG}-3x.png`, contactSheet(rows, 3, `enemy / neutral ${TAG}`));
-  });
+  },
 
-  it("writes the remaining states", () => {
+  "states": () => {
     const states: readonly AnimState[] = ["cast", "hurt", "downed"];
     const rows: Cell[][] = [];
     for (const jobId of JOB_IDS) {
@@ -334,5 +338,18 @@ describe.runIf(DUMP)("sprite gallery", () => {
       }
     }
     write(`states-${TAG}-3x.png`, contactSheet(rows, 3, `cast / hurt / downed ${TAG}`));
-  });
-});
+  },
+};
+
+const requested = process.argv.slice(2);
+const unknown = requested.filter((name) => !(name in SHEETS));
+if (unknown.length > 0) {
+  console.error(`unknown sheet(s): ${unknown.join(", ")}\nknown: ${Object.keys(SHEETS).join(", ")}`);
+  process.exit(1);
+}
+
+for (const name of requested.length > 0 ? requested : Object.keys(SHEETS)) {
+  const started = Date.now();
+  SHEETS[name]?.();
+  console.log(`${name} -> ${OUT} (${Date.now() - started}ms)`);
+}

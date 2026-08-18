@@ -23,8 +23,8 @@ npx tsx tools/ingest-master.ts enforcer --dry --spans   # + row spans for landma
 Contact sheets for the human gate (C.8.5) come from the gallery rig:
 
 ```
-SPRITE_DUMP=1 SPRITE_DUMP_DIR=.art-review/intake SPRITE_DUMP_TAG=intake \
-  npx vitest run tests/art/gallery.test.ts
+SPRITE_DUMP_DIR=.art-review/intake SPRITE_DUMP_TAG=intake \
+  npx tsx tools/sprite-gallery.ts        # or: npm run gallery -- verify external
 ```
 
 ## 1. Verdicts against the brief
