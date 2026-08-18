@@ -144,7 +144,7 @@ export function chargingView(
 /** Deep enough that a cast in flight is always in the preview it is read from. */
 const CHARGE_LOOKAHEAD = 24;
 
-/** Where a charging unit's cast would land, for the field paint (UI_DESIGN §8b). */
+/** Where a charging unit's cast would land, for the field paint (UI_DESIGN §13.5). */
 export function chargeLandingTiles(state: GameState, unitId: string): TileCoord[] {
   const charge = allCharges(state).find((pending) => pending.actorId === unitId);
   if (charge === undefined) return [];

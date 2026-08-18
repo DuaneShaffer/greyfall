@@ -2,9 +2,8 @@
 // authoritative: `BattleRenderer.buildScene(viewModel)` can rebuild everything
 // from a snapshot at any time (load-game, debug rewind, resize).
 //
-// TODO(core-seam): once `src/core` exists, add a single adapter
-// `viewModelFromGameState(state): BattleViewModel` next to this file. Nothing
-// else in `src/render` may import core — the adapter is the only crossing.
+// `render/adapter.ts` builds it from a `GameState`. Nothing else in
+// `src/render` may import core — that adapter is the only crossing.
 
 import type { Facing, Team, TileCoord } from "../data/schemas/common.js";
 import type { GameMap, GridRole, MapObject, MapObjectKind } from "../data/schemas/map.js";

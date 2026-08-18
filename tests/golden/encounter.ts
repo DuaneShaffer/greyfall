@@ -1,5 +1,5 @@
 /**
- * One encounter's replay checks, sharded into its own test file so the sixteen
+ * One encounter's replay checks, sharded into its own test file so the fifteen
  * fixtures do not queue behind each other in a single vitest worker.
  */
 

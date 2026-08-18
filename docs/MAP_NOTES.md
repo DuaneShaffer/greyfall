@@ -1,8 +1,10 @@
-# Map Notes — Slice Battles 2–5
+# Map Notes
 
 Design record for `data/maps/foundry-floor-nine.json`, `tallow-row.json`,
-`refinery-three.json`, and `charterhouse-steps.json`. Battle 1
-(`marshaling-yard.json`) is the format exemplar and is not covered here.
+`refinery-three.json`, and `charterhouse-steps.json` — slice battles 2–5 — and
+for `meter-house.json` (§6), the grid-native map that is not a slice battle.
+Battle 1 (`marshaling-yard.json`) is the format exemplar and is not covered
+here.
 
 Each map is a thesis on the battlefield system its battle showcases
 (creative bible §8) and a real functioning workplace whose function is its

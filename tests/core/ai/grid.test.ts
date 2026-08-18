@@ -1,8 +1,9 @@
 /**
  * The value function on a graph (`docs/design/FLUX_GRID.md` §4.5). Everything
- * here is scored against the grid bench, because no shipped map declares a grid
- * — which is also what the last case proves: on an ungridded map every new term
- * is exactly zero and the old arithmetic comes back untouched.
+ * here is scored against the grid bench, because the five slice maps declare no
+ * grid — only the Meter House does — which is also what the last case proves: on
+ * an ungridded map every new term is exactly zero and the old arithmetic comes
+ * back untouched.
  */
 
 import { describe, expect, it } from "vitest";

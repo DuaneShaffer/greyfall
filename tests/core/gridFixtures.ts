@@ -1,6 +1,7 @@
 /**
- * A grid-native test bench. No shipped map declares a grid, so the engine's
- * graph behaviour is exercised against a map authored here:
+ * A grid-native test bench. The five slice maps declare no grid — only the Meter
+ * House does — so the engine's graph behaviour is exercised against a map
+ * authored here:
  *
  *     west-main --- west-bus --- north-bus --- press-west
  *                                    |   \

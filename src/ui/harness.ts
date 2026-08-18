@@ -25,8 +25,9 @@ import { RosterScreen } from "./screens/roster.js";
 import { UnitSheetScreen } from "./screens/unitSheet.js";
 import type { BattleHudView, DeploymentView, EquipmentView, LearningView } from "./state.js";
 
-// Development harness only — mounts every screen against mock state so the
-// layouts and copy can be eyeballed before core integration. Not shipped.
+// Development harness — mounts the battle HUD and the between-battle screens
+// against mock state (src/ui/mock.ts) so the layouts and copy can be eyeballed
+// without playing a battle. Built as its own entry, ui-harness.html.
 
 type ScreenId = "battle" | "roster" | "sheet" | "abilities" | "equipment" | "jobs" | "formation";
 

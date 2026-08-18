@@ -1,7 +1,8 @@
 /**
- * The grid counters, measured on a bench encounter authored here. No shipped map
- * declares a grid (`docs/design/FLUX_GRID.md` §1.6), so the only way to prove the
- * counters move is to build a network and play it.
+ * The grid counters, measured on a bench encounter authored here. Of the shipped
+ * maps only the Meter House declares a grid, and none of the five slice maps do
+ * (`docs/design/FLUX_GRID.md` §1.6), so the only way to prove the counters move
+ * across a whole battle is to build a network and play it.
  *
  *     bench-main --- bench-bus --- bench-press
  *                        |

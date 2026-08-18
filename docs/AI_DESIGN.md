@@ -212,6 +212,12 @@ only for the side it can actually go off under.
 
 ### What a tile is worth
 
+- **Objective** — the tile the encounter itself is asking for: a `reachTiles`
+  win condition for the player, a loss-by-arrival tile for the enemy. It is
+  priced only once the tile is inside one turn's reach, and at 400 a step it is
+  the heaviest term in the sum, so a unit that can close an objective this turn
+  does. An enemy's escape pull rides on how badly it has been hurt; a tile the
+  battle is won by pulls at full weight from turn one.
 - **Approach** — true path cost to the quarry, from a Dijkstra field run over
   the live map with the unit's own jump and terrain rules, so the crate stack
   and the height wall are visible where Manhattan distance is not. Artillery

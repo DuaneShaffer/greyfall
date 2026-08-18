@@ -4,12 +4,12 @@ import type { EquipSlot } from "./state.js";
 // THE SEAM. The UI never mutates game state and never calls into core; it
 // reports what the player asked for through this one callback interface.
 //
-// Next phase, `src/app` supplies an implementation that constructs core
-// Commands from these intents and feeds them to `applyCommand`; the resulting
-// events come back as fresh view models (src/ui/state.ts) pushed into the
-// components. Every method here maps to either a core Command (battle intents)
-// or a between-battle roster mutation (progression intents). Nothing in
-// src/ui imports from src/core, src/render, or src/art.
+// `src/app` supplies the implementation: it constructs core Commands from these
+// intents and feeds them to `applyCommand`; the resulting events come back as
+// fresh view models (src/ui/state.ts) pushed into the components. Every method
+// here maps to either a core Command (battle intents) or a between-battle
+// roster mutation (progression intents). Nothing in src/ui imports from
+// src/core, src/render, or src/art.
 
 export type TargetRef =
   | { kind: "unit"; unitId: string }

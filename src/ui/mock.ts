@@ -25,8 +25,8 @@ import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
 // verbatim from data/*.json (tests/ui/mock.test.ts fails if it drifts) so the
-// layouts and register are honest; the rest is UI-only scaffolding that will be
-// replaced by core selectors next phase.
+// layouts and register are honest; the rest is UI-only scaffolding standing in
+// for whatever a battle would have supplied.
 
 // --- real content -----------------------------------------------------------
 

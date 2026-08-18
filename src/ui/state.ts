@@ -3,10 +3,10 @@ import type { TargetRef } from "./intents.js";
 
 // VIEW MODELS — the read side of the UI seam.
 //
-// These are plain, serializable snapshots of what a screen needs to draw. They
-// mirror what `core` selectors will hand over next phase (derived from
-// GameState after each command's events are applied); until then the harness
-// and tests build them from `src/ui/mock.ts`. Rules for anything added here:
+// These are plain, serializable snapshots of what a screen needs to draw. The
+// selectors in `src/app/viewmodels.ts` derive them from GameState after each
+// command's events are applied; the harness and the component tests build them
+// from `src/ui/mock.ts` instead. Rules for anything added here:
 //
 //   1. Plain data only — no functions, no class instances, no core types.
 //   2. Already formatted for display where formatting is a rules decision
@@ -180,7 +180,7 @@ export interface ForecastView {
   /**
    * True at the confirm moment: a target is staged and the stamp is the next
    * thing the player presses. The panel takes the bottom of the frame for it and
-   * faces the two parties across the numbers (UI_DESIGN §8a). False for a
+   * faces the two parties across the numbers (UI_DESIGN §13.3). False for a
    * cursor-rest preview — the Operate cursor has no aim step to have staged.
    */
   armed: boolean;

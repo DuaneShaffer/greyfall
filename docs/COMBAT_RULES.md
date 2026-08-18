@@ -145,9 +145,9 @@ Worked examples:
 - Rowen's Pin (`weapon`, power 80): `floor(9 * 9 * 80 / 400)` = **16**.
 - Vale (Mag 10, Attunement 70) casting Overload Cell (`mag`, power 20) on the
   yard cell: `floor(10 * 20 / 2)` = 100, `floor(100 * 70 / 100)` = **70**.
-- The same caster's Arc (`mag`, power 8) onto a unit with Attunement 45:
-  `floor(10 * 8 / 2)` = 40, `floor(40 * 70 / 100)` = 28,
-  `floor(28 * 45 / 100)` = **12**.
+- The same caster's Arc (`mag`, power 21) onto a unit with Attunement 45:
+  `floor(10 * 21 / 2)` = 105, `floor(105 * 70 / 100)` = 73,
+  `floor(73 * 45 / 100)` = **32**.
 
 Healing uses the same amount pipeline and is capped at the target's max HP.
 **Downed units cannot be healed** — in this world the dead stay dead
@@ -676,8 +676,9 @@ batch, so a trigger fires whenever its condition holds.
 | `turnStart` | `state.turn` has **reached or passed** the named turn |
 | `unitDowned` | that unit is down |
 | `objectDestroyed` | that object is destroyed |
+| `objectPowered` | that object's energization matches `powered` — energization, not the isolator flag, so a source cut off by a tripped main reads unpowered (FLUX_GRID §1.3) |
 | `unitEntersTiles` | any standing unit (of the named team, if given) is on one of the tiles |
-| `unitHpBelowPercent` | that unit is standing and below the percentage |
+| `unitHpBelowPercent` | that unit is below the percentage. A downed unit reads 0% and so is below every authorable threshold, which is how an overkill blow still fires the beats it skipped past — in author order, ahead of the `unitDowned` trigger |
 
 **`turnStart` is reaches-or-passes, not equals.** `state.turn` counts
 individual unit turns, and a turn consumed entirely inside `advanceClock` — a
@@ -690,6 +691,12 @@ evaluation at or after that turn index.
 A trigger fires at most once per command batch. `once: true` triggers are
 recorded in `state.firedTriggerIds` and never fire again. Evaluation repeats
 until nothing new fires, up to 8 passes, so one trigger may set up another.
+
+A trigger may also carry `afterTriggerId`, which holds it until the named
+trigger has fired at least once. `firedTriggerIds` records every trigger that
+fires, `once` or not, so the gate reads the same either way. Because passes
+repeat in author order, a trigger gated behind one listed after it still fires
+in the same batch, a pass later — never before the trigger it waits on.
 
 Trigger actions go through the same functions commands do — `setPower`,
 `destroyObject`, and unit creation are the identical code paths. `dialogue`

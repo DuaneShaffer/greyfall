@@ -61,7 +61,7 @@ export interface ImportRequest {
    */
   readonly landmarks?: Landmarks;
   readonly quantize?: QuantizeOptions;
-  /** Which team's tint the masters were painted in. Defaults to player. */
+  /** Which team's tint the masters were painted in. Nothing reads it yet. */
   readonly sourceTeam?: Team;
   /** Per-view facing correction; see `ExternalMaster.mirror`. */
   readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;

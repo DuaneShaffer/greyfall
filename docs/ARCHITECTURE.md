@@ -27,7 +27,7 @@ governs how.
 
 ## Package layout
 
-Single npm package, Vite + TypeScript (strict), Vitest, ESLint.
+Single npm package, Vite + TypeScript (strict), Vitest; no linter.
 
 ```
 src/
@@ -37,20 +37,26 @@ src/
     commands/  # command types + validation + application
     events/    # event types
     ai/        # enemy decision-making (consumes state, produces commands)
+    progression/ # campaign state, job levels, learning, between-battle ops
     rng/       # seeded RNG
   data/      # zod schemas + content loaders/validators
   render/    # Three.js: terrain mesh, billboards, camera, VFX
   ui/        # DOM overlay: menus, forecast panel, battle HUD
+  art/       # sprite generation and external-master intake
   app/       # browser entry: wires core + render + ui together
   sim/       # headless entry: AI-vs-AI battles, balance harness
 data/        # content JSON: jobs/, abilities/, items/, maps/, encounters/
 tools/       # authoring tools (map editor, later)
 ```
 
-**Dependency rule (enforced by ESLint import restrictions):** `core` imports
-only from `core` and type-only from `data` schemas. `render`, `ui`, and `sim`
-import from `core` and `data`; never from each other. `app` imports anything.
-Three.js appearing in `core` is a build error, not a code-review comment.
+**Dependency rule:** `core` imports only from `core` and type-only from `data`
+schemas. `render`, `ui`, and `sim` import from `core` and `data`; never from
+each other. `app` imports anything. Nothing mechanises this yet — there is no
+lint step; what holds it are the seam headers on the crossing modules
+(`render/presentation.ts`, `render/adapter.ts`, `ui/intents.ts`,
+`ui/state.ts`), which name the one legal crossing and say what may not import
+what, plus review. Three.js appearing in `core` is a bug this document names,
+not something the build catches.
 
 ## The core loop
 
@@ -90,6 +96,12 @@ switches, lifts, cells, catwalks, walls). Both carry state:
 - Tiles: terrain type, height, standability, hazard state (scalded, gas).
 - Objects: `powered` flag, structural integrity, activation state, occupancy
   and blocking footprint.
+- Flux grids: a map may declare **grids** — nodes (sources with a capacity,
+  sinks with a draw, ties and buses) joined by edges, with each object's
+  `network` tag naming the grid it belongs to. Energization is then a graph
+  walk rather than a per-object flag, and a section drawing past its source's
+  rating trips it (`docs/design/FLUX_GRID.md`). A map that declares no grid
+  behaves exactly as before: `powered` alone decides.
 
 Interactions are rules, not scripts: an ability targets a tile or object; the
 rules resolve what that does (`Overload Cell` on a powered press → press
@@ -98,7 +110,8 @@ Encounter JSON may attach **triggers** (declarative condition → command) for
 scripted beats like Refinery Three's midpoint, but triggers inject commands
 through the same front door — no side channel mutates state.
 
-Pathfinding (A* over the tile graph with Move/Jump edge rules) and LoS
+Pathfinding (uniform-cost search over the tile graph with Move/Jump edge
+rules, producing the whole move field the UI paints anyway) and LoS
 (height-aware ray sampling) are pure functions of current state, called
 per-query. Maps are FFT-scale (< ~20×20, < ~20 units); recompute-on-demand is
 well within budget and avoids cache-invalidation bugs when a Saboteur deletes
@@ -148,9 +161,6 @@ JSON; a new effect primitive is an engine change with tests.
 
 ## Deliberately deferred
 
-- Networked infrastructure graphs (power/steam) — post-slice; the object
-  `powered` flag is the slice-scale stand-in and the schema leaves room for a
-  `network` id on objects.
 - Cutscene script format — post-slice; scripted beats in the slice use
   encounter triggers + dialogue lines only.
 - **Mid-battle save/load — deliberately not built.** What is persisted is

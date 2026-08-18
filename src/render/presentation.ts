@@ -1,14 +1,13 @@
 // Presentation layer: the renderer's own event vocabulary plus the queue that
 // plays those events back at animation pace, one at a time, skippably.
 //
-// THE SEAM (read before wiring `src/core`):
+// THE SEAM:
 // `RenderEvent` is deliberately declared here and NOT imported from core. Core
 // emits rule-level facts (`UnitMoved`, `CatwalkCollapsed`, …) that carry the
 // information the rules need; the renderer needs presentation-shaped facts
-// (a full path to walk, an hp fraction to drain a bar to). When core lands,
-// write ONE adapter — `render/adapter.ts: toRenderEvents(coreEvent, state):
-// RenderEvent[]` — and keep every other render module importing only this
-// file. Rules for keeping the seam clean:
+// (a full path to walk, an hp fraction to drain a bar to). The one crossing is
+// `render/adapter.ts: toRenderEvents(coreEvent, state): RenderEvent[]`; every
+// other render module imports only this file. Rules for keeping the seam clean:
 //   1. RenderEvents are plain serializable data; no Three.js objects, no
 //      callbacks, no references to core types.
 //   2. Every RenderEvent must carry enough to reach its terminal state on its

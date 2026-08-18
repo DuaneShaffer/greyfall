@@ -607,8 +607,9 @@ export class ObjectVisual {
   }
 
   /**
-   * A board: a cabinet with the copper handle a player can reach, one per tile
-   * of its footprint, so a two-tile switchboard is not the one-tile gallery tie.
+   * A board: a cabinet with the copper handles a player can reach — one per tile
+   * of its footprint, capped at three, so a two-tile switchboard is not the
+   * one-tile gallery tie and a long bank does not become a picket fence.
    * Its only seam is the indicator strip — a breaker carries no column.
    */
   private buildBreaker(tileCount: number, footprint: Footprint): void {

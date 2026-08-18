@@ -1,7 +1,8 @@
 // The game loop. Owns the one authoritative `GameState`, translates UI intents
-// into core commands, and routes the resulting events three ways: visual events
-// into the presentation queue, `DialogueRequested` into the dialogue box, and
-// `BattleEnded` into the end banner.
+// into core commands, and routes the resulting events two ways: visual events
+// into the presentation queue and `DialogueRequested` into the dialogue box.
+// The end banner is not event-driven — `advance()` re-reads `battleResult` off
+// the state once the queue has drained.
 //
 // It talks to the renderer and the UI through the two small ports below, never
 // to Three.js or the DOM directly, so the whole loop is constructible in a test
@@ -144,7 +145,7 @@ export interface ControllerOptions {
   events?: readonly BattleEvent[];
   renderer: RendererPort;
   ui: UiPort;
-  /** Enemy decision function. Defaults to `stubAiCommand`. */
+  /** Enemy decision function. Defaults to one that ends every enemy turn. */
   ai?: (state: GameState) => Command | null;
   turnOrderCount?: number;
 }
@@ -334,8 +335,8 @@ function registerNode(state: GameState, objectId: string): GridRegisterNode | nu
  * to be inferred is a mechanic that measures well and plays badly
  * (FLUX_GRID §2.5b, and the e2 lesson it operationalises).
  *
- * One line, always: the notice strip shows one at a time, so three lines that
- * overwrite each other are worse than one dense one.
+ * One line, always: the strip keeps a short scrollback, and a batch that fills
+ * it with three thin lines reads worse than one dense one.
  */
 function gridNotice(
   state: GameState,

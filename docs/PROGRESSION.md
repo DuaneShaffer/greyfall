@@ -105,11 +105,13 @@ one-line change with a test to update.
   move faster, raise `STANDING_PER_ACTION` in `core/rules/abilities.ts` rather
   than flattening this curve further — the curve is already about as shallow as
   it can be without job levels becoming meaningless.
-- **They fit the authored prerequisites.** Every job in `data/jobs` gates on
-  level 2 or 3 of another job (Saboteur is the deepest, at Chemist 3 +
-  Machinist 2). Levels 2 and 3 cost 100 and 250 — one to two battles of work
-  each, so unlocking a second job is a chapter-scale goal rather than a
-  post-game one.
+- **They fit the authored prerequisites.** Three of the seven jobs in
+  `data/jobs` — Enforcer, Conduit, Chemist — are open from the start; the other
+  four gate on level 2 or 3 of one or two of those (Railrunner on Enforcer 2,
+  Machinist on Chemist 2, Augmented on Conduit 2 + Enforcer 2, and Saboteur
+  deepest at Chemist 3 + Machinist 2). Levels 2 and 3 cost 100 and 250 — one to
+  two battles of work each, so unlocking a second job is a chapter-scale goal
+  rather than a post-game one.
 - **They fit ability prices.** Authored `standingCost` runs 100–1100, median
   450. A unit that stays in one job through the slice affords one or two of its
   own abilities on top of the starting bonus, which is the intended pressure:
@@ -243,12 +245,11 @@ Registered in `contentRegistry` as `campaigns`. Cross-reference checks live in
 `tests/progression/campaign-refs.test.ts` rather than `tests/content.test.ts`,
 so the shared content test and the campaign schema do not collide.
 
-**Deliberate looseness, to be removed.** `encounterIds` names all five slice
-battles, but only the authored ones exist. The refs test hard-checks id
-*format* for all of them, hard-checks that the opening encounter exists, and
-allows the rest only if they are named in `PENDING_ENCOUNTER_IDS`. That list
-shrinks and never grows; delete it and the soft branch when
-`data/encounters/` is complete.
+**Deliberate looseness, now discharged.** `encounterIds` names all five slice
+battles and all five are authored. The refs test hard-checks id *format* for
+all of them, hard-checks that the opening encounter exists, and allows the rest
+only if they are named in `PENDING_ENCOUNTER_IDS` — a list that shrinks and
+never grows, and is now empty. It and its soft branch are ready to delete.
 
 `startingStandingBonus` **is 150, reduced from 250 by the rebalance pass once
 the chapter was played end to end.** The flag is discharged; the reasoning is:
@@ -318,9 +319,12 @@ the top of the roster, confirming a roster entry drops it on the next free tile
 and confirming it again pulls it back off. Picking *which* tile, and facing at
 deploy time, are a later pass.
 
-**Replay fallback.** When the chapter's next encounter has no file yet,
-`playableEncounterId()` falls back to the last encounter won, the screen says
-so, and the loop closes on battle 1 instead of dead-ending. `applyBattleResults`
+**Replay.** `playableEncounterId()` returns null when the chapter's next
+encounter has no file yet, and null again once the chapter has run out of
+encounters — it never falls back to a won one, because a fallback would quietly
+hide the ending. The runner reads the null: unauthored content gets a notice
+saying so, a finished chapter gets the chapter-close record. Replaying is the
+player's explicit choice out of `completedEncounters()`. `applyBattleResults`
 does not advance the index for an encounter already in
 `completedEncounterIds`, so replaying costs nothing but earns Standing and can
 still kill people.
