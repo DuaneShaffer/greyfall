@@ -87,7 +87,6 @@ export const WATER_RAMP: readonly Hex[] = [...TERRAIN_RAMP, ...RAMPS.verdigris];
 const TOP = { width: TILE_TEXTURE_SIZE, height: TILE_TEXTURE_SIZE } as const;
 const SIDE = { width: TILE_TEXTURE_SIZE, height: HEIGHT_STEP_PX } as const;
 const TOP_WRAPS = { horizontal: true, vertical: true } as const;
-/** A side face stacks against a copy of itself, so both axes wrap there too. */
 /**
  * A side face wraps horizontally and is *measured* vertically, but not required
  * to wrap there. §5 puts a lighter cut line across the top 2 rows and nothing

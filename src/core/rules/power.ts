@@ -9,8 +9,9 @@
  *
  * The degeneracy rule is the whole safety net: an object that is not a node of
  * any declared grid is energized exactly when its isolator is closed and it is
- * standing, which is what `powered` meant before this file existed. No shipped
- * map declares a grid, so every slice battle must replay byte for byte.
+ * standing, which is what `powered` meant before this file existed. The five
+ * slice maps (e1-e5) declare no grid — only `meter-house` does — so every slice
+ * battle must replay byte for byte.
  *
  * Nothing here is cached. A recompute is one BFS over at most 32 nodes and 64
  * edges on integers, and the invalidation bugs a cache would buy cost more than

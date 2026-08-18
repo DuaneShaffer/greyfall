@@ -1,5 +1,4 @@
-import type { Ability, Effect, ItemStack, Team } from "../../data/index.js";
-import type { Targeting } from "../../data/schemas/ability.js";
+import type { Ability, Effect, ItemStack, Targeting, Team } from "../../data/index.js";
 import type { Ctx } from "../state/ctx.js";
 import type { ActionAbility, BattleUnit, ConsumableItem, GameState } from "../state/types.js";
 

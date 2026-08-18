@@ -1,6 +1,6 @@
 // Deterministic pixel compositor. Layers of parametric primitives resolve into
-// a palette-index grid: index 0 is transparent, 1..34 are PALETTE in
-// declaration order. Nothing here reads a clock or a random source, so the
+// a palette-index grid: index 0 is transparent, 1..`PALETTE_SIZE` are PALETTE
+// in declaration order. Nothing here reads a clock or a random source, so the
 // same inputs always produce byte-identical grids.
 
 import {

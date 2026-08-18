@@ -2,9 +2,10 @@
 // effects. One group, one update call, one `clear()` — because skipping the
 // presentation means every transient is gone, not fast-forwarded.
 //
-// No post-processing: emissive palette steps (amber-glow, overload-100,
-// veinglass-100) are simply drawn bright and untonemapped. When the bloom chain
-// lands it keys on those three colors and nothing else (ART_DIRECTION §2).
+// Emissive palette steps (amber-glow, overload-100, veinglass-100) are drawn
+// bright and untonemapped; the elements that call `markBloomEligible` get their
+// halo from `render/post.ts`, which keys on that layer rather than on luminance
+// (ART_DIRECTION §2, D.2).
 
 import * as THREE from "three";
 import {

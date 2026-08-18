@@ -244,7 +244,7 @@ export interface QuantizeOptions extends AuditOptions {
    * ramp step in this palette — beyond that the artist meant another color.
    */
   readonly reportDistance?: number;
-  /** Palette subset to quantize into. Defaults to all 34. */
+  /** Palette subset to quantize into. Defaults to the whole palette. */
   readonly allowed?: readonly Hex[];
 }
 
@@ -281,7 +281,7 @@ export interface ConformanceReport {
   /** Lowest occupied row of the figure box; must be the anchor row minus one. */
   readonly figureBottom: number | null;
   readonly subFloorIntruders: readonly Point[];
-  /** Same-color 4-connected regions of 1px, excluding permitted singletons. */
+  /** Same-color 8-connected regions of 1px, excluding permitted singletons. */
   readonly orphanClusters: number;
   readonly errors: readonly string[];
   readonly warnings: readonly string[];

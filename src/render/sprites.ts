@@ -89,8 +89,8 @@ export const applyCellUV = (
 
 /**
  * Wide enough to survive a mip level's rounding, far narrower than the gap
- * between an emissive step and the ramp step under it (the closest pair,
- * amber-glow against amber-300, sits 0.48 apart in linear space).
+ * between an emissive step and the nearest non-emissive one (veinglass-100
+ * against soot-100, 0.41 apart in linear space).
  */
 const BLOOM_KEY_TOLERANCE = 0.15;
 

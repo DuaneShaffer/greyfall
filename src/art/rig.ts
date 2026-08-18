@@ -418,9 +418,9 @@ export interface JobArt {
   readonly build: Build;
   readonly shades: JobShades;
   /**
-   * The hand-authored head: a 12x15 glyph whose row 2 is head row 0 and whose
-   * column 1 is the left edge of a 10px head. This is the master (Appendix C.3)
-   * and it is stamped, never redrawn, so every pose carries the same face.
+   * The hand-authored head, at `HEAD_GLYPH`'s geometry. This is the master
+   * (Appendix C.3) and it is stamped, never redrawn, so every pose carries the
+   * same face.
    */
   readonly head: (ctx: GearContext) => Glyph;
   /** Drawn behind the figure: packs, coat tails, far-side gear. */

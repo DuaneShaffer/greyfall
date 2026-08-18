@@ -394,7 +394,7 @@ export interface BattleResultsApplied {
  *
  * The party satchel folds back on the same terms: what the battle spent is
  * struck from stock on a win, and a loss refunds it along with everything else
- * (`docs/ITEMS.md` §4).
+ * (`docs/ITEMS.md` §1).
  */
 export function applyBattleResults(
   state: CampaignState,
