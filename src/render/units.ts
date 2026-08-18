@@ -149,8 +149,8 @@ export class UnitVisual {
 
     this.geometry = new THREE.PlaneGeometry(SPRITE_WIDTH, SPRITE_HEIGHT);
     this.geometry.translate(0, ANCHOR_LIFT, 0);
-    this.sheetId = `${view.spriteId}:${view.team}`;
-    this.texture = unitSheetView(view.spriteId, view.team);
+    this.sheetId = `${view.jobId}:${view.team}`;
+    this.texture = unitSheetView(view.jobId, view.team);
     this.material = new THREE.MeshBasicMaterial({
       map: this.texture,
       transparent: false,
@@ -270,10 +270,10 @@ export class UnitVisual {
   }
 
   setView(view: UnitView): void {
-    const sheetId = `${view.spriteId}:${view.team}`;
+    const sheetId = `${view.jobId}:${view.team}`;
     if (sheetId !== this.sheetId) {
       releaseSheetView(this.texture);
-      this.texture = unitSheetView(view.spriteId, view.team);
+      this.texture = unitSheetView(view.jobId, view.team);
       this.sheetId = sheetId;
       this.material.map = this.texture;
       this.material.needsUpdate = true;

@@ -143,7 +143,6 @@ function benchUnit(id: string, jobId: string): Unit {
     schemaVersion: 1,
     id,
     name: id,
-    spriteId: jobId,
     level: 3,
     jobId,
     disposition: { resolve: 50, attunement: 60 },

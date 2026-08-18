@@ -41,22 +41,21 @@ const DEFAULT_JOB: JobId = "enforcer";
 const sheets = new Map<string, THREE.Texture>();
 const clones = new Set<THREE.Texture>();
 
-/** Sprite ids follow job ids; unknown ids fall back to the melee baseline. */
-export const jobForSprite = (spriteId: string): JobId =>
-  isJobId(spriteId) ? spriteId : DEFAULT_JOB;
+/** A unit wears its job's sheet; a job with no art falls back to the melee baseline. */
+export const sheetJob = (jobId: string): JobId => (isJobId(jobId) ? jobId : DEFAULT_JOB);
 
 const configure = (texture: THREE.Texture): THREE.Texture =>
   configureTexture(texture, THREE.ClampToEdgeWrapping);
 
 /** The shared sheet for a job/team. Built once, cached for the session. */
-export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
-  const jobId = jobForSprite(spriteId);
-  const key = sheetKey(jobId, team);
+export const unitSheet = (jobId: string, team: Team): THREE.Texture => {
+  const job = sheetJob(jobId);
+  const key = sheetKey(job, team);
   const cached = sheets.get(key);
   if (cached) return cached;
 
   const texture = mippedTexture(
-    sheetTextureLevels(buildJobSheet(jobId, team)),
+    sheetTextureLevels(buildJobSheet(job, team)),
     THREE.ClampToEdgeWrapping,
   );
   sheets.set(key, texture);
@@ -67,8 +66,8 @@ export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
  * A per-unit view onto a shared sheet. Clones carry their own UV window, which
  * is what lets two units of the same job play different frames.
  */
-export const unitSheetView = (spriteId: string, team: Team): THREE.Texture => {
-  const view = unitSheet(spriteId, team).clone();
+export const unitSheetView = (jobId: string, team: Team): THREE.Texture => {
+  const view = unitSheet(jobId, team).clone();
   configure(view);
   view.needsUpdate = true;
   clones.add(view);

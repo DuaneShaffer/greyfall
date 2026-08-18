@@ -11,7 +11,6 @@
         "schemaVersion": 1,
         "id": "provocateur-a",
         "name": "Provocateur",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -94,7 +93,6 @@
                 "schemaVersion": 1,
                 "id": "provocateur-b",
                 "name": "Provocateur",
-                "spriteId": "enforcer",
                 "level": 2,
                 "jobId": "enforcer",
                 "disposition": {
@@ -120,7 +118,6 @@
                 "schemaVersion": 1,
                 "id": "maren-voss",
                 "name": "Maren Voss",
-                "spriteId": "railrunner",
                 "level": 1,
                 "jobId": "railrunner",
                 "disposition": {

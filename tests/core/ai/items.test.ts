@@ -10,7 +10,6 @@ function bench(id: string, name = "Perren Ash"): Unit {
     schemaVersion: 1,
     id,
     name,
-    spriteId: "chemist",
     level: 1,
     jobId: "chemist",
     disposition: { resolve: 55, attunement: 45 },

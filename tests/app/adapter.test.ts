@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   activeUnit,
   applyCommand,
+  changeJob,
+  createCampaign,
   getUnit,
+  rosterUnit,
   unitMaxHp,
   type BattleEvent,
   type GameState,
 } from "../../src/core/index.js";
+import type { Campaign } from "../../src/data/index.js";
 import { toRenderEventList, toRenderEvents, viewModelFromGameState } from "../../src/render/adapter.js";
-import { advanceTo, rowen } from "../core/fixtures.js";
+import { sheetJob } from "../../src/render/sprites.js";
+import { advanceTo, loadContent, loadUnits, rowen, YARD_ENCOUNTER_ID } from "../core/fixtures.js";
 import { openBattle, VALE } from "./fixtures.js";
 
 const battle = (): GameState => openBattle([rowen(), VALE]).state;
@@ -35,7 +40,7 @@ describe("viewModelFromGameState", () => {
 
     expect(unit?.hpFraction).toBe(1);
     expect(unit?.elevation).toBe(0);
-    expect(unit?.spriteId).toBe("enforcer");
+    expect(unit?.jobId).toBe("enforcer");
     expect(unit?.downed).toBe(false);
   });
 
@@ -66,6 +71,31 @@ describe("viewModelFromGameState", () => {
     const cell = view.objects.find((object) => object.id === "yard-cell");
     expect(cell?.destroyed).toBe(true);
     expect(cell?.powered).toBe(false);
+  });
+});
+
+describe("a re-jobbed unit", () => {
+  const CHAPTER: Campaign = {
+    schemaVersion: 1,
+    id: "rejob-bench",
+    name: "Rejob Bench",
+    description: "One unit, one encounter, so a job change has somewhere to land.",
+    encounterIds: [YARD_ENCOUNTER_ID],
+    startingRosterUnitIds: ["rowen"],
+  };
+
+  it("wears the sheet of the job it changed into", () => {
+    const content = loadContent();
+    const changed = changeJob(createCampaign(CHAPTER, loadUnits()), "rowen", "conduit", content);
+    expect(changed.error).toBeNull();
+
+    const unit = rosterUnit(changed.state, "rowen");
+    expect(unit).not.toBeNull();
+
+    const view = viewModelFromGameState(openBattle([unit!]).state);
+    const drawn = view.units.find((candidate) => candidate.id === "rowen");
+    expect(drawn?.jobId).toBe("conduit");
+    expect(sheetJob(drawn!.jobId)).toBe("conduit");
   });
 });
 

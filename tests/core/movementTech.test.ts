@@ -40,7 +40,6 @@ const RAILRUNNER: Unit = {
   schemaVersion: 1,
   id: "wick",
   name: "Wick",
-  spriteId: "railrunner",
   level: 1,
   jobId: "railrunner",
   disposition: { resolve: 55, attunement: 45 },

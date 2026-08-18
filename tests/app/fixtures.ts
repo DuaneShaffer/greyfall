@@ -17,7 +17,6 @@ export const VALE: Unit = {
   schemaVersion: 1,
   id: "vale",
   name: "Vale Tarn",
-  spriteId: "conduit",
   level: 1,
   jobId: "conduit",
   disposition: { resolve: 50, attunement: 70 },

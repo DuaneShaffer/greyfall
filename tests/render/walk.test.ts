@@ -19,7 +19,7 @@ const flatMap = (size = 8): GameMap => ({
 const unitView = (team: UnitView["team"], position: TileCoord): UnitView => ({
   id: "rowen",
   name: "Rowen Corvane",
-  spriteId: "railrunner",
+  jobId: "railrunner",
   team,
   position: { ...position },
   elevation: 0,

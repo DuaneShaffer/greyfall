@@ -59,7 +59,6 @@ const unit: Unit = {
   schemaVersion: 1,
   id: "rowen",
   name: "Rowen Corvane",
-  spriteId: "enforcer",
   level: 1,
   jobId: "enforcer",
   disposition: { resolve: 72, attunement: 38 },
@@ -80,7 +79,7 @@ describe("view-model derivation", () => {
     expect(view.hpFraction).toBe(1);
     expect(view.downed).toBe(false);
     expect(view.team).toBe("player");
-    expect(view.spriteId).toBe("enforcer");
+    expect(view.jobId).toBe("enforcer");
   });
 
   it("prefers an object surface over the terrain height", () => {

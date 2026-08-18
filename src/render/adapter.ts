@@ -44,7 +44,7 @@ const hpFractionOf = (state: GameState, unit: BattleUnit): number => {
 const unitViewOf = (state: GameState, unit: BattleUnit): UnitView => ({
   id: unit.id,
   name: unit.unit.name,
-  spriteId: unit.unit.spriteId,
+  jobId: unit.unit.jobId,
   team: unit.team,
   position: { ...unit.position },
   elevation: standHeight(state, unit.position),

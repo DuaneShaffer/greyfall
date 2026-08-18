@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "watch-sergeant",
   "name": "Watch Sergeant",
-  "spriteId": "enforcer",
   "portraitId": "dray",
   "level": 3,
   "jobId": "enforcer",

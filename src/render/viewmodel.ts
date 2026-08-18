@@ -13,7 +13,7 @@ import { standingHeight } from "./grid.js";
 export interface UnitView {
   id: string;
   name: string;
-  spriteId: string;
+  jobId: string;
   team: Team;
   position: TileCoord;
   /** Height of the surface the unit stands on, in map height units. */
@@ -59,7 +59,7 @@ export interface UnitPlacement {
 export const unitViewFromPlacement = (map: GameMap, placement: UnitPlacement): UnitView => ({
   id: placement.unit.id,
   name: placement.unit.name,
-  spriteId: placement.unit.spriteId,
+  jobId: placement.unit.jobId,
   team: placement.team,
   position: { ...placement.position },
   elevation: standingHeight(map, placement.position),

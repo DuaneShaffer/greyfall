@@ -11,7 +11,6 @@
         "schemaVersion": 1,
         "id": "crew-sparker-nella",
         "name": "Nella Fen",
-        "spriteId": "conduit",
         "level": 2,
         "jobId": "conduit",
         "disposition": {
@@ -41,7 +40,6 @@
         "schemaVersion": 1,
         "id": "crew-machinist-bram",
         "name": "Bram Coil",
-        "spriteId": "machinist",
         "level": 2,
         "jobId": "machinist",
         "disposition": {
@@ -74,7 +72,6 @@
         "schemaVersion": 1,
         "id": "torch-hand-trough",
         "name": "Torch-Hand",
-        "spriteId": "saboteur",
         "level": 2,
         "jobId": "saboteur",
         "disposition": {
@@ -106,7 +103,6 @@
         "schemaVersion": 1,
         "id": "hand-runner-sill",
         "name": "Yard Runner",
-        "spriteId": "railrunner",
         "level": 2,
         "jobId": "railrunner",
         "disposition": {
@@ -135,7 +131,6 @@
         "schemaVersion": 1,
         "id": "hand-dosser-orla",
         "name": "Orla Pike",
-        "spriteId": "chemist",
         "level": 1,
         "jobId": "chemist",
         "disposition": {
@@ -163,7 +158,6 @@
         "schemaVersion": 1,
         "id": "crew-picket-vaughn",
         "name": "Picket",
-        "spriteId": "enforcer",
         "level": 2,
         "jobId": "enforcer",
         "disposition": {

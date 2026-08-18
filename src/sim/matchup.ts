@@ -138,7 +138,6 @@ export function jobUnit(
     schemaVersion: 1,
     id,
     name: `${job.name} ${id}`,
-    spriteId: job.spriteId,
     level,
     jobId,
     disposition: { resolve: opts.resolve ?? 50, attunement: opts.attunement ?? 50 },

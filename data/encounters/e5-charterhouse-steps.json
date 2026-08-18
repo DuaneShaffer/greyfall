@@ -11,7 +11,6 @@
         "schemaVersion": 1,
         "id": "aldric",
         "name": "Aldric Corvane",
-        "spriteId": "enforcer",
         "portraitId": "aldric",
         "level": 2,
         "jobId": "enforcer",
@@ -46,7 +45,6 @@
         "schemaVersion": 1,
         "id": "quill",
         "name": "Prelate-Assayer Quill",
-        "spriteId": "conduit",
         "level": 2,
         "jobId": "conduit",
         "disposition": {
@@ -71,7 +69,6 @@
         "schemaVersion": 1,
         "id": "watch-conduit-upper",
         "name": "Watch Conduit",
-        "spriteId": "conduit",
         "level": 2,
         "jobId": "conduit",
         "disposition": {
@@ -105,7 +102,6 @@
         "schemaVersion": 1,
         "id": "watch-enforcer-mid-west",
         "name": "Watch Enforcer",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -137,7 +133,6 @@
         "schemaVersion": 1,
         "id": "watch-enforcer-screen",
         "name": "Watch Enforcer",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -169,7 +164,6 @@
         "schemaVersion": 1,
         "id": "watch-sergeant-steps",
         "name": "Watch Sergeant",
-        "spriteId": "enforcer",
         "level": 2,
         "jobId": "enforcer",
         "disposition": {
@@ -451,7 +445,6 @@
                 "schemaVersion": 1,
                 "id": "watch-enforcer-court-west",
                 "name": "Watch Enforcer",
-                "spriteId": "enforcer",
                 "level": 2,
                 "jobId": "enforcer",
                 "disposition": {

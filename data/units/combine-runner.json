@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "combine-runner",
   "name": "Yard Runner",
-  "spriteId": "railrunner",
   "level": 1,
   "jobId": "railrunner",
   "disposition": {

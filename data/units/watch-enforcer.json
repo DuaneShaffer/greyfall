@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "watch-enforcer",
   "name": "Watch Enforcer",
-  "spriteId": "enforcer",
   "level": 2,
   "jobId": "enforcer",
   "disposition": {

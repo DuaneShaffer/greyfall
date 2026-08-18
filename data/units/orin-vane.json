@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "orin-vane",
   "name": "Orin Vane",
-  "spriteId": "augmented",
   "portraitId": "orin-vane",
   "level": 2,
   "jobId": "augmented",

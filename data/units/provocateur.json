@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "provocateur",
   "name": "Provocateur",
-  "spriteId": "enforcer",
   "level": 1,
   "jobId": "enforcer",
   "disposition": {

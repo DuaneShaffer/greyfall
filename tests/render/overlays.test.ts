@@ -45,7 +45,7 @@ const stubCanvas2d = (): void => {
 const unitView = (): UnitView => ({
   id: "rowen",
   name: "Rowen Corvane",
-  spriteId: "conduit",
+  jobId: "conduit",
   team: "player",
   position: { x: 0, y: 0 },
   elevation: 0,

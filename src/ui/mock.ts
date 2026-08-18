@@ -59,7 +59,6 @@ export const enforcerJob: Job = {
     "press-through",
   ],
   equipTags: ["enforcer-arms", "heavy-armor", "shield", "accessory", "field-issue"],
-  spriteId: "enforcer",
 };
 
 export const conduitJob: Job = {
@@ -96,7 +95,6 @@ export const conduitJob: Job = {
     "earth-strap",
   ],
   equipTags: ["conduit-gear", "light-armor", "accessory", "field-issue"],
-  spriteId: "conduit",
 };
 
 export const pinAbility: Ability = {
@@ -169,7 +167,6 @@ export const rowen: Unit = {
   schemaVersion: 1,
   id: "rowen",
   name: "Rowen Corvane",
-  spriteId: "enforcer",
   portraitId: "rowen",
   level: 1,
   jobId: "enforcer",

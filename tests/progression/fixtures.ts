@@ -24,7 +24,6 @@ const job = (id: string, overrides: Partial<Job> = {}): Job => ({
   innateAbilityIds: [],
   learnableAbilityIds: ["pin"],
   equipTags: ["enforcer-arms"],
-  spriteId: id,
   ...overrides,
 });
 
@@ -206,7 +205,6 @@ export const ROWEN: Unit = {
   schemaVersion: 1,
   id: "rowen",
   name: "Rowen Corvane",
-  spriteId: "enforcer",
   portraitId: "rowen",
   level: 1,
   jobId: "enforcer",
@@ -219,7 +217,6 @@ export const VALE: Unit = {
   schemaVersion: 1,
   id: "vale",
   name: "Vale Tarn",
-  spriteId: "conduit",
   level: 1,
   jobId: "conduit",
   disposition: { resolve: 50, attunement: 70 },

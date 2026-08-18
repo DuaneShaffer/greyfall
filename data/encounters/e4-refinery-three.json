@@ -11,7 +11,6 @@
         "schemaVersion": 1,
         "id": "nessa-kiln",
         "name": "Nessa Kiln",
-        "spriteId": "conduit",
         "portraitId": "nessa-kiln",
         "level": 3,
         "jobId": "conduit",
@@ -47,7 +46,6 @@
         "schemaVersion": 1,
         "id": "watch-enforcer-gallery",
         "name": "Watch Enforcer",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -78,7 +76,6 @@
         "schemaVersion": 1,
         "id": "watch-conduit-ring",
         "name": "Watch Conduit",
-        "spriteId": "conduit",
         "level": 1,
         "jobId": "conduit",
         "disposition": {
@@ -110,7 +107,6 @@
         "schemaVersion": 1,
         "id": "watch-conduit-terrace",
         "name": "Watch Conduit",
-        "spriteId": "conduit",
         "level": 1,
         "jobId": "conduit",
         "disposition": {
@@ -141,7 +137,6 @@
         "schemaVersion": 1,
         "id": "watch-enforcer-west-ramp",
         "name": "Watch Enforcer",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -172,7 +167,6 @@
         "schemaVersion": 1,
         "id": "watch-enforcer-east-ramp",
         "name": "Watch Enforcer",
-        "spriteId": "enforcer",
         "level": 1,
         "jobId": "enforcer",
         "disposition": {
@@ -203,7 +197,6 @@
         "schemaVersion": 1,
         "id": "watch-sergeant-floor",
         "name": "Watch Sergeant",
-        "spriteId": "enforcer",
         "level": 2,
         "jobId": "enforcer",
         "disposition": {
@@ -237,7 +230,6 @@
         "schemaVersion": 1,
         "id": "quill",
         "name": "Prelate-Assayer Quill",
-        "spriteId": "conduit",
         "level": 2,
         "jobId": "conduit",
         "disposition": {

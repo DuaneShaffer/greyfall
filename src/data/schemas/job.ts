@@ -22,6 +22,5 @@ export const Job = z.object({
   // Ability ids learnable with Standing; costs live on the abilities.
   learnableAbilityIds: z.array(Id).min(1),
   equipTags: z.array(z.string()).min(1),
-  spriteId: Id,
 });
 export type Job = z.infer<typeof Job>;

@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "combine-hand",
   "name": "Combine Hand",
-  "spriteId": "chemist",
   "level": 1,
   "jobId": "chemist",
   "disposition": {

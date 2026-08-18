@@ -21,7 +21,6 @@ function chemist(id: string, name: string, bench: boolean): Unit {
     schemaVersion: 1,
     id,
     name,
-    spriteId: "chemist",
     level: 1,
     jobId: "chemist",
     disposition: { resolve: 50, attunement: 50 },

@@ -7,7 +7,6 @@ export const Unit = z.object({
   schemaVersion: SchemaVersion,
   id: Id,
   name: z.string(),
-  spriteId: Id,
   portraitId: Id.optional(),
   level: z.int().positive(),
   jobId: Id,
