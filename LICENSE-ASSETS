@@ -1,0 +1,23 @@
+Greyfall game content — All rights reserved
+
+Copyright (c) 2026 Duane Shaffer
+
+The following parts of this repository are the game's creative content, not
+part of the MIT-licensed code, and are NOT open source:
+
+- art-src/            — delivered art masters and generator briefs
+- src/art/masters/    — ingested pixel-art data generated from art-src/
+- data/               — all game content: abilities, campaigns, encounters,
+                        items, jobs, maps, statuses, units
+- docs/               — the creative, story, design, and balance documents
+- docs/media/         — screenshots and other captured imagery
+
+All rights to this content are reserved. You may view it as published in this
+repository, and build and run the game locally from an unmodified clone for
+personal, non-commercial evaluation and development of the MIT-licensed code.
+You may not otherwise copy, redistribute, modify, or use this content —
+including in other games or derivative works, commercial or not — without
+written permission from the copyright holder.
+
+The Greyfall name, setting, characters, and story are part of the reserved
+content.

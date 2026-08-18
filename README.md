@@ -63,3 +63,11 @@ by the zod schemas in `src/data/schemas/`:
 Character, terrain, object, and portrait art are produced externally from the
 generator briefs in `art-src/` and ingested through the pipeline in `src/art/`
 (dependency-free PNG codec included).
+
+## Licensing
+
+Split license: the **code** is MIT (see `LICENSE`); the **game content** — the
+art in `art-src/` and `src/art/masters/`, everything in `data/` and `docs/`,
+and the Greyfall setting, characters, and story — is **all rights reserved**
+(see `LICENSE-ASSETS`). Build the engine into whatever you like; the game
+itself is not up for grabs.
