@@ -12,7 +12,7 @@
  * `GREYFALL_SIM_OUT=<path>` also writes the dump to a file.
  */
 
-import type { ContentLibrary } from "../core/index.js";
+import { WEIGHTS, type ContentLibrary } from "../core/index.js";
 import {
   abilityUsage,
   decisiveness,
@@ -36,7 +36,6 @@ import {
   type SweepConfig,
   type WeightTable,
 } from "./sweeps.js";
-import { WEIGHTS } from "../core/ai/index.js";
 import { ttkMatrix, type TtkCell } from "./ttk.js";
 import {
   BASELINE,

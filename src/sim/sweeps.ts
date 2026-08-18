@@ -8,8 +8,12 @@
  * every headline number in `docs/BALANCE_REPORT.md` names the sweep it came from.
  */
 
-import type { ContentLibrary, Deployment } from "../core/index.js";
-import { WEIGHTS, type AiWeights } from "../core/ai/index.js";
+import {
+  WEIGHTS,
+  type AiWeights,
+  type ContentLibrary,
+  type Deployment,
+} from "../core/index.js";
 import type { GameMap, Unit } from "../data/index.js";
 import { runBattle, type BattleRecord, type RunOptions } from "./harness.js";
 import { simContent, type SimContent } from "./content.js";

@@ -28,7 +28,7 @@ import {
   apparentView,
   clipDurationTicks,
   frameAtTick,
-  resolveFacing,
+  drawnViewFor,
   sheetRect,
   sheetRowIndex,
   type CameraYaw,
@@ -203,9 +203,9 @@ describe("facing derivation", () => {
     }
   });
 
-  it("resolveFacing yields exactly two front views and two back views per yaw", () => {
+  it("drawnViewFor yields two se rows and two ne rows per yaw", () => {
     for (const yaw of YAWS) {
-      const selections = FACINGS.map((f) => resolveFacing(f, yaw));
+      const selections = FACINGS.map((f) => drawnViewFor(f, yaw));
       expect(selections.filter((s) => s.view === "se")).toHaveLength(2);
       expect(selections.filter((s) => s.view === "ne")).toHaveLength(2);
       expect(selections.filter((s) => s.mirrored)).toHaveLength(2);

@@ -1,5 +1,5 @@
 import type { TileCoord } from "../../data/index.js";
-import { inBounds, isStandable, neighbors, standHeight, tileFromIndex, tileIndex } from "../rules/grid.js";
+import { inBounds, isStandable, neighbors, standHeight, tileFromIndex, tileIndex } from "../rules/board.js";
 import { stepCost, type MoveProfile } from "../rules/movement.js";
 import type { GameState } from "../state/types.js";
 

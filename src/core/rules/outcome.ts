@@ -1,7 +1,7 @@
 import type { SimpleWinCondition } from "../../data/schemas/encounter.js";
 import { emit, type Ctx } from "../state/ctx.js";
 import type { BattleResult, GameState } from "../state/types.js";
-import { coordEq, unitById } from "./grid.js";
+import { coordEq, unitById } from "./board.js";
 import { maxHp } from "./status.js";
 
 export function endBattle(ctx: Ctx, result: BattleResult): void {

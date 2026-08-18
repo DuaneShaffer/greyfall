@@ -308,7 +308,7 @@ and it is why two drawn views suffice.
 | back-right | `ne` | no |
 | back-left | `ne` | **yes** |
 
-Derivation (implemented as `resolveFacing` in `src/art/sprites.ts`), with
+Derivation (implemented as `drawnViewFor` in `src/art/sprites.ts`), with
 facing index north=0, east=1, south=2, west=3 and camera yaw index c:
 
 ```
@@ -1383,7 +1383,7 @@ no tile atlas, and that engine work belongs with the art, not ahead of it.
 
 D.4 named the density and left the engine open. Wave 1 landed, the pipeline was
 built, and these are the decisions it forced. Binding on
-`src/render/{terrain,terrainTextures}.ts` and `src/art/{tiles,tileSheet,tileset}.ts`.
+`src/render/{terrain,terrainTextures}.ts` and `src/art/{tiles,tileIntake,tileset}.ts`.
 The delivery's own report card — what diverged, and what the owner should redraw
 — is `art-src/INTAKE_LOG.md` Part B.
 
@@ -1440,7 +1440,7 @@ frame replaces when it lands.
 delivery format; neither said how a painted face reaches a primitive. Wave 1's
 first object — the flux main — landed, the pipeline was built, and these are the
 decisions it forced. Binding on `src/render/{objects,objectTextures}.ts` and
-`src/art/{objects,objectSheet,objectset}.ts`. The delivery's own report card is
+`src/art/{objects,objectIntake,objectset}.ts`. The delivery's own report card is
 `art-src/INTAKE_LOG.md` Part C.
 
 **`spriteId` is the key, and it finally buys something.** `data/maps/*.json`

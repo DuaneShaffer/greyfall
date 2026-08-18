@@ -14,7 +14,7 @@ import type { Team } from "../src/data/schemas/common.js";
 import { hasExternalArt } from "../src/art/external.js";
 import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "../src/art/jobs.js";
 import { buildJobSheet, cellGrid, sheetCell, sheetKey } from "../src/art/sheet.js";
-import { importExternalMaster, propRegion } from "../src/art/intake.js";
+import { intakeExternalMaster, propRegion } from "../src/art/intake.js";
 import { decodePNG, encodePNG as encodeSpritePNG } from "../src/art/png.js";
 import { deriveExternalFrame } from "../src/art/segments.js";
 import { INDEXED_PALETTE, mirrorGrid, type PixelGrid } from "../src/art/pixel.js";
@@ -185,7 +185,7 @@ const SHEETS: Record<string, () => void> = {
               ne: [propRegion(10, 38, 30, 32, "hip" as const), propRegion(44, 16, 20, 18, "handNear" as const)],
             }
           : { se: [propRegion(6, 48, 24, 24, "hip" as const)], ne: [propRegion(34, 48, 24, 24, "hip" as const)] };
-      const { master } = importExternalMaster({
+      const { master } = intakeExternalMaster({
         id: jobId,
         build: art.build,
         views: { se: decodePNG(encodeSpritePNG(toRGBA(shot("se")))), ne: decodePNG(encodeSpritePNG(toRGBA(shot("ne")))) },

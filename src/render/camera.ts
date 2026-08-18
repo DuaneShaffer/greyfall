@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { GameMap } from "../data/schemas/map.js";
-import { HEIGHT_STEP, TILE_SIZE, baseY, tileCenter } from "./grid.js";
+import { HEIGHT_STEP, TILE_SIZE, baseY, tileCenter } from "./board.js";
 import { easeInOut } from "./presentation.js";
 
 const PITCH = THREE.MathUtils.degToRad(33);

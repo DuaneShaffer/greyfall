@@ -163,8 +163,11 @@ export interface ForecastTargetView {
   statuses: { name: string; chancePercent: number }[];
   /** What else lands on this target: stat changes, cleansed statuses, a shove. */
   effects: string[];
-  /** Facing the attack comes in on; drives the hit bonus the player is reading. */
-  relativeFacing: "front" | "side" | "back" | null;
+  /**
+   * Where the attacker stands relative to the target's facing; drives the hit
+   * bonus the player is reading.
+   */
+  attackAngle: "front" | "side" | "back" | null;
   heightAdvantage: number;
 }
 

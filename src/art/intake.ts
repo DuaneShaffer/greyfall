@@ -2,7 +2,7 @@
 // externally-produced 64x96 PNG masters into playable, animated job sheets:
 //
 //   const bytes = readFileSync("enforcer-se.png");
-//   const { master, reports } = importExternalMaster({
+//   const { master, reports } = intakeExternalMaster({
 //     id: "enforcer",
 //     build: JOB_ART.enforcer.build,
 //     views: { se: decodePNG(bytes), ne: decodePNG(neBytes) },
@@ -38,7 +38,7 @@ import {
 } from "./segments.js";
 import { DRAWN_VIEWS, type AnimState, type DrawnView } from "./sprites.js";
 
-export interface ImportRequest {
+export interface IntakeRequest {
   readonly id: string;
   /** Rig build the master was drawn to; proportions must match Appendix A.1. */
   readonly build: Build;
@@ -67,7 +67,7 @@ export interface ImportRequest {
   readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;
 }
 
-export interface ImportResult {
+export interface IntakeResult {
   readonly master: ExternalMaster;
   readonly reports: Readonly<Record<DrawnView, ConformanceReport>>;
   readonly ok: boolean;
@@ -85,7 +85,7 @@ const tintIndicesOf = (team: Team): readonly number[] => [
  * region maps come from `defaultRegionMap` — the rig's own six-way partition —
  * with any declared prop regions cut first.
  */
-export function importExternalMaster(request: ImportRequest): ImportResult {
+export function intakeExternalMaster(request: IntakeRequest): IntakeResult {
   const rest = request.rest ?? { state: "idle", frame: 0 };
   const views: Partial<Record<DrawnView, PixelGrid>> = {};
   const maps: Partial<Record<DrawnView, RegionMap>> = {};

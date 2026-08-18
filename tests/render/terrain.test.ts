@@ -4,7 +4,7 @@ import { TILE_TEXTURE, TILE_TEXTURE_IDS } from "../../src/art/tiles.js";
 import type { GameMap, Tile } from "../../src/data/schemas/map.js";
 import { OBJECT_TEXELS_PER_UNIT } from "../../src/art/objects.js";
 import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../../src/art/sprites.js";
-import { HEIGHT_STEP, SKIRT_DEPTH, TILE_SIZE, baseY } from "../../src/render/grid.js";
+import { HEIGHT_STEP, SKIRT_DEPTH, TILE_SIZE, baseY } from "../../src/render/board.js";
 import {
   buildTerrainMeshData,
   buildTerrainQuads,

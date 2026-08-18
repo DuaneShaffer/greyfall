@@ -12,7 +12,7 @@ import { createBattle, type ContentLibrary, type Deployment, type GameState } fr
 import { WEIGHTS, buildContext, type AiContext } from "../../../src/core/ai/index.js";
 import { GRID_AFFINITY_BONUS } from "../../../src/core/ai/weights.js";
 import { abilityValue } from "../../../src/core/ai/score.js";
-import { getAbility } from "../../../src/core/state/content.js";
+import { abilityById } from "../../../src/core/state/content.js";
 import type { ActionAbility, TargetRef } from "../../../src/core/state/types.js";
 import { advanceTo } from "../fixtures.js";
 import { BENCH_ENCOUNTER_ID, BENCH_MAP_ID, benchContent, benchEncounter, benchMap, benchUnit } from "../gridFixtures.js";
@@ -100,7 +100,7 @@ function contextOf(state: GameState): AiContext {
 
 function ability(state: GameState, id: string): ActionAbility {
   const actor = state.units.find((unit) => unit.id === HAND)!;
-  const found = getAbility(state, actor, id);
+  const found = abilityById(state, actor, id);
   if (found === undefined || found.slot !== "action") throw new Error(`no action ability ${id}`);
   return found;
 }

@@ -4,7 +4,7 @@ import type { ActiveTurn, BattleUnit, ChargedAction, GameState, ObjectRuntime } 
 import { resolveCharge } from "./abilities.js";
 import { hitChance } from "./damage.js";
 import { applyEffects, damageUnit, emptyOutcome } from "./effects.js";
-import { manhattan, teamsHostile, unitById } from "./grid.js";
+import { manhattan, teamsHostile, unitById } from "./board.js";
 import { ageLoads } from "./power.js";
 import { canAct, canMove, ctPerTick, statusHooks } from "./status.js";
 import { hasLos, inRange } from "./targeting.js";

@@ -523,7 +523,7 @@ Reported, not worked around. Nothing below was faked with a wrong mechanic.
 5. **No non-combatant placement.** The bible puts Jory Slate on Floor Nine
    and Quill in Refinery Three, physically present. `PlacedUnit` accepts
    `team: "neutral"`, but `isHostile` is `a.team !== b.team`
-   (`src/core/rules/grid.ts:123`) and the AI treats every unit not on its own
+   (`src/core/rules/board.ts`) and the AI treats every unit not on its own
    team as a hostile (`src/core/ai/context.ts:252`), so a neutral is hostile
    to *both* sides and will attack the player. Both characters are therefore
    voices only. Wanted: a `nonCombatant` flag on `PlacedUnit`, or a

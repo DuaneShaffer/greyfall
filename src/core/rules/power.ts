@@ -23,7 +23,7 @@ import type { PowerCause } from "../events/types.js";
 import { emit, nextOrdinal, type Ctx } from "../state/ctx.js";
 import type { GameState, GridLoad, GridNodeRuntime, GridRuntime, ObjectRuntime } from "../state/types.js";
 
-// Resolved here rather than through `rules/grid.ts`, which reads energization
+// Resolved here rather than through `rules/board.ts`, which reads energization
 // back off this module.
 function objectById(state: GameState, id: string): ObjectRuntime | undefined {
   return state.map.objects.find((o) => o.def.id === id);

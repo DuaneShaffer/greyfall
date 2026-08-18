@@ -13,10 +13,10 @@
 // mid-batch snapshot.
 
 import {
-  abilityInfo,
   allObjects,
   allUnits,
   battleMap,
+  getAbility,
   getUnit,
   gridComponents,
   itemIdFromAbilityId,
@@ -31,7 +31,7 @@ import {
   type ObjectRuntime,
 } from "../core/index.js";
 import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
-import { facingBetween } from "./grid.js";
+import { facingToward } from "../data/coords.js";
 import type { ActorPose, RenderEvent } from "./presentation.js";
 import type { BattleViewModel, MapObjectView, UnitView } from "./viewmodel.js";
 
@@ -84,7 +84,7 @@ const facingAfterPath = (path: readonly TileCoord[], fallback: Facing): Facing =
   const to = path[path.length - 1];
   const from = path[path.length - 2];
   if (to === undefined || from === undefined) return fallback;
-  return facingBetween(from, to);
+  return facingToward(from, to);
 };
 
 const hitEvent = (
@@ -151,7 +151,7 @@ const gridStrainEvents = (state: GameState, gridId: string): RenderEvent[] => {
  */
 const poseFor = (state: GameState, unitId: string, abilityId: string): ActorPose => {
   if (itemIdFromAbilityId(abilityId) !== null) return "cast";
-  const ability = abilityInfo(state, unitId, abilityId);
+  const ability = getAbility(state, unitId, abilityId);
   if (ability !== null && ability.slot === "action" && ability.castSpeed !== null) return "cast";
   return "attack";
 };
@@ -187,7 +187,7 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
           kind: "unitMoved",
           unitId: event.unitId,
           path: [{ ...event.from }, { ...event.to }],
-          facing: unit?.facing ?? facingBetween(event.from, event.to),
+          facing: unit?.facing ?? facingToward(event.from, event.to),
         },
       ];
     }
@@ -228,7 +228,7 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
     case "AbilityCharging":
       return [{ kind: "unitActed", unitId: event.unitId, pose: "castHold" }];
     case "AbilityChargeCancelled":
-      return [{ kind: "unitActed", unitId: event.unitId, pose: "rest" }];
+      return [{ kind: "unitActed", unitId: event.unitId, pose: "idle" }];
     case "AbilityMissed":
       return [
         { kind: "unitMissed", unitId: event.targetUnitId, sourceUnitId: event.unitId },

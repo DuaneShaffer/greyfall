@@ -1,7 +1,7 @@
 import type { Amount, TileCoord } from "../../data/index.js";
 import { weaponPower } from "../state/content.js";
 import type { BattleUnit, GameState } from "../state/types.js";
-import { attackAngle } from "./grid.js";
+import { attackAngle } from "./board.js";
 import { effectiveStats, maxHp } from "./status.js";
 
 /** Divisor on `phys x weaponPower x power` at level 1; `D(1)`. */

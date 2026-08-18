@@ -388,7 +388,7 @@ export function mockForecastView(overrides: Partial<ForecastView> = {}): Forecas
         damage: { kind: "damage", min: 24, max: 31, damageType: "kinetic" },
         statuses: [{ name: "Stunned", chancePercent: 35 }],
         effects: [],
-        relativeFacing: "side",
+        attackAngle: "side",
         heightAdvantage: 1,
       },
     ],

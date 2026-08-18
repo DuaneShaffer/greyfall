@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { AnimationPlayer } from "../art/player.js";
-import { resolveFacing, type AnimState, type CameraYaw, type DrawnView } from "../art/sprites.js";
+import { drawnViewFor, type AnimState, type CameraYaw, type DrawnView } from "../art/sprites.js";
 import type { Facing, Team } from "../data/schemas/common.js";
-import { facingYaw } from "./grid.js";
+import { facingYaw } from "./board.js";
 import { DRAW_ORDER, markBloomOnly } from "./layers.js";
 import { palette, teamColor } from "./palette.js";
 import {
@@ -370,8 +370,8 @@ export class UnitVisual {
     this.refreshFrame();
   }
 
-  /** Back to the resting state after a traversal or one-shot. */
-  rest(): void {
+  /** Back to the idle clip after a traversal or one-shot. */
+  idle(): void {
     if (this.view.downed) return;
     if (this.player.state === "idle") return;
     this.player.play("idle");
@@ -438,7 +438,7 @@ export class UnitVisual {
   }
 
   private refreshFrame(force = false): void {
-    const selection = resolveFacing(this.view.facing, this.yawIndex);
+    const selection = drawnViewFor(this.view.facing, this.yawIndex);
     this.drawnView = selection.view;
     this.mirrored = selection.mirrored;
     const state = this.player.state;

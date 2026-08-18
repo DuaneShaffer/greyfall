@@ -1,10 +1,10 @@
 import type { Effect, TileCoord } from "../../data/index.js";
 import { inertAmountTarget, resolveAmount, unitAmountTarget } from "../rules/damage.js";
 import { objectMaxHp } from "../rules/effects.js";
-import { areEnemies, manhattan, tileAt, tileIndex, unitById } from "../rules/grid.js";
+import { areEnemies, manhattan, tileAt, tileIndex, unitById } from "../rules/board.js";
 import { moveProfile, type MoveProfile } from "../rules/movement.js";
 import { maxHp } from "../rules/status.js";
-import { getAbility, knownActionAbilityIds } from "../state/content.js";
+import { abilityById, knownActionAbilityIds } from "../state/content.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { resolveArea } from "../rules/abilities.js";
 import { distanceField, terrainGrid, UNREACHABLE } from "./field.js";
@@ -134,7 +134,7 @@ export interface AiContext {
 function actionAbilities(state: GameState, unit: BattleUnit): ActionAbility[] {
   const out: ActionAbility[] = [];
   for (const id of knownActionAbilityIds(state, unit)) {
-    const ability = getAbility(state, unit, id);
+    const ability = abilityById(state, unit, id);
     if (ability !== undefined && ability.slot === "action") out.push(ability);
   }
   return out;
@@ -263,7 +263,7 @@ function pendingDamage(state: GameState): Map<string, number> {
   for (const charge of state.charges) {
     const actor = unitById(state, charge.actorId);
     if (actor === undefined || actor.downed) continue;
-    const ability = getAbility(state, actor, charge.abilityId);
+    const ability = abilityById(state, actor, charge.abilityId);
     if (ability === undefined || ability.slot !== "action") continue;
     const area = resolveArea(state, actor, ability, charge.target);
     for (const unitId of area.unitIds) {

@@ -1,7 +1,10 @@
+// The board in world space: tile centres, the height step the art is drawn to,
+// and the yaw that turns a mesh toward a facing.
+
 import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../art/sprites.js";
-import { coordEq } from "../data/coords.js";
+import { coordEq, tileAt } from "../data/coords.js";
 import type { Facing, TileCoord } from "../data/schemas/common.js";
-import type { GameMap, Tile } from "../data/schemas/map.js";
+import type { GameMap } from "../data/schemas/map.js";
 
 /** One world unit per tile edge — the unit the art's texel density is quoted in. */
 export const TILE_SIZE = 1;
@@ -20,17 +23,8 @@ export interface WorldPoint {
   z: number;
 }
 
-export const tileIndex = (map: { width: number }, x: number, y: number): number =>
-  y * map.width + x;
-
-export const inBounds = (map: { width: number; depth: number }, x: number, y: number): boolean =>
-  x >= 0 && y >= 0 && x < map.width && y < map.depth;
-
-export const tileAt = (map: GameMap, x: number, y: number): Tile | undefined =>
-  inBounds(map, x, y) ? map.tiles[tileIndex(map, x, y)] : undefined;
-
-export const tileHeight = (map: GameMap, x: number, y: number): number =>
-  tileAt(map, x, y)?.height ?? 0;
+export const tileHeight = (map: GameMap, tile: TileCoord): number =>
+  tileAt(map, tile)?.height ?? 0;
 
 export const minTileHeight = (map: GameMap): number => {
   const lowest = map.tiles.reduce(
@@ -45,13 +39,13 @@ export const baseY = (map: GameMap): number => minTileHeight(map) * HEIGHT_STEP 
 /** World-space centre of a tile's top surface (y = the walkable surface). */
 export const tileCenter = (map: GameMap, x: number, y: number): WorldPoint => ({
   x: (x - (map.width - 1) / 2) * TILE_SIZE,
-  y: tileHeight(map, x, y) * HEIGHT_STEP,
+  y: tileHeight(map, { x, y }) * HEIGHT_STEP,
   z: (y - (map.depth - 1) / 2) * TILE_SIZE,
 });
 
 /** Surface a unit stands on: object surfaces (lift/catwalk) win over terrain. */
 export const standingHeight = (map: GameMap, tile: TileCoord): number => {
-  let height = tileHeight(map, tile.x, tile.y);
+  let height = tileHeight(map, tile);
   for (const object of map.objects) {
     if (object.surfaceHeight === undefined) continue;
     if (!object.tiles.some((t) => coordEq(t, tile))) continue;
@@ -73,4 +67,3 @@ export const facingYaw = (facing: Facing): number => {
   return Math.atan2(dx, dz);
 };
 
-export { facingToward as facingBetween } from "../data/coords.js";

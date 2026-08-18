@@ -7,7 +7,7 @@ import {
   type GameState,
 } from "../../src/core/index.js";
 import { findPath } from "../../src/core/rules/movement.js";
-import { unitById } from "../../src/core/rules/grid.js";
+import { unitById } from "../../src/core/rules/board.js";
 import type { Encounter, TileCoord, Unit } from "../../src/data/index.js";
 import { VALE, advanceTo, coordEq, enemyAt, enforcer, hasTile, testContent, yardEncounter } from "./fixtures.js";
 

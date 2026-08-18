@@ -23,16 +23,8 @@
 import { FACE_SHADE } from "../art/palette.js";
 import { TILE_TEXTURE_IDS, tileTextureFor, type TileTextureId } from "../art/tiles.js";
 import type { GameMap, TerrainType } from "../data/schemas/map.js";
-import {
-  HEIGHT_STEP,
-  TILE_SIZE,
-  baseY,
-  inBounds,
-  tileAt,
-  tileCenter,
-  tileIndex,
-  type WorldPoint,
-} from "./grid.js";
+import { inBounds, tileAt, tileIndex } from "../data/coords.js";
+import { HEIGHT_STEP, TILE_SIZE, baseY, tileCenter, type WorldPoint } from "./board.js";
 import type { Rgb } from "./palette.js";
 
 export type TerrainQuadKind = "top" | "side";
@@ -100,14 +92,14 @@ const MATERIAL_INDEX = new Map<TileTextureId, number>(TILE_TEXTURE_IDS.map((id, 
 const materialIndexOf = (texture: TileTextureId): number => MATERIAL_INDEX.get(texture) as number;
 
 const surfaceY = (map: GameMap, x: number, y: number): number => {
-  const tile = tileAt(map, x, y);
+  const tile = tileAt(map, { x, y });
   if (!tile || tile.terrain === "void") return baseY(map);
   return tile.height * HEIGHT_STEP;
 };
 
 const railRunsNorthSouth = (map: GameMap, x: number, y: number): boolean => {
   const isRail = (tx: number, ty: number): boolean =>
-    inBounds(map, tx, ty) && tileAt(map, tx, ty)?.terrain === "rail";
+    tileAt(map, { x: tx, y: ty })?.terrain === "rail";
   const alongZ = Number(isRail(x, y - 1)) + Number(isRail(x, y + 1));
   const alongX = Number(isRail(x - 1, y)) + Number(isRail(x + 1, y));
   return alongZ >= alongX;
@@ -213,14 +205,14 @@ export const buildTerrainQuads = (map: GameMap): TerrainQuad[] => {
   const floor = baseY(map);
   for (let y = 0; y < map.depth; y += 1) {
     for (let x = 0; x < map.width; x += 1) {
-      const tile = map.tiles[tileIndex(map, x, y)];
+      const tile = map.tiles[tileIndex(map, { x, y })];
       if (!tile || tile.terrain === "void") continue;
       push(topQuad(map, x, y, tile.terrain));
       const top = tile.height * HEIGHT_STEP;
       for (const direction of NEIGHBORS) {
         const nx = x + direction[0];
         const ny = y + direction[1];
-        const neighborTop = inBounds(map, nx, ny) ? surfaceY(map, nx, ny) : floor;
+        const neighborTop = inBounds(map, { x: nx, y: ny }) ? surfaceY(map, nx, ny) : floor;
         if (neighborTop >= top) continue;
         push(sideQuad(map, x, y, tile.terrain, direction, neighborTop, top));
       }
@@ -263,7 +255,7 @@ export const quadsToMeshData = (map: GameMap, quads: TerrainQuad[]): TerrainMesh
     indices[i + 3] = base;
     indices[i + 4] = base + 2;
     indices[i + 5] = base + 3;
-    const tile = tileIndex(map, quad.tileX, quad.tileY);
+    const tile = tileIndex(map, { x: quad.tileX, y: quad.tileY });
     triangleTiles[quadIdx * 2] = tile;
     triangleTiles[quadIdx * 2 + 1] = tile;
 

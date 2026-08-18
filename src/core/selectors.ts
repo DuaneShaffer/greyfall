@@ -26,7 +26,7 @@ import {
   satchelCount,
   teamSatchel as satchelOf,
 } from "./rules/items.js";
-import { areEnemies, attackAngle, coordEq, manhattan, objectById, unitById, type AttackAngle } from "./rules/grid.js";
+import { areEnemies, attackAngle, coordEq, manhattan, objectById, unitById, type AttackAngle } from "./rules/board.js";
 import { reachableTiles as computeReachable, type ReachableTile } from "./rules/movement.js";
 import {
   attachLoad,
@@ -52,7 +52,7 @@ import {
   targetableTiles as computeTargetable,
   unmetRequirement,
 } from "./rules/targeting.js";
-import { getAbility, getItem, getJob, getStatus, knownActionAbilityIds } from "./state/content.js";
+import { abilityById, itemById, jobById, knownActionAbilityIds, statusById } from "./state/content.js";
 import { cloneState, type Ctx } from "./state/ctx.js";
 import type {
   ActiveTurn,
@@ -141,22 +141,22 @@ export function unitCanAct(state: GameState, unitId: string): boolean {
  * Definition of an ability as this unit would use it, including the engine's
  * synthesized `basic-attack` (which is not a content file).
  */
-export function abilityInfo(state: GameState, unitId: string, abilityId: string): Ability | null {
+export function getAbility(state: GameState, unitId: string, abilityId: string): Ability | null {
   const unit = unitById(state, unitId);
   if (unit === undefined) return null;
-  return getAbility(state, unit, abilityId) ?? null;
+  return abilityById(state, unit, abilityId) ?? null;
 }
 
-export function jobInfo(state: GameState, jobId: string): Job | null {
-  return getJob(state, jobId) ?? null;
+export function getJob(state: GameState, jobId: string): Job | null {
+  return jobById(state, jobId) ?? null;
 }
 
-export function statusInfo(state: GameState, statusId: string): Status | null {
-  return getStatus(state, statusId) ?? null;
+export function getStatus(state: GameState, statusId: string): Status | null {
+  return statusById(state, statusId) ?? null;
 }
 
-export function itemInfo(state: GameState, itemId: string): Item | null {
-  return getItem(state, itemId) ?? null;
+export function getItem(state: GameState, itemId: string): Item | null {
+  return itemById(state, itemId) ?? null;
 }
 
 /** Where an attacker stands relative to the target's facing. */
@@ -502,7 +502,7 @@ export function gridFlipPreview(
   if (state.content.map.grids.length === 0) return [];
   const unit = unitById(state, unitId);
   if (unit === undefined) return [];
-  const ability = getAbility(state, unit, abilityId);
+  const ability = abilityById(state, unit, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
   if (!ability.effects.some((effect) => GRID_EFFECT_KINDS.has(effect.kind))) return [];
   if (unmetRequirement(state, unit, ability, target) !== null) return [];
@@ -610,7 +610,7 @@ export function availableAbilities(state: GameState, unitId: string): string[] {
   const unit = unitById(state, unitId);
   if (unit === undefined) return [];
   return knownActionAbilityIds(state, unit).filter((id) => {
-    const ability = getAbility(state, unit, id);
+    const ability = abilityById(state, unit, id);
     if (ability === undefined || ability.slot !== "action") return false;
     return unmetRequirement(state, unit, ability, null) === null;
   });
@@ -677,7 +677,7 @@ export function reachableTiles(state: GameState, unitId: string): ReachableTile[
 export function targetableTiles(state: GameState, unitId: string, abilityId: string): TileCoord[] {
   const unit = unitById(state, unitId);
   if (unit === undefined) return [];
-  const ability = getAbility(state, unit, abilityId);
+  const ability = abilityById(state, unit, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
   if (unmetRequirement(state, unit, ability, null) !== null) return [];
   return computeTargetable(state, unit.position, ability.targeting).filter(
@@ -701,7 +701,7 @@ export function aimTarget(
 ): TargetRef | null {
   const unit = unitById(state, unitId);
   if (unit === undefined) return null;
-  const ability = getAbility(state, unit, abilityId);
+  const ability = abilityById(state, unit, abilityId);
   if (ability === undefined || ability.slot !== "action") return null;
 
   const candidates: TargetRef[] = [];
@@ -748,7 +748,7 @@ export function affectedTiles(
 ): TileCoord[] {
   const unit = unitById(state, unitId);
   if (unit === undefined) return [];
-  const ability = getAbility(state, unit, abilityId);
+  const ability = abilityById(state, unit, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
   return resolveArea(state, unit, ability, target).tiles;
 }
@@ -822,7 +822,7 @@ export function abilityOutcomes(
 ): ForecastOutcome[] {
   const actor = unitById(state, unitId);
   if (actor === undefined) return [];
-  const ability = getAbility(state, actor, abilityId);
+  const ability = abilityById(state, actor, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
   const out: ForecastOutcome[] = [];
   for (const effect of ability.effects) {
@@ -848,7 +848,7 @@ export function forecast(
 ): ForecastEntry[] {
   const actor = unitById(state, unitId);
   if (actor === undefined) return [];
-  const ability = getAbility(state, actor, abilityId);
+  const ability = abilityById(state, actor, abilityId);
   if (ability === undefined || ability.slot !== "action") return [];
   if (unmetRequirement(state, actor, ability, target) !== null) return [];
   const area = resolveArea(state, actor, ability, target);

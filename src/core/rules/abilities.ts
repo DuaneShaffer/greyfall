@@ -1,6 +1,6 @@
 import type { Facing, TileCoord } from "../../data/index.js";
 import { chanceRoll } from "../rng/mulberry32.js";
-import { getAbility } from "../state/content.js";
+import { abilityById } from "../state/content.js";
 import { emit, nextOrdinal, type Ctx } from "../state/ctx.js";
 import type { ActionAbility, BattleUnit, ChargedAction, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
 import { hitChance, reactionChance } from "./damage.js";
@@ -12,7 +12,7 @@ import {
   spendCharge,
   type EffectOutcome,
 } from "./effects.js";
-import { areEnemies, coordEq, facingToward, unitById } from "./grid.js";
+import { areEnemies, coordEq, facingToward, unitById } from "./board.js";
 import { canReact, maxHp } from "./status.js";
 import { aimedTile, areaTiles } from "./targeting.js";
 
@@ -134,7 +134,7 @@ export function triggerReactions(
 function reactionOf(ctx: Ctx, unit: BattleUnit) {
   const id = unit.unit.reactionAbilityId;
   if (id === undefined) return undefined;
-  const ability = getAbility(ctx.state, unit, id);
+  const ability = abilityById(ctx.state, unit, id);
   if (ability === undefined || ability.slot !== "reaction") return undefined;
   return ability;
 }
@@ -216,7 +216,7 @@ export function resolveCharge(ctx: Ctx, charge: ChargedAction): EffectOutcome {
   const outcome = emptyOutcome();
   const actor = unitById(ctx.state, charge.actorId);
   if (actor === undefined || actor.downed) return outcome;
-  const ability = getAbility(ctx.state, actor, charge.abilityId);
+  const ability = abilityById(ctx.state, actor, charge.abilityId);
   if (ability === undefined || ability.slot !== "action") return outcome;
   mergeOutcome(outcome, executeAbility(ctx, actor, ability, charge.target, true));
   awardStanding(ctx, actor, STANDING_PER_ACTION);

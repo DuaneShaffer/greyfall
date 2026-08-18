@@ -48,7 +48,7 @@ import {
   FLUX_MAIN_SHEET_CELLS,
   cutObjectSheet,
   findObjectSheetContent,
-} from "../../src/art/objectSheet.js";
+} from "../../src/art/objectIntake.js";
 import { objectCarrierGrid, objectFaceGrid, objectFaceLevels } from "../../src/art/objectset.js";
 import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../../src/art/sprites.js";
 

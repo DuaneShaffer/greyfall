@@ -25,15 +25,15 @@ export const UNARMED = {
   range: { min: 1, max: 1, vertical: 1 },
 } as const;
 
-export function getJob(state: GameState, id: string): Job | undefined {
+export function jobById(state: GameState, id: string): Job | undefined {
   return state.content.jobs[id];
 }
 
-export function getStatus(state: GameState, id: string): Status | undefined {
+export function statusById(state: GameState, id: string): Status | undefined {
   return state.content.statuses[id];
 }
 
-export function getItem(state: GameState, id: string): Item | undefined {
+export function itemById(state: GameState, id: string): Item | undefined {
   return state.content.items[id];
 }
 
@@ -79,7 +79,7 @@ export function basicAttack(state: GameState, unit: BattleUnit): ActionAbility {
  * Ability lookup that also resolves the two abilities the engine synthesizes:
  * the weapon attack, and `item:<id>` for a consumable as this unit would use it.
  */
-export function getAbility(state: GameState, unit: BattleUnit, id: string): Ability | undefined {
+export function abilityById(state: GameState, unit: BattleUnit, id: string): Ability | undefined {
   if (id === BASIC_ATTACK_ID) return basicAttack(state, unit);
   const itemId = itemIdFromAbilityId(id);
   if (itemId !== null) {
@@ -104,7 +104,7 @@ export function knownActionAbilityIds(state: GameState, unit: BattleUnit): strin
   }
   const out: string[] = [];
   for (const id of ids) {
-    const ability = getAbility(state, unit, id);
+    const ability = abilityById(state, unit, id);
     if (ability !== undefined && ability.slot === "action") out.push(id);
   }
   return out.sort();

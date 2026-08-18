@@ -1,6 +1,9 @@
-// The renderer's read-only picture of a battle. It is DERIVED, never
-// authoritative: `BattleRenderer.buildScene(viewModel)` can rebuild everything
-// from a snapshot at any time (load-game, debug rewind, resize).
+// The renderer's picture of a battle. It is DERIVED, never authoritative:
+// `BattleRenderer.buildScene(viewModel)` can rebuild everything from a snapshot
+// at any time (load-game, debug rewind, resize). It is also mutable on purpose —
+// the animations in `scene.ts` write each event's terminal values back into these
+// objects as they settle, so a rebuild draws the battle as last animated rather
+// than as last adapted.
 //
 // `render/adapter.ts` builds it from a `GameState`. Nothing else in
 // `src/render` may import core — that adapter is the only crossing.
@@ -8,7 +11,7 @@
 import type { Facing, Team, TileCoord } from "../data/schemas/common.js";
 import type { GameMap, GridRole, MapObject, MapObjectKind } from "../data/schemas/map.js";
 import type { Unit } from "../data/schemas/unit.js";
-import { standingHeight } from "./grid.js";
+import { standingHeight } from "./board.js";
 
 export interface UnitView {
   id: string;

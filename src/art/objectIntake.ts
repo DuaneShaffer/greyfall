@@ -23,7 +23,7 @@
 //     shows as a fence breach. The two checks together pin all four edges.
 //
 // So the rects below are still hand-measured and **declared** — the same honesty
-// `tileSheet.ts` and `tools/ingest-master.ts` use — while an automatic opaque-run
+// `tileIntake.ts` and `tools/ingest-master.ts` use — while an automatic opaque-run
 // sweep, the fence check and the fill check say whether the declaration is true.
 // The palette strip is declared too, as *reference and not a cell*, which is what
 // lets the intake cross-check the swatches against the colours actually used.

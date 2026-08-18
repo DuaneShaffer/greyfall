@@ -4,7 +4,7 @@ import { buildSatchels } from "./rules/items.js";
 import { advanceClock } from "./rules/turn.js";
 import { evaluateOutcome } from "./rules/outcome.js";
 import { evaluateTriggers } from "./rules/triggers.js";
-import { coordEq } from "./rules/grid.js";
+import { coordEq } from "./rules/board.js";
 import { initialGrids, initializePower } from "./rules/power.js";
 import { createRng } from "./rng/mulberry32.js";
 import type { ContentLibrary } from "./state/content.js";

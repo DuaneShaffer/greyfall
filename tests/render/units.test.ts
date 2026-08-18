@@ -9,7 +9,7 @@ import {
   APPARENT_VIEWS,
   CAMERA_YAW_CORNERS,
   apparentView,
-  resolveFacing,
+  drawnViewFor,
   type CameraYaw,
 } from "../../src/art/sprites.js";
 import type { Facing, Team } from "../../src/data/schemas/common.js";
@@ -119,7 +119,7 @@ describe("facing to drawn view", () => {
       for (const facing of FACINGS) {
         const apparent = apparentView(facing, yaw);
         seen.add(apparent);
-        expect(resolveFacing(facing, yaw)).toEqual(APPARENT_VIEWS[apparent]);
+        expect(drawnViewFor(facing, yaw)).toEqual(APPARENT_VIEWS[apparent]);
       }
       expect(seen.size).toBe(4);
     }
@@ -135,7 +135,7 @@ describe("facing to drawn view", () => {
   it("turns the sprite when the camera orbits, not just when the unit turns", () => {
     const still: string[] = [];
     for (let yaw = 0 as CameraYaw; yaw < 4; yaw = ((yaw + 1) as CameraYaw)) {
-      const selection = resolveFacing("north", yaw);
+      const selection = drawnViewFor("north", yaw);
       still.push(`${selection.view}:${selection.mirrored}`);
     }
     expect(new Set(still).size).toBe(4);
@@ -145,7 +145,7 @@ describe("facing to drawn view", () => {
     for (let step = -4; step <= 4; step += 1) {
       const yaw = BASE_YAW + step * QUARTER;
       const index = cameraYawIndex(yaw);
-      expect(resolveFacing("east", index)).toEqual(APPARENT_VIEWS[apparentView("east", index)]);
+      expect(drawnViewFor("east", index)).toEqual(APPARENT_VIEWS[apparentView("east", index)]);
     }
   });
 });

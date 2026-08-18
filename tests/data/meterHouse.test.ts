@@ -18,7 +18,7 @@ import {
   type BattleEvent,
   type GameState,
 } from "../../src/core/index.js";
-import { inBounds, isStandable, neighbors } from "../../src/core/rules/grid.js";
+import { inBounds, isStandable, neighbors } from "../../src/core/rules/board.js";
 import { evaluateTriggers } from "../../src/core/rules/triggers.js";
 import { Campaign, type Grid, type MapObject, type TileCoord } from "../../src/data/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";

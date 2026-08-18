@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import { frameEndTick } from "../art/player.js";
 import { TICKS_PER_SECOND } from "../art/sprites.js";
-import { coordEq } from "../data/coords.js";
+import { coordEq, facingToward, inBounds } from "../data/coords.js";
 import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import { TacticsCamera } from "./camera.js";
 import type { Vec3 } from "./effects.js";
-import { HEIGHT_STEP, facingBetween, inBounds, standingHeight, tileCenter } from "./grid.js";
+import { HEIGHT_STEP, standingHeight, tileCenter } from "./board.js";
 import { TileHighlights, type HighlightOptions } from "./highlights.js";
 import { DRAW_ORDER } from "./layers.js";
 import { ObjectVisual } from "./objects.js";
@@ -99,7 +99,7 @@ export interface Walker {
   setWorldPosition(x: number, y: number, z: number): void;
   setFacing(facing: Facing): void;
   playWalk(): void;
-  rest(): void;
+  idle(): void;
 }
 
 /**
@@ -125,7 +125,7 @@ export function walkAnimation(
   const settle = (): void => {
     visual.setWorldPosition(end.x, end.y, end.z);
     visual.setFacing(facing);
-    visual.rest();
+    visual.idle();
     view.position = { ...destination };
     view.elevation = standingHeight(map, destination);
     view.facing = facing;
@@ -152,7 +152,7 @@ export function walkAnimation(
         from.y + (to.y - from.y) * t + hop,
         from.z + (to.z - from.z) * t,
       );
-      visual.setFacing(facingBetween(path[leg] as TileCoord, path[leg + 1] as TileCoord));
+      visual.setFacing(facingToward(path[leg] as TileCoord, path[leg + 1] as TileCoord));
     },
     finish: settle,
   };
@@ -177,7 +177,7 @@ export function snapAnimation(
   return instantAnimation(() => {
     visual.setWorldPosition(position.x, position.y, position.z);
     visual.setFacing(facing);
-    visual.rest();
+    visual.idle();
     view.position = { ...tile };
     view.elevation = standingHeight(map, tile);
     view.facing = facing;
@@ -675,10 +675,10 @@ export class BattleRenderer {
         const visual = this.units.get(event.unitId);
         if (!visual) return null;
         if (event.pose === "castHold") return instantAnimation(() => visual.playCast(true));
-        if (event.pose === "rest") {
+        if (event.pose === "idle") {
           return instantAnimation(() => {
             visual.releaseCast();
-            visual.rest();
+            visual.idle();
           });
         }
         // The clip runs on its own clock and returns itself to idle, so the
@@ -763,7 +763,7 @@ export class BattleRenderer {
         };
         const start = worldPositionOf(map, origin);
         const end = worldPositionOf(map, destination);
-        if (!inBounds(map, destination.x, destination.y)) end.y = start.y;
+        if (!inBounds(map, destination)) end.y = start.y;
         const walkSeconds = EXIT_TILES * STEP_SECONDS;
         const retire = (): void => {
           this.unitGroup.remove(visual.group);
@@ -776,7 +776,7 @@ export class BattleRenderer {
           update: (elapsed) => {
             if (elapsed < walkSeconds) {
               visual.playWalk();
-              visual.setFacing(facingBetween(origin, destination));
+              visual.setFacing(facingToward(origin, destination));
               const t = elapsed / walkSeconds;
               visual.setWorldPosition(
                 start.x + (end.x - start.x) * t,
@@ -788,7 +788,7 @@ export class BattleRenderer {
             // No alpha fade: §3 forbids partial alpha on sprites, so the exit
             // is a shrink toward the feet anchor instead.
             const t = Math.min(1, (elapsed - walkSeconds) / EXIT_VANISH_SECONDS);
-            visual.rest();
+            visual.idle();
             visual.setWorldPosition(end.x, end.y, end.z);
             visual.group.scale.setScalar(Math.max(0.001, 1 - t));
           },

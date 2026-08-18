@@ -176,7 +176,7 @@ scaled by the carrier's potency bonus — exactly as it already synthesizes
 `basic-attack` from the equipped weapon.
 
 Everything downstream then works untouched: `resolveArea`, `forecast`,
-`targetableTiles`, `affectedTiles`, `abilityInfo`, the renderer's pose lookup,
+`targetableTiles`, `affectedTiles`, `getAbility`, the renderer's pose lookup,
 and the AI's `abilityValue`. The UI aims an item through the same
 pick-then-confirm flow it aims an ability through; only the command that
 finally goes out is different.

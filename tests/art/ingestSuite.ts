@@ -20,7 +20,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { externalArt } from "../../src/art/external.js";
 import { JOB_ART, jobFrame, type JobId } from "../../src/art/jobs.js";
 import { AMBER_BUDGET, MAX_FRAME_COLORS } from "../../src/art/ingest.js";
-import { importExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
+import { intakeExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
 import { EMISSIVE_COLORS, RAMPS, TEAM_TINT } from "../../src/art/palette.js";
 import {
   INDEXED_PALETTE,
@@ -74,12 +74,12 @@ export function toRGBA(
 
 export const pngOf = (grid: PixelGrid, jitter = 0): Uint8Array => encodePNG(toRGBA(grid, jitter));
 
-/** The two masters kept as fallback content, imported as if they were foreign. */
+/** The two masters kept as fallback content, taken in as if they were foreign. */
 export const FALLBACK = ["enforcer", "saboteur"] as const;
 
 export type FallbackJob = (typeof FALLBACK)[number];
 
-export const importFallback = (jobId: FallbackJob) => {
+export const intakeFallback = (jobId: FallbackJob) => {
   const art = JOB_ART[jobId];
   const se = jobFrame({ jobId, team: "player", state: "idle", view: "se", frame: 0 });
   const ne = jobFrame({ jobId, team: "player", state: "idle", view: "ne", frame: 0 });
@@ -92,7 +92,7 @@ export const importFallback = (jobId: FallbackJob) => {
           ne: [propRegion(10, 38, 30, 32, "hip"), propRegion(44, 16, 20, 18, "handNear")],
         }
       : { se: [propRegion(6, 48, 24, 24, "hip")], ne: [propRegion(34, 48, 24, 24, "hip")] };
-  return importExternalMaster({
+  return intakeExternalMaster({
     id: jobId,
     build: art.build,
     views: { se: decodePNG(pngOf(se, 1)), ne: decodePNG(pngOf(ne, 1)) },
@@ -235,19 +235,19 @@ export function registerDeliveredMasterSuite(jobId: JobId): void {
 export function registerExternalMasterSuite(jobId: FallbackJob): void {
   describe("external masters become full animations", () => {
     describe(jobId, () => {
-      let imported: ReturnType<typeof importFallback>;
+      let taken: ReturnType<typeof intakeFallback>;
       let frames: ReturnType<typeof everyExternalFrame>;
 
       beforeAll(() => {
-        imported = importFallback(jobId);
-        frames = everyExternalFrame(imported.master);
+        taken = intakeFallback(jobId);
+        frames = everyExternalFrame(taken.master);
       });
 
       it("conforms on intake", () => {
-        expect(imported.ok, imported.summary).toBe(true);
+        expect(taken.ok, taken.summary).toBe(true);
         for (const view of ["se", "ne"] as const) {
-          expect(imported.reports[view].movedCount).toBeGreaterThan(0);
-          expect(imported.reports[view].figureBottom).toBe(SPRITE_ANCHOR.y - 1);
+          expect(taken.reports[view].movedCount).toBeGreaterThan(0);
+          expect(taken.reports[view].figureBottom).toBe(SPRITE_ANCHOR.y - 1);
         }
       });
 
@@ -271,8 +271,8 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
       it("animates: adjacent frames of a state differ", () => {
         for (const state of ["walk", "attack", "cast", "downed"] as const) {
           for (let frame = 1; frame < ANIMATIONS[state].frames; frame += 1) {
-            const previous = deriveExternalFrame(imported.master, { state, view: "se", frame: frame - 1 });
-            const current = deriveExternalFrame(imported.master, { state, view: "se", frame });
+            const previous = deriveExternalFrame(taken.master, { state, view: "se", frame: frame - 1 });
+            const current = deriveExternalFrame(taken.master, { state, view: "se", frame });
             expect(current.data, `${jobId}/${state}/${frame}`).not.toEqual(previous.data);
           }
         }
@@ -285,7 +285,7 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
           expect(opaqueCount(flipped), where).toBe(opaqueCount(grid));
           expect(mirrorGrid(flipped).data, where).toEqual(grid.data);
         }
-        const idle = deriveExternalFrame(imported.master, { state: "idle", view: "se", frame: 0 });
+        const idle = deriveExternalFrame(taken.master, { state: "idle", view: "se", frame: 0 });
         let sum = 0;
         let count = 0;
         for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
@@ -304,8 +304,8 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
           if (state === "hurt" && frame === 0) continue; // A.4 flash frame
           expect(histogram(grid).get(base) ?? 0, `${jobId}/${state}/${view}/${frame}`).toBeGreaterThan(0);
         }
-        const enemy = retintMaster(imported.master, "player", "enemy");
-        const player = deriveExternalFrame(imported.master, { state: "idle", view: "se", frame: 0 });
+        const enemy = retintMaster(taken.master, "player", "enemy");
+        const player = deriveExternalFrame(taken.master, { state: "idle", view: "se", frame: 0 });
         const enemyFrame = deriveExternalFrame(enemy, { state: "idle", view: "se", frame: 0 });
         const allowed = new Set([
           paletteIndex(TEAM_TINT.player.base),
@@ -327,7 +327,7 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
       });
 
       it("assembles into the frozen sheet layout", () => {
-        const sheet = buildExternalSheet(imported.master);
+        const sheet = buildExternalSheet(taken.master);
         expect(sheet.width).toBe(SHEET_LAYOUT.width);
         expect(sheet.height).toBe(SHEET_LAYOUT.height);
         expect(opaqueCount(sheet)).toBeGreaterThan(DRAWN_FRAMES_PER_JOB * 100);
@@ -341,7 +341,7 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
 
       it("reproduces the master at rest, up to the re-derived outline", () => {
         const original = jobFrame({ jobId, team: "player", state: "idle", view: "se", frame: 0 });
-        const derived = deriveExternalFrame(imported.master, { state: "idle", view: "se", frame: 0 });
+        const derived = deriveExternalFrame(taken.master, { state: "idle", view: "se", frame: 0 });
         let same = 0;
         let total = 0;
         for (let i = 0; i < original.data.length; i += 1) {

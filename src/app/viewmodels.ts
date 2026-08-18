@@ -7,8 +7,6 @@
 // the harness's fixture source — this module is the app path.
 
 import {
-  BASIC_ATTACK_ID,
-  abilityInfo,
   abilityOutcomes,
   activatableObjects,
   activeTurnState,
@@ -18,22 +16,24 @@ import {
   allUnits,
   attackAngleAgainst,
   availableAbilities,
+  BASIC_ATTACK_ID,
   battleClock,
   battleEncounter,
   battleMap,
   canUndoMove,
   forecast,
+  getAbility,
+  getItem,
+  getJob,
   getObject,
+  getStatus,
   getUnit,
   itemIdFromAbilityId,
-  itemInfo,
-  jobInfo,
   objectEnergized,
   objectGridRole,
   objectOperationPreview,
   powerRegister,
   standHeight,
-  statusInfo,
   turnOrderPreview,
   unitCanAct,
   unitCanMove,
@@ -80,11 +80,11 @@ import {
 
 const DEFAULT_TURN_ORDER_COUNT = 6;
 
-const jobName = (state: GameState, jobId: string): string => jobInfo(state, jobId)?.name ?? jobId;
+const jobName = (state: GameState, jobId: string): string => getJob(state, jobId)?.name ?? jobId;
 
 const statusViews = (state: GameState, unit: BattleUnit): StatusView[] =>
   unit.statuses.map((active) => {
-    const status = statusInfo(state, active.statusId);
+    const status = getStatus(state, active.statusId);
     return {
       id: active.statusId,
       name: status?.name ?? active.statusId,
@@ -134,7 +134,7 @@ export function chargingView(
   const entry = turnOrderPreview(state, CHARGE_LOOKAHEAD).find(
     (candidate) => candidate.kind === "charge" && candidate.id === charge.id,
   );
-  const ability = abilityInfo(state, unitId, charge.abilityId);
+  const ability = getAbility(state, unitId, charge.abilityId);
   return {
     abilityName: ability?.name ?? charge.abilityId,
     ticksUntil: entry === undefined ? null : Math.max(0, entry.clock - battleClock(state)),
@@ -186,7 +186,7 @@ const unavailableReason = (unit: BattleUnit, ability: ActionAbility): string | u
 
 export function abilityView(state: GameState, unitId: string, abilityId: string): AbilityView | null {
   const unit = getUnit(state, unitId);
-  const ability = abilityInfo(state, unitId, abilityId);
+  const ability = getAbility(state, unitId, abilityId);
   if (unit === null || ability === null || ability.slot !== "action") return null;
   const reason = unavailableReason(unit, ability);
   return {
@@ -207,7 +207,7 @@ export function skillsetViews(state: GameState, unitId: string): SkillsetView[] 
   if (unit === null) return [];
   const byJob = new Map<string, AbilityView[]>();
   for (const abilityId of availableAbilities(state, unitId)) {
-    const ability = abilityInfo(state, unitId, abilityId);
+    const ability = getAbility(state, unitId, abilityId);
     const view = abilityView(state, unitId, abilityId);
     if (ability === null || view === null) continue;
     const owner = abilityId === BASIC_ATTACK_ID ? unit.unit.jobId : ability.jobId;
@@ -326,7 +326,7 @@ function outcomeLine(state: GameState, outcome: ForecastOutcome): string | null 
       return `${parts.join(" · ")} for ${window}`;
     }
     case "removeStatus":
-      return `Clears ${statusInfo(state, outcome.statusId)?.name ?? outcome.statusId}`;
+      return `Clears ${getStatus(state, outcome.statusId)?.name ?? outcome.statusId}`;
     case "charge": {
       const moved = `Charge ${formatSigned(outcome.amount)}`;
       return outcome.siphonedToActor ? `${moved}, drawn to the caster` : moved;
@@ -360,7 +360,7 @@ export function forecastView(
   target: TargetRef,
 ): ForecastView | null {
   const attacker = getUnit(state, unitId);
-  const ability = abilityInfo(state, unitId, abilityId);
+  const ability = getAbility(state, unitId, abilityId);
   if (attacker === null || ability === null || ability.slot !== "action") return null;
 
   const itemId = itemIdFromAbilityId(abilityId);
@@ -370,7 +370,7 @@ export function forecastView(
     const amount = entry.heal > 0 && entry.damage === 0 ? entry.heal : entry.damage;
     const kind = entry.heal > 0 && entry.damage === 0 ? "heal" : "damage";
     const statuses = entry.statusChances.map((chance) => ({
-      name: statusInfo(state, chance.statusId)?.name ?? chance.statusId,
+      name: getStatus(state, chance.statusId)?.name ?? chance.statusId,
       chancePercent: chance.chance,
     }));
 
@@ -392,7 +392,7 @@ export function forecastView(
             : { kind, min: amount, max: amount, ...(damageType === undefined ? {} : { damageType }) },
         statuses,
         effects: outcomeLines(state, entry.outcomes),
-        relativeFacing: angle,
+        attackAngle: angle,
         heightAdvantage:
           standHeight(state, attacker.position) - standHeight(state, victim.position),
       });
@@ -418,7 +418,7 @@ export function forecastView(
           : { kind, min: amount, max: amount, ...(damageType === undefined ? {} : { damageType }) },
       statuses,
       effects: outcomeLines(state, entry.outcomes),
-      relativeFacing: null,
+      attackAngle: null,
       heightAdvantage: 0,
     });
   }
@@ -632,7 +632,7 @@ export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT
     if (charge === undefined) continue;
     const caster = getUnit(state, charge.actorId);
     if (caster === null) continue;
-    const ability = abilityInfo(state, charge.actorId, charge.abilityId);
+    const ability = getAbility(state, charge.actorId, charge.abilityId);
     entries.push({
       unitId: caster.id,
       name: caster.unit.name,
@@ -688,7 +688,7 @@ export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleH
 const equipSlotViews = (state: GameState, unit: BattleUnit): EquipSlotView[] =>
   EQUIP_SLOTS.map((slot: EquipSlot) => {
     const itemId = unit.unit.equipment[slot] ?? null;
-    const item = itemId === null ? null : itemInfo(state, itemId);
+    const item = itemId === null ? null : getItem(state, itemId);
     return {
       slot,
       itemId,
@@ -718,7 +718,7 @@ export function unitSheetView(state: GameState, unitId: string): UnitSheetView |
         : slot === "support"
           ? unit.unit.supportAbilityId
           : unit.unit.movementAbilityId;
-    const ability = id === undefined ? null : abilityInfo(state, unitId, id);
+    const ability = id === undefined ? null : getAbility(state, unitId, id);
     return { slot, abilityName: ability?.name ?? null };
   });
 

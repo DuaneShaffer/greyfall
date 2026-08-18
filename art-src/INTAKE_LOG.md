@@ -287,7 +287,7 @@ Three things the table cannot carry:
 ## B.2 Cell location in the delivered sheet
 
 The nine crop rects are **hand-measured off this one file and declared** in
-`src/art/tileSheet.ts` — the same honesty `tools/ingest-master.ts` uses for Vale's
+`src/art/tileIntake.ts` — the same honesty `tools/ingest-master.ts` uses for Vale's
 sheet. What keeps them honest is automatic: a frame sweep finds the nine cell
 boxes without being told where they are, and every rect is checked against the 1px
 near-black inset line that fences each painting on all four sides.
@@ -530,7 +530,7 @@ Three things the table cannot carry:
 ## C.2 Cell location in the delivered sheet
 
 The three crop rects are **hand-measured off this one file and declared** in
-`src/art/objectSheet.ts`, the same honesty `tileSheet.ts` uses. What keeps them
+`src/art/objectIntake.ts`, the same honesty `tileIntake.ts` uses. What keeps them
 honest is different from the terrain set's, because the sheet is different: there
 are no frame rules and no inset lines to read, and there is no need for them.
 

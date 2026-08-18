@@ -41,7 +41,8 @@ import {
   type Vec3,
 } from "./effects.js";
 import { NUMBER_OUTLINE_INDEX, popupGrid } from "./glyphs.js";
-import { HEIGHT_STEP, standingHeight, tileAt, tileCenter } from "./grid.js";
+import { tileAt } from "../data/coords.js";
+import { HEIGHT_STEP, standingHeight, tileCenter } from "./board.js";
 import { DRAW_ORDER, markBloomEligible } from "./layers.js";
 import { terrainAccentColor, terrainTopColor } from "./palette.js";
 import {
@@ -276,7 +277,7 @@ export class VfxLayer {
   private arcFlash(tile: TileCoord | null): Effect | null {
     const ground = this.groundOf(tile);
     if (tile === null || ground === null || this.map === null) return null;
-    const terrain = tileAt(this.map, tile.x, tile.y)?.terrain;
+    const terrain = tileAt(this.map, tile)?.terrain;
     if (terrain === undefined || !conductiveTerrain(terrain)) return null;
     const geometry = new THREE.CircleGeometry(0.42, 12);
     geometry.rotateX(-Math.PI / 2);
@@ -326,7 +327,7 @@ export class VfxLayer {
 
     const tile = options.tile ?? null;
     const terrain =
-      tile === null || this.map === null ? undefined : tileAt(this.map, tile.x, tile.y)?.terrain;
+      tile === null || this.map === null ? undefined : tileAt(this.map, tile)?.terrain;
     const debrisPalette = [
       color(vfx.body),
       terrain === undefined ? color(vfx.spread) : terrainTopColor[terrain],

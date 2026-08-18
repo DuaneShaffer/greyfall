@@ -12,7 +12,7 @@ import {
   tileFromIndex,
   tileIndex,
   unitAt,
-} from "./grid.js";
+} from "./board.js";
 import { effectiveStats } from "./status.js";
 
 /** Extra tile cost multipliers for slow terrain. */

@@ -35,7 +35,7 @@ import {
   type TileAudit,
   type TileTextureId,
 } from "../../src/art/tiles.js";
-import { TERRAIN_SHEET_CELLS, cutTerrainSheet, findSheetFrames } from "../../src/art/tileSheet.js";
+import { TERRAIN_SHEET_CELLS, cutTerrainSheet, findSheetFrames } from "../../src/art/tileIntake.js";
 import { tileGrid, tileTextureLevels } from "../../src/art/tileset.js";
 
 const SHEET = resolve(import.meta.dirname, "../../art-src/greyfall_terrain.png");

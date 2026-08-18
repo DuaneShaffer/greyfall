@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { GameMap, MapObject } from "../../src/data/schemas/map.js";
 import type { Unit } from "../../src/data/schemas/unit.js";
-import { facingBetween, facingYaw, standingHeight } from "../../src/render/grid.js";
+import { facingToward } from "../../src/data/coords.js";
+import { facingYaw, standingHeight } from "../../src/render/board.js";
 import {
   blockedTiles,
   buildViewModel,
@@ -159,9 +160,9 @@ describe("facing helpers", () => {
   });
 
   it("derives step facing from tile deltas", () => {
-    expect(facingBetween({ x: 0, y: 0 }, { x: 1, y: 0 })).toBe("east");
-    expect(facingBetween({ x: 1, y: 0 }, { x: 0, y: 0 })).toBe("west");
-    expect(facingBetween({ x: 0, y: 0 }, { x: 0, y: 1 })).toBe("south");
-    expect(facingBetween({ x: 0, y: 1 }, { x: 0, y: 0 })).toBe("north");
+    expect(facingToward({ x: 0, y: 0 }, { x: 1, y: 0 })).toBe("east");
+    expect(facingToward({ x: 1, y: 0 }, { x: 0, y: 0 })).toBe("west");
+    expect(facingToward({ x: 0, y: 0 }, { x: 0, y: 1 })).toBe("south");
+    expect(facingToward({ x: 0, y: 1 }, { x: 0, y: 0 })).toBe("north");
   });
 });

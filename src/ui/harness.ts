@@ -98,7 +98,7 @@ function previewFor(abilityId: string) {
           damage: { kind: "damage", min: 38, max: 46, damageType: "arc" },
           statuses: [],
           effects: ["Power off"],
-          relativeFacing: null,
+          attackAngle: null,
           heightAdvantage: 0,
         },
       ],

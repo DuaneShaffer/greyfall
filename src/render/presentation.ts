@@ -18,11 +18,11 @@
 import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
 
 /**
- * What the acting unit's body is doing. `castHold` parks a charged action in
- * the `cast` hold loop until the charge resolves; `rest` releases it if the
- * charge is cancelled instead.
+ * What the acting unit's body is doing — the art layer's `AnimState` names, plus
+ * `castHold`, which parks a charged action in the `cast` hold loop until the
+ * charge resolves. `idle` releases that hold if the charge is cancelled instead.
  */
-export type ActorPose = "attack" | "cast" | "castHold" | "rest";
+export type ActorPose = "attack" | "cast" | "castHold" | "idle";
 
 export type RenderEvent =
   /** Walk a unit along `path` (path[0] is the current tile). */

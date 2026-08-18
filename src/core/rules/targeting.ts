@@ -11,7 +11,7 @@ import {
   objectById,
   standHeight,
   tileAt,
-} from "./grid.js";
+} from "./board.js";
 import { gridNodeOf, isEnergized } from "./power.js";
 
 /** Height a unit's eyes and a tile's blocking silhouette sit above its surface. */

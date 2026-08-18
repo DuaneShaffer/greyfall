@@ -1,5 +1,5 @@
 import type { Facing, TileCoord } from "../../data/index.js";
-import { attackAngle, facingToward, manhattan, standHeight, tileIndex } from "../rules/grid.js";
+import { attackAngle, facingToward, manhattan, standHeight, tileIndex } from "../rules/board.js";
 import { maxHp } from "../rules/status.js";
 import { hasLos } from "../rules/targeting.js";
 import type { BattleUnit, GameState } from "../state/types.js";

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { objectArtFor, type ObjectArtSpec, type ObjectFaceId, type ObjectPowerState } from "../art/objects.js";
 import type { GameMap, GridRole, MapObjectKind } from "../data/schemas/map.js";
-import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./grid.js";
+import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./board.js";
 import { markBloomEligible, markBloomOnly } from "./layers.js";
 import {
   BOX_FACE_SLOTS,
@@ -66,7 +66,7 @@ const footprintOf = (map: GameMap, view: MapObjectView): Footprint => {
     maxX = Math.max(maxX, center.x);
     minZ = Math.min(minZ, center.z);
     maxZ = Math.max(maxZ, center.z);
-    groundY = Math.max(groundY, tileHeight(map, tile.x, tile.y) * HEIGHT_STEP);
+    groundY = Math.max(groundY, tileHeight(map, tile) * HEIGHT_STEP);
   }
   const count = Math.max(1, view.tiles.length);
   return {

@@ -78,6 +78,16 @@ units + RNG seed) plus an ordered command log. That gives us for free:
 - **AI and player parity** — the AI emits the same `Command` type the input
   layer does; the core cannot tell who is playing.
 
+### Lookup naming (binding)
+
+One thing looked up by id has one shape per side of the barrel, and the empty
+value marks which side you are on:
+
+- `getX(state, id)` is the public form exported from `src/core/index.ts`, and
+  returns `null` — a value the UI can put in a view model.
+- `xById(state, id)` is the form internal to `src/core`, and returns
+  `undefined`, so callers reach for `?.` and `??` instead.
+
 ### Determinism rules (binding)
 
 - One seeded RNG stream lives inside `GameState`; every roll draws from it.

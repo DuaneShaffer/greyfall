@@ -124,7 +124,7 @@ describe("actor threading", () => {
         },
         state,
       ),
-    ).toEqual([{ kind: "unitActed", unitId: "vale", pose: "rest" }]);
+    ).toEqual([{ kind: "unitActed", unitId: "vale", pose: "idle" }]);
   });
 
   it("swings before the target recoils", () => {

@@ -37,7 +37,7 @@ import {
   cutObjectSheet,
   formatObjectSheetCut,
   type DeclaredObjectCell,
-} from "../src/art/objectSheet.js";
+} from "../src/art/objectIntake.js";
 
 /** One delivered file per object, with the cells it carries. */
 const SHEETS: readonly { readonly sprite: ObjectSpriteId; readonly source: string; readonly cells: readonly DeclaredObjectCell[] }[] = [

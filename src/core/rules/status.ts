@@ -1,6 +1,6 @@
 import type { DamageType, StatMods } from "../../data/index.js";
 import { applyStatMods, clampStats, type DerivedStats } from "../progression/stats.js";
-import { getStatus } from "../state/content.js";
+import { statusById } from "../state/content.js";
 import type { BattleUnit, GameState } from "../state/types.js";
 
 export interface StatusHooks {
@@ -28,7 +28,7 @@ export function statusHooks(state: GameState, unit: BattleUnit): StatusHooks {
     tickDamage: [],
   };
   for (const id of sortedStatusIds(unit)) {
-    const status = getStatus(state, id);
+    const status = statusById(state, id);
     if (status === undefined) continue;
     const h = status.hooks;
     if (h.preventsAction === true) hooks.preventsAction = true;

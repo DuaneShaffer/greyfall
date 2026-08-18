@@ -32,14 +32,14 @@ interface Spy extends Walker {
   positions: [number, number, number][];
   facings: Facing[];
   walked: number;
-  rested: number;
+  idled: number;
 }
 
 const spyWalker = (): Spy => ({
   positions: [],
   facings: [],
   walked: 0,
-  rested: 0,
+  idled: 0,
   setWorldPosition(x, y, z) {
     this.positions.push([x, y, z]);
   },
@@ -49,8 +49,8 @@ const spyWalker = (): Spy => ({
   playWalk() {
     this.walked += 1;
   },
-  rest() {
-    this.rested += 1;
+  idle() {
+    this.idled += 1;
   },
 });
 
@@ -73,7 +73,7 @@ describe("walk animation", () => {
     expect(animation!.duration).toBeGreaterThan(0);
     expect(() => play(animation!)).not.toThrow();
     expect(walker.walked).toBe(0);
-    expect(walker.rested).toBe(1);
+    expect(walker.idled).toBe(1);
     expect(view.position).toEqual({ x: 4, y: 1 });
     expect(view.facing).toBe("east");
   });
@@ -133,7 +133,7 @@ describe("undo snap", () => {
     expect(animation.duration).toBe(0);
     animation.finish();
     expect(walker.walked).toBe(0);
-    expect(walker.rested).toBe(1);
+    expect(walker.idled).toBe(1);
     expect(walker.facings).toEqual(["west"]);
     expect(view.position).toEqual({ x: 1, y: 3 });
     expect(view.facing).toBe("west");

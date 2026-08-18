@@ -9,7 +9,7 @@ import type {
   TileCoord,
 } from "../../data/index.js";
 import { chanceRoll } from "../rng/mulberry32.js";
-import { getStatus } from "../state/content.js";
+import { statusById } from "../state/content.js";
 import { emit, nextOrdinal, type Ctx } from "../state/ctx.js";
 import type { BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import {
@@ -27,7 +27,7 @@ import {
   standHeight,
   unitAt,
   unitById,
-} from "./grid.js";
+} from "./board.js";
 import {
   attachLoad,
   dropLoadsOfCaster,
@@ -156,7 +156,7 @@ export function healUnit(ctx: Ctx, unitId: string, amount: number, sourceUnitId:
 export function applyStatus(ctx: Ctx, unitId: string, statusId: string, chance: number): void {
   const unit = unitById(ctx.state, unitId);
   if (unit === undefined || unit.downed) return;
-  const status = getStatus(ctx.state, statusId);
+  const status = statusById(ctx.state, statusId);
   if (status === undefined) return;
   if (!chanceRoll(ctx.state.rng, chance)) {
     emit(ctx, { type: "StatusResisted", unitId, statusId });

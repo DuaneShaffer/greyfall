@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
-import { TILE_SIZE, tileCenter } from "./grid.js";
+import { TILE_SIZE, tileCenter } from "./board.js";
 import { DRAW_ORDER } from "./layers.js";
 
 const HALF = TILE_SIZE / 2;

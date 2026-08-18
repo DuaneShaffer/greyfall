@@ -17,7 +17,7 @@ import { RAMPS } from "../../src/art/palette.js";
 import { TRANSPARENT, gridGet, mirrorGrid, paletteIndex, type PixelGrid } from "../../src/art/pixel.js";
 import { deriveExternalFrame, type ExternalMaster } from "../../src/art/segments.js";
 import { ANIMATIONS, ANIM_STATES, DRAWN_VIEWS, SPRITE_WIDTH, type DrawnView } from "../../src/art/sprites.js";
-import { importFallback } from "./ingestSuite.js";
+import { intakeFallback } from "./ingestSuite.js";
 
 /**
  * The whole roster's declared corrections, pinned so a future master swap or
@@ -60,7 +60,7 @@ const gridsEqual = (a: PixelGrid, b: PixelGrid): boolean =>
   a.width === b.width && a.height === b.height && Array.from(a.data).every((v, i) => v === b.data[i]);
 
 describe("facing normalization — mirrored derivation", () => {
-  const base = importFallback("enforcer").master;
+  const base = intakeFallback("enforcer").master;
   const mirrored: ExternalMaster = { ...base, mirror: { se: true } };
 
   it("flips every derived se frame against the unmirrored derivation, and leaves ne alone", () => {

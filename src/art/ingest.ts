@@ -1,8 +1,8 @@
-// External master intake (ART_DIRECTION Appendix C.8). Takes a 64x96 RGBA
-// master drawn outside this pipeline — colors approximately right, not
-// palette-exact — and turns it into an internal palette-index grid, together
-// with a conformance report saying exactly what moved and what the result
-// violates.
+// Resample, fit, quantize, audit — the primitives `intake.ts` orchestrates
+// (ART_DIRECTION Appendix C.8). They take a 64x96 RGBA master drawn outside this
+// pipeline — colors approximately right, not palette-exact — and turn it into an
+// internal palette-index grid, together with a conformance report saying exactly
+// what moved and what the result violates.
 //
 // The one rule this file lives by: **quantization reports, it does not repair**.
 // Snapping a color to the nearest palette step is unavoidable and is recorded

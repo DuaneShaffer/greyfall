@@ -1,5 +1,17 @@
-import { coordEq, facingToward, manhattan } from "../../data/coords.js";
-import type { Facing, GameMap, Team, Tile, TileCoord } from "../../data/index.js";
+// The battle board: what a tile is made of, what stands on it, how high that
+// stands, and who on it is hostile to whom. "Grid" in this codebase is the flux
+// graph (`rules/power.ts`), never the tile lattice.
+
+import {
+  coordEq,
+  facingToward,
+  inBounds,
+  manhattan,
+  tileAt,
+  tileFromIndex,
+  tileIndex,
+} from "../../data/coords.js";
+import type { Facing, GameMap, Team, TileCoord } from "../../data/index.js";
 import type { BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { isEnergized } from "./power.js";
 
@@ -17,24 +29,7 @@ export const FACING_VECTORS: Readonly<Record<Facing, { dx: number; dy: number }>
 /** Neighbour order is fixed (N, E, S, W) so search results never vary. */
 export const NEIGHBOR_ORDER: readonly Facing[] = ["north", "east", "south", "west"];
 
-export function tileIndex(map: GameMap, c: TileCoord): number {
-  return c.y * map.width + c.x;
-}
-
-export function tileFromIndex(map: GameMap, index: number): TileCoord {
-  return { x: index % map.width, y: Math.floor(index / map.width) };
-}
-
-export function inBounds(map: GameMap, c: TileCoord): boolean {
-  return c.x >= 0 && c.y >= 0 && c.x < map.width && c.y < map.depth;
-}
-
-export function tileAt(map: GameMap, c: TileCoord): Tile | undefined {
-  if (!inBounds(map, c)) return undefined;
-  return map.tiles[tileIndex(map, c)];
-}
-
-export { coordEq, facingToward, manhattan };
+export { coordEq, facingToward, inBounds, manhattan, tileAt, tileFromIndex, tileIndex };
 
 export function neighbors(c: TileCoord): TileCoord[] {
   return NEIGHBOR_ORDER.map((f) => ({ x: c.x + FACING_VECTORS[f].dx, y: c.y + FACING_VECTORS[f].dy }));

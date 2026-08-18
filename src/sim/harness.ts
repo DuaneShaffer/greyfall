@@ -9,24 +9,26 @@
  */
 
 import {
-  applyCommand,
-  createBattle,
+  WEIGHTS,
   activeTurnState,
   allUnits,
+  applyCommand,
   battleClock,
   battleResult,
+  chooseCommand,
+  createBattle,
   objectEnergized,
   solveGrid,
   turnNumber,
   unitMaxCharge,
   unitMaxHp,
+  type AiWeights,
   type BattleEvent,
   type Command,
   type ContentLibrary,
   type Deployment,
   type GameState,
 } from "../core/index.js";
-import { chooseCommand, WEIGHTS, type AiWeights } from "../core/ai/index.js";
 import type { Encounter, GameMap, Grid, Team, Unit } from "../data/index.js";
 import { withContent } from "./content.js";
 import type { Matchup } from "./matchup.js";

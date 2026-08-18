@@ -54,7 +54,6 @@ export { BASIC_ATTACK_ID } from "./state/content.js";
 export type { RngState } from "./rng/mulberry32.js";
 
 export {
-  abilityInfo,
   abilityOutcomes,
   activatableObjects,
   activeTurnState,
@@ -72,23 +71,24 @@ export {
   battleResult,
   canUndoMove,
   forecast,
+  getAbility,
+  getItem,
+  getJob,
   getObject,
+  getStatus,
   getUnit,
   gridComponents,
   gridFlipPreview,
   gridRestoringTies,
-  itemInfo,
-  jobInfo,
   legalTargetTiles,
   lineOfSight,
   objectEnergized,
   objectGridRole,
   objectOperationPreview,
   objectSevered,
-  powerRegister,
   poweredObjects,
+  powerRegister,
   reachableTiles,
-  statusInfo,
   targetableTiles,
   teamSatchel,
   turnNumber,
@@ -106,8 +106,8 @@ export {
   type GridRegisterComponent,
   type GridRegisterNode,
   type GridRegisterSection,
-  type PowerRegister,
   type PoweredObject,
+  type PowerRegister,
   type TurnOrderEntry,
   type UsableItemEntry,
 } from "./selectors.js";
@@ -120,8 +120,8 @@ export {
   itemAbilityId,
   itemIdFromAbilityId,
 } from "./rules/items.js";
-export type { AttackAngle } from "./rules/grid.js";
-export { coordEq, facingToward, isDecked, manhattan } from "./rules/grid.js";
+export type { AttackAngle } from "./rules/board.js";
+export { coordEq, facingToward, isDecked, manhattan } from "./rules/board.js";
 export { moveProfile, type MoveProfile, type ReachableTile } from "./rules/movement.js";
 
 export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";
@@ -171,7 +171,7 @@ export {
   type StandingAward,
 } from "./progression/ops.js";
 
-export { standHeight } from "./rules/grid.js";
+export { standHeight } from "./rules/board.js";
 export {
   CT_COST_MOVE_AND_ACT,
   CT_COST_NEITHER,

@@ -16,10 +16,10 @@ import {
   tileIndex,
   unitAt,
   unitById,
-} from "../rules/grid.js";
+} from "../rules/board.js";
 import { consumableItem, itemAbility } from "../rules/items.js";
 import { gridNodeOf, gridNodeRuntimeOf, isEnergized, resolveLoadAmount, solveGrid } from "../rules/power.js";
-import { getStatus } from "../state/content.js";
+import { statusById } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
 import { aimRefusal, aimedTile, unmetRequirement } from "../rules/targeting.js";
 import { forecast, turnOrderPreview, usableItems, type ForecastEntry } from "../selectors.js";
@@ -40,7 +40,7 @@ function memo(ctx: AiContext, key: string, compute: () => number): number {
 
 /** How much a status is worth landing on a hostile; negative means it helps. */
 export function statusValue(ctx: AiContext, state: GameState, statusId: string): number {
-  const status = getStatus(state, statusId);
+  const status = statusById(state, statusId);
   if (status === undefined) return 0;
   const w = ctx.weights;
   const hooks = status.hooks;
@@ -77,7 +77,7 @@ function heldPercent(ctx: AiContext, state: GameState, statusId: string, unit: B
   if (held === undefined) return 100;
   const floor = ctx.weights.heldStatusFloorPercent;
   if (held.turnsRemaining === null) return floor;
-  const status = getStatus(state, statusId);
+  const status = statusById(state, statusId);
   const full = status?.duration.kind === "turns" ? status.duration.turns : 0;
   if (full <= 0) return floor;
   const gained = Math.max(0, full - held.turnsRemaining);

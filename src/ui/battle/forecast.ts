@@ -3,7 +3,7 @@ import { UiIntents, withIntents } from "../intents.js";
 import type { TargetRef } from "../intents.js";
 import { ForecastTargetView, ForecastView, formatDamageRange, formatSigned } from "../state.js";
 
-const FACING_LABELS: Record<NonNullable<ForecastTargetView["relativeFacing"]>, string> = {
+const ATTACK_ANGLE_LABELS: Record<NonNullable<ForecastTargetView["attackAngle"]>, string> = {
   front: "Front",
   side: "Side",
   back: "Back",
@@ -321,7 +321,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
 
   /** Machinery has no facing and no portrait: it reads as a machine, in copper. */
   private isObject(target: ForecastTargetView): boolean {
-    return target.relativeFacing === null && target.portraitId === undefined;
+    return target.attackAngle === null && target.portraitId === undefined;
   }
 
   private renderTarget(target: ForecastTargetView): HTMLElement {
@@ -379,7 +379,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
       el("p", {
         class: "gf-forecast-modifiers",
         text: [
-          target.relativeFacing ? FACING_LABELS[target.relativeFacing] : null,
+          target.attackAngle ? ATTACK_ANGLE_LABELS[target.attackAngle] : null,
           target.heightAdvantage === 0 ? null : `Height ${formatSigned(target.heightAdvantage)}`,
         ]
           .filter((part): part is string => part !== null)

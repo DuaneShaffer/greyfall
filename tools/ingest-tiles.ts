@@ -30,7 +30,7 @@ import {
   type TileAudit,
   type TileTextureId,
 } from "../src/art/tiles.js";
-import { cutTerrainSheet, formatTerrainSheetCut } from "../src/art/tileSheet.js";
+import { cutTerrainSheet, formatTerrainSheetCut } from "../src/art/tileIntake.js";
 
 const SOURCE = "art-src/greyfall_terrain.png";
 const root = resolve(import.meta.dirname, "..");

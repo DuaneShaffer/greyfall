@@ -138,7 +138,7 @@ describe("forecastView", () => {
     expect(view?.targets[0]?.unitId).toBe("yard-cell");
     expect(view?.targets[0]?.hitChancePercent).toBe(100);
     expect(view?.targets[0]?.damage?.max).toBeGreaterThan(0);
-    expect(view?.targets[0]?.relativeFacing).toBeNull();
+    expect(view?.targets[0]?.attackAngle).toBeNull();
   });
 
   it("says what a buff grants and for how long instead of reporting no damage", () => {

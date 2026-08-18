@@ -3,7 +3,7 @@ import { emit, type Ctx } from "../state/ctx.js";
 import type { GameState } from "../state/types.js";
 import { createBattleUnit, sortUnits } from "../state/unit.js";
 import { checkContact, destroyObject, emptyOutcome, setObjectPower } from "./effects.js";
-import { coordEq, isStandable, objectById, unitAt, unitById } from "./grid.js";
+import { coordEq, isStandable, objectById, unitAt, unitById } from "./board.js";
 import { hpPercent, endBattle } from "./outcome.js";
 import { isEnergized } from "./power.js";
 import { endActiveTurn } from "./turn.js";

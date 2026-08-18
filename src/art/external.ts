@@ -14,7 +14,7 @@
 // the C.8.6 cost of a single-view delivery, recorded rather than hidden.
 
 import type { Team } from "../data/schemas/common.js";
-import { importExternalMaster, propRegion, retintMaster } from "./intake.js";
+import { intakeExternalMaster, propRegion, retintMaster } from "./intake.js";
 import { JOB_ART, JOB_IDS, type JobId } from "./jobs.js";
 import { SE_BASE64 as AUGMENTED_SE, NE_BASE64 as AUGMENTED_NE } from "./masters/augmented.js";
 import { SE_BASE64 as CHEMIST_SE, NE_BASE64 as CHEMIST_NE } from "./masters/chemist.js";
@@ -196,7 +196,7 @@ export function externalArt(jobId: JobId): ExternalArt | null {
   const ne = delivery.ne ? asSource(delivery.ne) : se;
   const props = delivery.props ?? {};
   const art = JOB_ART[jobId];
-  const built = importExternalMaster({
+  const built = intakeExternalMaster({
     id: jobId,
     build: art.build,
     views: { se, ne },

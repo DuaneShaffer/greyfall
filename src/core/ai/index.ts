@@ -7,7 +7,7 @@
 
 import type { TileCoord } from "../../data/index.js";
 import type { Command } from "../commands/types.js";
-import { coordEq, unitById } from "../rules/grid.js";
+import { coordEq, unitById } from "../rules/board.js";
 import { reachableTiles } from "../rules/movement.js";
 import { canAct, canMove } from "../rules/status.js";
 import type { BattleUnit, GameState } from "../state/types.js";

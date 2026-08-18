@@ -12,7 +12,7 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { TacticsCamera } from "../../src/render/camera.js";
-import { tileCenter } from "../../src/render/grid.js";
+import { tileCenter } from "../../src/render/board.js";
 import { buildTerrainMeshData, tileFromTriangle } from "../../src/render/terrain.js";
 import { loadContent } from "../core/fixtures.js";
 

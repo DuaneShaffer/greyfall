@@ -20,7 +20,6 @@
 // machine move on immediately.
 
 import {
-  abilityInfo,
   activeUnit,
   affectedTiles,
   aimTarget,
@@ -32,16 +31,17 @@ import {
   battleResult,
   coordEq,
   facingToward,
+  getAbility,
   getObject,
+  getUnit,
   gridFlipPreview,
   gridRestoringTies,
-  objectEnergized,
-  objectOperationPreview,
-  powerRegister,
-  getUnit,
   itemAbilityId,
   itemIdFromAbilityId,
   legalTargetTiles,
+  objectEnergized,
+  objectOperationPreview,
+  powerRegister,
   reachableTiles,
   targetableTiles,
   type BattleEvent,
@@ -749,7 +749,7 @@ export class BattleController {
   private selectAbility(unitId: string, abilityId: string): void {
     if (this.currentPhase !== "player") return;
     this.clearSelection();
-    const ability = abilityInfo(this.gameState, unitId, abilityId);
+    const ability = getAbility(this.gameState, unitId, abilityId);
     if (ability === null || ability.slot !== "action") return;
     // Faint layer: how far the ability carries. Bright layer: what it may
     // actually be sent at. Nothing outside the bright one ever arms a forecast.
@@ -1006,7 +1006,7 @@ export class BattleController {
     if (this.selection.mode === "move") return this.ui.setMode("move", name);
     if (this.selection.mode === "facing") return this.ui.setMode("facing", name);
     if (this.selection.mode === "target" && acting !== null) {
-      const ability = abilityInfo(this.gameState, acting.id, this.selection.abilityId);
+      const ability = getAbility(this.gameState, acting.id, this.selection.abilityId);
       return this.ui.setMode("target", ability?.name ?? name);
     }
     this.ui.setMode("orders", name);
@@ -1020,7 +1020,7 @@ export class BattleController {
   /** Why a click on `tile` was not a target: out of reach, or the wrong thing. */
   private aimRefusal(actor: BattleUnit, abilityId: string, tile: TileCoord): string {
     if (!this.aimReach.some((candidate) => coordEq(candidate, tile))) return "Out of reach";
-    const name = abilityInfo(this.gameState, actor.id, abilityId)?.name ?? "That";
+    const name = getAbility(this.gameState, actor.id, abilityId)?.name ?? "That";
     return `${name} cannot target that`;
   }
 

@@ -188,7 +188,7 @@ export function apparentView(facing: Facing, cameraYaw: CameraYaw): ApparentView
   return RELATIVE_TO_APPARENT[m] as ApparentView;
 }
 
-export function resolveFacing(facing: Facing, cameraYaw: CameraYaw): ViewSelection {
+export function drawnViewFor(facing: Facing, cameraYaw: CameraYaw): ViewSelection {
   return APPARENT_VIEWS[apparentView(facing, cameraYaw)];
 }
 

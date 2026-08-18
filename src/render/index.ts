@@ -72,7 +72,7 @@ export {
   type UnitPlacement,
   type UnitView,
 } from "./viewmodel.js";
-export * from "./grid.js";
+export * from "./board.js";
 export {
   objectColor,
   palette,

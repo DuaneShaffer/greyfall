@@ -1,4 +1,4 @@
-import { getAbility, knownActionAbilityIds } from "../state/content.js";
+import { abilityById, knownActionAbilityIds } from "../state/content.js";
 import { cloneState, emit, type Ctx } from "../state/ctx.js";
 import type {
   ActionAbility,
@@ -19,7 +19,7 @@ import {
 } from "../rules/abilities.js";
 import { checkContact, emptyOutcome, spendCharge } from "../rules/effects.js";
 import { canCarryItem, consumableItem, itemAbility, satchelCount, spendItem } from "../rules/items.js";
-import { coordEq, facingToward, manhattan, objectById, unitById } from "../rules/grid.js";
+import { coordEq, facingToward, manhattan, objectById, unitById } from "../rules/board.js";
 import { findPath } from "../rules/movement.js";
 import { isEnergized } from "../rules/power.js";
 import { evaluateOutcome } from "../rules/outcome.js";
@@ -102,7 +102,7 @@ function validateAct(
 ): { ability: ActionAbility; error: null } | { ability: null; error: CommandError } {
   const blocked = actionAvailable(state, unit);
   if (blocked !== null) return { ability: null, error: blocked };
-  const ability = getAbility(state, unit, cmd.abilityId);
+  const ability = abilityById(state, unit, cmd.abilityId);
   if (ability === undefined || ability.slot !== "action") {
     return { ability: null, error: commandError("unknown-ability", `no action ability ${cmd.abilityId}`) };
   }
