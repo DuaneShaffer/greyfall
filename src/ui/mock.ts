@@ -23,6 +23,7 @@ import type {
   UnitView,
 } from "./state.js";
 import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
+import { equipTagLabel } from "./screens/vocabulary.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
 // verbatim from data/*.json (tests/ui/mock.test.ts fails if it drifts) so the
@@ -735,6 +736,8 @@ export function mockUnitSheetView(overrides: Partial<UnitSheetView> = {}): UnitS
   return {
     unit: mockUnitView(),
     standing: 320,
+    // Unit level 1, Enforcer level 2: two tracks, and the record has to say so.
+    jobLevel: 2,
     stats: MOCK_STATS,
     move: enforcerJob.baseMove,
     jump: enforcerJob.baseJump,
@@ -775,6 +778,14 @@ export function mockLearningView(overrides: Partial<LearningView> = {}): Learnin
   };
 }
 
+/** The eight stats a kit change can move, so a delta has a figure to move from. */
+const MOCK_EQUIP_STATS: StatLineView[] = [
+  ...MOCK_STATS,
+  { key: "move", label: STAT_LABELS.move, value: enforcerJob.baseMove },
+  { key: "jump", label: STAT_LABELS.jump, value: enforcerJob.baseJump },
+  { key: "evade", label: STAT_LABELS.evade, value: enforcerJob.baseEvade },
+];
+
 export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): EquipmentView {
   const equipped: Partial<Record<EquipSlot, string>> = {
     weapon: "shock-maul",
@@ -802,7 +813,11 @@ export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): Equip
             label: STAT_LABELS[key as StatLineView["key"]],
             delta: value ?? 0,
           })),
-          ...(usable ? {} : { unavailableReason: `${job.name} cannot bear ${item.equipTags[0]}` }),
+          ...(usable
+            ? {}
+            : {
+                unavailableReason: `${job.name} cannot bear ${equipTagLabel(item.equipTags[0] ?? "")}`,
+              }),
         };
       });
   }
@@ -811,6 +826,7 @@ export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): Equip
     unitName: "Rowen Corvane",
     jobName: job.name,
     jobEquipTags: job.equipTags,
+    stats: MOCK_EQUIP_STATS,
     slots: equipSlotViews(equipped),
     options,
     satchel: mockSatchel(),

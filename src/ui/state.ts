@@ -678,6 +678,12 @@ export interface EquipSlotView {
 export interface UnitSheetView {
   unit: UnitView;
   standing: number;
+  /**
+   * Job level in the unit's current job, 1–8. Distinct from `unit.level`, and
+   * the record has to name both: the same unit read "Level 1" here and "level 2"
+   * on the roster, which is two tracks, not a contradiction.
+   */
+  jobLevel?: number;
   stats: StatLineView[];
   move: number;
   jump: number;
@@ -726,6 +732,12 @@ export interface EquipmentView {
   unitName: string;
   jobName: string;
   jobEquipTags: string[];
+  /**
+   * The unit's stats as it stands, so a candidate's `deltas` can be printed as
+   * the before→after they are. A delta on its own is a number with nothing to
+   * measure it against, which is what the kit list used to offer.
+   */
+  stats?: StatLineView[];
   slots: EquipSlotView[];
   /** Candidate items per slot, already filtered to the ones worth listing. */
   options: Record<EquipSlot, ItemOptionView[]>;

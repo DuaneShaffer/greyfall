@@ -325,10 +325,10 @@ describe("EquipmentScreen", () => {
     expect(options.map((node) => node.dataset["entry"])).toEqual(["__unequip", "shock-maul", "tap-rod"]);
     const tapRod = options.find((node) => node.dataset["entry"] === "tap-rod");
     expect(tapRod?.classList.contains("is-disabled")).toBe(true);
-    expect(tapRod?.title).toBe("Enforcer cannot bear conduit-gear");
+    expect(tapRod?.title).toBe("Enforcer cannot bear Conduit gear");
   });
 
-  it("previews stat deltas for the highlighted item", () => {
+  it("previews stat deltas as the before and after they are", () => {
     const screen = new EquipmentScreen();
     screen.update(mockEquipmentView());
 
@@ -338,8 +338,82 @@ describe("EquipmentScreen", () => {
     screen.menus.handleKey(key("ArrowDown"));
     const detail = screen.el.querySelector(".gf-equip-detail")?.textContent ?? "";
     expect(detail).toContain("Watch Cuirass");
-    expect(detail).toContain("HP +24");
-    expect(detail).toContain("Speed -1");
+    // "+24" is a number with nothing to measure it against.
+    expect(detail).toContain("HP 58 → 82 (+24)");
+    expect(detail).toContain("Speed 7 → 6 (-1)");
+  });
+
+  it("keeps one unit per stat: points stay points, Evade stays a percentage", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+
+    screen.menus.handleKey(key("ArrowDown"));
+    screen.menus.handleKey(key("Enter"));
+    expect(screen.menus.path.at(-1)).toBe("equipment-options-shield");
+    const shield = screen.el.querySelector<HTMLElement>(
+      '[data-menu="equipment-options-shield"] .gf-menu-entry[data-entry="riot-shield"]',
+    );
+    expect(shield?.textContent).toContain("Evade +12%");
+    shield!.dispatchEvent(new MouseEvent("mouseenter"));
+    expect(screen.el.querySelector(".gf-equip-detail")?.textContent).toContain(
+      "Evade 8% → 20% (+12%)",
+    );
+  });
+
+  it("counts what an empty slot could actually take", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    const head = screen.el.querySelector<HTMLElement>(
+      '[data-menu="equipment-slots"] .gf-menu-entry[data-entry="head"]',
+    );
+    // The Yard Helm is the one head piece an Enforcer can bear.
+    expect(head?.textContent).toContain("Empty — 1 available");
+  });
+
+  it("names the kit a job can carry, never the internal tag", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    const tags = screen.el.querySelector(".gf-equip-tags")?.textContent ?? "";
+    expect(tags).toContain("Heavy armour");
+    expect(tags).toContain("Enforcer arms");
+    expect(tags).not.toContain("heavy-armor");
+    expect(tags).not.toContain("enforcer-arms");
+  });
+
+  it("prints the item's prose exactly once", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    for (let i = 0; i < 3; i++) screen.menus.handleKey(key("ArrowDown"));
+    screen.menus.handleKey(key("Enter"));
+    screen.menus.handleKey(key("ArrowDown"));
+    const detail = screen.el.querySelector(".gf-equip-detail")?.textContent ?? "";
+    const prose = "Corvane-stamped riot plate";
+    expect(detail.split(prose)).toHaveLength(2);
+    // And the line above it is the piece's figures, not the same sentence again.
+    expect(screen.el.querySelector(".gf-equip-detail .gf-detail-sub")?.textContent).not.toContain(
+      prose,
+    );
+  });
+
+  it("lists the field kit as stock, with what each thing does", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    const kit = screen.el.querySelector(".gf-field-kit");
+    expect(kit?.querySelector(".gf-plate-stamp")?.textContent).toBe("4 IN STOCK");
+    const vial = kit?.querySelector<HTMLElement>('.gf-kit-entry[data-item="coagulant-vial"]');
+    expect(vial?.textContent).toContain("Coagulant Vial");
+    expect(vial?.textContent).toContain("x3");
+    expect(vial?.textContent).toContain("Self or ally");
+    expect(vial?.textContent).toContain("Recovery 30");
+    expect(kit?.textContent).toContain("does not come back");
+  });
+
+  it("says the satchel is empty in the stock list too", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView({ satchel: [] }));
+    expect(screen.el.querySelector(".gf-field-kit")?.textContent).toContain(
+      "Nothing in the satchel.",
+    );
   });
 
   it("emits equipItem and unequips through Remove", () => {
