@@ -5,6 +5,7 @@
   "mapId": "refinery-three",
   "rngSeed": 1004,
   "maxDeployedUnits": 6,
+  "objective": "Get Marek to the gallery switchboard, or take Nessa Kiln off the floor.",
   "enemies": [
     {
       "unit": {

@@ -5,6 +5,7 @@
   "mapId": "foundry-floor-nine",
   "rngSeed": 1002,
   "maxDeployedUnits": 6,
+  "objective": "Take the aisle and put down the three who set Floor Nine.",
   "enemies": [
     {
       "unit": {

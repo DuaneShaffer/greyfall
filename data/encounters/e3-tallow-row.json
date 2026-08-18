@@ -5,6 +5,7 @@
   "mapId": "tallow-row",
   "rngSeed": 1003,
   "maxDeployedUnits": 6,
+  "objective": "Take Wick before he reaches the tram lane.",
   "enemies": [
     {
       "unit": {
