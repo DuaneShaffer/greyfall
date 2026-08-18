@@ -4,6 +4,7 @@ import type { BattleHudView, HudMode } from "../state.js";
 import { ActionMenu } from "./actionMenu.js";
 import { DialogueBox } from "./dialogue.js";
 import { ForecastPanel } from "./forecast.js";
+import { LogPanel } from "./logPanel.js";
 import { ModeBar } from "./modeBar.js";
 import { NoticeStrip, type NoticeTone } from "./notice.js";
 import { PowerLedger } from "./powerLedger.js";
@@ -33,6 +34,8 @@ export class BattleHud implements Component<BattleHudView> {
   readonly turnOrder: TurnOrderStrip;
   /** Which machines are live; empty and hidden on maps that switch nothing. */
   readonly power: PowerLedger;
+  /** The battle's record: what actually happened, after the numbers fade. */
+  readonly log: LogPanel;
   readonly dialogue: DialogueBox;
   readonly mode: ModeBar;
   readonly notice: NoticeStrip;
@@ -59,6 +62,7 @@ export class BattleHud implements Component<BattleHudView> {
     this.acting = new UnitStatusPanel({ role: "acting" });
     this.turnOrder = new TurnOrderStrip({ intents });
     this.power = new PowerLedger();
+    this.log = new LogPanel();
     this.dialogue = new DialogueBox({ intents });
     this.mode = new ModeBar({
       onWithdraw: () => this.withdraw(),
@@ -70,6 +74,7 @@ export class BattleHud implements Component<BattleHudView> {
       children: [
         this.status.el,
         this.notice.el,
+        this.log.el,
         el("div", { class: "gf-order", children: [this.acting.el, this.actionMenu.el] }),
         this.forecast.el,
         el("div", { class: "gf-clock", children: [this.turnOrder.el, this.power.el] }),
@@ -104,6 +109,7 @@ export class BattleHud implements Component<BattleHudView> {
     );
     this.turnOrder.update(view.turnOrder);
     this.power.update(view.power);
+    this.log.update(view.log ?? []);
     this.forecast.update(view.forecast);
   }
 
@@ -144,6 +150,7 @@ export class BattleHud implements Component<BattleHudView> {
     this.acting.destroy();
     this.turnOrder.destroy();
     this.power.destroy();
+    this.log.destroy();
     this.dialogue.destroy();
     this.mode.destroy();
     this.notice.destroy();
