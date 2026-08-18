@@ -111,6 +111,12 @@ export class BattleHud implements Component<BattleHudView> {
     this.power.update(view.power);
     this.log.update(view.log ?? []);
     this.forecast.update(view.forecast);
+    // A staged order is a new question, and the notices from the last one must
+    // not be sitting beside the answer to this one.
+    this.notice.enterContext(
+      "order",
+      view.forecast?.armed === true ? view.forecast.abilityId : "",
+    );
   }
 
   update(view: BattleHudView): void {
@@ -119,6 +125,9 @@ export class BattleHud implements Component<BattleHudView> {
   }
 
   setMode(mode: HudMode, detail?: string | null): void {
+    // Every turn change and every selection change comes through here, which
+    // makes this the one place that knows the moment a notice belonged to is over.
+    this.notice.enterContext("mode", `${mode}|${detail ?? ""}`);
     this.mode.update(mode, detail);
     this.el.dataset["mode"] = mode;
     const playersTurn = PLAYER_MODES.has(mode);
@@ -135,6 +144,10 @@ export class BattleHud implements Component<BattleHudView> {
   /** Frame pump: the dialogue reveal and the notice both need it. */
   tick(deltaMs: number): void {
     this.dialogue.tick(deltaMs);
+    // Opening or closing a submenu is a new context too, and the menus report to
+    // nobody when they do it. Read before the notices age: a line raised this
+    // frame has not been read yet, whatever the player did to it.
+    this.notice.enterContext("menu", this.actionMenu.menus.path.join("/"));
     this.notice.tick(deltaMs);
   }
 
