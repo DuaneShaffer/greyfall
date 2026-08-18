@@ -4,9 +4,9 @@
   "seed": 303,
   "outcome": "win",
   "winner": "player",
-  "turns": 86,
-  "clock": 82,
-  "commands": 187,
+  "turns": 103,
+  "clock": 95,
+  "commands": 206,
   "capped": false,
   "rejectedCommands": 0,
   "objectsDestroyed": [
@@ -15,7 +15,12 @@
     "bank-cell-three",
     "bank-cell-four",
     "pump-line-west",
-    "tower-walk-south"
+    "tower-walk-south",
+    "spawned-mine-12",
+    "spawned-mine-14",
+    "spawned-mine-15",
+    "spawned-mine-17",
+    "stillage-cell-west"
   ],
   "events": [
     {
@@ -2851,8 +2856,8 @@
         "y": 13
       },
       "to": {
-        "x": 5,
-        "y": 13
+        "x": 8,
+        "y": 12
       },
       "path": [
         {
@@ -2860,29 +2865,10 @@
           "y": 13
         },
         {
-          "x": 7,
-          "y": 13
-        },
-        {
-          "x": 6,
-          "y": 13
-        },
-        {
-          "x": 5,
-          "y": 13
+          "x": 8,
+          "y": 12
         }
       ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "west"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "marek-sump",
-      "delta": -1,
-      "charge": 3
     },
     {
       "type": "UnitFacingChanged",
@@ -2890,84 +2876,21 @@
       "facing": "north"
     },
     {
-      "type": "AbilityUsed",
+      "type": "ChargeChanged",
       "unitId": "marek-sump",
-      "abilityId": "smoke-canister",
+      "delta": -3,
+      "charge": 1
+    },
+    {
+      "type": "AbilityCharging",
+      "unitId": "marek-sump",
+      "abilityId": "shaped-charge",
       "target": {
-        "kind": "tile",
-        "tile": {
-          "x": 5,
-          "y": 10
-        }
+        "kind": "object",
+        "objectId": "tower-walk-west"
       },
-      "tiles": [
-        {
-          "x": 5,
-          "y": 8
-        },
-        {
-          "x": 4,
-          "y": 9
-        },
-        {
-          "x": 5,
-          "y": 9
-        },
-        {
-          "x": 6,
-          "y": 9
-        },
-        {
-          "x": 3,
-          "y": 10
-        },
-        {
-          "x": 4,
-          "y": 10
-        },
-        {
-          "x": 5,
-          "y": 10
-        },
-        {
-          "x": 6,
-          "y": 10
-        },
-        {
-          "x": 4,
-          "y": 11
-        },
-        {
-          "x": 5,
-          "y": 11
-        },
-        {
-          "x": 6,
-          "y": 11
-        },
-        {
-          "x": 5,
-          "y": 12
-        }
-      ]
-    },
-    {
-      "type": "StatusApplied",
-      "unitId": "nessa-kiln",
-      "statusId": "smoked",
-      "turnsRemaining": 2
-    },
-    {
-      "type": "StatusApplied",
-      "unitId": "watch-enforcer-west-ramp",
-      "statusId": "smoked",
-      "turnsRemaining": 2
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "marek-sump",
-      "amount": 10,
-      "total": 50
+      "chargeId": "charge-11",
+      "castSpeed": 35
     },
     {
       "type": "TurnEnded",
@@ -2992,8 +2915,8 @@
         "y": 8
       },
       "to": {
-        "x": 6,
-        "y": 5
+        "x": 5,
+        "y": 6
       },
       "path": [
         {
@@ -3007,21 +2930,13 @@
         {
           "x": 5,
           "y": 6
-        },
-        {
-          "x": 5,
-          "y": 5
-        },
-        {
-          "x": 6,
-          "y": 5
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
       "unitId": "nessa-kiln",
-      "facing": "east"
+      "facing": "north"
     },
     {
       "type": "UnitFacingChanged",
@@ -3155,8 +3070,8 @@
         "y": 15
       },
       "to": {
-        "x": 6,
-        "y": 12
+        "x": 5,
+        "y": 13
       },
       "path": [
         {
@@ -3172,10 +3087,15 @@
           "y": 13
         },
         {
-          "x": 6,
-          "y": 12
+          "x": 5,
+          "y": 13
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "ivo-brace",
+      "facing": "west"
     },
     {
       "type": "ChargeChanged",
@@ -3186,7 +3106,7 @@
     {
       "type": "UnitFacingChanged",
       "unitId": "ivo-brace",
-      "facing": "west"
+      "facing": "north"
     },
     {
       "type": "AbilityUsed",
@@ -3208,7 +3128,7 @@
     },
     {
       "type": "ObjectSpawned",
-      "objectId": "spawned-mine-11",
+      "objectId": "spawned-mine-12",
       "kind": "mine",
       "owner": "player",
       "tiles": [
@@ -3225,14 +3145,68 @@
       "total": 50
     },
     {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "north"
-    },
-    {
       "type": "TurnEnded",
       "unitId": "ivo-brace",
       "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 45
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "marek-sump",
+      "abilityId": "shaped-charge",
+      "target": {
+        "kind": "object",
+        "objectId": "tower-walk-west"
+      },
+      "tiles": [
+        {
+          "x": 6,
+          "y": 6
+        },
+        {
+          "x": 6,
+          "y": 7
+        },
+        {
+          "x": 7,
+          "y": 7
+        },
+        {
+          "x": 6,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-conduit-ring",
+      "sourceUnitId": "marek-sump",
+      "amount": 32,
+      "damageType": "kinetic",
+      "hpRemaining": 16
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "tower-walk-north",
+      "sourceUnitId": "marek-sump",
+      "amount": 36,
+      "hpRemaining": 4
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "tower-walk-west",
+      "sourceUnitId": "marek-sump",
+      "amount": 36,
+      "hpRemaining": 4
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "marek-sump",
+      "amount": 10,
+      "total": 50
     },
     {
       "type": "ClockAdvanced",
@@ -3297,10 +3271,43 @@
       ]
     },
     {
-      "type": "AbilityMissed",
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-east-ramp",
+      "sourceUnitId": "della-tine",
+      "amount": 12,
+      "damageType": "kinetic",
+      "hpRemaining": 19
+    },
+    {
+      "type": "UnitForcedMove",
+      "unitId": "watch-enforcer-east-ramp",
+      "from": {
+        "x": 13,
+        "y": 13
+      },
+      "to": {
+        "x": 16,
+        "y": 13
+      }
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "watch-enforcer-east-ramp",
+      "statusId": "stunned"
+    },
+    {
+      "type": "ReactionTriggered",
+      "unitId": "watch-enforcer-east-ramp",
+      "abilityId": "baton-answer",
+      "againstUnitId": "della-tine"
+    },
+    {
+      "type": "DamageDealt",
       "unitId": "della-tine",
-      "abilityId": "coupling-hook",
-      "targetUnitId": "watch-enforcer-east-ramp"
+      "sourceUnitId": "watch-enforcer-east-ramp",
+      "amount": 6,
+      "damageType": "kinetic",
+      "hpRemaining": 52
     },
     {
       "type": "StandingAwarded",
@@ -3335,6 +3342,41 @@
       "clock": 47
     },
     {
+      "type": "UnitMoved",
+      "unitId": "jory-slate",
+      "from": {
+        "x": 1,
+        "y": 17
+      },
+      "to": {
+        "x": 0,
+        "y": 15
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 17
+        },
+        {
+          "x": 1,
+          "y": 16
+        },
+        {
+          "x": 1,
+          "y": 15
+        },
+        {
+          "x": 0,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "west"
+    },
+    {
       "type": "ChargeChanged",
       "unitId": "jory-slate",
       "delta": -3,
@@ -3350,8 +3392,8 @@
       },
       "tiles": [
         {
-          "x": 1,
-          "y": 17
+          "x": 0,
+          "y": 15
         }
       ]
     },
@@ -3372,34 +3414,9 @@
       "total": 30
     },
     {
-      "type": "UnitMoved",
+      "type": "UnitFacingChanged",
       "unitId": "jory-slate",
-      "from": {
-        "x": 1,
-        "y": 17
-      },
-      "to": {
-        "x": 1,
-        "y": 14
-      },
-      "path": [
-        {
-          "x": 1,
-          "y": 17
-        },
-        {
-          "x": 1,
-          "y": 16
-        },
-        {
-          "x": 1,
-          "y": 15
-        },
-        {
-          "x": 1,
-          "y": 14
-        }
-      ]
+      "facing": "north"
     },
     {
       "type": "TurnEnded",
@@ -3420,14 +3437,22 @@
       "type": "UnitMoved",
       "unitId": "nessa-kiln",
       "from": {
-        "x": 6,
-        "y": 5
+        "x": 5,
+        "y": 6
       },
       "to": {
         "x": 7,
         "y": 5
       },
       "path": [
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 5,
+          "y": 5
+        },
         {
           "x": 6,
           "y": 5
@@ -3452,11 +3477,6 @@
       "type": "TurnEnded",
       "unitId": "nessa-kiln",
       "ctSpent": 80
-    },
-    {
-      "type": "StatusRemoved",
-      "unitId": "nessa-kiln",
-      "statusId": "smoked"
     },
     {
       "type": "ClockAdvanced",
@@ -3552,27 +3572,125 @@
       "clock": 51
     },
     {
-      "type": "AbilityUsed",
+      "type": "UnitMoved",
       "unitId": "marek-sump",
-      "abilityId": "basic-attack",
-      "target": {
-        "kind": "unit",
-        "unitId": "watch-enforcer-west-ramp"
+      "from": {
+        "x": 8,
+        "y": 12
       },
-      "tiles": [
+      "to": {
+        "x": 6,
+        "y": 15
+      },
+      "path": [
         {
-          "x": 5,
+          "x": 8,
           "y": 12
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 15
         }
       ]
     },
     {
-      "type": "DamageDealt",
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "marek-sump",
+      "delta": -1,
+      "charge": 0
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "marek-sump",
+      "abilityId": "smoke-canister",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 7,
+          "y": 12
+        }
+      },
+      "tiles": [
+        {
+          "x": 6,
+          "y": 11
+        },
+        {
+          "x": 7,
+          "y": 11
+        },
+        {
+          "x": 8,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 8,
+          "y": 12
+        },
+        {
+          "x": 9,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "StatusResisted",
       "unitId": "watch-enforcer-west-ramp",
-      "sourceUnitId": "marek-sump",
-      "amount": 18,
-      "damageType": "kinetic",
-      "hpRemaining": 50
+      "statusId": "smoked"
     },
     {
       "type": "StandingAwarded",
@@ -3583,7 +3701,7 @@
     {
       "type": "TurnEnded",
       "unitId": "marek-sump",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
@@ -3654,7 +3772,7 @@
       "abilityId": "pin",
       "target": {
         "kind": "unit",
-        "unitId": "marek-sump"
+        "unitId": "ivo-brace"
       },
       "tiles": [
         {
@@ -3664,17 +3782,10 @@
       ]
     },
     {
-      "type": "DamageDealt",
-      "unitId": "marek-sump",
-      "sourceUnitId": "watch-enforcer-west-ramp",
-      "amount": 1,
-      "damageType": "kinetic",
-      "hpRemaining": 65
-    },
-    {
-      "type": "StatusResisted",
-      "unitId": "marek-sump",
-      "statusId": "stunned"
+      "type": "AbilityMissed",
+      "unitId": "watch-enforcer-west-ramp",
+      "abilityId": "pin",
+      "targetUnitId": "ivo-brace"
     },
     {
       "type": "StandingAwarded",
@@ -3704,6 +3815,11 @@
       "charge": 9
     },
     {
+      "type": "UnitFacingChanged",
+      "unitId": "della-tine",
+      "facing": "east"
+    },
+    {
       "type": "AbilityUsed",
       "unitId": "della-tine",
       "abilityId": "coupling-hook",
@@ -3713,7 +3829,7 @@
       },
       "tiles": [
         {
-          "x": 13,
+          "x": 16,
           "y": 13
         }
       ]
@@ -3724,17 +3840,17 @@
       "sourceUnitId": "della-tine",
       "amount": 12,
       "damageType": "kinetic",
-      "hpRemaining": 19
+      "hpRemaining": 7
     },
     {
       "type": "UnitForcedMove",
       "unitId": "watch-enforcer-east-ramp",
       "from": {
-        "x": 13,
+        "x": 16,
         "y": 13
       },
       "to": {
-        "x": 16,
+        "x": 13,
         "y": 13
       }
     },
@@ -3755,7 +3871,7 @@
       "sourceUnitId": "watch-enforcer-east-ramp",
       "amount": 6,
       "damageType": "kinetic",
-      "hpRemaining": 52
+      "hpRemaining": 46
     },
     {
       "type": "StandingAwarded",
@@ -3771,8 +3887,8 @@
         "y": 14
       },
       "to": {
-        "x": 15,
-        "y": 15
+        "x": 13,
+        "y": 12
       },
       "path": [
         {
@@ -3781,14 +3897,26 @@
         },
         {
           "x": 15,
-          "y": 15
+          "y": 13
+        },
+        {
+          "x": 15,
+          "y": 12
+        },
+        {
+          "x": 14,
+          "y": 12
+        },
+        {
+          "x": 13,
+          "y": 12
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
       "unitId": "della-tine",
-      "facing": "south"
+      "facing": "west"
     },
     {
       "type": "UnitFacingChanged",
@@ -3817,11 +3945,6 @@
       "charge": 17
     },
     {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "west"
-    },
-    {
       "type": "AbilityUsed",
       "unitId": "ivo-brace",
       "abilityId": "tripwire-charge",
@@ -3841,7 +3964,7 @@
     },
     {
       "type": "ObjectSpawned",
-      "objectId": "spawned-mine-13",
+      "objectId": "spawned-mine-14",
       "kind": "mine",
       "owner": "player",
       "tiles": [
@@ -3856,11 +3979,6 @@
       "unitId": "ivo-brace",
       "amount": 10,
       "total": 60
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "north"
     },
     {
       "type": "TurnEnded",
@@ -3886,7 +4004,7 @@
       },
       "to": {
         "x": 5,
-        "y": 6
+        "y": 5
       },
       "path": [
         {
@@ -3900,18 +4018,24 @@
         {
           "x": 5,
           "y": 5
-        },
-        {
-          "x": 5,
-          "y": 6
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "west"
     },
     {
       "type": "ChargeChanged",
       "unitId": "nessa-kiln",
       "delta": -1,
       "charge": 66
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "south"
     },
     {
       "type": "AbilityUsed",
@@ -3955,58 +4079,38 @@
       "clock": 56
     },
     {
-      "type": "UnitMoved",
-      "unitId": "watch-enforcer-east-ramp",
-      "from": {
-        "x": 16,
-        "y": 13
-      },
-      "to": {
-        "x": 15,
-        "y": 13
-      },
-      "path": [
-        {
-          "x": 16,
-          "y": 13
-        },
-        {
-          "x": 15,
-          "y": 13
-        }
-      ]
-    },
-    {
       "type": "UnitFacingChanged",
       "unitId": "watch-enforcer-east-ramp",
-      "facing": "west"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "watch-enforcer-east-ramp",
-      "delta": -2,
-      "charge": 3
+      "facing": "north"
     },
     {
       "type": "AbilityUsed",
       "unitId": "watch-enforcer-east-ramp",
-      "abilityId": "breach-posture",
+      "abilityId": "pin",
       "target": {
         "kind": "unit",
-        "unitId": "watch-enforcer-east-ramp"
+        "unitId": "della-tine"
       },
       "tiles": [
         {
-          "x": 15,
-          "y": 13
+          "x": 13,
+          "y": 12
         }
       ]
     },
     {
+      "type": "DamageDealt",
+      "unitId": "della-tine",
+      "sourceUnitId": "watch-enforcer-east-ramp",
+      "amount": 16,
+      "damageType": "kinetic",
+      "hpRemaining": 30
+    },
+    {
       "type": "StatusApplied",
-      "unitId": "watch-enforcer-east-ramp",
-      "statusId": "braced",
-      "turnsRemaining": 3
+      "unitId": "della-tine",
+      "statusId": "stunned",
+      "turnsRemaining": 1
     },
     {
       "type": "StandingAwarded",
@@ -4017,12 +4121,17 @@
     {
       "type": "UnitFacingChanged",
       "unitId": "watch-enforcer-east-ramp",
-      "facing": "south"
+      "facing": "west"
     },
     {
       "type": "TurnEnded",
       "unitId": "watch-enforcer-east-ramp",
-      "ctSpent": 100
+      "ctSpent": 80
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "watch-enforcer-east-ramp",
+      "statusId": "braced"
     },
     {
       "type": "ClockAdvanced",
@@ -4102,26 +4211,54 @@
     },
     {
       "type": "ClockAdvanced",
-      "clock": 59
+      "clock": 60
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "della-tine",
+      "turn": 65,
+      "clock": 60
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "della-tine",
+      "ctSpent": 60
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "della-tine",
+      "statusId": "stunned"
     },
     {
       "type": "TurnStarted",
       "unitId": "marek-sump",
-      "turn": 65,
-      "clock": 59
+      "turn": 66,
+      "clock": 60
     },
     {
       "type": "UnitMoved",
       "unitId": "marek-sump",
       "from": {
-        "x": 5,
-        "y": 13
+        "x": 6,
+        "y": 15
       },
       "to": {
-        "x": 5,
-        "y": 11
+        "x": 4,
+        "y": 12
       },
       "path": [
+        {
+          "x": 6,
+          "y": 15
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 13
+        },
         {
           "x": 5,
           "y": 13
@@ -4133,187 +4270,19 @@
         {
           "x": 4,
           "y": 12
-        },
-        {
-          "x": 4,
-          "y": 11
-        },
-        {
-          "x": 5,
-          "y": 11
         }
       ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "east"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "marek-sump",
-      "delta": -3,
-      "charge": 0
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "north"
-    },
-    {
-      "type": "AbilityCharging",
-      "unitId": "marek-sump",
-      "abilityId": "shaped-charge",
-      "target": {
-        "kind": "tile",
-        "tile": {
-          "x": 5,
-          "y": 7
-        }
-      },
-      "chargeId": "charge-14",
-      "castSpeed": 35
     },
     {
       "type": "TurnEnded",
       "unitId": "marek-sump",
-      "ctSpent": 100
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 60
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "della-tine",
-      "turn": 66,
-      "clock": 60
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "della-tine",
-      "from": {
-        "x": 15,
-        "y": 15
-      },
-      "to": {
-        "x": 15,
-        "y": 16
-      },
-      "path": [
-        {
-          "x": 15,
-          "y": 15
-        },
-        {
-          "x": 15,
-          "y": 16
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "della-tine",
-      "facing": "south"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "della-tine",
-      "delta": -1,
-      "charge": 8
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "della-tine",
-      "facing": "north"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "della-tine",
-      "abilityId": "coupling-hook",
-      "target": {
-        "kind": "unit",
-        "unitId": "watch-enforcer-east-ramp"
-      },
-      "tiles": [
-        {
-          "x": 15,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-east-ramp",
-      "sourceUnitId": "della-tine",
-      "amount": 12,
-      "damageType": "kinetic",
-      "hpRemaining": 7
-    },
-    {
-      "type": "UnitForcedMove",
-      "unitId": "watch-enforcer-east-ramp",
-      "from": {
-        "x": 15,
-        "y": 13
-      },
-      "to": {
-        "x": 15,
-        "y": 15
-      }
-    },
-    {
-      "type": "StatusResisted",
-      "unitId": "watch-enforcer-east-ramp",
-      "statusId": "stunned"
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "della-tine",
-      "amount": 10,
-      "total": 60
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "della-tine",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
       "unitId": "vale",
       "turn": 67,
       "clock": 60
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "vale",
-      "from": {
-        "x": 13,
-        "y": 16
-      },
-      "to": {
-        "x": 14,
-        "y": 15
-      },
-      "path": [
-        {
-          "x": 13,
-          "y": 16
-        },
-        {
-          "x": 13,
-          "y": 15
-        },
-        {
-          "x": 14,
-          "y": 15
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "vale",
-      "facing": "east"
     },
     {
       "type": "ChargeChanged",
@@ -4331,16 +4300,16 @@
       },
       "tiles": [
         {
-          "x": 15,
+          "x": 13,
           "y": 15
         },
         {
-          "x": 16,
-          "y": 15
+          "x": 13,
+          "y": 14
         },
         {
-          "x": 17,
-          "y": 15
+          "x": 13,
+          "y": 13
         }
       ]
     },
@@ -4363,9 +4332,34 @@
       "total": 20
     },
     {
-      "type": "UnitFacingChanged",
+      "type": "UnitMoved",
       "unitId": "vale",
-      "facing": "north"
+      "from": {
+        "x": 13,
+        "y": 16
+      },
+      "to": {
+        "x": 13,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 13,
+          "y": 16
+        },
+        {
+          "x": 13,
+          "y": 15
+        },
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 13,
+          "y": 13
+        }
+      ]
     },
     {
       "type": "TurnEnded",
@@ -4377,103 +4371,16 @@
       "clock": 62
     },
     {
-      "type": "AbilityUsed",
-      "unitId": "marek-sump",
-      "abilityId": "shaped-charge",
-      "target": {
-        "kind": "tile",
-        "tile": {
-          "x": 5,
-          "y": 7
-        }
-      },
-      "tiles": [
-        {
-          "x": 5,
-          "y": 6
-        },
-        {
-          "x": 5,
-          "y": 7
-        },
-        {
-          "x": 5,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "nessa-kiln",
-      "sourceUnitId": "marek-sump",
-      "amount": 32,
-      "damageType": "kinetic",
-      "hpRemaining": 32
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-gallery",
-      "sourceUnitId": "marek-sump",
-      "amount": 32,
-      "damageType": "kinetic",
-      "hpRemaining": 36
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "marek-sump",
-      "amount": 10,
-      "total": 70
-    },
-    {
       "type": "TurnStarted",
       "unitId": "nessa-kiln",
       "turn": 68,
       "clock": 62
     },
     {
-      "type": "UnitMoved",
-      "unitId": "nessa-kiln",
-      "from": {
-        "x": 5,
-        "y": 6
-      },
-      "to": {
-        "x": 4,
-        "y": 9
-      },
-      "path": [
-        {
-          "x": 5,
-          "y": 6
-        },
-        {
-          "x": 5,
-          "y": 7
-        },
-        {
-          "x": 5,
-          "y": 8
-        },
-        {
-          "x": 4,
-          "y": 8
-        },
-        {
-          "x": 4,
-          "y": 9
-        }
-      ]
-    },
-    {
       "type": "ChargeChanged",
       "unitId": "nessa-kiln",
       "delta": -1,
       "charge": 65
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "nessa-kiln",
-      "facing": "north"
     },
     {
       "type": "AbilityUsed",
@@ -4500,6 +4407,33 @@
       "unitId": "nessa-kiln",
       "amount": 10,
       "total": 30
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "nessa-kiln",
+      "from": {
+        "x": 5,
+        "y": 5
+      },
+      "to": {
+        "x": 6,
+        "y": 5
+      },
+      "path": [
+        {
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 6,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "east"
     },
     {
       "type": "UnitFacingChanged",
@@ -4531,13 +4465,13 @@
         "kind": "tile",
         "tile": {
           "x": 5,
-          "y": 9
+          "y": 11
         }
       },
       "tiles": [
         {
           "x": 5,
-          "y": 9
+          "y": 11
         }
       ]
     },
@@ -4549,7 +4483,7 @@
       "tiles": [
         {
           "x": 5,
-          "y": 9
+          "y": 11
         }
       ]
     },
@@ -4578,28 +4512,28 @@
       "type": "UnitMoved",
       "unitId": "jory-slate",
       "from": {
-        "x": 1,
-        "y": 14
+        "x": 0,
+        "y": 15
       },
       "to": {
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "path": [
         {
-          "x": 1,
-          "y": 14
+          "x": 0,
+          "y": 15
         },
         {
           "x": 0,
-          "y": 14
+          "y": 16
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
       "unitId": "jory-slate",
-      "facing": "west"
+      "facing": "south"
     },
     {
       "type": "ChargeChanged",
@@ -4618,7 +4552,7 @@
       "tiles": [
         {
           "x": 0,
-          "y": 14
+          "y": 16
         }
       ]
     },
@@ -4650,78 +4584,41 @@
     },
     {
       "type": "ClockAdvanced",
-      "clock": 67
+      "clock": 65
     },
     {
       "type": "TurnStarted",
-      "unitId": "watch-conduit-ring",
+      "unitId": "della-tine",
       "turn": 71,
-      "clock": 67
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "watch-conduit-ring",
-      "from": {
-        "x": 8,
-        "y": 6
-      },
-      "to": {
-        "x": 6,
-        "y": 7
-      },
-      "path": [
-        {
-          "x": 8,
-          "y": 6
-        },
-        {
-          "x": 7,
-          "y": 6
-        },
-        {
-          "x": 6,
-          "y": 6
-        },
-        {
-          "x": 6,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "watch-conduit-ring",
-      "ctSpent": 80
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 68
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "della-tine",
-      "turn": 72,
-      "clock": 68
+      "clock": 65
     },
     {
       "type": "UnitMoved",
       "unitId": "della-tine",
       "from": {
-        "x": 15,
-        "y": 16
+        "x": 13,
+        "y": 12
       },
       "to": {
-        "x": 6,
+        "x": 7,
         "y": 16
       },
       "path": [
         {
-          "x": 15,
-          "y": 16
+          "x": 13,
+          "y": 12
         },
         {
-          "x": 14,
-          "y": 16
+          "x": 13,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 13,
+          "y": 15
         },
         {
           "x": 13,
@@ -4750,10 +4647,6 @@
         {
           "x": 7,
           "y": 16
-        },
-        {
-          "x": 6,
-          "y": 16
         }
       ]
     },
@@ -4763,81 +4656,97 @@
       "facing": "west"
     },
     {
-      "type": "ChargeChanged",
-      "unitId": "della-tine",
-      "delta": -1,
-      "charge": 7
-    },
-    {
       "type": "UnitFacingChanged",
       "unitId": "della-tine",
       "facing": "north"
     },
     {
-      "type": "AbilityUsed",
+      "type": "TurnEnded",
       "unitId": "della-tine",
-      "abilityId": "coupling-hook",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 67
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "watch-conduit-ring",
+      "turn": 72,
+      "clock": 67
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "watch-conduit-ring",
+      "facing": "west"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "watch-conduit-ring",
+      "abilityId": "tap-line",
       "target": {
         "kind": "unit",
-        "unitId": "watch-enforcer-west-ramp"
+        "unitId": "nessa-kiln"
       },
       "tiles": [
         {
-          "x": 5,
-          "y": 12
+          "x": 6,
+          "y": 5
         }
       ]
     },
     {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-west-ramp",
-      "sourceUnitId": "della-tine",
-      "amount": 12,
-      "damageType": "kinetic",
-      "hpRemaining": 38
-    },
-    {
-      "type": "UnitForcedMove",
-      "unitId": "watch-enforcer-west-ramp",
-      "from": {
-        "x": 5,
-        "y": 12
-      },
-      "to": {
-        "x": 5,
-        "y": 13
-      }
-    },
-    {
-      "type": "StatusApplied",
-      "unitId": "watch-enforcer-west-ramp",
-      "statusId": "stunned",
-      "turnsRemaining": 1
-    },
-    {
-      "type": "ReactionTriggered",
-      "unitId": "watch-enforcer-west-ramp",
-      "abilityId": "baton-answer",
-      "againstUnitId": "della-tine"
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "della-tine",
-      "sourceUnitId": "watch-enforcer-west-ramp",
-      "amount": 0,
-      "damageType": "kinetic",
-      "hpRemaining": 52
+      "type": "ChargeChanged",
+      "unitId": "nessa-kiln",
+      "delta": 2,
+      "charge": 67
     },
     {
       "type": "StandingAwarded",
-      "unitId": "della-tine",
+      "unitId": "watch-conduit-ring",
       "amount": 10,
-      "total": 70
+      "total": 20
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "watch-conduit-ring",
+      "from": {
+        "x": 8,
+        "y": 6
+      },
+      "to": {
+        "x": 9,
+        "y": 6
+      },
+      "path": [
+        {
+          "x": 8,
+          "y": 6
+        },
+        {
+          "x": 9,
+          "y": 6
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "watch-conduit-ring",
+      "facing": "east"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "watch-conduit-ring",
+      "facing": "south"
     },
     {
       "type": "TurnEnded",
-      "unitId": "della-tine",
+      "unitId": "watch-conduit-ring",
       "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 68
     },
     {
       "type": "TurnStarted",
@@ -4849,22 +4758,14 @@
       "type": "UnitMoved",
       "unitId": "marek-sump",
       "from": {
-        "x": 5,
-        "y": 11
+        "x": 4,
+        "y": 12
       },
       "to": {
-        "x": 4,
+        "x": 1,
         "y": 13
       },
       "path": [
-        {
-          "x": 5,
-          "y": 11
-        },
-        {
-          "x": 4,
-          "y": 11
-        },
         {
           "x": 4,
           "y": 12
@@ -4872,61 +4773,25 @@
         {
           "x": 4,
           "y": 13
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "south"
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "east"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "marek-sump",
-      "abilityId": "basic-attack",
-      "target": {
-        "kind": "unit",
-        "unitId": "watch-enforcer-west-ramp"
-      },
-      "tiles": [
+        },
         {
-          "x": 5,
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 1,
           "y": 13
         }
       ]
     },
     {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-west-ramp",
-      "sourceUnitId": "marek-sump",
-      "amount": 18,
-      "damageType": "kinetic",
-      "hpRemaining": 20
-    },
-    {
-      "type": "ReactionTriggered",
-      "unitId": "watch-enforcer-west-ramp",
-      "abilityId": "baton-answer",
-      "againstUnitId": "marek-sump"
-    },
-    {
-      "type": "DamageDealt",
+      "type": "UnitFacingChanged",
       "unitId": "marek-sump",
-      "sourceUnitId": "watch-enforcer-west-ramp",
-      "amount": 0,
-      "damageType": "kinetic",
-      "hpRemaining": 65
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "marek-sump",
-      "amount": 10,
-      "total": 80
+      "facing": "west"
     },
     {
       "type": "UnitFacingChanged",
@@ -4936,7 +4801,7 @@
     {
       "type": "TurnEnded",
       "unitId": "marek-sump",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
@@ -4985,7 +4850,7 @@
       },
       "to": {
         "x": 5,
-        "y": 8
+        "y": 9
       },
       "path": [
         {
@@ -4995,6 +4860,10 @@
         {
           "x": 5,
           "y": 8
+        },
+        {
+          "x": 5,
+          "y": 9
         }
       ]
     },
@@ -5010,19 +4879,43 @@
       "clock": 68
     },
     {
+      "type": "AbilityUsed",
+      "unitId": "watch-enforcer-west-ramp",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "ivo-brace"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "watch-enforcer-west-ramp",
+      "amount": 16,
+      "damageType": "kinetic",
+      "hpRemaining": 56
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "ivo-brace",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "watch-enforcer-west-ramp",
+      "amount": 10,
+      "total": 20
+    },
+    {
       "type": "TurnEnded",
       "unitId": "watch-enforcer-west-ramp",
-      "ctSpent": 60
-    },
-    {
-      "type": "StatusRemoved",
-      "unitId": "watch-enforcer-west-ramp",
-      "statusId": "smoked"
-    },
-    {
-      "type": "StatusRemoved",
-      "unitId": "watch-enforcer-west-ramp",
-      "statusId": "stunned"
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
@@ -5038,71 +4931,32 @@
       "type": "UnitMoved",
       "unitId": "nessa-kiln",
       "from": {
-        "x": 4,
-        "y": 9
+        "x": 6,
+        "y": 5
       },
       "to": {
-        "x": 4,
-        "y": 10
+        "x": 5,
+        "y": 6
       },
       "path": [
         {
-          "x": 4,
-          "y": 9
+          "x": 6,
+          "y": 5
         },
         {
-          "x": 4,
-          "y": 10
+          "x": 5,
+          "y": 5
+        },
+        {
+          "x": 5,
+          "y": 6
         }
       ]
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "nessa-kiln",
-      "delta": -5,
-      "charge": 60
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "nessa-kiln",
-      "abilityId": "arc",
-      "target": {
-        "kind": "unit",
-        "unitId": "marek-sump"
-      },
-      "tiles": [
-        {
-          "x": 4,
-          "y": 11
-        },
-        {
-          "x": 4,
-          "y": 12
-        },
-        {
-          "x": 4,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "marek-sump",
-      "sourceUnitId": "nessa-kiln",
-      "amount": 36,
-      "damageType": "arc",
-      "hpRemaining": 29
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "nessa-kiln",
-      "amount": 10,
-      "total": 40
     },
     {
       "type": "TurnEnded",
       "unitId": "nessa-kiln",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
@@ -5110,47 +4964,176 @@
     },
     {
       "type": "TurnStarted",
-      "unitId": "ivo-brace",
+      "unitId": "della-tine",
       "turn": 78,
       "clock": 70
     },
     {
       "type": "UnitMoved",
-      "unitId": "ivo-brace",
+      "unitId": "della-tine",
       "from": {
-        "x": 6,
-        "y": 12
+        "x": 7,
+        "y": 16
       },
       "to": {
         "x": 6,
-        "y": 13
+        "y": 12
       },
       "path": [
         {
+          "x": 7,
+          "y": 16
+        },
+        {
           "x": 6,
-          "y": 12
+          "y": 16
+        },
+        {
+          "x": 6,
+          "y": 15
+        },
+        {
+          "x": 6,
+          "y": 14
         },
         {
           "x": 6,
           "y": 13
+        },
+        {
+          "x": 6,
+          "y": 12
         }
       ]
     },
     {
-      "type": "UnitFacingChanged",
+      "type": "ChargeChanged",
+      "unitId": "della-tine",
+      "delta": -1,
+      "charge": 8
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "della-tine",
+      "abilityId": "coupling-hook",
+      "target": {
+        "kind": "unit",
+        "unitId": "watch-enforcer-gallery"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-gallery",
+      "sourceUnitId": "della-tine",
+      "amount": 12,
+      "damageType": "kinetic",
+      "hpRemaining": 56
+    },
+    {
+      "type": "UnitForcedMove",
+      "unitId": "watch-enforcer-gallery",
+      "from": {
+        "x": 5,
+        "y": 9
+      },
+      "to": {
+        "x": 5,
+        "y": 11
+      }
+    },
+    {
+      "type": "ObjectTriggered",
+      "objectId": "spawned-mine-12",
+      "unitId": "watch-enforcer-gallery"
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "spawned-mine-12"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-gallery",
+      "sourceUnitId": null,
+      "amount": 20,
+      "damageType": "kinetic",
+      "hpRemaining": 36
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "watch-enforcer-gallery",
+      "statusId": "stunned"
+    },
+    {
+      "type": "ObjectTriggered",
+      "objectId": "spawned-mine-14",
+      "unitId": "watch-enforcer-gallery"
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "spawned-mine-14"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-gallery",
+      "sourceUnitId": null,
+      "amount": 20,
+      "damageType": "kinetic",
+      "hpRemaining": 16
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "watch-enforcer-gallery",
+      "statusId": "stunned"
+    },
+    {
+      "type": "ObjectTriggered",
+      "objectId": "spawned-mine-15",
+      "unitId": "watch-enforcer-gallery"
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "spawned-mine-15"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-gallery",
+      "sourceUnitId": null,
+      "amount": 20,
+      "damageType": "kinetic",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "watch-enforcer-gallery"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "della-tine",
+      "amount": 10,
+      "total": 60
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "della-tine",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
       "unitId": "ivo-brace",
-      "facing": "south"
+      "turn": 79,
+      "clock": 70
     },
     {
       "type": "ChargeChanged",
       "unitId": "ivo-brace",
       "delta": -4,
       "charge": 9
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "north"
     },
     {
       "type": "AbilityUsed",
@@ -5160,13 +5143,13 @@
         "kind": "tile",
         "tile": {
           "x": 5,
-          "y": 10
+          "y": 11
         }
       },
       "tiles": [
         {
           "x": 5,
-          "y": 10
+          "y": 11
         }
       ]
     },
@@ -5178,7 +5161,7 @@
       "tiles": [
         {
           "x": 5,
-          "y": 10
+          "y": 11
         }
       ]
     },
@@ -5191,200 +5174,71 @@
     {
       "type": "TurnEnded",
       "unitId": "ivo-brace",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
       "clock": 75
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "della-tine",
-      "turn": 79,
-      "clock": 75
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "della-tine",
-      "from": {
-        "x": 6,
-        "y": 16
-      },
-      "to": {
-        "x": 7,
-        "y": 16
-      },
-      "path": [
-        {
-          "x": 6,
-          "y": 16
-        },
-        {
-          "x": 7,
-          "y": 16
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "della-tine",
-      "facing": "east"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "della-tine",
-      "delta": -1,
-      "charge": 6
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "della-tine",
-      "facing": "north"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "della-tine",
-      "abilityId": "coupling-hook",
-      "target": {
-        "kind": "unit",
-        "unitId": "watch-enforcer-west-ramp"
-      },
-      "tiles": [
-        {
-          "x": 5,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-west-ramp",
-      "sourceUnitId": "della-tine",
-      "amount": 12,
-      "damageType": "kinetic",
-      "hpRemaining": 8
-    },
-    {
-      "type": "StatusResisted",
-      "unitId": "watch-enforcer-west-ramp",
-      "statusId": "stunned"
-    },
-    {
-      "type": "ReactionTriggered",
-      "unitId": "watch-enforcer-west-ramp",
-      "abilityId": "baton-answer",
-      "againstUnitId": "della-tine"
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "della-tine",
-      "sourceUnitId": "watch-enforcer-west-ramp",
-      "amount": 6,
-      "damageType": "kinetic",
-      "hpRemaining": 46
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "della-tine",
-      "amount": 10,
-      "total": 80
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "della-tine",
-      "ctSpent": 100
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 76
     },
     {
       "type": "TurnStarted",
       "unitId": "nessa-kiln",
       "turn": 80,
-      "clock": 76
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "nessa-kiln",
-      "delta": -5,
-      "charge": 55
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "nessa-kiln",
-      "abilityId": "arc",
-      "target": {
-        "kind": "unit",
-        "unitId": "marek-sump"
-      },
-      "tiles": [
-        {
-          "x": 4,
-          "y": 11
-        },
-        {
-          "x": 4,
-          "y": 12
-        },
-        {
-          "x": 4,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "marek-sump",
-      "sourceUnitId": "nessa-kiln",
-      "amount": 36,
-      "damageType": "arc",
-      "hpRemaining": 0
-    },
-    {
-      "type": "UnitDowned",
-      "unitId": "marek-sump"
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "nessa-kiln",
-      "amount": 10,
-      "total": 50
+      "clock": 75
     },
     {
       "type": "UnitMoved",
       "unitId": "nessa-kiln",
       "from": {
-        "x": 4,
-        "y": 10
+        "x": 5,
+        "y": 6
       },
       "to": {
-        "x": 4,
-        "y": 13
+        "x": 5,
+        "y": 10
       },
       "path": [
         {
-          "x": 4,
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 5,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 8
+        },
+        {
+          "x": 5,
+          "y": 9
+        },
+        {
+          "x": 5,
           "y": 10
-        },
-        {
-          "x": 4,
-          "y": 11
-        },
-        {
-          "x": 4,
-          "y": 12
-        },
-        {
-          "x": 4,
-          "y": 13
         }
       ]
     },
     {
-      "type": "UnitFacingChanged",
+      "type": "ChargeChanged",
       "unitId": "nessa-kiln",
-      "facing": "east"
+      "delta": -5,
+      "charge": 62
+    },
+    {
+      "type": "AbilityCharging",
+      "unitId": "nessa-kiln",
+      "abilityId": "ground",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 5,
+          "y": 13
+        }
+      },
+      "chargeId": "charge-18",
+      "castSpeed": 60
     },
     {
       "type": "TurnEnded",
@@ -5393,8 +5247,59 @@
     },
     {
       "type": "TurnStarted",
-      "unitId": "quill",
+      "unitId": "marek-sump",
       "turn": 81,
+      "clock": 75
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "marek-sump",
+      "from": {
+        "x": 1,
+        "y": 13
+      },
+      "to": {
+        "x": 0,
+        "y": 14
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 13
+        },
+        {
+          "x": 0,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "east"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "marek-sump",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 76
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "quill",
+      "turn": 82,
       "clock": 76
     },
     {
@@ -5407,32 +5312,114 @@
       "clock": 77
     },
     {
+      "type": "AbilityUsed",
+      "unitId": "nessa-kiln",
+      "abilityId": "ground",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 5,
+          "y": 13
+        }
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "ivo-brace",
+      "statusId": "grounded",
+      "turnsRemaining": 3
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "ivo-brace",
+      "delta": -9,
+      "charge": 0
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "nessa-kiln",
+      "delta": 5,
+      "charge": 67
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "nessa-kiln",
+      "amount": 10,
+      "total": 40
+    },
+    {
       "type": "TurnStarted",
       "unitId": "vale",
-      "turn": 82,
+      "turn": 83,
       "clock": 77
     },
     {
       "type": "UnitMoved",
       "unitId": "vale",
       "from": {
-        "x": 14,
-        "y": 15
+        "x": 13,
+        "y": 13
       },
       "to": {
-        "x": 13,
-        "y": 15
+        "x": 11,
+        "y": 14
       },
       "path": [
         {
-          "x": 14,
-          "y": 15
+          "x": 13,
+          "y": 13
         },
         {
-          "x": 13,
-          "y": 15
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 11,
+          "y": 13
+        },
+        {
+          "x": 11,
+          "y": 14
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "south"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "vale",
+      "abilityId": "tap-line",
+      "target": {
+        "kind": "unit",
+        "unitId": "vale"
+      },
+      "tiles": [
+        {
+          "x": 11,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": 10,
+      "charge": 30
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "vale",
+      "amount": 10,
+      "total": 30
     },
     {
       "type": "UnitFacingChanged",
@@ -5442,22 +5429,109 @@
     {
       "type": "TurnEnded",
       "unitId": "vale",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
-      "clock": 80
+      "clock": 78
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "della-tine",
+      "turn": 84,
+      "clock": 78
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "della-tine",
+      "delta": -1,
+      "charge": 7
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "della-tine",
+      "abilityId": "coupling-hook",
+      "target": {
+        "kind": "unit",
+        "unitId": "nessa-kiln"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "nessa-kiln",
+      "sourceUnitId": "della-tine",
+      "amount": 12,
+      "damageType": "kinetic",
+      "hpRemaining": 52
+    },
+    {
+      "type": "UnitForcedMove",
+      "unitId": "nessa-kiln",
+      "from": {
+        "x": 5,
+        "y": 10
+      },
+      "to": {
+        "x": 5,
+        "y": 11
+      }
+    },
+    {
+      "type": "ObjectTriggered",
+      "objectId": "spawned-mine-17",
+      "unitId": "nessa-kiln"
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "spawned-mine-17"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "nessa-kiln",
+      "sourceUnitId": null,
+      "amount": 20,
+      "damageType": "kinetic",
+      "hpRemaining": 32
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned",
+      "turnsRemaining": 1
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned",
+      "turnsRemaining": 1
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "della-tine",
+      "amount": 10,
+      "total": 70
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "della-tine",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "della-tine",
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
       "unitId": "ivo-brace",
-      "turn": 83,
-      "clock": 80
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "west"
+      "turn": 85,
+      "clock": 78
     },
     {
       "type": "AbilityUsed",
@@ -5470,21 +5544,15 @@
       "tiles": [
         {
           "x": 5,
-          "y": 13
+          "y": 12
         }
       ]
     },
     {
-      "type": "DamageDealt",
-      "unitId": "watch-enforcer-west-ramp",
-      "sourceUnitId": "ivo-brace",
-      "amount": 13,
-      "damageType": "kinetic",
-      "hpRemaining": 0
-    },
-    {
-      "type": "UnitDowned",
-      "unitId": "watch-enforcer-west-ramp"
+      "type": "AbilityMissed",
+      "unitId": "ivo-brace",
+      "abilityId": "basic-attack",
+      "targetUnitId": "watch-enforcer-west-ramp"
     },
     {
       "type": "StandingAwarded",
@@ -5493,36 +5561,18 @@
       "total": 90
     },
     {
-      "type": "UnitMoved",
-      "unitId": "ivo-brace",
-      "from": {
-        "x": 6,
-        "y": 13
-      },
-      "to": {
-        "x": 5,
-        "y": 13
-      },
-      "path": [
-        {
-          "x": 6,
-          "y": 13
-        },
-        {
-          "x": 5,
-          "y": 13
-        }
-      ]
-    },
-    {
       "type": "TurnEnded",
       "unitId": "ivo-brace",
-      "ctSpent": 100
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 80
     },
     {
       "type": "TurnStarted",
       "unitId": "jory-slate",
-      "turn": 84,
+      "turn": 86,
       "clock": 80
     },
     {
@@ -5530,11 +5580,82 @@
       "unitId": "jory-slate",
       "from": {
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "to": {
         "x": 2,
-        "y": 13
+        "y": 17
+      },
+      "path": [
+        {
+          "x": 0,
+          "y": 16
+        },
+        {
+          "x": 1,
+          "y": 16
+        },
+        {
+          "x": 2,
+          "y": 16
+        },
+        {
+          "x": 2,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "north"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 82
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "nessa-kiln",
+      "turn": 87,
+      "clock": 82
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "nessa-kiln",
+      "ctSpent": 60
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned"
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "marek-sump",
+      "turn": 88,
+      "clock": 82
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "marek-sump",
+      "from": {
+        "x": 0,
+        "y": 14
+      },
+      "to": {
+        "x": 0,
+        "y": 15
       },
       "path": [
         {
@@ -5543,51 +5664,86 @@
         },
         {
           "x": 0,
-          "y": 13
-        },
-        {
-          "x": 1,
-          "y": 13
-        },
-        {
-          "x": 2,
-          "y": 13
+          "y": 15
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
-      "unitId": "jory-slate",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
       "facing": "east"
     },
     {
+      "type": "TurnEnded",
+      "unitId": "marek-sump",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "quill",
+      "turn": 89,
+      "clock": 82
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "quill",
+      "ctSpent": 60
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 83
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "della-tine",
+      "turn": 90,
+      "clock": 83
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "della-tine",
+      "delta": -1,
+      "charge": 6
+    },
+    {
       "type": "AbilityUsed",
-      "unitId": "jory-slate",
-      "abilityId": "basic-attack",
+      "unitId": "della-tine",
+      "abilityId": "coupling-hook",
       "target": {
         "kind": "unit",
         "unitId": "nessa-kiln"
       },
       "tiles": [
         {
-          "x": 4,
-          "y": 13
+          "x": 5,
+          "y": 11
         }
       ]
     },
     {
       "type": "DamageDealt",
       "unitId": "nessa-kiln",
-      "sourceUnitId": "jory-slate",
-      "amount": 28,
-      "damageType": "chemical",
-      "hpRemaining": 4
+      "sourceUnitId": "della-tine",
+      "amount": 12,
+      "damageType": "kinetic",
+      "hpRemaining": 20
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned",
+      "turnsRemaining": 1
     },
     {
       "type": "StandingAwarded",
-      "unitId": "jory-slate",
+      "unitId": "della-tine",
       "amount": 10,
-      "total": 50
+      "total": 80
     },
     {
       "type": "TriggerFired",
@@ -5609,50 +5765,48 @@
     },
     {
       "type": "TurnEnded",
-      "unitId": "jory-slate",
-      "ctSpent": 100
+      "unitId": "della-tine",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 84
     },
     {
       "type": "TurnStarted",
       "unitId": "watch-conduit-ring",
-      "turn": 85,
-      "clock": 80
+      "turn": 91,
+      "clock": 84
     },
     {
       "type": "UnitMoved",
       "unitId": "watch-conduit-ring",
       "from": {
-        "x": 6,
-        "y": 7
+        "x": 9,
+        "y": 6
       },
       "to": {
-        "x": 7,
-        "y": 6
+        "x": 11,
+        "y": 7
       },
       "path": [
         {
-          "x": 6,
+          "x": 9,
+          "y": 6
+        },
+        {
+          "x": 10,
+          "y": 6
+        },
+        {
+          "x": 11,
+          "y": 6
+        },
+        {
+          "x": 11,
           "y": 7
-        },
-        {
-          "x": 6,
-          "y": 6
-        },
-        {
-          "x": 7,
-          "y": 6
         }
       ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "watch-conduit-ring",
-      "facing": "east"
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "watch-conduit-ring",
-      "facing": "south"
     },
     {
       "type": "TurnEnded",
@@ -5660,78 +5814,167 @@
       "ctSpent": 80
     },
     {
-      "type": "ClockAdvanced",
-      "clock": 82
-    },
-    {
       "type": "TurnStarted",
-      "unitId": "della-tine",
-      "turn": 86,
-      "clock": 82
+      "unitId": "watch-enforcer-west-ramp",
+      "turn": 92,
+      "clock": 84
     },
     {
-      "type": "UnitMoved",
-      "unitId": "della-tine",
-      "from": {
-        "x": 7,
-        "y": 16
+      "type": "AbilityUsed",
+      "unitId": "watch-enforcer-west-ramp",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "ivo-brace"
       },
-      "to": {
-        "x": 3,
-        "y": 13
-      },
-      "path": [
-        {
-          "x": 7,
-          "y": 16
-        },
-        {
-          "x": 6,
-          "y": 16
-        },
+      "tiles": [
         {
           "x": 5,
-          "y": 16
-        },
-        {
-          "x": 4,
-          "y": 16
-        },
-        {
-          "x": 3,
-          "y": 16
-        },
-        {
-          "x": 3,
-          "y": 15
-        },
-        {
-          "x": 3,
-          "y": 14
-        },
-        {
-          "x": 3,
           "y": 13
         }
       ]
     },
     {
-      "type": "UnitFacingChanged",
+      "type": "DamageDealt",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "watch-enforcer-west-ramp",
+      "amount": 16,
+      "damageType": "kinetic",
+      "hpRemaining": 40
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "ivo-brace",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "watch-enforcer-west-ramp",
+      "amount": 10,
+      "total": 30
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "watch-enforcer-west-ramp",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 86
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "nessa-kiln",
+      "turn": 93,
+      "clock": 86
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "nessa-kiln",
+      "ctSpent": 60
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned"
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "ivo-brace",
+      "turn": 94,
+      "clock": 86
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "ivo-brace",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "watch-enforcer-west-ramp"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-enforcer-west-ramp",
+      "sourceUnitId": "ivo-brace",
+      "amount": 13,
+      "damageType": "kinetic",
+      "hpRemaining": 55
+    },
+    {
+      "type": "ReactionTriggered",
+      "unitId": "watch-enforcer-west-ramp",
+      "abilityId": "baton-answer",
+      "againstUnitId": "ivo-brace"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "ivo-brace",
+      "sourceUnitId": "watch-enforcer-west-ramp",
+      "amount": 6,
+      "damageType": "kinetic",
+      "hpRemaining": 34
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "ivo-brace",
+      "amount": 10,
+      "total": 100
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "ivo-brace",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 88
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "quill",
+      "turn": 95,
+      "clock": 88
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "quill",
+      "ctSpent": 60
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 89
+    },
+    {
+      "type": "TurnStarted",
       "unitId": "della-tine",
-      "facing": "east"
+      "turn": 96,
+      "clock": 89
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "della-tine",
+      "delta": -1,
+      "charge": 5
     },
     {
       "type": "AbilityUsed",
       "unitId": "della-tine",
-      "abilityId": "switch-kick",
+      "abilityId": "coupling-hook",
       "target": {
         "kind": "unit",
         "unitId": "nessa-kiln"
       },
       "tiles": [
         {
-          "x": 4,
-          "y": 13
+          "x": 5,
+          "y": 11
         }
       ]
     },
@@ -5739,7 +5982,332 @@
       "type": "DamageDealt",
       "unitId": "nessa-kiln",
       "sourceUnitId": "della-tine",
-      "amount": 11,
+      "amount": 12,
+      "damageType": "kinetic",
+      "hpRemaining": 8
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "nessa-kiln",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "della-tine",
+      "amount": 10,
+      "total": 90
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "della-tine",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 90
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "marek-sump",
+      "turn": 97,
+      "clock": 90
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "marek-sump",
+      "from": {
+        "x": 0,
+        "y": 15
+      },
+      "to": {
+        "x": 3,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 0,
+          "y": 15
+        },
+        {
+          "x": 0,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "marek-sump",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "nessa-kiln",
+      "turn": 98,
+      "clock": 90
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "nessa-kiln",
+      "delta": -5,
+      "charge": 62
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "west"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "nessa-kiln",
+      "abilityId": "overload-cell",
+      "target": {
+        "kind": "object",
+        "objectId": "stillage-cell-west"
+      },
+      "tiles": [
+        {
+          "x": 3,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "stillage-cell-west",
+      "sourceUnitId": "nessa-kiln",
+      "amount": 117,
+      "hpRemaining": 0
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "stillage-cell-west",
+      "powered": false
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "stillage-cell-west"
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "marek-sump",
+      "sourceUnitId": null,
+      "amount": 24,
+      "damageType": "thermal",
+      "hpRemaining": 42
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "nessa-kiln",
+      "amount": 10,
+      "total": 50
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "east"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "nessa-kiln",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 94
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 99,
+      "clock": 94
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "jory-slate",
+      "from": {
+        "x": 2,
+        "y": 17
+      },
+      "to": {
+        "x": 2,
+        "y": 14
+      },
+      "path": [
+        {
+          "x": 2,
+          "y": 17
+        },
+        {
+          "x": 2,
+          "y": 16
+        },
+        {
+          "x": 2,
+          "y": 15
+        },
+        {
+          "x": 2,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "east"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "vale",
+      "turn": 100,
+      "clock": 94
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 11,
+        "y": 14
+      },
+      "to": {
+        "x": 10,
+        "y": 15
+      },
+      "path": [
+        {
+          "x": 11,
+          "y": 14
+        },
+        {
+          "x": 10,
+          "y": 14
+        },
+        {
+          "x": 10,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "vale",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "ivo-brace",
+      "turn": 101,
+      "clock": 94
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "ivo-brace",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "watch-enforcer-west-ramp"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "AbilityMissed",
+      "unitId": "ivo-brace",
+      "abilityId": "basic-attack",
+      "targetUnitId": "watch-enforcer-west-ramp"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "ivo-brace",
+      "amount": 10,
+      "total": 110
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "ivo-brace",
+      "ctSpent": 80
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "ivo-brace",
+      "statusId": "grounded"
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "quill",
+      "turn": 102,
+      "clock": 94
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "quill",
+      "ctSpent": 60
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 95
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "della-tine",
+      "turn": 103,
+      "clock": 95
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "della-tine",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "nessa-kiln"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "nessa-kiln",
+      "sourceUnitId": "della-tine",
+      "amount": 16,
       "damageType": "kinetic",
       "hpRemaining": 0
     },
@@ -5751,7 +6319,7 @@
       "type": "StandingAwarded",
       "unitId": "della-tine",
       "amount": 10,
-      "total": 90
+      "total": 100
     },
     {
       "type": "BattleEnded",

@@ -24,15 +24,7 @@ import { findPath } from "../rules/movement.js";
 import { isEnergized } from "../rules/power.js";
 import { evaluateOutcome } from "../rules/outcome.js";
 import { canAct, canMove } from "../rules/status.js";
-import {
-  aimedTile,
-  hasLos,
-  inRange,
-  isValidTargetKind,
-  objectTargetIsInert,
-  targetReachTiles,
-  unmetRequirement,
-} from "../rules/targeting.js";
+import { aimRefusal } from "../rules/targeting.js";
 import { evaluateTriggers } from "../rules/triggers.js";
 import { advanceClock, endActiveTurn } from "../rules/turn.js";
 import { commandError, type Command, type CommandError, type CommandResult } from "./types.js";
@@ -78,41 +70,8 @@ function validateAim(
   ability: ActionAbility,
   target: TargetRef,
 ): CommandError | null {
-  const aimed = aimedTile(state, target);
-  if (aimed === undefined) return commandError("invalid-target", "target does not exist");
-  if (!isValidTargetKind(state, unit, ability, target)) {
-    return commandError("invalid-target", `${ability.name} cannot target that`);
-  }
-  if (target.kind === "object" && objectById(state, target.objectId)?.destroyed === true) {
-    return commandError("object-destroyed", "target object is destroyed");
-  }
-  // An object is in reach on any of its own tiles: the aim overlay lights all
-  // of them, so committing through one of them must not be re-judged against
-  // whichever tile the object lists first.
-  const reach = targetReachTiles(state, target).filter((tile) =>
-    inRange(state, unit.position, tile, ability.targeting.range),
-  );
-  if (reach.length === 0) {
-    return commandError("out-of-range", `${ability.name} cannot reach that tile`);
-  }
-  if (
-    ability.targeting.requiresLos &&
-    !reach.some((tile) => hasLos(state, unit.position, tile))
-  ) {
-    return commandError("no-line-of-sight", "nothing in sight there");
-  }
-  const requirement = unmetRequirement(state, unit, ability, target);
-  if (requirement !== null) {
-    return commandError("requirement-unmet", `${ability.id} needs ${requirement}`);
-  }
-  // Last, so an ability that states its own gate refuses by that gate's name.
-  if (target.kind === "object") {
-    const obj = objectById(state, target.objectId);
-    if (obj !== undefined && objectTargetIsInert(state, ability, obj)) {
-      return commandError("invalid-target", `${ability.name} has nothing to work on there`);
-    }
-  }
-  return null;
+  const refusal = aimRefusal(state, unit, ability, target, unit.position);
+  return refusal === null ? null : commandError(refusal.code, refusal.message);
 }
 
 function validateUseItem(

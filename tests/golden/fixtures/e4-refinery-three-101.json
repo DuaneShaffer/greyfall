@@ -4,9 +4,9 @@
   "seed": 101,
   "outcome": "loss",
   "winner": "enemy",
-  "turns": 108,
-  "clock": 120,
-  "commands": 224,
+  "turns": 110,
+  "clock": 122,
+  "commands": 232,
   "capped": false,
   "rejectedCommands": 0,
   "objectsDestroyed": [
@@ -5547,9 +5547,51 @@
       ]
     },
     {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": -1,
+      "charge": 19
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "vale",
+      "abilityId": "throw-the-breaker",
+      "target": {
+        "kind": "object",
+        "objectId": "condenser-bank-east"
+      },
+      "tiles": [
+        {
+          "x": 14,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "condenser-bank-east",
+      "powered": false
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "vale",
+      "amount": 10,
+      "total": 30
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "west"
+    },
+    {
       "type": "TurnEnded",
       "unitId": "vale",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "TurnStarted",
@@ -5959,83 +6001,8 @@
     },
     {
       "type": "TurnStarted",
-      "unitId": "vale",
-      "turn": 98,
-      "clock": 104
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "vale",
-      "from": {
-        "x": 15,
-        "y": 10
-      },
-      "to": {
-        "x": 16,
-        "y": 10
-      },
-      "path": [
-        {
-          "x": 15,
-          "y": 10
-        },
-        {
-          "x": 16,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "vale",
-      "facing": "east"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "vale",
-      "delta": -1,
-      "charge": 19
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "vale",
-      "facing": "west"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "vale",
-      "abilityId": "throw-the-breaker",
-      "target": {
-        "kind": "object",
-        "objectId": "charge-hoist-east"
-      },
-      "tiles": [
-        {
-          "x": 12,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "type": "PowerChanged",
-      "objectId": "charge-hoist-east",
-      "powered": false
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "vale",
-      "amount": 10,
-      "total": 30
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "vale",
-      "ctSpent": 100
-    },
-    {
-      "type": "TurnStarted",
       "unitId": "watch-enforcer-gallery",
-      "turn": 99,
+      "turn": 98,
       "clock": 104
     },
     {
@@ -6065,22 +6032,6 @@
       ]
     },
     {
-      "type": "ObjectActivated",
-      "unitId": "watch-enforcer-gallery",
-      "objectId": "feed-switch-east"
-    },
-    {
-      "type": "PowerChanged",
-      "objectId": "condenser-bank-east",
-      "powered": false
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "watch-enforcer-gallery",
-      "amount": 10,
-      "total": 20
-    },
-    {
       "type": "UnitFacingChanged",
       "unitId": "watch-enforcer-gallery",
       "facing": "south"
@@ -6088,7 +6039,7 @@
     {
       "type": "TurnEnded",
       "unitId": "watch-enforcer-gallery",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
@@ -6097,17 +6048,121 @@
     {
       "type": "TurnStarted",
       "unitId": "quill",
-      "turn": 100,
+      "turn": 99,
       "clock": 106
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "quill",
+      "from": {
+        "x": 10,
+        "y": 2
+      },
+      "to": {
+        "x": 7,
+        "y": 2
+      },
+      "path": [
+        {
+          "x": 10,
+          "y": 2
+        },
+        {
+          "x": 9,
+          "y": 2
+        },
+        {
+          "x": 8,
+          "y": 2
+        },
+        {
+          "x": 7,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "quill",
+      "facing": "west"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "quill",
+      "facing": "north"
+    },
+    {
+      "type": "ObjectActivated",
+      "unitId": "quill",
+      "objectId": "switchboard-main"
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "charge-hoist-east",
+      "powered": false
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "charge-hoist-west",
+      "powered": true
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "quill",
+      "amount": 10,
+      "total": 10
     },
     {
       "type": "TurnEnded",
       "unitId": "quill",
-      "ctSpent": 60
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
       "clock": 107
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "vale",
+      "turn": 100,
+      "clock": 107
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 15,
+        "y": 10
+      },
+      "to": {
+        "x": 15,
+        "y": 9
+      },
+      "path": [
+        {
+          "x": 15,
+          "y": 10
+        },
+        {
+          "x": 15,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "vale",
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
@@ -6123,8 +6178,8 @@
         "y": 6
       },
       "to": {
-        "x": 11,
-        "y": 6
+        "x": 6,
+        "y": 7
       },
       "path": [
         {
@@ -6132,55 +6187,23 @@
           "y": 6
         },
         {
-          "x": 9,
+          "x": 7,
           "y": 6
         },
         {
-          "x": 10,
+          "x": 6,
           "y": 6
         },
         {
-          "x": 11,
-          "y": 6
+          "x": 6,
+          "y": 7
         }
       ]
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "watch-conduit-ring",
-      "delta": -1,
-      "charge": 29
     },
     {
       "type": "UnitFacingChanged",
       "unitId": "watch-conduit-ring",
       "facing": "south"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "watch-conduit-ring",
-      "abilityId": "throw-the-breaker",
-      "target": {
-        "kind": "object",
-        "objectId": "charge-hoist-east"
-      },
-      "tiles": [
-        {
-          "x": 12,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "type": "PowerChanged",
-      "objectId": "charge-hoist-east",
-      "powered": true
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "watch-conduit-ring",
-      "amount": 10,
-      "total": 30
     },
     {
       "type": "UnitFacingChanged",
@@ -6190,7 +6213,7 @@
     {
       "type": "TurnEnded",
       "unitId": "watch-conduit-ring",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
@@ -6210,8 +6233,8 @@
         "y": 13
       },
       "to": {
-        "x": 11,
-        "y": 13
+        "x": 12,
+        "y": 14
       },
       "path": [
         {
@@ -6221,13 +6244,63 @@
         {
           "x": 11,
           "y": 13
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 12,
+          "y": 14
         }
       ]
     },
     {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "south"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "nessa-kiln",
+      "delta": -1,
+      "charge": 65
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "nessa-kiln",
+      "abilityId": "throw-the-breaker",
+      "target": {
+        "kind": "object",
+        "objectId": "charge-hoist-east"
+      },
+      "tiles": [
+        {
+          "x": 12,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "charge-hoist-east",
+      "powered": true
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "nessa-kiln",
+      "amount": 10,
+      "total": 80
+    },
+    {
       "type": "TurnEnded",
       "unitId": "nessa-kiln",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
@@ -6248,7 +6321,7 @@
       },
       "to": {
         "x": 13,
-        "y": 11
+        "y": 9
       },
       "path": [
         {
@@ -6257,82 +6330,112 @@
         },
         {
           "x": 12,
-          "y": 11
+          "y": 9
         },
         {
           "x": 13,
-          "y": 11
+          "y": 9
         }
       ]
     },
     {
+      "type": "AbilityUsed",
+      "unitId": "watch-sergeant-floor",
+      "abilityId": "shield-advance",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 14,
+          "y": 9
+        }
+      },
+      "tiles": [
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 15,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "vale",
+      "sourceUnitId": "watch-sergeant-floor",
+      "amount": 21,
+      "damageType": "kinetic",
+      "hpRemaining": 26
+    },
+    {
+      "type": "UnitForcedMove",
+      "unitId": "vale",
+      "from": {
+        "x": 15,
+        "y": 9
+      },
+      "to": {
+        "x": 16,
+        "y": 9
+      }
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "watch-sergeant-floor",
+      "amount": 10,
+      "total": 50
+    },
+    {
       "type": "TurnEnded",
       "unitId": "watch-sergeant-floor",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
-      "clock": 112
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "quill",
-      "turn": 104,
-      "clock": 112
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "quill",
-      "ctSpent": 60
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 115
+      "clock": 116
     },
     {
       "type": "TurnStarted",
       "unitId": "nessa-kiln",
-      "turn": 105,
-      "clock": 115
+      "turn": 104,
+      "clock": 116
     },
     {
       "type": "UnitMoved",
       "unitId": "nessa-kiln",
       "from": {
+        "x": 12,
+        "y": 14
+      },
+      "to": {
         "x": 11,
         "y": 13
       },
-      "to": {
-        "x": 14,
-        "y": 12
-      },
       "path": [
         {
-          "x": 11,
-          "y": 13
+          "x": 12,
+          "y": 14
         },
         {
           "x": 12,
           "y": 13
         },
         {
-          "x": 13,
+          "x": 11,
           "y": 13
-        },
-        {
-          "x": 13,
-          "y": 12
-        },
-        {
-          "x": 14,
-          "y": 12
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
       "unitId": "nessa-kiln",
-      "facing": "north"
+      "facing": "west"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "nessa-kiln",
+      "facing": "east"
     },
     {
       "type": "TurnEnded",
@@ -6340,8 +6443,15 @@
       "ctSpent": 80
     },
     {
-      "type": "ClockAdvanced",
+      "type": "TurnStarted",
+      "unitId": "quill",
+      "turn": 105,
       "clock": 116
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "quill",
+      "ctSpent": 60
     },
     {
       "type": "TurnStarted",
@@ -6382,69 +6492,232 @@
     },
     {
       "type": "ClockAdvanced",
-      "clock": 118
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "quill",
-      "turn": 107,
-      "clock": 118
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "quill",
-      "ctSpent": 60
-    },
-    {
-      "type": "ClockAdvanced",
       "clock": 120
     },
     {
       "type": "TurnStarted",
-      "unitId": "nessa-kiln",
+      "unitId": "vale",
+      "turn": 107,
+      "clock": 120
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": -5,
+      "charge": 14
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "vale",
+      "abilityId": "arc",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 14,
+          "y": 9
+        }
+      },
+      "tiles": [
+        {
+          "x": 15,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 13,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "watch-sergeant-floor",
+      "sourceUnitId": "vale",
+      "amount": 27,
+      "damageType": "arc",
+      "hpRemaining": 18
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "vale",
+      "amount": 10,
+      "total": 40
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 16,
+        "y": 9
+      },
+      "to": {
+        "x": 14,
+        "y": 10
+      },
+      "path": [
+        {
+          "x": 16,
+          "y": 9
+        },
+        {
+          "x": 15,
+          "y": 9
+        },
+        {
+          "x": 15,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "vale",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "watch-conduit-ring",
       "turn": 108,
       "clock": 120
     },
     {
       "type": "UnitMoved",
-      "unitId": "nessa-kiln",
+      "unitId": "watch-conduit-ring",
       "from": {
-        "x": 14,
-        "y": 12
+        "x": 6,
+        "y": 7
       },
       "to": {
-        "x": 16,
-        "y": 11
+        "x": 5,
+        "y": 5
       },
       "path": [
         {
-          "x": 14,
-          "y": 12
+          "x": 6,
+          "y": 7
         },
         {
-          "x": 14,
-          "y": 11
+          "x": 5,
+          "y": 7
         },
         {
-          "x": 15,
-          "y": 11
+          "x": 5,
+          "y": 6
         },
         {
-          "x": 16,
-          "y": 11
+          "x": 5,
+          "y": 5
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
-      "unitId": "nessa-kiln",
+      "unitId": "watch-conduit-ring",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "watch-conduit-ring",
       "facing": "east"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "watch-conduit-ring",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "watch-enforcer-gallery",
+      "turn": 109,
+      "clock": 120
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "watch-enforcer-gallery",
+      "from": {
+        "x": 12,
+        "y": 5
+      },
+      "to": {
+        "x": 13,
+        "y": 6
+      },
+      "path": [
+        {
+          "x": 12,
+          "y": 5
+        },
+        {
+          "x": 13,
+          "y": 5
+        },
+        {
+          "x": 13,
+          "y": 6
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "watch-enforcer-gallery",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 122
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "nessa-kiln",
+      "turn": 110,
+      "clock": 122
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "nessa-kiln",
+      "from": {
+        "x": 11,
+        "y": 13
+      },
+      "to": {
+        "x": 14,
+        "y": 12
+      },
+      "path": [
+        {
+          "x": 11,
+          "y": 13
+        },
+        {
+          "x": 12,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 13
+        },
+        {
+          "x": 13,
+          "y": 12
+        },
+        {
+          "x": 14,
+          "y": 12
+        }
+      ]
     },
     {
       "type": "ChargeChanged",
       "unitId": "nessa-kiln",
       "delta": -5,
-      "charge": 61
+      "charge": 60
     },
     {
       "type": "UnitFacingChanged",
@@ -6461,16 +6734,16 @@
       },
       "tiles": [
         {
-          "x": 16,
+          "x": 14,
+          "y": 11
+        },
+        {
+          "x": 14,
           "y": 10
         },
         {
-          "x": 16,
+          "x": 14,
           "y": 9
-        },
-        {
-          "x": 16,
-          "y": 8
         }
       ]
     },
@@ -6490,7 +6763,7 @@
       "type": "StandingAwarded",
       "unitId": "nessa-kiln",
       "amount": 10,
-      "total": 80
+      "total": 90
     },
     {
       "type": "BattleEnded",

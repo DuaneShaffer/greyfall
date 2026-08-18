@@ -1,6 +1,4 @@
-import type { AbilityRequirement, Effect, TileCoord } from "../../data/index.js";
-// `Targeting` is not re-exported from src/data/index.ts; take it from the schema.
-import type { Targeting } from "../../data/schemas/ability.js";
+import type { AbilityRequirement, Effect, Targeting, TileCoord } from "../../data/index.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
 import {
   FACING_VECTORS,
@@ -10,6 +8,7 @@ import {
   inBounds,
   manhattan,
   objectBlocksLos,
+  objectById,
   standHeight,
   tileAt,
 } from "./grid.js";
@@ -257,4 +256,56 @@ export function isValidTargetKind(
     return isValidTargetKind(state, actor, ability, { kind: "unit", unitId: occupant.id });
   }
   return allowed.includes("emptyTile");
+}
+
+/** Why an aimed action is illegal. The codes are `CommandErrorCode` spellings. */
+export interface AimRefusal {
+  code: "invalid-target" | "object-destroyed" | "out-of-range" | "no-line-of-sight" | "requirement-unmet";
+  message: string;
+}
+
+/**
+ * The one aim-legality gate, asked from `from` rather than from the actor's own
+ * tile so the AI can weigh an action it would take after moving. The command
+ * layer refuses by this and the AI's search offers by it: a divergence here is a
+ * plan the rules reject, so there is deliberately only the one copy.
+ */
+export function aimRefusal(
+  state: GameState,
+  actor: BattleUnit,
+  ability: ActionAbility,
+  target: TargetRef,
+  from: TileCoord,
+): AimRefusal | null {
+  if (aimedTile(state, target) === undefined) {
+    return { code: "invalid-target", message: "target does not exist" };
+  }
+  if (!isValidTargetKind(state, actor, ability, target)) {
+    return { code: "invalid-target", message: `${ability.name} cannot target that` };
+  }
+  const object = target.kind === "object" ? objectById(state, target.objectId) : undefined;
+  if (object?.destroyed === true) {
+    return { code: "object-destroyed", message: "target object is destroyed" };
+  }
+  // An object is in reach on any of its own tiles: the aim overlay lights all
+  // of them, so committing through one of them must not be re-judged against
+  // whichever tile the object lists first.
+  const reach = targetReachTiles(state, target).filter((tile) =>
+    inRange(state, from, tile, ability.targeting.range),
+  );
+  if (reach.length === 0) {
+    return { code: "out-of-range", message: `${ability.name} cannot reach that tile` };
+  }
+  if (ability.targeting.requiresLos && !reach.some((tile) => hasLos(state, from, tile))) {
+    return { code: "no-line-of-sight", message: "nothing in sight there" };
+  }
+  const requirement = unmetRequirement(state, actor, ability, target);
+  if (requirement !== null) {
+    return { code: "requirement-unmet", message: `${ability.id} needs ${requirement}` };
+  }
+  // Last, so an ability that states its own gate refuses by that gate's name.
+  if (object !== undefined && objectTargetIsInert(state, ability, object)) {
+    return { code: "invalid-target", message: `${ability.name} has nothing to work on there` };
+  }
+  return null;
 }

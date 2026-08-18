@@ -21,7 +21,7 @@ import { consumableItem, itemAbility } from "../rules/items.js";
 import { gridNodeOf, gridNodeRuntimeOf, isEnergized, resolveLoadAmount, solveGrid } from "../rules/power.js";
 import { getStatus } from "../state/content.js";
 import { maxCharge, maxHp } from "../rules/status.js";
-import { aimedTile, hasLos, inRange, isValidTargetKind, unmetRequirement } from "../rules/targeting.js";
+import { aimRefusal, aimedTile, unmetRequirement } from "../rules/targeting.js";
 import { forecast, turnOrderPreview, usableItems, type ForecastEntry } from "../selectors.js";
 import type { ActionAbility, BattleUnit, GameState, ObjectRuntime, TargetRef } from "../state/types.js";
 import { damageBite, effectiveHp, fieldDistance, type AiContext, type GridBase, type GridSwing } from "./context.js";
@@ -66,7 +66,7 @@ export function statusValue(ctx: AiContext, state: GameState, statusId: string):
 
 /**
  * Share of a status's value still on the table for a target that already holds
- * it. Re-applying refreshes the clock rather than stacking (`COMBAT_RULES` §9),
+ * it. Re-applying refreshes the clock rather than stacking (`COMBAT_RULES` §8),
  * so all a second cast buys is the turns the first one has already burned: a
  * full-duration hold is worth nothing, one about to lapse is worth most of it.
  * Without this the search re-buys its own buffs every idle turn
@@ -1002,7 +1002,11 @@ export interface ActionOption {
   target: TargetRef | null;
 }
 
-/** Whether an aimed action is legal from `at`; the gate both action loops share. */
+/**
+ * Whether an aimed action is legal from `at`; the gate both action loops share.
+ * It asks the command layer's own question, so an option the search offers is an
+ * order `applyCommand` accepts.
+ */
 function aimable(
   view: GameState,
   actor: BattleUnit,
@@ -1010,13 +1014,7 @@ function aimable(
   target: TargetRef,
   at: TileCoord,
 ): boolean {
-  const aimed = aimedTile(view, target);
-  if (aimed === undefined) return false;
-  if (!inRange(view, at, aimed, ability.targeting.range)) return false;
-  if (!isValidTargetKind(view, actor, ability, target)) return false;
-  if (target.kind === "object" && objectById(view, target.objectId)?.destroyed === true) return false;
-  if (ability.targeting.requiresLos && !hasLos(view, at, aimed)) return false;
-  return unmetRequirement(view, actor, ability, target) === null;
+  return aimRefusal(view, actor, ability, target, at) === null;
 }
 
 /**
