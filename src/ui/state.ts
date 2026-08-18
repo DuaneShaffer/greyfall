@@ -88,6 +88,61 @@ export interface UnitView {
   downed: boolean;
 }
 
+/** How an `Amount` is arrived at. The rules' own five bases, no others. */
+export type MechanicsScale = "phys" | "mag" | "weapon" | "fixed" | "maxHpPercent";
+
+/**
+ * One damage or recovery figure an order carries, as the data states it.
+ *
+ * Only `fixed` is a literal number; the rest are scales the engine resolves
+ * against the acting unit, so `label` is the honest reading of the pair
+ * ("Weapon 100%", "Mag ×8 arc") and never a total nobody can promise.
+ */
+export interface MechanicsAmountView {
+  kind: "damage" | "recovery";
+  /** Whether it lands on a unit's HP or on machinery's integrity. */
+  against: "unit" | "integrity";
+  scale: MechanicsScale;
+  power: number;
+  damageType?: DamageType;
+  /** "Weapon 100% kinetic", "Mag ×8 arc", "12", "20% max HP" — formatted. */
+  label: string;
+}
+
+export type MechanicsAreaView =
+  | { shape: "single" }
+  | { shape: "radius"; radius: number; vertical: number }
+  | { shape: "line"; length: number };
+
+/** `emptyTile` reads as `tile`; everything else keeps the data's own word. */
+export type MechanicsTargetKind = "enemy" | "ally" | "self" | "object" | "tile";
+
+/**
+ * What an ability or item actually does, mechanically, derived from its data
+ * definition. Menus, purchase screens and the field kit all print from this:
+ * flavour prose keeps its job and stops doing this one (UI_DESIGN §8b).
+ */
+export interface MechanicsView {
+  /** Reach in tiles, with the height allowance the aim gate applies. */
+  range: { min: number; max: number; vertical: number };
+  area: MechanicsAreaView;
+  targets: readonly MechanicsTargetKind[];
+  /** "Enemy", "Ally or self", "Machinery" — already formatted. */
+  targetsLabel: string;
+  requiresLos: boolean;
+  /** Damage/recovery the definition states; empty for an order that carries none. */
+  amounts: readonly MechanicsAmountView[];
+  /** Statuses it can apply, with the roll the data states. */
+  statuses: readonly { id: string; name: string; chancePercent: number }[];
+  chargeCost: number;
+  /** null = resolves immediately; otherwise it enters the queue as a cast. */
+  castSpeed: number | null;
+  /** Stock left in the satchel. Items only. */
+  usesRemaining?: number;
+  /** "Range 1–3 (±2h) · Line 3 · Enemy · Damage Mag ×8 arc · Charge 4" */
+  summary: string;
+}
+
 export interface AbilityView {
   id: string;
   name: string;
@@ -99,6 +154,8 @@ export interface AbilityView {
   standingCost: number;
   /** Set when the ability cannot be used right now; shown as the entry's reason. */
   unavailableReason?: string;
+  /** The mechanics, for the row to print beside the prose. Action abilities only. */
+  mechanics?: MechanicsView;
 }
 
 export interface SkillsetView {
@@ -121,6 +178,8 @@ export interface ItemEntryView {
   /** Stock left in the satchel; the whole force draws on the same pile. */
   count: number;
   unavailableReason?: string;
+  /** What the item does, for the row to print beside the prose. */
+  mechanics?: MechanicsView;
 }
 
 export interface ActionMenuView {
@@ -147,6 +206,13 @@ export interface ActionMenuView {
 export interface ForecastTargetView {
   unitId: string;
   name: string;
+  /**
+   * Whose side this target is on. Absent for machinery, which has none. An
+   * area order that catches a friend is correct mechanics and must be *read* as
+   * what it is, so the panel is given the allegiance rather than left to infer
+   * it from a portrait.
+   */
+  team?: Team;
   portraitId?: string;
   /** The target's job, or a machine's category: what the facing panel reads. */
   jobName?: string;
@@ -179,6 +245,8 @@ export interface ForecastView {
     jobName: string;
     hp?: number;
     maxHp?: number;
+    /** The side the order is sent from, so a target's team can be read against it. */
+    team?: Team;
   };
   /**
    * True at the confirm moment: a target is staged and the stamp is the next
@@ -326,6 +394,153 @@ export interface ObjectInspectView {
   destroyed: boolean;
 }
 
+// --- the record of what happened -------------------------------------------
+//
+// The log is built from the event stream `applyCommand` returns, so every figure
+// on it is what the rules actually did — never a forecast, and never a number
+// the presentation had to be watched to catch. Enemy turns, actions resolved
+// behind a dialogue box, and the sub-second ones all land here the same way.
+
+/** Somebody or something that acted. `team` is null for machinery. */
+export interface LogActorView {
+  id: string;
+  name: string;
+  team: Team | null;
+}
+
+export interface LogStatusView {
+  id: string;
+  name: string;
+  change: "applied" | "resisted" | "expired" | "cleared";
+  /** Turns it was applied for; null = until removed. Absent for an expiry. */
+  remainingTurns?: number | null;
+}
+
+/** What one action did to one unit or machine. */
+export interface LogTargetView {
+  /** Unit id, or the object id for machinery. */
+  id: string;
+  name: string;
+  /** Absent for machinery. */
+  team?: Team;
+  /** true hit, false missed, null = no roll was made. */
+  hit: boolean | null;
+  /** Damage actually dealt, off the events. */
+  damage?: number;
+  damageType?: DamageType;
+  /** Healing actually restored, off the events. */
+  recovery?: number;
+  /** Condition left afterwards, as the event reported it. */
+  hpRemaining?: number;
+  statuses: readonly LogStatusView[];
+  /** This action put them down. */
+  downed: boolean;
+}
+
+/**
+ * One line of the battle's record. `index` is battle-long and monotonic, so a
+ * panel can page it, diff it, or show only the tail without ever reordering it.
+ */
+export interface LogEntryView {
+  index: number;
+  kind: "battle" | "turn" | "action" | "effect" | "join" | "left" | "death" | "grid";
+  /** The turn it landed on, and the clock tick inside it. */
+  turn: number;
+  tick: number;
+  actor?: LogActorView;
+  /** The order's name: "Arc", "Coagulant Vial", "Operate — West Main". */
+  action?: string;
+  targets: readonly LogTargetView[];
+  /** Consequences aimed at nobody: grid changes, spawns, a bus tripping. */
+  notes: readonly string[];
+  /** The whole entry as one already-formatted line. */
+  text: string;
+}
+
+// --- the field, as data ------------------------------------------------------
+
+/** A status as the field paints it: a chip with a label and a clock. */
+export interface FieldStatusView {
+  id: string;
+  label: string;
+  category: "buff" | "debuff";
+  /** null = until removed. */
+  remainingTurns: number | null;
+}
+
+/** One unit on the board: where it stands, how it is, and what is on it. */
+export interface FieldUnitView {
+  unitId: string;
+  name: string;
+  jobName: string;
+  team: Team;
+  tile: TileCoord;
+  /** Surface height of the tile it stands on. */
+  height: number;
+  facing: Facing;
+  hp: number;
+  maxHp: number;
+  charge: number;
+  maxCharge: number;
+  downed: boolean;
+  /** True while it is this unit's turn. */
+  acting: boolean;
+  statuses: readonly FieldStatusView[];
+  /** A cast it has committed to; the same telegraph the queue lists. */
+  charging?: { abilityName: string; ticksUntil: number | null };
+}
+
+/** One machine on the board, as the inspect panel reads it plus its footprint. */
+export interface FieldObjectView extends ObjectInspectView {
+  tiles: readonly TileCoord[];
+}
+
+/** The board itself: its shape, its elevations, and everything standing on it. */
+export interface FieldView {
+  width: number;
+  depth: number;
+  /** Surface height per tile, indexed `[y][x]` — the value the aim gate uses. */
+  heights: readonly (readonly number[])[];
+  units: readonly FieldUnitView[];
+  objects: readonly FieldObjectView[];
+}
+
+/**
+ * The tile under the cursor. Elevation decides half the aim gate and was the one
+ * fact the field never printed.
+ */
+export interface FieldCursorView {
+  tile: TileCoord;
+  height: number;
+  /**
+   * Hovered height minus the acting unit's own, so positive means the target
+   * stands higher. Null outside a targeting mode, where there is nothing to
+   * measure the tile against.
+   */
+  heightDelta: number | null;
+}
+
+/** An in-range tile the aim gate will not accept, with the gate's own reason. */
+export interface TargetingRefusalView {
+  tile: TileCoord;
+  /** Refusal code as the command layer spells it. */
+  code: string;
+  reason: string;
+}
+
+/**
+ * What the current targeting mode may actually be sent at. `inRange` is reach
+ * alone — what the range overlay lights — and `legal` is the subset the aim gate
+ * accepts, so a tile painted as a target can be trusted to be one.
+ */
+export interface TargetingView {
+  abilityId: string;
+  abilityName: string;
+  inRange: readonly TileCoord[];
+  legal: readonly TileCoord[];
+  illegal: readonly TargetingRefusalView[];
+}
+
 /** Everything the battle overlay draws for one moment of one battle. */
 export interface BattleHudView {
   action: ActionMenuView;
@@ -336,6 +551,21 @@ export interface BattleHudView {
   dialogue: DialogueLine[];
   /** Machinery whose power the battle is fought over; absent on maps with none. */
   power?: PowerLedgerView;
+  /**
+   * Whose turn it is. Distinct from `action.unit`, which is who the orders are
+   * about, and from `inspected`, which is who the player is reading.
+   */
+  activeUnitId?: string | null;
+  /** The battle's record so far, oldest first. */
+  log?: readonly LogEntryView[];
+  /** The tile under the cursor, with its elevation. */
+  cursor?: FieldCursorView | null;
+  /** The staged ability's reach, split into what may and may not be sent at. */
+  targeting?: TargetingView | null;
+  /** The board as data: elevations, units, machinery. */
+  field?: FieldView;
+  /** What this engagement is for, in one line. Null until the encounter says. */
+  objective?: string | null;
 }
 
 export interface RosterEntryView {
@@ -353,6 +583,12 @@ export interface RosterEntryView {
   jobLevel?: number;
   /** Roster-level notes: "Deployed", "Reserve", "Downed". */
   note?: string;
+  /**
+   * True when this unit is on the staged formation. The roster is where the
+   * player decides who fights, and it used to print the deployment limit
+   * nowhere and the membership nowhere either.
+   */
+  deployed?: boolean;
 }
 
 /**
@@ -373,6 +609,8 @@ export interface PartyView {
   /** The chapter's party, in roster order. */
   members: RosterEntryView[];
   deployedLimit: number;
+  /** How many of `members` are deployed, for the "3/4 deployed" counter. */
+  deployedCount?: number;
   /** The chapter's dead, in the order they were lost. */
   fallen?: FallenEntryView[];
 }
@@ -457,6 +695,8 @@ export interface LearnableView {
   standingCost: number;
   chargeCost: number;
   learned: boolean;
+  /** The mechanics being bought, so Standing is never spent blind. */
+  mechanics?: MechanicsView;
 }
 
 export interface LearningView {

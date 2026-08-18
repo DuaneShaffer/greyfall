@@ -5,6 +5,7 @@
 // `src/ui/mock.ts` stays the harness's fixture source; this is the app path.
 
 import {
+  DEFAULT_CONSUMABLE_TARGETING,
   consumableStock,
   deriveStats,
   equippedItems,
@@ -22,6 +23,7 @@ import {
   type FallenRecord,
 } from "../core/index.js";
 import type { Ability, Campaign, Item, Job, Unit } from "../data/index.js";
+import { mechanicsView } from "./mechanics.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
@@ -40,6 +42,7 @@ import {
   type JobOptionView,
   type JobsView,
   type LearnableView,
+  type MechanicsView,
   type LearningView,
   type PartyView,
   type RosterEntryView,
@@ -55,7 +58,7 @@ import {
  * they degrade to the encounter id when a bench library has none.
  */
 export type CampaignContent = Pick<ContentLibrary, "jobs" | "abilities" | "items"> &
-  Partial<Pick<ContentLibrary, "encounters">>;
+  Partial<Pick<ContentLibrary, "encounters" | "statuses">>;
 
 const jobOf = (content: CampaignContent, unit: Unit): Job | undefined => content.jobs[unit.jobId];
 
@@ -125,7 +128,53 @@ export function campaignUnitView(
   };
 }
 
-function abilityViewOf(ability: Ability): AbilityView {
+const statusNamer = (content: CampaignContent) => (statusId: string) =>
+  content.statuses?.[statusId]?.name ?? statusId;
+
+/**
+ * The mechanics of an ability as the shipped definition states them. No battle
+ * is open between engagements, so this is the definition unmodified: the same
+ * figures the purchase screen must show before Standing is spent on it.
+ */
+export function abilityMechanics(
+  content: CampaignContent,
+  ability: Ability,
+): MechanicsView | null {
+  if (ability.slot !== "action") return null;
+  return mechanicsView(
+    {
+      targeting: ability.targeting,
+      effects: ability.effects,
+      chargeCost: ability.chargeCost,
+      castSpeed: ability.castSpeed,
+    },
+    { statusName: statusNamer(content) },
+  );
+}
+
+/** The mechanics of a consumable, including the engine's default reach. */
+export function itemMechanics(
+  content: CampaignContent,
+  item: Item,
+  usesRemaining?: number,
+): MechanicsView | null {
+  if (item.slot !== "consumable") return null;
+  return mechanicsView(
+    {
+      targeting: item.targeting ?? DEFAULT_CONSUMABLE_TARGETING,
+      effects: item.effects,
+      chargeCost: 0,
+      castSpeed: null,
+    },
+    {
+      ...(usesRemaining === undefined ? {} : { usesRemaining }),
+      statusName: statusNamer(content),
+    },
+  );
+}
+
+function abilityViewOf(content: CampaignContent, ability: Ability): AbilityView {
+  const mechanics = abilityMechanics(content, ability);
   return {
     id: ability.id,
     name: ability.name,
@@ -134,6 +183,7 @@ function abilityViewOf(ability: Ability): AbilityView {
     chargeCost: ability.slot === "action" ? ability.chargeCost : 0,
     castSpeed: ability.slot === "action" ? ability.castSpeed : null,
     standingCost: ability.standingCost,
+    ...(mechanics === null ? {} : { mechanics }),
   };
 }
 
@@ -141,7 +191,13 @@ export function campaignPartyView(
   state: CampaignState,
   content: CampaignContent,
   deployedLimit: number,
+  /**
+   * Who is on the staged formation. The roster is where the player decides who
+   * fights, and it used to print neither the membership nor the limit.
+   */
+  deployedUnitIds: readonly string[] = [],
 ): PartyView {
+  const deployed = new Set(deployedUnitIds);
   const members: RosterEntryView[] = [];
   for (const unit of state.roster) {
     const stats = campaignStats(content, unit);
@@ -160,11 +216,13 @@ export function campaignPartyView(
       // The row already prints the job beside the name; the job *level* is the
       // fact it does not carry, and it belongs to the record pane.
       jobLevel: level,
+      deployed: deployed.has(unit.id),
     });
   }
   return {
     members,
     deployedLimit,
+    deployedCount: members.filter((member) => member.deployed === true).length,
     fallen: state.fallen.map((entry) => fallenView(content, entry)),
   };
 }
@@ -199,7 +257,7 @@ export function campaignUnitSheetView(
   const learned = learnedAbilities(state, unitId)
     .map((id) => content.abilities[id])
     .filter((ability): ability is Ability => ability !== undefined)
-    .map(abilityViewOf);
+    .map((ability) => abilityViewOf(content, ability));
 
   const passives = (["reaction", "support", "movement"] as const).map((slot) => {
     const id =
@@ -240,6 +298,7 @@ export function campaignLearningView(
   for (const abilityId of job.learnableAbilityIds) {
     const ability = content.abilities[abilityId];
     if (ability === undefined) continue;
+    const mechanics = abilityMechanics(content, ability);
     entries.push({
       abilityId,
       name: ability.name,
@@ -248,6 +307,7 @@ export function campaignLearningView(
       standingCost: ability.standingCost,
       chargeCost: ability.slot === "action" ? ability.chargeCost : 0,
       learned: known.has(abilityId),
+      ...(mechanics === null ? {} : { mechanics }),
     });
   }
 
@@ -290,11 +350,13 @@ export function campaignSatchelView(
   for (const stack of consumableStock(state, content.items)) {
     const item = content.items[stack.itemId];
     if (item === undefined) continue;
+    const mechanics = itemMechanics(content, item, Math.max(0, stack.count - 1));
     out.push({
       itemId: item.id,
       name: item.name,
       description: item.description,
       count: stack.count,
+      ...(mechanics === null ? {} : { mechanics }),
     });
   }
   return out;

@@ -46,15 +46,18 @@ import {
 } from "./rules/turn.js";
 import { canAct, canMove, ctPerTick, effectiveStats, maxCharge, maxHp } from "./rules/status.js";
 import {
+  aimRefusal,
   hasLos,
   isValidTargetKind,
   objectTargetIsInert,
   targetableTiles as computeTargetable,
   unmetRequirement,
+  type AimRefusal,
 } from "./rules/targeting.js";
 import { abilityById, itemById, jobById, knownActionAbilityIds, statusById } from "./state/content.js";
 import { cloneState, type Ctx } from "./state/ctx.js";
 import type {
+  ActionAbility,
   ActiveTurn,
   BattleResult,
   BattleUnit,
@@ -737,6 +740,61 @@ export function legalTargetTiles(state: GameState, unitId: string, abilityId: st
   return targetableTiles(state, unitId, abilityId).filter(
     (tile) => aimTarget(state, unitId, abilityId, tile) !== null,
   );
+}
+
+/** The aim gate's verdict on one tile in reach. */
+export interface TileAimVerdict {
+  tile: TileCoord;
+  /** What an order aimed here would take, or null when none may be sent. */
+  target: TargetRef | null;
+  /** Why not, in the command layer's own words. Null when the tile is legal. */
+  refusal: AimRefusal | null;
+}
+
+/**
+ * Every tile in reach with the aim gate's verdict on it. `legalTargetTiles`
+ * answers the same question as a filter; this keeps the refusal, because a range
+ * overlay that paints an unusable tile as a target is the overlay lying.
+ *
+ * It asks the one gate the command layer refuses by rather than a second copy of
+ * the rule. The candidate it judges is the claim the tile makes on the order —
+ * machinery first when the ability works on objects, then whoever stands there,
+ * then the bare tile — and unlike `aimTarget` it keeps machinery the order has
+ * nothing to do to, so the refusal can say that instead of degenerating into
+ * "cannot target that".
+ */
+export function aimVerdicts(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+): TileAimVerdict[] {
+  const unit = unitById(state, unitId);
+  if (unit === undefined) return [];
+  const ability = abilityById(state, unit, abilityId);
+  if (ability === undefined || ability.slot !== "action") return [];
+  return targetableTiles(state, unitId, abilityId).map((tile) => {
+    const target = aimTarget(state, unitId, abilityId, tile);
+    if (target !== null) return { tile, target, refusal: null };
+    const candidate = refusalCandidate(state, ability, tile);
+    return {
+      tile,
+      target: null,
+      refusal: aimRefusal(state, unit, ability, candidate, unit.position),
+    };
+  });
+}
+
+/** The claim a tile makes on an order, for the sake of naming a refusal. */
+function refusalCandidate(state: GameState, ability: ActionAbility, tile: TileCoord): TargetRef {
+  if (ability.targeting.validTargets.includes("object")) {
+    const object = state.map.objects.find(
+      (candidate) => !candidate.destroyed && candidate.def.tiles.some((covered) => coordEq(covered, tile)),
+    );
+    if (object !== undefined) return { kind: "object", objectId: object.def.id };
+  }
+  const occupant = state.units.find((u) => !u.downed && coordEq(u.position, tile));
+  if (occupant !== undefined) return { kind: "unit", unitId: occupant.id };
+  return { kind: "tile", tile: { ...tile } };
 }
 
 /** Tiles an ability would actually cover once aimed at `target`. */

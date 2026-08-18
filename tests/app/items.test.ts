@@ -65,8 +65,20 @@ describe("using an item through the controller", () => {
 
   it("offers the satchel on the action menu with its counts", () => {
     expect(h.ui.latest()?.action.items).toEqual([
-      { itemId: "caustic-flask", name: "Caustic Flask", description: expect.any(String), count: 1 },
-      { itemId: "coagulant-vial", name: "Coagulant Vial", description: expect.any(String), count: 2 },
+      {
+        itemId: "caustic-flask",
+        name: "Caustic Flask",
+        description: expect.any(String),
+        count: 1,
+        mechanics: expect.any(Object),
+      },
+      {
+        itemId: "coagulant-vial",
+        name: "Coagulant Vial",
+        description: expect.any(String),
+        count: 2,
+        mechanics: expect.any(Object),
+      },
     ]);
   });
 

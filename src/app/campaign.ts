@@ -158,7 +158,10 @@ export class CampaignSession {
     const encounterId = this.pending?.encounterId ?? this.playableEncounterId();
     const encounter = encounterId === null ? undefined : this.content.encounters[encounterId];
     const limit = encounter?.maxDeployedUnits ?? this.campaignState.roster.length;
-    return campaignPartyView(this.campaignState, this.content, limit);
+    // Membership comes off the staged formation, so the roster and the formation
+    // screen can never disagree about who is going out.
+    const deployed = (this.pending?.assignments ?? []).filter((id): id is string => id !== null);
+    return campaignPartyView(this.campaignState, this.content, limit, deployed);
   }
 
   unitSheetView(unitId: string): UnitSheetView | null {

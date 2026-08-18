@@ -56,6 +56,7 @@ export type { RngState } from "./rng/mulberry32.js";
 export {
   abilityOutcomes,
   activatableObjects,
+  aimVerdicts,
   activeTurnState,
   activeUnit,
   affectedTiles,
@@ -101,6 +102,7 @@ export {
   usableItems,
   type ForecastEntry,
   type ForecastOutcome,
+  type TileAimVerdict,
   type GridComponentNodes,
   type GridNodeState,
   type GridRegisterComponent,
@@ -120,6 +122,7 @@ export {
   itemAbilityId,
   itemIdFromAbilityId,
 } from "./rules/items.js";
+export type { AimRefusal } from "./rules/targeting.js";
 export type { AttackAngle } from "./rules/board.js";
 export { coordEq, facingToward, isDecked, manhattan } from "./rules/board.js";
 export { moveProfile, type MoveProfile, type ReachableTile } from "./rules/movement.js";

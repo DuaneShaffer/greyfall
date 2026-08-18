@@ -12,7 +12,9 @@ import {
   activeTurnState,
   activeUnit,
   affectedTiles,
+  aimVerdicts,
   allCharges,
+  allObjects,
   allUnits,
   attackAngleAgainst,
   availableAbilities,
@@ -28,6 +30,7 @@ import {
   getObject,
   getStatus,
   getUnit,
+  itemAbilityId,
   itemIdFromAbilityId,
   objectEnergized,
   objectGridRole,
@@ -48,6 +51,7 @@ import {
   type TargetRef,
 } from "../core/index.js";
 import type { DamageType, DialogueLine, StatKey, TileCoord } from "../data/index.js";
+import { mechanicsView } from "./mechanics.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
@@ -57,9 +61,16 @@ import {
   type BattleHudView,
   type EquipSlot,
   type EquipSlotView,
+  type FieldCursorView,
+  type FieldObjectView,
+  type FieldStatusView,
+  type FieldUnitView,
+  type FieldView,
   type ForecastTargetView,
   type ForecastView,
   type ItemEntryView,
+  type LogEntryView,
+  type MechanicsView,
   type ObjectInspectView,
   type PartyView,
   type PowerLedgerView,
@@ -71,6 +82,8 @@ import {
   type StatLineView,
   type StatModView,
   type StatusView,
+  type TargetingRefusalView,
+  type TargetingView,
   type TargetRef as UiTargetRef,
   type TurnOrderEntryView,
   type TurnOrderView,
@@ -184,11 +197,39 @@ const unavailableReason = (unit: BattleUnit, ability: ActionAbility): string | u
   return undefined;
 };
 
+/**
+ * What an order does, read off the definition this unit would actually issue —
+ * the weapon attack's reach comes from the weapon, an item's from the thrower's
+ * mastery. The menu row prints these; the prose beside them stops having to.
+ */
+export function abilityMechanicsView(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+  usesRemaining?: number,
+): MechanicsView | null {
+  const ability = getAbility(state, unitId, abilityId);
+  if (ability === null || ability.slot !== "action") return null;
+  return mechanicsView(
+    {
+      targeting: ability.targeting,
+      effects: ability.effects,
+      chargeCost: ability.chargeCost,
+      castSpeed: ability.castSpeed,
+    },
+    {
+      ...(usesRemaining === undefined ? {} : { usesRemaining }),
+      statusName: (statusId) => getStatus(state, statusId)?.name ?? statusId,
+    },
+  );
+}
+
 export function abilityView(state: GameState, unitId: string, abilityId: string): AbilityView | null {
   const unit = getUnit(state, unitId);
   const ability = getAbility(state, unitId, abilityId);
   if (unit === null || ability === null || ability.slot !== "action") return null;
   const reason = unavailableReason(unit, ability);
+  const mechanics = abilityMechanicsView(state, unitId, abilityId);
   return {
     id: ability.id,
     name: ability.name,
@@ -198,6 +239,7 @@ export function abilityView(state: GameState, unitId: string, abilityId: string)
     castSpeed: ability.castSpeed,
     standingCost: ability.standingCost,
     ...(reason === undefined ? {} : { unavailableReason: reason }),
+    ...(mechanics === null ? {} : { mechanics }),
   };
 }
 
@@ -260,13 +302,24 @@ export function actionMenuView(state: GameState, unitId: string): ActionMenuView
 
 /** The force's shared satchel as this unit's Item submenu reads it. */
 export function satchelViews(state: GameState, unitId: string): ItemEntryView[] {
-  return usableItems(state, unitId).map((entry) => ({
-    itemId: entry.itemId,
-    name: entry.name,
-    description: entry.description,
-    count: entry.count,
-    ...(entry.unavailableReason === undefined ? {} : { unavailableReason: entry.unavailableReason }),
-  }));
+  return usableItems(state, unitId).map((entry) => {
+    // An item is aimed through its synthesized ability, so its mechanics are
+    // read the same way an ability's are — mastery bonuses included.
+    const mechanics = abilityMechanicsView(
+      state,
+      unitId,
+      itemAbilityId(entry.itemId),
+      Math.max(0, entry.count - 1),
+    );
+    return {
+      itemId: entry.itemId,
+      name: entry.name,
+      description: entry.description,
+      count: entry.count,
+      ...(entry.unavailableReason === undefined ? {} : { unavailableReason: entry.unavailableReason }),
+      ...(mechanics === null ? {} : { mechanics }),
+    };
+  });
 }
 
 /** Adjacent operable machinery, as action-menu entries. */
@@ -381,6 +434,7 @@ export function forecastView(
       targets.push({
         unitId: entry.unitId,
         name: victim.unit.name,
+        team: victim.team,
         ...(victim.unit.portraitId === undefined ? {} : { portraitId: victim.unit.portraitId }),
         jobName: jobName(state, victim.unit.jobId),
         hp: victim.hp,
@@ -431,6 +485,7 @@ export function forecastView(
       jobName: jobName(state, attacker.unit.jobId),
       hp: attacker.hp,
       maxHp: unitMaxHp(state, attacker.id) ?? attacker.hp,
+      team: attacker.team,
     },
     // An aimed order is only ever built from a staged target, so this panel is
     // always the confirm moment; the Operate preview below is the one that is not.
@@ -484,6 +539,7 @@ export function operateForecastView(
       jobName: jobName(state, actor.unit.jobId),
       hp: actor.hp,
       maxHp: unitMaxHp(state, actor.id) ?? actor.hp,
+      team: actor.team,
     },
     // Operate has no aim step, so there is nothing staged to confirm: the
     // machine under the menu cursor is a preview, and it stays a side panel.
@@ -647,6 +703,114 @@ export function turnOrderView(state: GameState, count = DEFAULT_TURN_ORDER_COUNT
   return { entries };
 }
 
+// --- the field, as data ------------------------------------------------------
+
+const fieldStatusViews = (state: GameState, unit: BattleUnit): FieldStatusView[] =>
+  statusViews(state, unit).map((status) => ({
+    id: status.id,
+    label: status.name,
+    category: status.category,
+    remainingTurns: status.remainingTurns,
+  }));
+
+/**
+ * The board as data: its elevations, its units, its machinery.
+ *
+ * Elevation decides half the aim gate and was the one fact the field never
+ * printed, so it is stated here per tile rather than left to be read off a
+ * shaded mesh. Heights are recomputed each frame on purpose — a wrecked catwalk
+ * lowers the tiles it was decking, so a cached grid would be a lie the moment a
+ * deck came down.
+ */
+export function fieldView(state: GameState): FieldView {
+  const map = battleMap(state);
+  const acting = activeUnit(state);
+  const heights: number[][] = [];
+  for (let y = 0; y < map.depth; y += 1) {
+    const row: number[] = [];
+    for (let x = 0; x < map.width; x += 1) row.push(standHeight(state, { x, y }));
+    heights.push(row);
+  }
+  const units: FieldUnitView[] = allUnits(state).map((unit) => {
+    const charging = chargingView(state, unit.id);
+    return {
+      unitId: unit.id,
+      name: unit.unit.name,
+      jobName: jobName(state, unit.unit.jobId),
+      team: unit.team,
+      tile: { ...unit.position },
+      height: standHeight(state, unit.position),
+      facing: unit.facing,
+      hp: unit.hp,
+      maxHp: unitMaxHp(state, unit.id) ?? unit.hp,
+      charge: unit.charge,
+      maxCharge: unitMaxCharge(state, unit.id) ?? unit.charge,
+      downed: unit.downed,
+      acting: acting !== null && acting.id === unit.id,
+      statuses: fieldStatusViews(state, unit),
+      ...(charging === null ? {} : { charging }),
+    };
+  });
+  const objects: FieldObjectView[] = [];
+  for (const object of allObjects(state)) {
+    const inspect = objectInspectView(state, object.def.id);
+    if (inspect === null) continue;
+    objects.push({ ...inspect, tiles: object.def.tiles.map((tile) => ({ ...tile })) });
+  }
+  return { width: map.width, depth: map.depth, heights, units, objects };
+}
+
+/**
+ * The tile under the cursor. `fromUnitId` is the unit the height is measured
+ * against — set while an order is being aimed, absent when the cursor is only
+ * resting, because there is nothing to measure a hover against outside a
+ * targeting mode.
+ */
+export function cursorView(
+  state: GameState,
+  tile: TileCoord | null,
+  fromUnitId: string | null = null,
+): FieldCursorView | null {
+  if (tile === null) return null;
+  const from = fromUnitId === null ? null : getUnit(state, fromUnitId);
+  const height = standHeight(state, tile);
+  return {
+    tile: { ...tile },
+    height,
+    heightDelta: from === null ? null : height - standHeight(state, from.position),
+  };
+}
+
+/**
+ * What the staged order may actually be sent at. `inRange` is the reach overlay;
+ * `legal` is the subset the aim gate accepts and `illegal` carries the gate's own
+ * refusal per tile, so a tile painted as a target can be trusted to be one.
+ */
+export function targetingView(
+  state: GameState,
+  unitId: string,
+  abilityId: string,
+): TargetingView | null {
+  const ability = getAbility(state, unitId, abilityId);
+  if (ability === null || ability.slot !== "action") return null;
+  const inRange: TileCoord[] = [];
+  const legal: TileCoord[] = [];
+  const illegal: TargetingRefusalView[] = [];
+  for (const verdict of aimVerdicts(state, unitId, abilityId)) {
+    inRange.push({ ...verdict.tile });
+    if (verdict.refusal === null) {
+      legal.push({ ...verdict.tile });
+      continue;
+    }
+    illegal.push({
+      tile: { ...verdict.tile },
+      code: verdict.refusal.code,
+      reason: verdict.refusal.message,
+    });
+  }
+  return { abilityId, abilityName: ability.name, inRange, legal, illegal };
+}
+
 export interface HudInputs {
   /** Unit under the cursor; falls back to the acting unit. */
   inspectedUnitId?: string | null;
@@ -661,6 +825,15 @@ export interface HudInputs {
   forecast?: ForecastView | null;
   dialogue?: DialogueLine[];
   turnOrderCount?: number;
+  /** The tile under the cursor, for the elevation readout. */
+  hoveredTile?: TileCoord | null;
+  /**
+   * The ability being aimed. It drives the legality split and the hover's height
+   * delta: outside a targeting mode neither has anything to be about.
+   */
+  targetingAbilityId?: string | null;
+  /** The battle's record so far, accumulated by the controller from the events. */
+  log?: readonly LogEntryView[];
 }
 
 export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleHudView | null {
@@ -675,6 +848,9 @@ export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleH
     inputs.inspectedObjectId === undefined || inputs.inspectedObjectId === null
       ? null
       : objectInspectView(state, inputs.inspectedObjectId);
+  const aimedAbilityId = inputs.targetingAbilityId ?? null;
+  const targeting =
+    aimedAbilityId === null || acting === null ? null : targetingView(state, acting.id, aimedAbilityId);
   return {
     action,
     inspected: inspectedObject ?? (inspectedId === null ? null : unitView(state, inspectedId)),
@@ -682,6 +858,16 @@ export function battleHudView(state: GameState, inputs: HudInputs = {}): BattleH
     forecast: inputs.forecast ?? null,
     dialogue: inputs.dialogue ?? [],
     ...(power === undefined ? {} : { power }),
+    activeUnitId: acting?.id ?? null,
+    ...(inputs.log === undefined ? {} : { log: inputs.log }),
+    cursor: cursorView(
+      state,
+      inputs.hoveredTile ?? null,
+      targeting === null ? null : (acting?.id ?? null),
+    ),
+    targeting,
+    field: fieldView(state),
+    objective: battleEncounter(state).objective ?? null,
   };
 }
 
@@ -751,10 +937,16 @@ export function partyView(state: GameState): PartyView {
       maxHp: unitMaxHp(state, unit.id) ?? unit.hp,
       standing: unit.standingEarned,
       disposition: unit.unit.disposition,
+      // Everyone on this list took the field: the battle roster has no reserve.
+      deployed: true,
       note: unit.downed ? "Downed" : "Deployed",
     });
   }
-  return { members, deployedLimit: battleEncounter(state).maxDeployedUnits };
+  return {
+    members,
+    deployedLimit: battleEncounter(state).maxDeployedUnits,
+    deployedCount: members.length,
+  };
 }
 
 function allPlayerUnits(state: GameState): readonly BattleUnit[] {

@@ -87,6 +87,10 @@ export const Encounter = z.object({
   mapId: Id,
   rngSeed: z.int().nonnegative(),
   maxDeployedUnits: z.int().positive(),
+  // What the player is here to do, in one line, phrased for the HUD chip and the
+  // in-battle Objectives page. Optional: an engagement that has not been written
+  // up yet reports nothing rather than inventing a goal.
+  objective: z.string().optional(),
   enemies: z.array(PlacedUnit).min(1),
   // Consumables the hostile force shares for this battle, the enemy mirror of
   // the party satchel the chapter hands down.
