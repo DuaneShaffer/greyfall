@@ -3,7 +3,10 @@
 // of machine notices in one enemy turn must not overwrite itself into silence.
 
 import { describe, expect, it } from "vitest";
+import { BattleHud } from "../../src/ui/battle/hud.js";
 import { NoticeStrip } from "../../src/ui/battle/notice.js";
+import { mockActionMenuView, mockForecastView, mockTurnOrderView } from "../../src/ui/mock.js";
+import type { BattleHudView } from "../../src/ui/state.js";
 
 const lines = (strip: NoticeStrip): HTMLElement[] =>
   [...strip.el.querySelectorAll<HTMLElement>(".gf-notice-line")];
@@ -124,5 +127,140 @@ describe("NoticeStrip", () => {
     expect(strip.el.querySelector(".gf-notice")?.className).not.toContain("is-shown");
     // Nothing displaced it, so nothing was logged.
     expect(strip.scrollback).toEqual([]);
+  });
+
+  // A refusal answers one attempt. The playtest read "Out of reach" beside a
+  // forecast that was perfectly sendable and could not tell which of the two the
+  // game was talking about.
+  it("retires a refusal once the game has asked for something else", () => {
+    const strip = new NoticeStrip();
+    strip.show("Out of reach", "refusal");
+    strip.tick(16);
+
+    strip.enterContext("mode", "target|Pin");
+    expect(strip.message).toBe("");
+  });
+
+  it("keeps a line nobody has had a frame to read yet", () => {
+    const strip = new NoticeStrip();
+    // An order's own consequences are reported in the same breath as the mode
+    // change that follows them: this is the enemy turn's report, not a leftover.
+    strip.show("Yard Provocateur stood down — no legal order", "refusal");
+    strip.enterContext("mode", "presenting|");
+
+    expect(strip.message).toBe("Yard Provocateur stood down — no legal order");
+    // And it goes at the next boundary, once it has been on screen.
+    strip.tick(16);
+    strip.enterContext("mode", "orders|Rowen Corvane");
+    expect(strip.message).toBe("");
+  });
+
+  it("leaves the annunciator's machine lines on their own clocks", () => {
+    const strip = new NoticeStrip();
+    strip.show("North Bus cut. 4 machines dark.", "machine");
+    strip.tick(40);
+    strip.show("West Main tripped — 18 against a rating of 14.", "machine");
+    strip.tick(40);
+
+    // The grid's record is not an answer to an input: the player's turn opening
+    // is exactly when it is read (FLUX_GRID §2.5).
+    strip.enterContext("mode", "orders|Rowen Corvane");
+    expect(strip.message).toBe("West Main tripped — 18 against a rating of 14.");
+    expect(strip.scrollback).toEqual(["North Bus cut. 4 machines dark."]);
+  });
+
+  it("clears the trail of a moment the player has left", () => {
+    const strip = new NoticeStrip();
+    strip.show("Move withdrawn.", "info");
+    strip.tick(16);
+    strip.show("Pin cannot target that", "refusal");
+    strip.tick(16);
+
+    strip.enterContext("mode", "orders|Rowen Corvane");
+    expect(strip.message).toBe("");
+    expect(strip.scrollback).toEqual([]);
+  });
+
+  it("takes a redraw of the same context for what it is", () => {
+    const strip = new NoticeStrip();
+    strip.enterContext("mode", "target|Pin");
+    strip.show("Pin cannot target that", "refusal");
+    strip.tick(16);
+
+    strip.enterContext("mode", "target|Pin");
+    expect(strip.message).toBe("Pin cannot target that");
+  });
+
+  it("counts a boundary per slot, so one does not mask another", () => {
+    const strip = new NoticeStrip();
+    strip.enterContext("mode", "orders|Rowen Corvane");
+    strip.enterContext("menu", "action-root");
+    strip.show("Insufficient charge", "refusal");
+    strip.tick(16);
+
+    // The mode has not moved; the menu has.
+    strip.enterContext("mode", "orders|Rowen Corvane");
+    expect(strip.message).toBe("Insufficient charge");
+    strip.enterContext("menu", "action-root/action-skillset");
+    expect(strip.message).toBe("");
+  });
+
+  it("gives the same refusal twice as one refusal, not two", () => {
+    const strip = new NoticeStrip();
+    strip.show("Out of reach", "refusal");
+    strip.tick(2000);
+    strip.show("Out of reach", "refusal");
+
+    expect(strip.scrollback).toEqual([]);
+    // The clock restarted rather than a copy being filed under it.
+    strip.tick(2500);
+    expect(strip.message).toBe("Out of reach");
+  });
+});
+
+/** The boundaries the overlay actually crosses, through the HUD's own plumbing. */
+describe("the HUD's notice contexts", () => {
+  const view = (overrides: Partial<BattleHudView> = {}): BattleHudView => ({
+    action: mockActionMenuView(),
+    inspected: null,
+    turnOrder: mockTurnOrderView(),
+    forecast: null,
+    dialogue: [],
+    ...overrides,
+  });
+
+  it("clears a stale refusal when the turn changes", () => {
+    const hud = new BattleHud();
+    hud.setMode("orders", "Rowen Corvane");
+    hud.notify("Out of reach", "refusal");
+    hud.tick(16);
+
+    hud.setMode("ai", "Yard Provocateur");
+    expect(hud.notice.message).toBe("");
+    hud.destroy();
+  });
+
+  it("clears a stale refusal when an order is staged", () => {
+    const hud = new BattleHud();
+    hud.setMode("target", "Pin");
+    hud.render(view());
+    hud.notify("Pin cannot target that", "refusal");
+    hud.tick(16);
+
+    hud.render(view({ forecast: mockForecastView() }));
+    expect(hud.notice.message).toBe("");
+    hud.destroy();
+  });
+
+  it("leaves a machine report standing through the same boundaries", () => {
+    const hud = new BattleHud();
+    hud.setMode("ai", "Yard Provocateur");
+    hud.notify("North Bus cut. 4 machines dark.", "machine");
+    hud.tick(16);
+
+    hud.setMode("orders", "Rowen Corvane");
+    hud.render(view({ forecast: mockForecastView() }));
+    expect(hud.notice.message).toBe("North Bus cut. 4 machines dark.");
+    hud.destroy();
   });
 });

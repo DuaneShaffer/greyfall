@@ -20,6 +20,9 @@ const SCROLLBACK_LINES = 5;
 interface LoggedNotice {
   el: HTMLElement;
   remaining: number;
+  tone: NoticeTone;
+  /** Frames it has been on screen. Zero means nobody has had a chance to read it. */
+  frames: number;
 }
 
 /**
@@ -42,6 +45,10 @@ export class NoticeStrip implements Component<null> {
   private readonly log: LoggedNotice[] = [];
   private remaining = 0;
   private tone: NoticeTone = "info";
+  /** Frames the live line has been on screen. */
+  private frames = 0;
+  /** The input context each named boundary is currently in. */
+  private readonly contexts = new Map<string, string>();
 
   constructor() {
     this.body = el("p", { class: "gf-notice", attrs: { role: "status", "aria-live": "polite" } });
@@ -59,28 +66,74 @@ export class NoticeStrip implements Component<null> {
   }
 
   show(message: string, tone: NoticeTone = "info"): void {
+    // The same refusal twice is one refusal the player has now been given twice:
+    // it restarts its clock rather than pushing a copy of itself into the trail.
+    if (this.remaining > 0 && tone === this.tone && this.body.textContent === message) {
+      this.remaining = HOLD_MS;
+      return;
+    }
     this.demote();
     this.body.textContent = message;
     this.body.className = `gf-notice is-shown is-${tone}`;
     this.tone = tone;
     this.remaining = HOLD_MS;
+    this.frames = 0;
   }
 
   clear(): void {
     this.remaining = 0;
+    this.frames = 0;
     this.body.classList.remove("is-shown");
     for (const entry of this.log) entry.el.remove();
     this.log.length = 0;
+    this.contexts.clear();
+  }
+
+  /**
+   * The game is asking the player for something new: a fresh mode, an order
+   * staged, a menu opened. `slot` names which boundary moved, so a redraw that
+   * announces the same context again is not mistaken for a new one.
+   *
+   * This is what keeps a refusal from outliving the attempt it answered — the
+   * playtest read a stale error beside a perfectly good forecast and could not
+   * tell which of the two the game meant.
+   */
+  enterContext(slot: string, token: string): void {
+    if (this.contexts.get(slot) === token) return;
+    this.contexts.set(slot, token);
+    this.clearStale();
+  }
+
+  /**
+   * Retire the lines whose moment has passed. Two things are spared: a line
+   * nobody has had a frame to read (an order's own consequences are reported in
+   * the same breath as the mode change that follows them) and the annunciator's
+   * machine lines, which are the grid's record rather than an answer to an input
+   * and retire on their own clocks (FLUX_GRID §2.5).
+   */
+  clearStale(): void {
+    if (this.remaining > 0 && this.tone !== "machine" && this.frames > 0) {
+      this.remaining = 0;
+      this.frames = 0;
+      this.body.classList.remove("is-shown");
+    }
+    for (const entry of [...this.log]) {
+      if (entry.tone === "machine" || entry.frames === 0) continue;
+      entry.el.remove();
+      this.log.splice(this.log.indexOf(entry), 1);
+    }
   }
 
   tick(deltaMs: number): void {
     for (const entry of [...this.log]) {
+      entry.frames += 1;
       entry.remaining -= deltaMs;
       if (entry.remaining > 0) continue;
       entry.el.remove();
       this.log.splice(this.log.indexOf(entry), 1);
     }
     if (this.remaining <= 0) return;
+    this.frames += 1;
     this.remaining -= deltaMs;
     if (this.remaining <= 0) {
       this.remaining = 0;
@@ -104,7 +157,12 @@ export class NoticeStrip implements Component<null> {
       text: this.body.textContent ?? "",
     });
     this.logEl.prepend(line);
-    this.log.unshift({ el: line, remaining: Math.max(this.remaining, SCROLLBACK_MS) });
+    this.log.unshift({
+      el: line,
+      remaining: Math.max(this.remaining, SCROLLBACK_MS),
+      tone: this.tone,
+      frames: this.frames,
+    });
     while (this.log.length > SCROLLBACK_LINES) {
       this.log.pop()?.el.remove();
     }

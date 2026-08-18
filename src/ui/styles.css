@@ -976,7 +976,7 @@
   grid-template-rows: auto minmax(0, 1fr) auto auto auto auto;
   grid-template-areas:
     "inspect notice   clock"
-    "inspect .        clock"
+    "record  .        clock"
     "order   forecast clock"
     "stage   stage    clock"
     "dialog  dialog   dialog"
@@ -3583,4 +3583,239 @@
   .gf-root.is-overlay .gf-turn-order {
     transition: none;
   }
+/* ================================================== the record, and the queue */
+/* The blind-playtest pass: a durable combat log in the bottom-left, one NEXT in
+   the queue, a faction rail on every queue row, and a band that says a
+   reinforcement arrived. Everything below is appended as one section on purpose
+   — the rules above it are the frame this leans on, not rules this replaces. */
+
+/* --- the record: bottom-left, three lines, the whole history behind a pull -- */
+/* It sits above the order column in the same column, so the eye that reads
+   "what may I do" travels up into "what just happened" without leaving the
+   corner the hand is already in. Collapsed it is a trail; expanded it is the
+   battle, scrolled to its tail. */
+
+.gf-battle-hud > .gf-log {
+  grid-area: record;
+  align-self: end;
+  width: 100%;
+  min-width: 0;
+}
+
+/* No record, no panel — the same rule the power register follows on a map that
+   switches nothing. */
+.gf-log.is-empty {
+  display: none;
+}
+
+.gf-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+/* Expanded: the history, bounded so it can never push the orders off the frame.
+   34vh is about fifteen lines at the frame's own scale. */
+.gf-log.is-expanded .gf-log-list {
+  max-height: 34vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.gf-log-entry {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: var(--gf-s-2);
+  padding: 2px var(--gf-s-2);
+  border-top: 1px solid var(--gf-ink);
+  border-left: 2px solid var(--gf-off);
+  box-shadow: var(--gf-groove-top);
+}
+
+.gf-log-entry:first-child {
+  border-top: none;
+  box-shadow: none;
+}
+
+.gf-log-turn {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  color: var(--gf-off);
+  letter-spacing: 0.02em;
+}
+
+/* Reading text, so it wraps: a clipped line reads as a finished line, and the
+   clause a record most needs is the one at the end of it. */
+.gf-log-text {
+  font-size: var(--gf-t-200);
+  line-height: 1.3;
+  color: var(--gf-text);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* Whose line it is, on the rail and on the serial — the same steel/blood split
+   the queue and the portraits use. Machinery and the battle's own boundaries
+   have no side and take neither. */
+.gf-log-entry.is-player {
+  border-left-color: var(--gf-player-deep);
+}
+
+.gf-log-entry.is-player .gf-log-turn {
+  color: var(--gf-player-deep);
+}
+
+.gf-log-entry.is-enemy {
+  border-left-color: var(--gf-danger);
+}
+
+.gf-log-entry.is-enemy .gf-log-turn {
+  color: var(--gf-danger);
+}
+
+.gf-log-entry.is-neutral {
+  border-left-color: var(--gf-dim);
+}
+
+/* A turn boundary is punctuation, not an event: stamped, quiet, and it makes the
+   enemy turns countable at a glance. */
+.gf-log-entry.is-turn .gf-log-text,
+.gf-log-entry.is-battle .gf-log-text {
+  font-family: var(--gf-face-stamp);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  font-size: var(--gf-t-100);
+  color: var(--gf-dim);
+}
+
+/* Grid changes are machinery and stay copper; a join is news and reads at full
+   weight; a miss falls back because nothing landed; a death is the one line in
+   the record spending blood. */
+.gf-log-entry.is-grid .gf-log-text {
+  color: var(--gf-operable);
+}
+
+.gf-log-entry.is-join .gf-log-text {
+  color: var(--gf-text);
+  font-weight: 600;
+}
+
+.gf-log-entry.is-miss .gf-log-text {
+  color: var(--gf-dim);
+}
+
+.gf-log-entry.is-down .gf-log-text,
+.gf-log-entry.is-death .gf-log-text {
+  color: var(--gf-enemy);
+}
+
+/* The drawer pull. Stamped label, the register's own weight, and it names how
+   much history is behind it rather than pretending there is always more. */
+.gf-log-toggle {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 2px var(--gf-s-2);
+  border: none;
+  border-top: 1px solid var(--gf-ink);
+  background: var(--gf-plate);
+  box-shadow: var(--gf-fitting);
+  color: var(--gf-dim);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--gf-hover) ease-out;
+}
+
+.gf-log-toggle:hover,
+.gf-log-toggle:focus-visible {
+  color: var(--gf-text);
+}
+
+.gf-log-toggle.is-hidden {
+  display: none;
+}
+
+/* --- the queue: one NEXT, a faction rail on every row, and the newcomers --- */
+/* Two rows stamped NEXT is two claims to the same place in the queue. Exactly
+   one row is next; the ties behind it read THEN and the serial column orders
+   them. The rail is the row's side, spent on every row rather than only on the
+   two whose serial happened to be coloured. */
+
+.gf-turn-entry {
+  position: relative;
+}
+
+/* Painted over the acting row's amber rail on purpose: which side is acting is
+   the fact the queue is worst at carrying, and the amber face, name and stamp
+   still say the turn is live. */
+.gf-turn-entry::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gf-off);
+}
+
+.gf-turn-entry.is-player::before {
+  background: var(--gf-player-deep);
+}
+
+.gf-turn-entry.is-enemy::before {
+  background: var(--gf-danger);
+}
+
+.gf-turn-entry.is-neutral::before {
+  background: var(--gf-dim);
+}
+
+/* A tie resolving behind the one that is next: the same weight as a countdown,
+   because that is what it is — a countdown of nothing left to count. */
+.gf-turn-entry.is-tied .gf-turn-ticks {
+  color: var(--gf-dim);
+}
+
+/* The newcomers' band, above the queue. A reinforcement used to arrive as an
+   unexplained name in the middle of the list; this names them and their side,
+   and disappears once they have taken a turn and the queue speaks for them. */
+.gf-turn-joins {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-turn-joins:empty {
+  display: none;
+}
+
+.gf-turn-join {
+  padding: 3px var(--gf-s-2);
+  border-left: 3px solid var(--gf-off);
+  background: rgba(11, 13, 16, 0.42);
+  box-shadow: var(--gf-groove-top);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  color: var(--gf-text);
+}
+
+.gf-turn-join.is-player {
+  border-left-color: var(--gf-player-deep);
+}
+
+.gf-turn-join.is-enemy {
+  border-left-color: var(--gf-danger);
+}
+
+.gf-turn-join.is-neutral {
+  border-left-color: var(--gf-dim);
 }

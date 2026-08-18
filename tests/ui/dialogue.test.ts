@@ -116,3 +116,120 @@ describe("DialogueBox", () => {
     expect(dialogue.isOpen).toBe(false);
   });
 });
+
+// The blind playtest's worst input bug: the Enter that closed a dialogue box also
+// confirmed the order the menu underneath was pointing at. One press is one
+// instruction, so the box takes the key out of circulation rather than trusting
+// whoever else is listening on the document to notice that it was spoken for.
+describe("DialogueBox input buffering", () => {
+  /** A menu, as far as the keyboard is concerned: it listens on the document. */
+  function menuUnderneath(): { presses: () => number; stop: () => void } {
+    let presses = 0;
+    const listener = (): void => {
+      presses += 1;
+    };
+    document.addEventListener("keydown", listener);
+    return {
+      presses: () => presses,
+      stop: () => document.removeEventListener("keydown", listener),
+    };
+  }
+
+  const press = (target: EventTarget, key = "Enter", repeat = false): void => {
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, repeat, bubbles: true, cancelable: true }));
+  };
+
+  const release = (target: EventTarget, key = "Enter"): void => {
+    target.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true, cancelable: true }));
+  };
+
+  it("does not let an advancing Enter through to the menu, whoever listened first", () => {
+    // Registered before the box attaches, and reached from a focused element, so
+    // only a capture-phase claim can beat it.
+    const menu = menuUnderneath();
+    const focused = document.createElement("button");
+    document.body.append(focused);
+    const dialogue = box();
+    dialogue.update(LINES);
+    dialogue.attach(document);
+
+    press(focused);
+
+    expect(dialogue.visibleText).toBe(LINES[0]!.text);
+    expect(menu.presses()).toBe(0);
+    menu.stop();
+    focused.remove();
+    dialogue.destroy();
+  });
+
+  it("takes one line per press, not one per repeat", () => {
+    const dialogue = box();
+    dialogue.update(LINES);
+    dialogue.attach(document);
+
+    press(document);
+    expect(dialogue.visibleText).toBe(LINES[0]!.text);
+    press(document, "Enter", true);
+    press(document, "Enter", true);
+    expect(dialogue.lineIndex).toBe(0);
+
+    release(document);
+    press(document);
+    expect(dialogue.lineIndex).toBe(1);
+    dialogue.destroy();
+  });
+
+  it("drains the press that closed the box before the menu is given its keys", () => {
+    const menu = menuUnderneath();
+    // Exactly what main.ts does: the box reports the end of the dialogue and the
+    // keyboard goes back to the menus inside that same keydown.
+    const dialogue: DialogueBox = new DialogueBox({
+      charIntervalMs: 10,
+      intents: { endDialogue: () => dialogue.detach() },
+    });
+    dialogue.update([{ speaker: "Watch Sergeant", text: "Go." }]);
+    dialogue.attach(document);
+
+    // The first press finishes the reveal; the second closes the box.
+    press(document);
+    press(document);
+    expect(dialogue.isOpen).toBe(false);
+    expect(menu.presses()).toBe(0);
+
+    // Still held: the repeats belong to the line that has just closed.
+    press(document, "Enter", true);
+    expect(menu.presses()).toBe(0);
+
+    // Released, and the keyboard is the menu's again.
+    release(document);
+    press(document);
+    expect(menu.presses()).toBe(1);
+    menu.stop();
+    dialogue.destroy();
+  });
+
+  it("leaves the menu's own keys alone", () => {
+    const menu = menuUnderneath();
+    const dialogue = box();
+    dialogue.update(LINES);
+    dialogue.attach(document);
+
+    press(document, "ArrowDown");
+    expect(menu.presses()).toBe(1);
+    menu.stop();
+    dialogue.destroy();
+  });
+
+  it("hands the keyboard back once it is detached with nothing held", () => {
+    const menu = menuUnderneath();
+    const dialogue = box();
+    dialogue.update(LINES);
+    dialogue.attach(document);
+    dialogue.detach();
+
+    press(document);
+    expect(menu.presses()).toBe(1);
+    menu.stop();
+    dialogue.destroy();
+  });
+});

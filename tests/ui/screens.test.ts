@@ -121,15 +121,17 @@ describe("TurnOrderStrip", () => {
     expect(cast?.textContent).toContain("Charging · Overload Cell");
   });
 
-  it("names one Now and orders the rest of the units tied at the threshold", () => {
+  it("names one Now, one Next, and orders the rest of the units tied at the threshold", () => {
     const strip = new TurnOrderStrip();
     const tied = mockTurnOrderView();
     strip.update({
       entries: tied.entries.map((entry, index) => ({ ...entry, ticksUntil: index < 3 ? 0 : 20 })),
     });
     const ticks = [...strip.el.querySelectorAll(".gf-turn-ticks")].map((n) => n.textContent);
-    expect(ticks.slice(0, 4)).toEqual(["Now", "Next", "Next", "+20"]);
+    // Only one row can be next; the tie behind it reads THEN (tests/ui/turnOrder).
+    expect(ticks.slice(0, 4)).toEqual(["Now", "Next", "Then", "+20"]);
     expect(strip.el.querySelectorAll(".gf-turn-entry.is-now")).toHaveLength(1);
+    expect(strip.el.querySelectorAll(".gf-turn-entry.is-next")).toHaveLength(1);
     expect([...strip.el.querySelectorAll(".gf-turn-index")].map((n) => n.textContent)).toEqual([
       "01",
       "02",
