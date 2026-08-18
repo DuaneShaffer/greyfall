@@ -38,6 +38,7 @@ import { CampaignRunner, type BattlePort } from "./campaignRunner.js";
 import { CONTENT, UNITS, campaignById, campaignList } from "./content.js";
 import { BattleController, type RendererPort, type UiPort } from "./controller.js";
 import { loadPortraitArt } from "./portraitArt.js";
+import { installProbe } from "./probe.js";
 import { loadCampaign, migrateSaves, saveCampaign } from "./save.js";
 import { stubAiCommand } from "./stubAi.js";
 
@@ -518,3 +519,21 @@ window.greyfall = {
   campaigns: () => campaignList().map((campaign) => campaign.id),
   start: (campaignId: string) => startCampaign(campaignId),
 };
+
+/**
+ * The UX probe (`src/app/probe.ts`), dev builds only: `__greyfall.describe()`
+ * dumps what is on screen and `__greyfall.act()` drives it by name. It is the
+ * text loop agent playtests run on, so screenshots are spent only on the
+ * pixels-only class of finding. `import.meta.env.DEV` keeps it out of a build.
+ */
+if (import.meta.env.DEV) {
+  installProbe({
+    controller: () => controller,
+    screen: () => {
+      if (!banner.classList.contains("is-hidden")) return "battle-result";
+      if (!pickerHost.classList.contains("is-hidden")) return "register";
+      if (screens !== null && !screens.el.classList.contains("is-hidden")) return screens.current;
+      return controller === null ? "none" : "battle";
+    },
+  });
+}

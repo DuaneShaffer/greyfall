@@ -373,8 +373,9 @@ chrome takes the pointer so the map stays clickable.
 ## 11. Testing the interface
 
 `tests/ui` covers components against `src/ui/mock.ts`; `tests/app` covers the
-seam (`viewmodels`, `controller`, `betweenBattles`) with fake ports. The
-behaviours that are easy to regress and expensive to notice have their own tests:
+seam (`viewmodels`, `controller`, `betweenBattles`) with fake ports, and the
+dev-only UX probe (§14.5) drives the real overlay as text. The behaviours that
+are easy to regress and expensive to notice have their own tests:
 cursor movement must not rebuild nodes, a click must survive a no-op refresh, the
 turn order must name exactly one "Now", the forecast must lock on commit, and the
 final frame must carry an empty queue.
@@ -890,3 +891,111 @@ viewport, the inspect card does not collide with the order column, and the
 document never scrolls horizontally. Those three are the frame's fit contract —
 a panel that grew until it pushed the thing that says what the game is waiting
 for off the bottom would be a worse interface than the small one.
+
+---
+
+# 14. The seam's data, and the probe that reads it
+
+Sections 1–13 say what the interface must tell the player. This one says what the
+seam has to *carry* for that to be possible, and it exists because a blind
+playtest found the interface withholding facts the view models never had: what an
+ability does before you spend an action on it, whether the last order hit, how
+high the tile under the cursor is, whether a red tile can actually be hit, and
+whose side the second name on the forecast is on.
+
+The rules of §state.ts's header are unchanged: **plain serializable data, no core
+types, formatted where formatting is a rules decision.** Everything below is
+built in `src/app/viewmodels.ts` (battle), `src/app/campaignViews.ts`
+(between battles), `src/app/mechanics.ts` (shared) and `src/app/battleLog.ts`
+(the record), and every field is optional so no panel is obliged to grow before
+its own pass reaches it.
+
+## 14.1 `MechanicsView` — what an order does
+
+One shape per ability and per item, derived from the data definition: `range`
+(min/max/vertical), `area` (`single` / `radius` / `line`), `targets` +
+`targetsLabel`, `requiresLos`, `amounts`, `statuses`, `chargeCost`, `castSpeed`,
+`usesRemaining` for items, and a formatted one-line `summary`.
+
+`amounts` states the scale, never a total: only `fixed` is a number the player can
+hold the game to, so `Weapon 80% kinetic` and `Mag ×20` are printed as the pair
+they are. A total would be a forecast wearing a stat's clothes.
+
+It rides on `AbilityView.mechanics` (battle menus, unit sheet),
+`ItemEntryView.mechanics` (field kit, satchel) and `LearnableView.mechanics`
+(purchase). In battle it is read off the ability the unit *would issue* — the
+weapon attack's reach comes from the weapon, an item's from the thrower's mastery.
+Between battles it is the shipped definition, unmodified.
+
+## 14.2 `LogEntryView` — the record of what happened
+
+`BattleHudView.log` is battle-long and accumulated by `BattleLog` from the events
+`applyCommand` returns. One entry per resolved action, plus entries for turn
+boundaries, joins, departures, deaths and grid changes nobody ordered.
+
+Every figure is what the rules did, not what a forecast promised — a vial that
+would have restored 30 to an unhurt unit files `0 recovered`. Entries carry a
+monotonic `index`, the `turn` and `tick` they landed on, the `actor` with its
+team, the order's `action` name, per-target `hit` / `damage` / `recovery` /
+`hpRemaining` / `statuses` / `downed`, free-text `notes` for consequences aimed at
+nobody, and a formatted `text` line. Enemy turns and actions resolved behind a
+dialogue box land the same way, which is the whole point: the two findings this
+answers were "I cannot tell whether it hit" and "the enemy's turn happened off
+screen".
+
+## 14.3 Elevation and legality
+
+- `BattleHudView.cursor` — the hovered tile, its `height`, and `heightDelta`
+  against the acting unit's tile (positive = the target stands higher). The delta
+  is null outside a targeting mode: there is nothing to measure a resting hover
+  against.
+- `BattleHudView.targeting` — `inRange` (reach, what the range overlay lights),
+  `legal` (the subset the aim gate accepts) and `illegal` (each with the gate's
+  own `code` and `reason`). It is built on the read-only core selector
+  `aimVerdicts`, which asks `aimRefusal` — the one gate the command layer refuses
+  by. A red tile that cannot be hit is the overlay lying, and this is the data
+  that stops it.
+- `BattleHudView.field` — the board: `width`, `depth`, a `heights[y][x]` grid,
+  every unit with its tile, height, facing, HP, charge, statuses and whether it is
+  acting, and every machine with its footprint and power state. Heights are
+  recomputed per frame on purpose: wreck a catwalk and the tiles it was decking
+  drop.
+
+## 14.4 Allegiance, whose turn, the objective, the formation
+
+- `ForecastTargetView.team` and `ForecastView.attacker.team` — friendly fire is
+  correct mechanics and must be *read* as what it is.
+- `BattleHudView.activeUnitId` — whose turn it is, distinct from `action.unit`
+  (who the orders are about) and from `inspected` (who is being read).
+- `BattleHudView.objective` — the encounter's own line, from the optional
+  `objective` field on the encounter schema; null for an engagement that has not
+  been written up, never invented.
+- `RosterEntryView.deployed` and `PartyView.deployedCount` — membership off the
+  staged formation, so the roster and the formation screen cannot disagree.
+
+## 14.5 The UX probe (`src/app/probe.ts`, dev only)
+
+`window.__greyfall` is filed by `main.ts` under `import.meta.env.DEV` and must
+never exist in a build.
+
+- `describe()` — the screen and mode, every visible menu as rows with cursor,
+  disabled and **inert** state, the notices, the dialogue, every visible panel as
+  lines of text, what is clickable by name, and `battle`: the controller's phase,
+  the overlay layers it is painting, and *the exact `BattleHudView` the panels
+  were drawn from* with the log trimmed to its tail. The probe derives no second
+  opinion about the game; one that computed its own answer could agree with itself
+  while the interface said something else.
+- `act(verb, target)` — `click`/`hover` on a menu row or button **by label**
+  (dispatched as the real click on the row the player would hit), `click`/`hover`
+  on a `{x, y}` tile (through the controller's own tile handlers, bypassing pixel
+  picking), and `key` (a real `keydown` on the document).
+- It fails loudly: an unknown label throws with everything that *was* on screen, a
+  greyed row throws with its reason, a tile off the board throws with the board's
+  size. A probe that quietly no-ops recreates the silent-failure bugs it exists to
+  catch.
+
+`tests/app/probe.test.ts` holds the honesty contract: the forecast the probe
+reports must be the forecast the panel printed — same ability name, same hit
+percentages, same amounts, and exactly the same set of named parties. If a panel
+and the seam ever diverge, that test fails rather than the probe quietly
+disagreeing with the screen.
