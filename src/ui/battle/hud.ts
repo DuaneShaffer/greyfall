@@ -14,6 +14,12 @@ import { UnitStatusPanel } from "./unitStatus.js";
 const PLAYER_MODES = new Set<HudMode>(["orders", "move", "target", "facing"]);
 
 /**
+ * What one back-out actually did. The canvas asks for a withdraw on every
+ * right-click and has no idea what is open, so the answer has to come back.
+ */
+export type WithdrawOutcome = "menu" | "unstaged" | "root" | "none";
+
+/**
  * The battle overlay.
  *
  * Layout is the hierarchy (see docs/UI_DESIGN.md): the acting unit and its
@@ -39,6 +45,8 @@ export class BattleHud implements Component<BattleHudView> {
   private readonly intents: UiIntents;
   /** Who the orders belong to, for the withdraw affordance. */
   private actingUnitId: string | null = null;
+  /** An order is staged and unsent: the forecast is answering something. */
+  private staged = false;
 
   constructor(
     options: {
@@ -52,9 +60,19 @@ export class BattleHud implements Component<BattleHudView> {
     this.intents = intents;
     this.actionMenu = new ActionMenu({
       intents,
+      onRootCancel: () => void this.withdraw(),
+      onRefuse: (reason) => this.notify(reason, "refusal"),
+      onStaged: (label) => this.notify(`${label} staged — Commit sends it.`),
       ...(options.onAbilityPreview ? { onAbilityPreview: options.onAbilityPreview } : {}),
     });
-    this.forecast = new ForecastPanel({ intents });
+    this.forecast = new ForecastPanel({
+      intents: {
+        ...intents,
+        // The card's Withdraw is the same gesture as the mode bar's. On its own
+        // it blanked the preview and left the row that staged it still armed.
+        cancelSelection: () => void this.withdraw(),
+      },
+    });
     this.status = new UnitStatusPanel({ role: "inspect" });
     this.acting = new UnitStatusPanel({ role: "acting" });
     this.turnOrder = new TurnOrderStrip({ intents });
@@ -80,16 +98,43 @@ export class BattleHud implements Component<BattleHudView> {
   }
 
   /**
-   * Back out of whatever the player opened, from one button. A submenu pops
-   * (and reports its own cancel); a bare targeting or move selection is
-   * withdrawn outright.
+   * The one way back out, wherever it is asked from: the mode bar's button,
+   * Escape, the forecast card's Withdraw, and the canvas right-click. It is
+   * correct at every depth *including the root*, and a no-op only when the
+   * orders are not the player's to give — never a silent no-op inside a turn.
+   *
+   *   "menu"     — an open submenu popped one level and reported its own cancel.
+   *   "unstaged" — a staged move, aim or facing was withdrawn; the field cursor
+   *                is the player's again and nothing is left armed.
+   *   "root"     — nothing was staged, so the root answered for itself.
+   *   "none"     — not a mode the player entered; nothing to leave.
    */
-  withdraw(): void {
+  withdraw(): WithdrawOutcome {
+    if (!PLAYER_MODES.has(this.mode.current)) return "none";
     if (this.actionMenu.menus.depth > 1) {
       this.actionMenu.menus.cancel();
-      return;
+      return "menu";
     }
-    if (this.actingUnitId !== null) this.intents.cancelSelection(this.actingUnitId);
+    if (this.hasStaged || this.mode.current !== "orders") {
+      if (this.actingUnitId !== null) this.intents.cancelSelection(this.actingUnitId);
+      // A committed order keeps its numbers (the panel refuses this while
+      // locked); an uncommitted one leaves nothing behind.
+      this.forecast.update(null);
+      this.staged = false;
+      return "unstaged";
+    }
+    this.rootWithdraw();
+    return "root";
+  }
+
+  /** Nothing is staged and the orders stand. The root still owes an answer. */
+  private rootWithdraw(): void {
+    this.notify("Nothing staged — the orders stand.");
+  }
+
+  /** An unsent order the forecast is answering. A committed one is a record. */
+  private get hasStaged(): boolean {
+    return this.staged && !this.forecast.isLocked;
   }
 
   /** Everything but the dialogue, whose reveal must not restart on a redraw. */
@@ -104,6 +149,7 @@ export class BattleHud implements Component<BattleHudView> {
     );
     this.turnOrder.update(view.turnOrder);
     this.power.update(view.power);
+    this.staged = view.forecast !== null;
     this.forecast.update(view.forecast);
   }
 

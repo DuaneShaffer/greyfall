@@ -7,6 +7,16 @@ export interface ActionMenuOptions {
   intents?: Partial<UiIntents>;
   /** Cursor moved onto an ability — the caller shows a forecast preview. */
   onAbilityPreview?: (abilityId: string | null) => void;
+  /**
+   * Escape / right-click at the root. The root is not the place to decide what
+   * backing out means: the HUD owns the whole unwind (`BattleHud.withdraw`), and
+   * without this the root swallowed the gesture and said nothing.
+   */
+  onRootCancel?: () => void;
+  /** A row refused input, with the reason; the HUD prints it. */
+  onRefuse?: (reason: string) => void;
+  /** An order is staged for the forecast to answer. Nothing has been sent. */
+  onStaged?: (label: string) => void;
 }
 
 const ROOT_ID = "action-root";
@@ -29,7 +39,7 @@ export class ActionMenu implements Component<ActionMenuView> {
   constructor(options: ActionMenuOptions = {}) {
     this.options = options;
     this.intents = withIntents(options.intents);
-    this.menus = new MenuStack();
+    this.menus = new MenuStack({ onRefuse: (reason) => this.options.onRefuse?.(reason) });
     this.el = el("div", { class: "gf-action-menu", children: [this.menus.el] });
   }
 
@@ -100,6 +110,7 @@ export class ActionMenu implements Component<ActionMenuView> {
       cancellable: false,
       entries,
       onSelect: (entry) => this.onRootSelect(entry),
+      onCancel: () => this.options.onRootCancel?.(),
     };
   }
 
@@ -160,7 +171,15 @@ export class ActionMenu implements Component<ActionMenuView> {
       title: "Operate",
       entries: operables.map((operable) => ({ id: operable.objectId, label: operable.name })),
       onCursor: (entry) => this.intents.previewOperable(view.unit.id, entry.id),
-      onSelect: (entry) => this.intents.activateObject(view.unit.id, entry.id),
+      // One commit model. The row *stages* the order exactly as resting on it
+      // does, and the forecast's stamp is the only thing that sends it — the
+      // playtest saw this order forecast once and fire instantly the next time.
+      // Re-selecting a row re-stages it, which is the way back from a Withdraw
+      // that blanked the preview and left the row still armed.
+      onSelect: (entry) => {
+        this.intents.previewOperable(view.unit.id, entry.id);
+        this.options.onStaged?.(entry.label);
+      },
       onCancel: () => {
         this.intents.previewOperable(view.unit.id, null);
         this.intents.cancelSelection(view.unit.id);
