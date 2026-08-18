@@ -80,6 +80,7 @@ export {
   type PopupStyle,
 } from "./popups.js";
 export { CursorReadout, heightReadoutText } from "./readout.js";
+export { cameraYawIndex } from "./units.js";
 export { VfxLayer } from "./vfxLayer.js";
 export {
   buildTerrainMeshData,

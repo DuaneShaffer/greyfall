@@ -17,11 +17,12 @@ import {
   type GameState,
   type InventoryStack,
 } from "../core/index.js";
-import type { DialogueLine, Encounter, Facing, TileCoord, Unit } from "../data/index.js";
+import type { DialogueLine, Encounter, TileCoord, Unit } from "../data/index.js";
 import {
   BattleRenderer,
   NO_MARKS,
   attachControls,
+  cameraYawIndex,
   fieldMarksFrom,
   findUnitView,
   palette,
@@ -36,7 +37,6 @@ import {
   type BattleHudView,
   type CampaignSelectView,
   type HudMode,
-  type MenuDef,
   type NoticeTone,
   type UiIntents,
 } from "../ui/index.js";
@@ -152,15 +152,6 @@ const banner = el("div", {
   ],
 });
 
-const FACING_LABELS: Record<Facing, string> = {
-  north: "North",
-  east: "East",
-  south: "South",
-  west: "West",
-};
-const FACING_ORDER: readonly Facing[] = ["north", "east", "south", "west"];
-const FACING_MENU_ID = "action-facing";
-
 /** Dialogue owns Enter/Space while it is open; the menus take them otherwise. */
 const focusDialogue = (open: boolean): void => {
   if (open) {
@@ -217,23 +208,10 @@ const uiPort: UiPort = {
     banner.classList.remove("is-hidden");
     bannerContinue.focus();
   },
-  promptFacing: (current, onPick, onCancel) => {
-    const menu: MenuDef = {
-      id: FACING_MENU_ID,
-      title: "Face",
-      entries: FACING_ORDER.map((facing) => ({
-        id: facing,
-        label: FACING_LABELS[facing],
-        ...(facing === current ? { detail: "current" } : {}),
-      })),
-      onSelect: (entry) => onPick(entry.id as Facing),
-      onCancel: () => onCancel(),
-    };
-    hud.actionMenu.menus.push(menu);
-  },
-  closePrompt: () => {
-    if (hud.actionMenu.menus.path.includes(FACING_MENU_ID)) hud.actionMenu.menus.pop();
-  },
+  // The rose the HUD owns, not a second list of four words: it carries the note
+  // about what facing is for and it turns with the camera (UI_DESIGN §13.7).
+  promptFacing: (current, onPick, onCancel) => hud.promptFacing(current, onPick, onCancel),
+  closePrompt: () => hud.closePrompt(),
   resetMenus: () => {
     while (hud.actionMenu.menus.depth > 1) hud.actionMenu.menus.pop();
   },
@@ -570,10 +548,23 @@ window.addEventListener("pointermove", (event) => {
   yieldQueue(inside);
 });
 
+/**
+ * The compass rose is drawn on the board's bearings, so it has to be told when
+ * the rig turns — from the drag as well as from the two orbit buttons, which is
+ * why it is read off the camera per frame rather than raised by whoever orbited.
+ */
+let facingRoseYaw = cameraYawIndex(renderer.rig.yaw);
+hud.setCameraYaw(facingRoseYaw);
+
 renderer.addFrameHook((delta) => {
   controller?.tick(delta);
   hud.tick(delta * 1000);
   screens?.tick(delta * 1000);
+  const yaw = cameraYawIndex(renderer.rig.yaw);
+  if (yaw !== facingRoseYaw) {
+    facingRoseYaw = yaw;
+    hud.setCameraYaw(yaw);
+  }
   if (!pointerInQueue || queueAwake) return;
   queueDwellMs += delta * 1000;
   if (queueDwellMs < QUEUE_DWELL_MS) return;
