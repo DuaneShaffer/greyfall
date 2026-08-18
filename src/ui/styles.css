@@ -3557,3 +3557,46 @@
   border-left-color: var(--gf-operable);
   color: var(--gf-operable);
 }
+
+/* ============================================ playtest remediation, wave D */
+/* One appended block, so the additions this pass made are reviewable as a set.
+   Targeted corrections to rules above live where those rules live. */
+
+/* --- what an order does, printed beside what it is for -------------------- */
+/* The purchase list, the field kit and the unit's own record all read the one
+   `MechanicsView`; these are the two densities it is drawn at. */
+
+.gf-mechanics {
+  display: grid;
+  gap: var(--gf-s-1);
+  min-width: 0;
+}
+
+.gf-mechanics-ledger {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+/* A figure that states its scale is the point; it should not read as prose. */
+.gf-mechanics-amount {
+  color: var(--gf-live);
+}
+
+.gf-mechanics-scale-note,
+.gf-mechanics-absent {
+  margin: 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+}
+
+/* The rule nobody found: where Standing comes from and what it belongs to. */
+.gf-standing-rule {
+  max-width: 74ch;
+}
+
+/* A summary is a sentence of figures, and it wraps rather than clipping: the
+   closing clause is where the charge cost and the status roll are. */
+.gf-menu-note {
+  white-space: normal;
+  overflow-wrap: break-word;
+}

@@ -76,6 +76,73 @@ describe("LearningScreen", () => {
     expect(screen.menus.depth).toBe(1);
   });
 
+  // "Buying an ability is a blind gamble": the row said a name and a price, the
+  // panel said prose, and nothing on the page said what the order did.
+  describe("what the Standing is buying", () => {
+    it("prints the mechanics on the row, not only in the record", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      const pin = entryNode(screen, "pin")?.textContent ?? "";
+      expect(pin).toContain("Range 1 (±1h)");
+      expect(pin).toContain("Enemy");
+      expect(pin).toContain("Damage Weapon 80% kinetic");
+      expect(pin).toContain("Stunned 35%");
+      expect(entryNode(screen, "overload-cell")?.textContent).toContain("Charge 5");
+    });
+
+    it("lays the figures out in full for the entry under the cursor", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      const detail = screen.el.querySelector(".gf-learn-detail")?.textContent ?? "";
+      expect(detail).toContain("Range");
+      expect(detail).toContain("1 tile, ±1 height");
+      expect(detail).toContain("Line of sight");
+      expect(detail).toContain("Required");
+      expect(detail).toContain("Weapon 80% kinetic");
+      expect(detail).toContain("35% chance");
+      expect(detail).toContain("Resolves at once");
+    });
+
+    it("never prints a total: a scaled figure keeps its scale and says so", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      const detail = screen.el.querySelector(".gf-learn-detail")?.textContent ?? "";
+      expect(detail).toContain("Weapon 80%");
+      expect(screen.el.querySelector(".gf-mechanics-scale-note")?.textContent).toContain(
+        "a plain number is fixed",
+      );
+    });
+
+    it("keeps the prose, and stops it doing the mechanics' job", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      const prose = screen.el.querySelector(".gf-learn-detail .gf-detail-text")?.textContent ?? "";
+      expect(prose).toContain("Watch doctrine");
+    });
+
+    it("states the figures on the confirm itself, before a point is spent", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      screen.menus.handleKey(key("Enter"));
+      const confirm = screen.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="confirm"]');
+      expect(confirm?.textContent).toContain("Spend 100");
+      expect(confirm?.textContent).toContain("Remaining 20");
+      expect(confirm?.textContent).toContain("Damage Weapon 80% kinetic");
+      // Still a confirm, and still withdrawable.
+      expect(
+        screen.el.querySelector('.gf-menu-entry[data-entry="withdraw"]'),
+      ).not.toBeNull();
+    });
+
+    it("says where Standing comes from, once, at the top of the page", () => {
+      const screen = new LearningScreen();
+      screen.update(view());
+      const rule = screen.el.querySelector(".gf-standing-rule")?.textContent ?? "";
+      expect(rule).toContain("banked per job");
+      expect(rule).toContain("10 for every action");
+    });
+  });
+
   it("shows the unit's Standing in the official register", () => {
     const screen = new LearningScreen();
     screen.update(view());

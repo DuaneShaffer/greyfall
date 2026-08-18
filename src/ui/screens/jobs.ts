@@ -4,6 +4,14 @@ import { MenuDef, MenuStack } from "../menu.js";
 import { JobOptionView, JobsView, formatStanding } from "../state.js";
 
 const LIST_ID = "jobs-list";
+const MAX_JOB_LEVEL = 8;
+
+/**
+ * The rule the playtest never found: Standing is not a wallet. It is banked per
+ * job, 10 for every action a unit resolves, and only a battle it wins banks it.
+ */
+export const STANDING_RULE =
+  "Standing is banked per job: 10 for every action a unit resolves in a battle it wins. Each job spends only its own.";
 
 /** Pick a primary job or borrow a secondary skillset. */
 export class JobScreen implements Component<JobsView> {
@@ -26,7 +34,11 @@ export class JobScreen implements Component<JobsView> {
           children: [
             el("div", {
               class: "gf-screen-head-text",
-              children: [el("h1", { class: "gf-screen-title", text: "Jobs" }), this.headerEl],
+              children: [
+                el("h1", { class: "gf-screen-title", text: "Jobs" }),
+                this.headerEl,
+                el("p", { class: "gf-screen-note gf-standing-rule", text: STANDING_RULE }),
+              ],
             }),
           ],
         }),
@@ -36,8 +48,8 @@ export class JobScreen implements Component<JobsView> {
   }
 
   update(view: JobsView): void {
-    this.headerEl.textContent = `${view.unitName} · ${view.primaryJobName}${
-      view.secondaryJobName === null ? "" : ` / ${view.secondaryJobName}`
+    this.headerEl.textContent = `${view.unitName} · Primary: ${view.primaryJobName} · Secondary: ${
+      view.secondaryJobName ?? "none borrowed"
     }`;
     const menu = this.listMenu(view);
     if (this.menus.path[0] === LIST_ID) this.menus.refresh(menu);
@@ -62,11 +74,13 @@ export class JobScreen implements Component<JobsView> {
       entries: view.options.map((option) => ({
         id: option.jobId,
         label: option.name,
-        detail: `Lv ${option.jobLevel} · ${formatStanding(option.standing)}`,
+        // "Lv 3" read as the unit's level on a screen that also shows the unit's
+        // level; it is the job's, and it says so.
+        detail: `Job level ${option.jobLevel} · ${formatStanding(option.standing)} here`,
         ...(option.isPrimary
-          ? { note: "Primary" }
+          ? { note: "Primary — its stat curve and skillset are the unit's own" }
           : option.isSecondary
-            ? { note: "Secondary" }
+            ? { note: "Secondary — its learned abilities are on loan to the Act menu" }
             : {}),
         disabled: option.lockedReason !== undefined,
         ...(option.lockedReason === undefined ? {} : { disabledReason: option.lockedReason }),
@@ -90,16 +104,18 @@ export class JobScreen implements Component<JobsView> {
         {
           id: "primary",
           label: "Take as primary",
+          note: "Its stat curve and skillset become the unit's own. Standing already banked in each job stays with that job.",
           disabled: option.isPrimary,
           disabledReason: "Already the primary job",
         },
         {
           id: "secondary",
           label: "Borrow as secondary",
+          note: "Its learned abilities join the Act menu. Nothing else about the unit changes.",
           disabled: option.isPrimary || option.isSecondary,
           disabledReason: option.isPrimary ? "Already the primary job" : "Already borrowed",
         },
-        { id: "clear", label: "Clear secondary" },
+        { id: "clear", label: "Clear secondary", note: "Hand the borrowed skillset back." },
       ],
       onSelect: (choice) => {
         if (choice.id === "primary") this.intents.changeJob(view.unitId, option.jobId);
@@ -121,15 +137,28 @@ export class JobScreen implements Component<JobsView> {
     replaceChildren(this.detail, [
       plate(
         "Job",
-        option.isPrimary ? "PRIMARY" : option.isSecondary ? "SECONDARY" : `LV ${option.jobLevel}`,
+        option.isPrimary
+          ? "PRIMARY"
+          : option.isSecondary
+            ? "SECONDARY"
+            : `JOB LV ${option.jobLevel}`,
       ),
       el("div", {
         class: "gf-detail-body",
         children: [
           el("h2", { class: "gf-detail-title", text: option.name }),
-          el("p", { class: "gf-detail-sub", text: `Job level ${option.jobLevel}` }),
+          el("dl", {
+            class: "gf-ledger",
+            children: [
+              el("dt", { text: "Job level" }),
+              el("dd", { text: `${option.jobLevel} of ${MAX_JOB_LEVEL}` }),
+              el("dt", { text: "Standing banked here" }),
+              el("dd", { class: "gf-detail-standing", text: String(option.standing) }),
+              el("dt", { text: "Standing" }),
+              el("dd", { text: "Earned per job, never shared between them" }),
+            ],
+          }),
           el("p", { class: "gf-detail-text", text: option.description }),
-          el("p", { class: "gf-detail-cost", text: formatStanding(option.standing) }),
           option.lockedReason !== undefined &&
             el("p", { class: "gf-detail-note is-refused", text: option.lockedReason }),
         ],
