@@ -829,8 +829,10 @@
 }
 
 /* Hover is the same gesture as the cursor, one weight down: a finger resting on
-   the row rather than the pointer arriving at it (mouse parity, §8). */
-.gf-menu-entry:hover:not(.is-disabled) {
+   the row rather than the pointer arriving at it (mouse parity, §8). An inert
+   row is excluded here rather than overridden above: the two selectors carry the
+   same specificity, so whichever came second won, and it was this one. */
+.gf-menu-entry:hover:not(.is-disabled):not(.is-inert) {
   background-color: rgba(120, 130, 142, 0.09);
   box-shadow: inset 2px 0 0 var(--gf-bronze-300);
 }
@@ -849,7 +851,7 @@
   transform: translateX(2px);
 }
 
-.gf-menu-entry.is-selected {
+.gf-menu-entry.is-selected:not(.is-inert) {
   background-color: rgba(120, 130, 142, 0.12);
   box-shadow: var(--gf-fitting);
 }
@@ -859,7 +861,7 @@
   cursor: not-allowed;
 }
 
-.gf-menu-entry:active:not(.is-disabled) {
+.gf-menu-entry:active:not(.is-disabled):not(.is-inert) {
   transform: translateY(1px);
 }
 

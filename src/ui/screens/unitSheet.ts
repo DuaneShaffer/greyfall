@@ -1,4 +1,5 @@
 import { Component, el, labelledValue, meter, panel, portrait, replaceChildren } from "../dom.js";
+import { UiIntents, withIntents } from "../intents.js";
 import { EQUIP_SLOT_LABELS, UnitSheetView, formatSigned, formatStanding } from "../state.js";
 
 const PASSIVE_LABELS: Record<"reaction" | "support" | "movement", string> = {
@@ -7,12 +8,36 @@ const PASSIVE_LABELS: Record<"reaction" | "support" | "movement", string> = {
   movement: "Movement",
 };
 
+const CANCEL_KEYS = new Set(["Escape", "Backspace"]);
+
 /** Read-only record of a unit: stats, kit, learned abilities. */
 export class UnitSheetScreen implements Component<UnitSheetView> {
   readonly el: HTMLElement;
+  private readonly intents: UiIntents;
+  private keyTarget: EventTarget | null = null;
+  // The sheet is the one between-battle page with no menu of its own, so it is
+  // the one page nothing was listening on: the hint said Escape returned to the
+  // roster and Escape did nothing at all.
+  private readonly onKeyDown = (event: Event): void => {
+    if (!CANCEL_KEYS.has((event as KeyboardEvent).key)) return;
+    event.preventDefault();
+    this.intents.closeScreen();
+  };
 
-  constructor() {
+  constructor(options: { intents?: Partial<UiIntents> } = {}) {
+    this.intents = withIntents(options.intents);
     this.el = el("section", { class: "gf-screen gf-unit-sheet" });
+  }
+
+  attach(target: EventTarget = document): void {
+    this.detach();
+    this.keyTarget = target;
+    target.addEventListener("keydown", this.onKeyDown);
+  }
+
+  detach(): void {
+    this.keyTarget?.removeEventListener("keydown", this.onKeyDown);
+    this.keyTarget = null;
   }
 
   update(view: UnitSheetView): void {
@@ -104,6 +129,7 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
   }
 
   destroy(): void {
+    this.detach();
     this.el.remove();
   }
 

@@ -275,6 +275,31 @@ describe("BetweenBattleScreens", () => {
     expect(h.screens.roster.menus.depth).toBe(2);
   });
 
+  // The sheet is the only page with no menu of its own, so it was the only page
+  // nothing was listening on: its own hint promised Escape and Escape was dead.
+  it("hands the unit sheet back to the roster on Escape", () => {
+    h.screens.roster.menus.handleKey(key("Enter"));
+    h.screens.roster.menus.handleKey(key("Enter"));
+    expect(h.screens.current).toBe("sheet");
+
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.current).toBe("roster");
+  });
+
+  it("gives the keyboard back rather than keeping a second listener on it", () => {
+    h.screens.roster.menus.handleKey(key("Enter"));
+    h.screens.roster.menus.handleKey(key("Enter"));
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.current).toBe("roster");
+
+    // The roster's own cancel key still reaches the roster: the sheet's listener
+    // is off the target, not stacked under the one that replaced it.
+    expect(h.screens.roster.menus.depth).toBe(2);
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.roster.menus.depth).toBe(1);
+    expect(h.screens.current).toBe("roster");
+  });
+
   it("falls back to the roster when a screen has no view model", () => {
     h.screens.showFormation();
     h.session.cancelDeployment();

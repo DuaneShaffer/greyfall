@@ -145,7 +145,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     intents.learnAbility = (unitId, abilityId) => this.learn(unitId, abilityId);
 
     this.roster = new RosterScreen({ intents });
-    this.sheet = new UnitSheetScreen();
+    this.sheet = new UnitSheetScreen({ intents });
     this.learning = new LearningScreen({ intents });
     this.equipment = new EquipmentScreen({ intents });
     this.jobs = new JobScreen({ intents });
@@ -397,6 +397,11 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   private attachCurrent(): void {
     this.detachAll();
     if (this.keyTarget === null) return;
+    // The sheet has no menu stack: it listens for the cancel key itself.
+    if (this.screen === "sheet") {
+      this.sheet.attach(this.keyTarget);
+      return;
+    }
     const menus =
       this.screen === "roster"
         ? this.roster.menus
@@ -417,6 +422,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   }
 
   private detachAll(): void {
+    this.sheet.detach();
     this.roster.menus.detach();
     this.learning.menus.detach();
     this.equipment.menus.detach();
