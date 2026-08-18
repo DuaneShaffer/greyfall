@@ -83,6 +83,11 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(7, 24, 16, 46, "hip"), propRegion(40, 58, 18, 24, "handNear", "handNear")],
     },
     sourceTeam: "player",
+    // The delivered se cell stands the figure facing up-screen-left instead of
+    // down-screen-right (C.8 facing convention): mirrored back at intake so
+    // east reads facing-right and south (se, mirrored again by the facing
+    // table) reads facing-left, as the cardinal rules require.
+    mirror: { se: true },
   },
   machinist: {
     se: MACHINIST_SE,
