@@ -3341,9 +3341,17 @@
 }
 
 .gf-between.is-field .gf-deploy-rail {
-  max-height: calc(100vh - 190px);
+  /* Bounded by the frame that is actually there. The reserve used to be a
+     constant off 100vh and at 1600×1000 it was a few pixels optimistic: the foot
+     of the panel sat under the page's own foot, where the wheel cannot reach it
+     — over the field the wheel is the camera's zoom, so an unreachable row is a
+     clipped row. dvh, a reserve wide enough to be wrong in the safe direction,
+     and the scroll kept inside the panel it started in. */
+  max-height: calc(100dvh - 240px);
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   padding-right: var(--gf-s-1);
 }
 
@@ -3694,4 +3702,86 @@
 /* Giving up the field is a decision, so the row that does it reads like one. */
 .gf-menu[data-menu="briefing-forfeit"] .gf-menu-entry[data-entry="forfeit"] .gf-menu-label {
   color: var(--gf-enemy);
+}
+
+/* --- the formation rail --------------------------------------------------- */
+
+/* A tile the player can say out loud. The letter is the same one the field
+   chips carry (`deploySlotLabel`), so "click tile B" is an instruction rather
+   than a coordinate to hunt for. */
+.gf-deploy-slot {
+  grid-template-columns: auto auto 1fr auto;
+}
+
+.gf-deploy-chip {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gf-text);
+  background: var(--gf-panel);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting);
+  padding: 0 4px;
+  min-width: 15px;
+  text-align: center;
+}
+
+/* The rail's rows are the reliable half of this screen: the tiles themselves are
+   geometry behind it. So they take the pointer like rows, and answer it. */
+.gf-deploy-slot {
+  cursor: pointer;
+}
+
+.gf-deploy-slot:hover,
+.gf-deploy-slot.is-hovered,
+.gf-deploy-enemy.is-hovered,
+.gf-unit-bar.is-hovered {
+  background-color: var(--gf-live-ink);
+  box-shadow: inset 2px 0 0 var(--gf-live-deep), var(--gf-fitting);
+}
+
+.gf-deploy-opposition {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+.gf-deploy-enemy {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: var(--gf-s-2);
+  border-top: 1px solid var(--gf-ink);
+  padding: 3px var(--gf-s-2);
+}
+
+.gf-deploy-enemy:first-child {
+  border-top: none;
+}
+
+/* The other side is the other side, wherever it is read (ART_DIRECTION §2). */
+.gf-deploy-enemy .gf-field-label {
+  color: var(--gf-enemy);
+}
+
+.gf-deploy-bearing,
+.gf-deploy-intel {
+  font-family: var(--gf-face-ledger);
+}
+
+.gf-deploy-intel.is-hidden {
+  display: none;
+}
+
+/* The rail's own height bound is the one declaration of it, edited in place
+   above (`.gf-between.is-field .gf-deploy-rail`). What belongs here is the other
+   half of the same clipping: nothing inside the rail is measured wider than the
+   rail — a 56ch body in a 340px column is text with its right-hand end cut off. */
+.gf-deploy-rail .gf-detail-body {
+  max-width: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

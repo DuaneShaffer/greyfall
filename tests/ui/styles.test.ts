@@ -155,3 +155,28 @@ describe("the compass rose turns with the rig", () => {
     }
   });
 });
+
+/**
+ * The formation rail floats over the live field, which takes the wheel for the
+ * camera. A row the panel's own scroller cannot reach is therefore a row that is
+ * gone, and both halves of that are stylesheet-only.
+ */
+describe("the formation rail is bounded by the frame, not by a guess", () => {
+  it("measures its height against the viewport that is actually there", () => {
+    const rail = rule(".gf-between.is-field .gf-deploy-rail {");
+    const bound = /max-height:\s*calc\(100dvh\s*-\s*(\d+)px\)/.exec(rail);
+    expect(bound, "the rail's bound is not viewport-relative").not.toBeNull();
+    // The bar, the foot, the page's padding and the screen's own header. The old
+    // 190px was six pixels short at 1600×1000, which is the whole finding.
+    expect(Number(bound?.[1])).toBeGreaterThanOrEqual(200);
+    expect(rail).toContain("min-height: 0");
+    // A scroll that starts in the panel stays in it; behind it is the camera.
+    expect(rail).toContain("overscroll-behavior: contain");
+  });
+
+  it("measures nothing inside it wider than the rail itself", () => {
+    const body = rule(".gf-deploy-rail .gf-detail-body");
+    expect(body).toContain("max-width: none");
+    expect(body).toContain("overflow-wrap: anywhere");
+  });
+});

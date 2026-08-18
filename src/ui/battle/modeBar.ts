@@ -73,10 +73,10 @@ const MODES: Record<HudMode, ModeCopy> = {
   },
   deploy: {
     name: "Formation",
-    ask: "Pick a unit, then a deployment tile.",
+    ask: "Pick a unit, then a lettered deployment tile.",
     keys: [
-      ["Click", "place"],
-      ["Enter", "move out"],
+      ["Click", "a tile, or its row in the rail"],
+      ["Enter", "take the field"],
     ],
   },
   ended: {
