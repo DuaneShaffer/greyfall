@@ -25,6 +25,24 @@ export interface MenuDef {
   cancellable?: boolean;
 }
 
+export interface MenuStackOptions {
+  /**
+   * A row refused input, with the reason to print. A flash says "no"; only this
+   * says which rule said it, and the annunciator is the one slot that can.
+   */
+  onRefuse?: (reason: string, entry: MenuEntry | null) => void;
+}
+
+/** Refusals the stack itself raises, rather than reading off an entry. */
+export const REFUSE_INERT = "Back out of the open menu first.";
+export const REFUSE_EMPTY = "Nothing here can be ordered.";
+export const REFUSE_NO_WAY_BACK = "Nothing to back out of.";
+
+/** What a greyed row says when it is asked to do the thing it cannot. */
+export function refusalFor(entry: MenuEntry): string {
+  return entry.disabledReason ?? `${entry.label} is not available.`;
+}
+
 const KEY_UP = new Set(["ArrowUp", "w", "W"]);
 const KEY_DOWN = new Set(["ArrowDown", "s", "S"]);
 const KEY_CONFIRM = new Set(["Enter", " "]);
@@ -46,12 +64,14 @@ export class MenuStack implements Component<void> {
   private readonly cursors = new Map<string, number>();
   /** Live entry nodes per menu id, so the cursor can move without a rebuild. */
   private readonly nodes = new Map<string, { list: HTMLElement; entries: HTMLElement[] }>();
+  private readonly options: MenuStackOptions;
   private keyTarget: EventTarget | null = null;
   private readonly onKeyDown = (event: Event): void => {
     if (this.handleKey(event as KeyboardEvent)) event.preventDefault();
   };
 
-  constructor() {
+  constructor(options: MenuStackOptions = {}) {
+    this.options = options;
     this.el = focusable(el("div", { class: "gf-menu-stack", attrs: { role: "presentation" } }));
     // Right-click is the mouse's Escape. Without it a player who never touches
     // the keyboard can open a submenu and has no way back out of it.
@@ -129,15 +149,20 @@ export class MenuStack implements Component<void> {
     if (index === -1) return;
     const previous = this.stack[index];
     this.stack[index] = menu;
-    this.setCursor(menu, this.cursors.get(menu.id) ?? 0, { silent: true });
+    // A row that just went disabled pushes the cursor off itself. Silently is
+    // how the preview it was driving came to describe a row nobody is on, so
+    // the move is re-announced below once the nodes agree with it.
+    const moved = this.setCursor(menu, this.cursors.get(menu.id) ?? 0, { silent: true });
     // Rebuilding entry nodes under a resting pointer costs the player their
     // mouse (the node that would receive mousedown is replaced first), so a
     // refresh that changes nothing visible must not touch the DOM at all.
     if (previous !== undefined && sameEntries(previous.entries, menu.entries)) {
       this.syncSelection();
+      if (moved) this.notifyCursor();
       return;
     }
     this.render();
+    if (moved) this.notifyCursor();
   }
 
   moveCursor(delta: number): void {
@@ -153,18 +178,31 @@ export class MenuStack implements Component<void> {
     if (!active) return;
     const index = this.cursor;
     const entry = active.entries[index];
-    if (!entry || entry.disabled) {
-      this.flash();
+    if (entry === undefined) {
+      this.refuse(REFUSE_EMPTY, null);
+      return;
+    }
+    if (entry.disabled === true) {
+      this.refuse(refusalFor(entry), entry);
       return;
     }
     active.onSelect?.(entry, index);
   }
 
-  cancel(): void {
+  /** Escape / right-click. True when the stack actually backed out of something. */
+  cancel(): boolean {
     const active = this.active;
-    if (!active) return;
+    if (!active) return false;
+    const handled = active.onCancel !== undefined;
     active.onCancel?.();
-    if (active.cancellable !== false) this.pop();
+    if (active.cancellable !== false) {
+      this.pop();
+      return true;
+    }
+    // A root that declares no way out used to swallow Escape and say nothing,
+    // which is indistinguishable from a broken key.
+    if (!handled) this.refuse(REFUSE_NO_WAY_BACK, null);
+    return handled;
   }
 
   handleKey(event: KeyboardEvent): boolean {
@@ -198,19 +236,22 @@ export class MenuStack implements Component<void> {
     this.el.remove();
   }
 
-  private setCursor(menu: MenuDef, index: number, options: { silent?: boolean } = {}): void {
+  /** True when the cursor landed somewhere new. */
+  private setCursor(menu: MenuDef, index: number, options: { silent?: boolean } = {}): boolean {
     const resolved = this.findSelectable(menu, index, 1);
     const next =
       resolved === -1 ? Math.max(0, Math.min(index, menu.entries.length - 1)) : resolved;
     const previous = this.cursors.get(menu.id);
     this.cursors.set(menu.id, next);
-    if (options.silent) return;
+    const moved = previous !== next;
+    if (options.silent) return moved;
     // A cursor that did not move is not an event. Re-rendering (and re-firing
     // onCursor) here is what used to put a resting pointer into a permanent
     // rebuild loop and swallow every click.
-    if (previous === next) return;
+    if (!moved) return false;
     this.syncSelection();
     this.notifyCursor();
+    return true;
   }
 
   /** Move the highlight over the nodes already on screen; never rebuild them. */
@@ -247,6 +288,12 @@ export class MenuStack implements Component<void> {
     if (!active) return;
     const entry = active.entries[this.cursor];
     if (entry) active.onCursor?.(entry, this.cursor);
+  }
+
+  /** Flash, and say why. Either half alone is the bug the playtest found. */
+  private refuse(reason: string, entry: MenuEntry | null): void {
+    this.flash();
+    this.options.onRefuse?.(reason, entry);
   }
 
   private flash(): void {
@@ -334,9 +381,14 @@ export class MenuStack implements Component<void> {
     });
     node.addEventListener("click", () => {
       const current = liveEntry();
-      if (current === null) return;
+      if (current === null) {
+        // The row is under an open submenu, or the list changed out from under
+        // it. It already refused the click; this is what says so.
+        this.refuse(REFUSE_INERT, entry);
+        return;
+      }
       if (current.disabled === true) {
-        this.flash();
+        this.refuse(refusalFor(current), current);
         return;
       }
       this.setCursor(menu, index);

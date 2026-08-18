@@ -19,6 +19,9 @@ const CAMERA_KEYS: readonly [string, string][] = [
 /** Modes the player entered on purpose, and can therefore leave. */
 const WITHDRAWABLE = new Set<HudMode>(["move", "target", "facing"]);
 
+/** Modes in which the briefing is worth opening: the orders are the player's. */
+const BRIEFABLE = new Set<HudMode>(["orders", "move", "target", "facing"]);
+
 const MODES: Record<HudMode, ModeCopy> = {
   orders: {
     name: "Orders",
@@ -26,6 +29,7 @@ const MODES: Record<HudMode, ModeCopy> = {
     keys: [
       ["Click", "or arrows to choose"],
       ["Enter", "confirm"],
+      ["Esc", "or right-click for the briefing"],
     ],
   },
   move: {
@@ -69,10 +73,10 @@ const MODES: Record<HudMode, ModeCopy> = {
   },
   deploy: {
     name: "Formation",
-    ask: "Pick a unit, then a deployment tile.",
+    ask: "Pick a unit, then a lettered deployment tile.",
     keys: [
-      ["Click", "place"],
-      ["Enter", "move out"],
+      ["Click", "a tile, or its row in the rail"],
+      ["Enter", "take the field"],
     ],
   },
   ended: {
@@ -93,11 +97,18 @@ export class ModeBar implements Component<HudMode> {
   private readonly askEl: HTMLElement;
   private readonly keysEl: HTMLElement;
   private readonly withdrawEl: HTMLElement;
+  private readonly briefingEl: HTMLElement;
   private readonly orbitEl: HTMLElement;
   private mode: HudMode = "presenting";
   private detail: string | null = null;
 
-  constructor(options: { onWithdraw?: () => void; onOrbit?: (direction: 1 | -1) => void } = {}) {
+  constructor(
+    options: {
+      onWithdraw?: () => void;
+      onBriefing?: () => void;
+      onOrbit?: (direction: 1 | -1) => void;
+    } = {},
+  ) {
     this.nameEl = el("span", { class: "gf-mode-name" });
     this.askEl = el("p", { class: "gf-mode-ask" });
     this.keysEl = el("div", { class: "gf-mode-keys" });
@@ -128,10 +139,25 @@ export class ModeBar implements Component<HudMode> {
       text: "Withdraw",
     });
     this.withdrawEl.addEventListener("click", () => options.onWithdraw?.());
+    // What the engagement is for, what the rules do, and the way out of it. The
+    // gesture that opens it is Escape, and Escape is not visible.
+    this.briefingEl = el("button", {
+      class: "gf-button is-quiet gf-mode-briefing",
+      attrs: { type: "button" },
+      text: "Briefing",
+    });
+    this.briefingEl.addEventListener("click", () => options.onBriefing?.());
     this.el = el("div", {
       class: "gf-mode-bar",
       attrs: { role: "status", "aria-live": "polite" },
-      children: [this.nameEl, this.askEl, this.withdrawEl, this.orbitEl, this.keysEl],
+      children: [
+        this.nameEl,
+        this.askEl,
+        this.withdrawEl,
+        this.briefingEl,
+        this.orbitEl,
+        this.keysEl,
+      ],
     });
     this.update("presenting");
   }
@@ -147,6 +173,7 @@ export class ModeBar implements Component<HudMode> {
     const copy = MODES[mode];
     this.el.dataset["mode"] = mode;
     this.withdrawEl.hidden = !WITHDRAWABLE.has(mode);
+    this.briefingEl.hidden = !BRIEFABLE.has(mode);
     this.nameEl.textContent = copy.name;
     this.askEl.textContent = this.detail === null ? copy.ask : `${this.detail} — ${copy.ask}`;
     replaceChildren(

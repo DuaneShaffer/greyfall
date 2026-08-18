@@ -3342,9 +3342,17 @@
 }
 
 .gf-between.is-field .gf-deploy-rail {
-  max-height: calc(100vh - 190px);
+  /* Bounded by the frame that is actually there. The reserve used to be a
+     constant off 100vh and at 1600×1000 it was a few pixels optimistic: the foot
+     of the panel sat under the page's own foot, where the wheel cannot reach it
+     — over the field the wheel is the camera's zoom, so an unreachable row is a
+     clipped row. dvh, a reserve wide enough to be wrong in the safe direction,
+     and the scroll kept inside the panel it started in. */
+  max-height: calc(100dvh - 240px);
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   padding-right: var(--gf-s-1);
 }
 
@@ -3894,4 +3902,226 @@
   letter-spacing: var(--gf-track-label);
   text-transform: uppercase;
   color: var(--gf-warn);
+}
+
+/* ==========================================================================
+   WAVE E — what the blind playtest could not read or could not leave
+   One section, appended: the detail line under the orders, the compass rose the
+   facing prompt is asked with, the briefing, the objective chip, and the
+   formation rail. Everything above is untouched.
+   ========================================================================== */
+
+/* --- the focused row, at length ------------------------------------------- */
+/* A row stays one line; the reading that will not fit on it lands here, under
+   the list, where it costs the rows nothing. */
+
+.gf-action-detail {
+  display: grid;
+  gap: 2px;
+  padding: 4px var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  background: var(--gf-trough);
+  max-width: 52ch;
+}
+
+.gf-action-detail.is-empty {
+  display: none;
+}
+
+.gf-action-detail-note {
+  font-size: var(--gf-t-100);
+  color: var(--gf-dim);
+  line-height: 1.4;
+}
+
+.gf-action-detail-line {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  color: var(--gf-text);
+  line-height: 1.4;
+}
+
+/* --- the facing prompt: a rose, not four words --------------------------- */
+/* The four rows are laid out as the quarters of a compass and turn with the
+   rig, so the arm labelled North is the one pointing at the board's north. The
+   camera's own bearing decides which quarter that is: at yaw 0 it sits over the
+   south-east corner, which puts north up-and-right, and each orbit step turns
+   the rose a quarter counter-clockwise with it. The list is untouched
+   underneath — hover, arrows, Enter and Escape all still work as rows. */
+
+.gf-menu[data-menu="action-facing"] .gf-menu-list {
+  display: grid;
+  grid-template-areas:
+    "nw ne"
+    "sw se";
+  gap: 1px;
+  padding: var(--gf-s-2);
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+.gf-menu[data-menu="action-facing"] .gf-menu-entry {
+  border-top: 1px solid transparent;
+  justify-content: center;
+  text-align: center;
+}
+
+.gf-menu[data-menu="action-facing"] .gf-menu-entry + .gf-menu-entry {
+  border-top-color: transparent;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="west"] {
+  grid-area: ne;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="north"] {
+  grid-area: se;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="east"] {
+  grid-area: sw;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="south"] {
+  grid-area: nw;
+}
+
+/* --- the briefing, and what the engagement is for ------------------------- */
+
+/* Reference material, in the reference column: one line, above the queue, and
+   gone entirely for an engagement nobody wrote an objective for. */
+.gf-objective-chip {
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gf-dim);
+  background: var(--gf-trough);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-inset);
+  padding: 3px var(--gf-s-2);
+  max-width: 40ch;
+  line-height: 1.35;
+}
+
+.gf-objective-chip.is-hidden {
+  display: none;
+}
+
+/* Prose pages, not orders: the lines wrap and the label above them is the
+   heading, so a page reads as a page and a row still takes the cursor. */
+.gf-menu[data-menu="briefing-systems"] .gf-menu-list,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-list {
+  max-width: 52ch;
+}
+
+.gf-menu[data-menu="briefing-systems"] .gf-menu-label,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-label {
+  color: var(--gf-text);
+}
+
+.gf-menu[data-menu="briefing-systems"] .gf-menu-note,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-note {
+  white-space: normal;
+  line-height: 1.45;
+  padding-bottom: 2px;
+}
+
+/* Giving up the field is a decision, so the row that does it reads like one. */
+.gf-menu[data-menu="briefing-forfeit"] .gf-menu-entry[data-entry="forfeit"] .gf-menu-label {
+  color: var(--gf-enemy);
+}
+
+/* --- the formation rail --------------------------------------------------- */
+
+/* A tile the player can say out loud. The letter is the same one the field
+   chips carry (`deploySlotLabel`), so "click tile B" is an instruction rather
+   than a coordinate to hunt for. */
+.gf-deploy-slot {
+  grid-template-columns: auto auto 1fr auto;
+}
+
+.gf-deploy-chip {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gf-text);
+  background: var(--gf-panel);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-fitting);
+  padding: 0 4px;
+  min-width: 15px;
+  text-align: center;
+}
+
+/* The rail's rows are the reliable half of this screen: the tiles themselves are
+   geometry behind it. So they take the pointer like rows, and answer it. */
+.gf-deploy-slot {
+  cursor: pointer;
+}
+
+.gf-deploy-slot:hover,
+.gf-deploy-slot.is-hovered,
+.gf-deploy-enemy.is-hovered,
+.gf-unit-bar.is-hovered {
+  background-color: var(--gf-live-ink);
+  box-shadow: inset 2px 0 0 var(--gf-live-deep), var(--gf-fitting);
+}
+
+.gf-deploy-opposition {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+.gf-deploy-enemy {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: var(--gf-s-2);
+  border-top: 1px solid var(--gf-ink);
+  padding: 3px var(--gf-s-2);
+}
+
+.gf-deploy-enemy:first-child {
+  border-top: none;
+}
+
+/* The other side is the other side, wherever it is read (ART_DIRECTION §2). */
+.gf-deploy-enemy .gf-field-label {
+  color: var(--gf-enemy);
+}
+
+.gf-deploy-bearing,
+.gf-deploy-intel {
+  font-family: var(--gf-face-ledger);
+}
+
+.gf-deploy-intel.is-hidden {
+  display: none;
+}
+
+/* The rail's own height bound is the one declaration of it, edited in place
+   above (`.gf-between.is-field .gf-deploy-rail`). What belongs here is the other
+   half of the same clipping: nothing inside the rail is measured wider than the
+   rail — a 56ch body in a 340px column is text with its right-hand end cut off. */
+.gf-deploy-rail .gf-detail-body {
+  max-width: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

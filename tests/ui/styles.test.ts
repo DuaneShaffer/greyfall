@@ -123,3 +123,60 @@ describe("the chrome's budgets (UI_DESIGN §12)", () => {
     expect(Math.max(...outer)).toBeLessThanOrEqual(3);
   });
 });
+
+/**
+ * The rose's whole job is that the arm labelled North points at the board's
+ * north, and the only thing that knows where that is on screen is the CSS that
+ * places the four rows per camera bearing. No DOM assertion can reach it.
+ */
+describe("the compass rose turns with the rig", () => {
+  it("gives every bearing a complete rose, one arm per quarter", () => {
+    const blocks = [
+      ...CSS.matchAll(/([^{}]*\[data-menu="action-facing"\][^{}]*)\{([^}]*grid-area:[^}]*)\}/g),
+    ];
+    const placed = new Map<string, string>();
+    for (const [, selectors = "", body = ""] of blocks) {
+      const area = /grid-area:\s*([a-z]+)/.exec(body)?.[1];
+      if (area === undefined) continue;
+      for (const selector of selectors.split(",")) {
+        const yaw = /data-yaw="(\d)"/.exec(selector)?.[1];
+        const facing = /data-entry="(\w+)"/.exec(selector)?.[1];
+        if (yaw === undefined || facing === undefined) continue;
+        placed.set(`${yaw}:${facing}`, area);
+      }
+    }
+    for (const yaw of ["0", "1", "2", "3"]) {
+      const areas = ["north", "east", "south", "west"].map((facing) =>
+        placed.get(`${yaw}:${facing}`),
+      );
+      expect(areas, `bearing ${yaw} is missing an arm`).not.toContain(undefined);
+      // Two arms in one quarter is a rose that lies about half the board.
+      expect(new Set(areas).size, `bearing ${yaw} doubles up a quarter`).toBe(4);
+    }
+  });
+});
+
+/**
+ * The formation rail floats over the live field, which takes the wheel for the
+ * camera. A row the panel's own scroller cannot reach is therefore a row that is
+ * gone, and both halves of that are stylesheet-only.
+ */
+describe("the formation rail is bounded by the frame, not by a guess", () => {
+  it("measures its height against the viewport that is actually there", () => {
+    const rail = rule(".gf-between.is-field .gf-deploy-rail {");
+    const bound = /max-height:\s*calc\(100dvh\s*-\s*(\d+)px\)/.exec(rail);
+    expect(bound, "the rail's bound is not viewport-relative").not.toBeNull();
+    // The bar, the foot, the page's padding and the screen's own header. The old
+    // 190px was six pixels short at 1600×1000, which is the whole finding.
+    expect(Number(bound?.[1])).toBeGreaterThanOrEqual(200);
+    expect(rail).toContain("min-height: 0");
+    // A scroll that starts in the panel stays in it; behind it is the camera.
+    expect(rail).toContain("overscroll-behavior: contain");
+  });
+
+  it("measures nothing inside it wider than the rail itself", () => {
+    const body = rule(".gf-deploy-rail .gf-detail-body");
+    expect(body).toContain("max-width: none");
+    expect(body).toContain("overflow-wrap: anywhere");
+  });
+});
