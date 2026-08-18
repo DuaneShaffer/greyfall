@@ -2,11 +2,11 @@
   "encounterId": "e2-foundry-floor-nine",
   "mapId": "foundry-floor-nine",
   "seed": 101,
-  "outcome": "win",
-  "winner": "player",
-  "turns": 64,
-  "clock": 83,
-  "commands": 152,
+  "outcome": "loss",
+  "winner": "enemy",
+  "turns": 72,
+  "clock": 117,
+  "commands": 175,
   "capped": false,
   "rejectedCommands": 0,
   "objectsDestroyed": [
@@ -14,8 +14,9 @@
     "spawned-mine-2",
     "spawned-mine-6",
     "feeder-cell-north",
-    "press-line-mid",
-    "press-line-south"
+    "press-line-south",
+    "ingot-stack",
+    "press-line-mid"
   ],
   "events": [
     {
@@ -3082,8 +3083,8 @@
         "y": 14
       },
       "to": {
-        "x": 2,
-        "y": 13
+        "x": 1,
+        "y": 14
       },
       "path": [
         {
@@ -3091,16 +3092,26 @@
           "y": 14
         },
         {
-          "x": 2,
-          "y": 13
+          "x": 1,
+          "y": 14
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "west"
     },
     {
       "type": "ChargeChanged",
       "unitId": "vale",
       "delta": -1,
       "charge": 29
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "north"
     },
     {
       "type": "AbilityUsed",
@@ -3562,11 +3573,6 @@
       "charge": 5
     },
     {
-      "type": "UnitFacingChanged",
-      "unitId": "jory-slate",
-      "facing": "north"
-    },
-    {
       "type": "AbilityUsed",
       "unitId": "jory-slate",
       "abilityId": "bracer-shot",
@@ -3576,8 +3582,8 @@
       },
       "tiles": [
         {
-          "x": 2,
-          "y": 13
+          "x": 1,
+          "y": 14
         }
       ]
     },
@@ -3596,6 +3602,11 @@
       "unitId": "jory-slate",
       "amount": 10,
       "total": 30
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "north"
     },
     {
       "type": "TurnEnded",
@@ -4192,10 +4203,46 @@
       "clock": 60
     },
     {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 1,
+        "y": 14
+      },
+      "to": {
+        "x": 2,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "east"
+    },
+    {
       "type": "ChargeChanged",
       "unitId": "vale",
       "delta": -5,
       "charge": 24
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "north"
     },
     {
       "type": "AbilityUsed",
@@ -4237,36 +4284,6 @@
       "unitId": "vale",
       "amount": 10,
       "total": 20
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "vale",
-      "from": {
-        "x": 2,
-        "y": 13
-      },
-      "to": {
-        "x": 2,
-        "y": 10
-      },
-      "path": [
-        {
-          "x": 2,
-          "y": 13
-        },
-        {
-          "x": 2,
-          "y": 12
-        },
-        {
-          "x": 2,
-          "y": 11
-        },
-        {
-          "x": 2,
-          "y": 10
-        }
-      ]
     },
     {
       "type": "TurnEnded",
@@ -4607,10 +4624,58 @@
       "clock": 67
     },
     {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-gantry",
+      "from": {
+        "x": 3,
+        "y": 8
+      },
+      "to": {
+        "x": 4,
+        "y": 12
+      },
+      "path": [
+        {
+          "x": 3,
+          "y": 8
+        },
+        {
+          "x": 4,
+          "y": 8
+        },
+        {
+          "x": 4,
+          "y": 9
+        },
+        {
+          "x": 4,
+          "y": 10
+        },
+        {
+          "x": 4,
+          "y": 11
+        },
+        {
+          "x": 4,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "south"
+    },
+    {
       "type": "ChargeChanged",
       "unitId": "torch-hand-gantry",
       "delta": -3,
       "charge": 5
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "west"
     },
     {
       "type": "AbilityCharging",
@@ -4619,8 +4684,8 @@
       "target": {
         "kind": "tile",
         "tile": {
-          "x": 1,
-          "y": 10
+          "x": 2,
+          "y": 12
         }
       },
       "chargeId": "charge-20",
@@ -4629,7 +4694,7 @@
     {
       "type": "TurnEnded",
       "unitId": "torch-hand-gantry",
-      "ctSpent": 80
+      "ctSpent": 100
     },
     {
       "type": "ClockAdvanced",
@@ -4670,20 +4735,6 @@
       ]
     },
     {
-      "type": "DamageDealt",
-      "unitId": "torch-hand-gantry",
-      "sourceUnitId": "jory-slate",
-      "amount": 24,
-      "damageType": "thermal",
-      "hpRemaining": 34
-    },
-    {
-      "type": "StatusApplied",
-      "unitId": "torch-hand-gantry",
-      "statusId": "scalded",
-      "turnsRemaining": 3
-    },
-    {
       "type": "StandingAwarded",
       "unitId": "jory-slate",
       "amount": 10,
@@ -4696,28 +4747,40 @@
       "target": {
         "kind": "tile",
         "tile": {
-          "x": 1,
-          "y": 10
+          "x": 2,
+          "y": 12
         }
       },
       "tiles": [
         {
-          "x": 1,
-          "y": 9
+          "x": 2,
+          "y": 11
         },
         {
           "x": 1,
-          "y": 10
+          "y": 12
         },
         {
           "x": 2,
-          "y": 10
+          "y": 12
         },
         {
-          "x": 1,
-          "y": 11
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 13
         }
       ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "jory-slate",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 28,
+      "damageType": "kinetic",
+      "hpRemaining": 32
     },
     {
       "type": "DamageDealt",
@@ -4726,17 +4789,6 @@
       "amount": 28,
       "damageType": "kinetic",
       "hpRemaining": 19
-    },
-    {
-      "type": "ObjectDamaged",
-      "objectId": "press-line-mid",
-      "sourceUnitId": "torch-hand-gantry",
-      "amount": 32,
-      "hpRemaining": 0
-    },
-    {
-      "type": "ObjectDestroyed",
-      "objectId": "press-line-mid"
     },
     {
       "type": "ObjectDamaged",
@@ -4762,51 +4814,9 @@
       "clock": 70
     },
     {
-      "type": "UnitMoved",
-      "unitId": "hand-runner-east",
-      "from": {
-        "x": 14,
-        "y": 10
-      },
-      "to": {
-        "x": 14,
-        "y": 8
-      },
-      "path": [
-        {
-          "x": 14,
-          "y": 10
-        },
-        {
-          "x": 14,
-          "y": 9
-        },
-        {
-          "x": 14,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "hand-runner-east",
-      "facing": "north"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "hand-runner-east",
-      "delta": -1,
-      "charge": 8
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "hand-runner-east",
-      "facing": "south"
-    },
-    {
       "type": "AbilityUsed",
       "unitId": "hand-runner-east",
-      "abilityId": "coupling-hook",
+      "abilityId": "basic-attack",
       "target": {
         "kind": "unit",
         "unitId": "ivo-brace"
@@ -4822,27 +4832,9 @@
       "type": "DamageDealt",
       "unitId": "ivo-brace",
       "sourceUnitId": "hand-runner-east",
-      "amount": 10,
+      "amount": 13,
       "damageType": "kinetic",
-      "hpRemaining": 9
-    },
-    {
-      "type": "UnitForcedMove",
-      "unitId": "ivo-brace",
-      "from": {
-        "x": 13,
-        "y": 10
-      },
-      "to": {
-        "x": 13,
-        "y": 7
-      }
-    },
-    {
-      "type": "StatusApplied",
-      "unitId": "ivo-brace",
-      "statusId": "stunned",
-      "turnsRemaining": 1
+      "hpRemaining": 6
     },
     {
       "type": "StandingAwarded",
@@ -4851,14 +4843,9 @@
       "total": 60
     },
     {
-      "type": "UnitFacingChanged",
-      "unitId": "hand-runner-east",
-      "facing": "west"
-    },
-    {
       "type": "TurnEnded",
       "unitId": "hand-runner-east",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
@@ -4878,8 +4865,8 @@
         "y": 2
       },
       "to": {
-        "x": 13,
-        "y": 4
+        "x": 15,
+        "y": 2
       },
       "path": [
         {
@@ -4899,14 +4886,19 @@
           "y": 2
         },
         {
-          "x": 13,
-          "y": 3
+          "x": 14,
+          "y": 2
         },
         {
-          "x": 13,
-          "y": 4
+          "x": 15,
+          "y": 2
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "east"
     },
     {
       "type": "ChargeChanged",
@@ -4915,14 +4907,19 @@
       "charge": 0
     },
     {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
       "type": "AbilityCharging",
       "unitId": "marek-sump",
       "abilityId": "shaped-charge",
       "target": {
         "kind": "tile",
         "tile": {
-          "x": 14,
-          "y": 7
+          "x": 15,
+          "y": 6
         }
       },
       "chargeId": "charge-21",
@@ -4949,7 +4946,11 @@
       "sourceUnitId": null,
       "amount": 8,
       "damageType": "thermal",
-      "hpRemaining": 1
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "ivo-brace"
     },
     {
       "type": "TurnEnded",
@@ -4962,11 +4963,6 @@
       "statusId": "scalded"
     },
     {
-      "type": "StatusRemoved",
-      "unitId": "ivo-brace",
-      "statusId": "stunned"
-    },
-    {
       "type": "ClockAdvanced",
       "clock": 74
     },
@@ -4977,34 +4973,28 @@
       "target": {
         "kind": "tile",
         "tile": {
-          "x": 14,
-          "y": 7
+          "x": 15,
+          "y": 6
         }
       },
       "tiles": [
+        {
+          "x": 15,
+          "y": 5
+        },
         {
           "x": 14,
           "y": 6
         },
         {
-          "x": 14,
-          "y": 7
+          "x": 15,
+          "y": 6
         },
         {
           "x": 15,
           "y": 7
-        },
-        {
-          "x": 14,
-          "y": 8
         }
       ]
-    },
-    {
-      "type": "AbilityMissed",
-      "unitId": "marek-sump",
-      "abilityId": "shaped-charge",
-      "targetUnitId": "hand-runner-east"
     },
     {
       "type": "DamageDealt",
@@ -5035,37 +5025,37 @@
       "unitId": "vale",
       "from": {
         "x": 2,
-        "y": 10
+        "y": 13
       },
       "to": {
-        "x": 2,
-        "y": 8
+        "x": 3,
+        "y": 12
       },
       "path": [
         {
           "x": 2,
-          "y": 10
+          "y": 13
         },
         {
           "x": 2,
-          "y": 9
+          "y": 12
         },
         {
-          "x": 2,
-          "y": 8
+          "x": 3,
+          "y": 12
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "east"
     },
     {
       "type": "ChargeChanged",
       "unitId": "vale",
       "delta": -5,
       "charge": 19
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "vale",
-      "facing": "east"
     },
     {
       "type": "AbilityUsed",
@@ -5077,16 +5067,16 @@
       },
       "tiles": [
         {
-          "x": 3,
-          "y": 8
-        },
-        {
           "x": 4,
-          "y": 8
+          "y": 12
         },
         {
           "x": 5,
-          "y": 8
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
         }
       ]
     },
@@ -5096,7 +5086,7 @@
       "sourceUnitId": "vale",
       "amount": 30,
       "damageType": "arc",
-      "hpRemaining": 4
+      "hpRemaining": 28
     },
     {
       "type": "StandingAwarded",
@@ -5111,13 +5101,13 @@
     },
     {
       "type": "ClockAdvanced",
-      "clock": 78
+      "clock": 80
     },
     {
       "type": "TurnStarted",
-      "unitId": "ivo-brace",
+      "unitId": "hand-perren",
       "turn": 60,
-      "clock": 78
+      "clock": 80
     },
     {
       "type": "TriggerFired",
@@ -5130,121 +5120,24 @@
     },
     {
       "type": "PowerChanged",
+      "objectId": "press-line-mid",
+      "powered": true
+    },
+    {
+      "type": "PowerChanged",
       "objectId": "pour-ladle-tap",
       "powered": true
     },
     {
       "type": "UnitMoved",
-      "unitId": "ivo-brace",
-      "from": {
-        "x": 13,
-        "y": 7
-      },
-      "to": {
-        "x": 15,
-        "y": 6
-      },
-      "path": [
-        {
-          "x": 13,
-          "y": 7
-        },
-        {
-          "x": 13,
-          "y": 6
-        },
-        {
-          "x": 14,
-          "y": 6
-        },
-        {
-          "x": 15,
-          "y": 6
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "east"
-    },
-    {
-      "type": "ChargeChanged",
-      "unitId": "ivo-brace",
-      "delta": -4,
-      "charge": 13
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "west"
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "ivo-brace",
-      "abilityId": "tripwire-charge",
-      "target": {
-        "kind": "tile",
-        "tile": {
-          "x": 14,
-          "y": 7
-        }
-      },
-      "tiles": [
-        {
-          "x": 14,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "type": "ObjectSpawned",
-      "objectId": "spawned-mine-22",
-      "kind": "mine",
-      "owner": "player",
-      "tiles": [
-        {
-          "x": 14,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "ivo-brace",
-      "amount": 10,
-      "total": 80
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "ivo-brace",
-      "facing": "south"
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "ivo-brace",
-      "ctSpent": 100
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 80
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "hand-perren",
-      "turn": 61,
-      "clock": 80
-    },
-    {
-      "type": "UnitMoved",
       "unitId": "hand-perren",
       "from": {
         "x": 15,
         "y": 7
       },
       "to": {
-        "x": 14,
-        "y": 5
+        "x": 15,
+        "y": 4
       },
       "path": [
         {
@@ -5252,16 +5145,16 @@
           "y": 7
         },
         {
-          "x": 14,
-          "y": 7
-        },
-        {
-          "x": 14,
+          "x": 15,
           "y": 6
         },
         {
-          "x": 14,
+          "x": 15,
           "y": 5
+        },
+        {
+          "x": 15,
+          "y": 4
         }
       ]
     },
@@ -5287,8 +5180,8 @@
       },
       "tiles": [
         {
-          "x": 14,
-          "y": 5
+          "x": 15,
+          "y": 4
         }
       ]
     },
@@ -5306,6 +5199,494 @@
       "total": 40
     },
     {
+      "type": "TurnEnded",
+      "unitId": "hand-perren",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-runner-east",
+      "turn": 61,
+      "clock": 80
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "hand-runner-east",
+      "from": {
+        "x": 14,
+        "y": 10
+      },
+      "to": {
+        "x": 14,
+        "y": 2
+      },
+      "path": [
+        {
+          "x": 14,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 8
+        },
+        {
+          "x": 14,
+          "y": 7
+        },
+        {
+          "x": 14,
+          "y": 6
+        },
+        {
+          "x": 14,
+          "y": 5
+        },
+        {
+          "x": 14,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 3
+        },
+        {
+          "x": 14,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-runner-east",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-runner-east",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "hand-runner-east",
+      "abilityId": "switch-kick",
+      "target": {
+        "kind": "unit",
+        "unitId": "marek-sump"
+      },
+      "tiles": [
+        {
+          "x": 15,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "marek-sump",
+      "sourceUnitId": "hand-runner-east",
+      "amount": 9,
+      "damageType": "kinetic",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "marek-sump"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "hand-runner-east",
+      "amount": 10,
+      "total": 70
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-runner-east",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "hand-runner-east",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 84
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 62,
+      "clock": 84
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "jory-slate",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "torch-hand-gantry"
+      },
+      "tiles": [
+        {
+          "x": 4,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "AbilityMissed",
+      "unitId": "jory-slate",
+      "abilityId": "basic-attack",
+      "targetUnitId": "torch-hand-gantry"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "jory-slate",
+      "amount": 10,
+      "total": 50
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "jory-slate",
+      "from": {
+        "x": 2,
+        "y": 12
+      },
+      "to": {
+        "x": 2,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "east"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "torch-hand-gantry",
+      "turn": 63,
+      "clock": 84
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-gantry",
+      "from": {
+        "x": 4,
+        "y": 12
+      },
+      "to": {
+        "x": 2,
+        "y": 12
+      },
+      "path": [
+        {
+          "x": 4,
+          "y": 12
+        },
+        {
+          "x": 4,
+          "y": 11
+        },
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "south"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "torch-hand-gantry",
+      "delta": -3,
+      "charge": 2
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityCharging",
+      "unitId": "torch-hand-gantry",
+      "abilityId": "shaped-charge",
+      "target": {
+        "kind": "object",
+        "objectId": "ingot-stack"
+      },
+      "chargeId": "charge-22",
+      "castSpeed": 35
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "torch-hand-gantry",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 87
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "torch-hand-gantry",
+      "abilityId": "shaped-charge",
+      "target": {
+        "kind": "object",
+        "objectId": "ingot-stack"
+      },
+      "tiles": [
+        {
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "jory-slate",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 28,
+      "damageType": "kinetic",
+      "hpRemaining": 4
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "vale",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 28,
+      "damageType": "kinetic",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "vale"
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "ingot-stack",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 32,
+      "hpRemaining": 0
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "ingot-stack"
+    },
+    {
+      "type": "ReactionTriggered",
+      "unitId": "jory-slate",
+      "abilityId": "reflex-dose",
+      "againstUnitId": "torch-hand-gantry"
+    },
+    {
+      "type": "Healed",
+      "unitId": "jory-slate",
+      "sourceUnitId": "jory-slate",
+      "amount": 21,
+      "hpRemaining": 25
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "torch-hand-gantry",
+      "amount": 10,
+      "total": 50
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 93
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-runner-east",
+      "turn": 64,
+      "clock": 93
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "hand-runner-east",
+      "from": {
+        "x": 14,
+        "y": 2
+      },
+      "to": {
+        "x": 11,
+        "y": 14
+      },
+      "path": [
+        {
+          "x": 14,
+          "y": 2
+        },
+        {
+          "x": 14,
+          "y": 3
+        },
+        {
+          "x": 14,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 5
+        },
+        {
+          "x": 14,
+          "y": 6
+        },
+        {
+          "x": 14,
+          "y": 7
+        },
+        {
+          "x": 14,
+          "y": 8
+        },
+        {
+          "x": 14,
+          "y": 9
+        },
+        {
+          "x": 14,
+          "y": 10
+        },
+        {
+          "x": 14,
+          "y": 11
+        },
+        {
+          "x": 14,
+          "y": 12
+        },
+        {
+          "x": 14,
+          "y": 13
+        },
+        {
+          "x": 14,
+          "y": 14
+        },
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 12,
+          "y": 14
+        },
+        {
+          "x": 11,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "hand-runner-east",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 97
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-perren",
+      "turn": 65,
+      "clock": 97
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "hand-perren",
+      "from": {
+        "x": 15,
+        "y": 4
+      },
+      "to": {
+        "x": 13,
+        "y": 5
+      },
+      "path": [
+        {
+          "x": 15,
+          "y": 4
+        },
+        {
+          "x": 14,
+          "y": 4
+        },
+        {
+          "x": 13,
+          "y": 4
+        },
+        {
+          "x": 13,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-perren",
+      "facing": "south"
+    },
+    {
       "type": "UnitFacingChanged",
       "unitId": "hand-perren",
       "facing": "west"
@@ -5313,116 +5694,535 @@
     {
       "type": "TurnEnded",
       "unitId": "hand-perren",
-      "ctSpent": 100
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 100
     },
     {
       "type": "TurnStarted",
-      "unitId": "marek-sump",
-      "turn": 62,
-      "clock": 80
+      "unitId": "jory-slate",
+      "turn": 66,
+      "clock": 100
     },
     {
       "type": "UnitMoved",
-      "unitId": "marek-sump",
+      "unitId": "jory-slate",
       "from": {
-        "x": 13,
-        "y": 4
+        "x": 2,
+        "y": 13
       },
       "to": {
-        "x": 14,
-        "y": 4
+        "x": 1,
+        "y": 12
       },
       "path": [
         {
-          "x": 13,
-          "y": 4
+          "x": 2,
+          "y": 13
         },
         {
-          "x": 14,
-          "y": 4
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 1,
+          "y": 12
         }
       ]
     },
     {
       "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "east"
+      "unitId": "jory-slate",
+      "facing": "north"
     },
     {
       "type": "UnitFacingChanged",
-      "unitId": "marek-sump",
-      "facing": "south"
+      "unitId": "jory-slate",
+      "facing": "east"
     },
     {
       "type": "AbilityUsed",
-      "unitId": "marek-sump",
+      "unitId": "jory-slate",
       "abilityId": "basic-attack",
       "target": {
         "kind": "unit",
-        "unitId": "hand-perren"
+        "unitId": "torch-hand-gantry"
       },
       "tiles": [
         {
-          "x": 14,
-          "y": 5
+          "x": 2,
+          "y": 12
         }
       ]
     },
     {
       "type": "DamageDealt",
-      "unitId": "hand-perren",
-      "sourceUnitId": "marek-sump",
-      "amount": 18,
-      "damageType": "kinetic",
-      "hpRemaining": 39
+      "unitId": "torch-hand-gantry",
+      "sourceUnitId": "jory-slate",
+      "amount": 8,
+      "damageType": "chemical",
+      "hpRemaining": 20
     },
     {
       "type": "StandingAwarded",
-      "unitId": "marek-sump",
+      "unitId": "jory-slate",
+      "amount": 10,
+      "total": 60
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "torch-hand-gantry",
+      "turn": 67,
+      "clock": 100
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-gantry",
+      "from": {
+        "x": 2,
+        "y": 12
+      },
+      "to": {
+        "x": 1,
+        "y": 10
+      },
+      "path": [
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 1,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "west"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "torch-hand-gantry",
+      "abilityId": "rig-machinery",
+      "target": {
+        "kind": "object",
+        "objectId": "press-line-mid"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "type": "PowerChanged",
+      "objectId": "press-line-mid",
+      "powered": false
+    },
+    {
+      "type": "ObjectDamaged",
+      "objectId": "press-line-mid",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 48,
+      "hpRemaining": 0
+    },
+    {
+      "type": "ObjectDestroyed",
+      "objectId": "press-line-mid"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "torch-hand-gantry",
+      "amount": 10,
+      "total": 60
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "south"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "torch-hand-gantry",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 103
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-runner-east",
+      "turn": 68,
+      "clock": 103
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "hand-runner-east",
+      "from": {
+        "x": 11,
+        "y": 14
+      },
+      "to": {
+        "x": 1,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 11,
+          "y": 14
+        },
+        {
+          "x": 10,
+          "y": 14
+        },
+        {
+          "x": 9,
+          "y": 14
+        },
+        {
+          "x": 8,
+          "y": 14
+        },
+        {
+          "x": 7,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 2,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-runner-east",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "hand-runner-east",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "jory-slate"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "jory-slate",
+      "sourceUnitId": "hand-runner-east",
+      "amount": 13,
+      "damageType": "kinetic",
+      "hpRemaining": 12
+    },
+    {
+      "type": "ReactionTriggered",
+      "unitId": "jory-slate",
+      "abilityId": "reflex-dose",
+      "againstUnitId": "hand-runner-east"
+    },
+    {
+      "type": "Healed",
+      "unitId": "jory-slate",
+      "sourceUnitId": "jory-slate",
+      "amount": 21,
+      "hpRemaining": 33
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "hand-runner-east",
+      "amount": 10,
+      "total": 80
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "hand-runner-east",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 110
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-perren",
+      "turn": 69,
+      "clock": 110
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "hand-perren",
+      "from": {
+        "x": 13,
+        "y": 5
+      },
+      "to": {
+        "x": 13,
+        "y": 7
+      },
+      "path": [
+        {
+          "x": 13,
+          "y": 5
+        },
+        {
+          "x": 13,
+          "y": 6
+        },
+        {
+          "x": 13,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-perren",
+      "facing": "south"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "hand-perren",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "hand-perren",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 115
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "hand-runner-east",
+      "turn": 70,
+      "clock": 115
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "hand-runner-east",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "jory-slate"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "jory-slate",
+      "sourceUnitId": "hand-runner-east",
+      "amount": 13,
+      "damageType": "kinetic",
+      "hpRemaining": 20
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "hand-runner-east",
       "amount": 10,
       "total": 90
     },
     {
       "type": "TurnEnded",
-      "unitId": "marek-sump",
-      "ctSpent": 100
+      "unitId": "hand-runner-east",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 117
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 71,
+      "clock": 117
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "south"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "jory-slate",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "hand-runner-east"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "hand-runner-east",
+      "sourceUnitId": "jory-slate",
+      "amount": 8,
+      "damageType": "chemical",
+      "hpRemaining": 43
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "jory-slate",
+      "amount": 10,
+      "total": 70
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "jory-slate",
+      "facing": "north"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
       "unitId": "torch-hand-gantry",
-      "turn": 63,
-      "clock": 80
+      "turn": 72,
+      "clock": 117
+    },
+    {
+      "type": "TriggerFired",
+      "triggerId": "mains-hold-72"
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-gantry",
+      "from": {
+        "x": 1,
+        "y": 10
+      },
+      "to": {
+        "x": 2,
+        "y": 12
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 10
+        },
+        {
+          "x": 2,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-gantry",
+      "facing": "west"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "torch-hand-gantry",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "jory-slate"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 12
+        }
+      ]
     },
     {
       "type": "DamageDealt",
-      "unitId": "torch-hand-gantry",
-      "sourceUnitId": null,
-      "amount": 8,
+      "unitId": "jory-slate",
+      "sourceUnitId": "torch-hand-gantry",
+      "amount": 22,
       "damageType": "thermal",
       "hpRemaining": 0
     },
     {
       "type": "UnitDowned",
-      "unitId": "torch-hand-gantry"
+      "unitId": "jory-slate"
     },
     {
-      "type": "TurnEnded",
+      "type": "StandingAwarded",
       "unitId": "torch-hand-gantry",
-      "ctSpent": 60
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 83
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "hand-runner-east",
-      "turn": 64,
-      "clock": 83
+      "amount": 10,
+      "total": 70
     },
     {
       "type": "BattleEnded",
-      "result": "win"
+      "result": "loss"
     }
   ]
 }

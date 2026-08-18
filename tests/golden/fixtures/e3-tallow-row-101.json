@@ -3,10 +3,10 @@
   "mapId": "tallow-row",
   "seed": 101,
   "outcome": "loss",
-  "winner": "none",
-  "turns": 68,
-  "clock": 84,
-  "commands": 149,
+  "winner": "enemy",
+  "turns": 80,
+  "clock": 110,
+  "commands": 177,
   "capped": false,
   "rejectedCommands": 0,
   "objectsDestroyed": [
@@ -4245,7 +4245,7 @@
       },
       "to": {
         "x": 1,
-        "y": 13
+        "y": 14
       },
       "path": [
         {
@@ -4255,14 +4255,28 @@
         {
           "x": 1,
           "y": 13
+        },
+        {
+          "x": 1,
+          "y": 14
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
     },
     {
       "type": "ChargeChanged",
       "unitId": "marek-sump",
       "delta": -3,
       "charge": 6
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "east"
     },
     {
       "type": "AbilityCharging",
@@ -4526,8 +4540,8 @@
         "y": 15
       },
       "to": {
-        "x": 2,
-        "y": 14
+        "x": 1,
+        "y": 13
       },
       "path": [
         {
@@ -4539,12 +4553,12 @@
           "y": 14
         },
         {
-          "x": 1,
-          "y": 14
+          "x": 0,
+          "y": 13
         },
         {
-          "x": 2,
-          "y": 14
+          "x": 1,
+          "y": 13
         }
       ]
     },
@@ -4617,13 +4631,17 @@
       "unitId": "marek-sump",
       "from": {
         "x": 1,
-        "y": 13
+        "y": 14
       },
       "to": {
         "x": 5,
         "y": 13
       },
       "path": [
+        {
+          "x": 1,
+          "y": 14
+        },
         {
           "x": 1,
           "y": 13
@@ -5008,8 +5026,486 @@
     {
       "type": "ChargeChanged",
       "unitId": "wick",
+      "delta": -1,
+      "charge": 10
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "wick",
+      "abilityId": "smoke-canister",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 3,
+          "y": 13
+        }
+      },
+      "tiles": [
+        {
+          "x": 3,
+          "y": 11
+        },
+        {
+          "x": 2,
+          "y": 12
+        },
+        {
+          "x": 3,
+          "y": 12
+        },
+        {
+          "x": 4,
+          "y": 12
+        },
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "jory-slate",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "marek-sump",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "rowen",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "wick",
+      "amount": 10,
+      "total": 60
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "north"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "wick",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 77
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 79
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "marek-sump",
+      "turn": 63,
+      "clock": 79
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "marek-sump",
+      "delta": -1,
+      "charge": 2
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "marek-sump",
+      "abilityId": "smoke-canister",
+      "target": {
+        "kind": "unit",
+        "unitId": "torch-hand-east-room"
+      },
+      "tiles": [
+        {
+          "x": 6,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 8,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 7,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "type": "AbilityMissed",
+      "unitId": "marek-sump",
+      "abilityId": "smoke-canister",
+      "targetUnitId": "torch-hand-east-room"
+    },
+    {
+      "type": "AbilityMissed",
+      "unitId": "marek-sump",
+      "abilityId": "smoke-canister",
+      "targetUnitId": "wick"
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "cell-machinist",
+      "statusId": "smoked"
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "marek-sump",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "provocateur-barricade",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "marek-sump",
+      "amount": 10,
+      "total": 80
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "marek-sump",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "torch-hand-east-room",
+      "turn": 64,
+      "clock": 80
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-east-room",
+      "from": {
+        "x": 6,
+        "y": 13
+      },
+      "to": {
+        "x": 4,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-east-room",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-east-room",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "torch-hand-east-room",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "marek-sump"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "marek-sump",
+      "sourceUnitId": "torch-hand-east-room",
+      "amount": 22,
+      "damageType": "thermal",
+      "hpRemaining": 38
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "torch-hand-east-room",
+      "amount": 10,
+      "total": 40
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "torch-hand-east-room",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 84
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "jory-slate",
+      "turn": 65,
+      "clock": 84
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "jory-slate",
+      "from": {
+        "x": 1,
+        "y": 13
+      },
+      "to": {
+        "x": 2,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "jory-slate",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "provocateur-barricade",
+      "turn": 66,
+      "clock": 84
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "provocateur-barricade",
+      "from": {
+        "x": 7,
+        "y": 14
+      },
+      "to": {
+        "x": 6,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 7,
+          "y": 14
+        },
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 6,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "provocateur-barricade",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "marek-sump"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "marek-sump",
+      "sourceUnitId": "provocateur-barricade",
+      "amount": 1,
+      "damageType": "kinetic",
+      "hpRemaining": 37
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "marek-sump",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "provocateur-barricade",
+      "amount": 10,
+      "total": 40
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "provocateur-barricade",
+      "ctSpent": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "vale",
+      "turn": 67,
+      "clock": 84
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "vale",
+      "from": {
+        "x": 0,
+        "y": 17
+      },
+      "to": {
+        "x": 1,
+        "y": 16
+      },
+      "path": [
+        {
+          "x": 0,
+          "y": 17
+        },
+        {
+          "x": 0,
+          "y": 16
+        },
+        {
+          "x": 1,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "vale",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "wick",
+      "turn": 68,
+      "clock": 84
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "wick",
       "delta": -3,
-      "charge": 8
+      "charge": 7
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "west"
     },
     {
       "type": "AbilityCharging",
@@ -5028,15 +5524,131 @@
     {
       "type": "TurnEnded",
       "unitId": "wick",
-      "ctSpent": 100
+      "ctSpent": 80
     },
     {
       "type": "ClockAdvanced",
-      "clock": 77
+      "clock": 86
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "marek-sump",
+      "turn": 69,
+      "clock": 86
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "marek-sump",
+      "delta": -1,
+      "charge": 1
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "marek-sump",
+      "abilityId": "smoke-canister",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 6,
+          "y": 11
+        }
+      },
+      "tiles": [
+        {
+          "x": 6,
+          "y": 9
+        },
+        {
+          "x": 5,
+          "y": 10
+        },
+        {
+          "x": 6,
+          "y": 10
+        },
+        {
+          "x": 7,
+          "y": 10
+        },
+        {
+          "x": 4,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 11
+        },
+        {
+          "x": 6,
+          "y": 11
+        },
+        {
+          "x": 7,
+          "y": 11
+        },
+        {
+          "x": 8,
+          "y": 11
+        },
+        {
+          "x": 5,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 12
+        },
+        {
+          "x": 7,
+          "y": 12
+        },
+        {
+          "x": 6,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "cell-machinist",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "provocateur-barricade",
+      "statusId": "smoked",
+      "turnsRemaining": 2
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "marek-sump",
+      "amount": 10,
+      "total": 90
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "marek-sump",
+      "ctSpent": 80
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "marek-sump",
+      "statusId": "smoked"
     },
     {
       "type": "ClockAdvanced",
-      "clock": 78
+      "clock": 87
     },
     {
       "type": "AbilityUsed",
@@ -5094,75 +5706,229 @@
       "type": "DamageDealt",
       "unitId": "wick",
       "sourceUnitId": "rowen",
-      "amount": 6,
+      "amount": 0,
       "damageType": "kinetic",
-      "hpRemaining": 24
+      "hpRemaining": 30
     },
     {
       "type": "StandingAwarded",
       "unitId": "wick",
       "amount": 10,
-      "total": 60
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 79
+      "total": 70
     },
     {
       "type": "TurnStarted",
-      "unitId": "marek-sump",
-      "turn": 63,
-      "clock": 79
+      "unitId": "cell-machinist",
+      "turn": 70,
+      "clock": 87
     },
     {
-      "type": "TriggerFired",
-      "triggerId": "wick-breaks-for-the-stair"
+      "type": "ChargeChanged",
+      "unitId": "cell-machinist",
+      "delta": -4,
+      "charge": 14
     },
     {
-      "type": "DialogueRequested",
-      "triggerId": "wick-breaks-for-the-stair",
-      "lines": [
+      "type": "AbilityUsed",
+      "unitId": "cell-machinist",
+      "abilityId": "tripwire-charge",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 4,
+          "y": 14
+        }
+      },
+      "tiles": [
         {
-          "speaker": "Wick",
-          "text": "That's me done standing. Stair's four doors up. I've walked it drunk."
-        },
-        {
-          "speaker": "Rowen Corvane",
-          "text": "He is on the stair. Cut him off at the head of the Row or we lose the whole street's evidence with him."
+          "x": 4,
+          "y": 14
         }
       ]
     },
     {
-      "type": "UnitForcedMove",
-      "unitId": "wick",
+      "type": "ObjectSpawned",
+      "objectId": "spawned-mine-21",
+      "kind": "mine",
+      "owner": "enemy",
+      "tiles": [
+        {
+          "x": 4,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "cell-machinist",
+      "amount": 10,
+      "total": 40
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "cell-machinist",
+      "ctSpent": 80
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "rowen",
+      "turn": 71,
+      "clock": 87
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "rowen",
       "from": {
-        "x": 5,
+        "x": 3,
         "y": 14
       },
       "to": {
-        "x": 8,
-        "y": 1
-      }
+        "x": 3,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "rowen",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "rowen",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "rowen",
+      "abilityId": "pin",
+      "target": {
+        "kind": "unit",
+        "unitId": "torch-hand-east-room"
+      },
+      "tiles": [
+        {
+          "x": 4,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "torch-hand-east-room",
+      "sourceUnitId": "rowen",
+      "amount": 1,
+      "damageType": "kinetic",
+      "hpRemaining": 33
+    },
+    {
+      "type": "StatusResisted",
+      "unitId": "torch-hand-east-room",
+      "statusId": "stunned"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "rowen",
+      "amount": 10,
+      "total": 30
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "rowen",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 91
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "wick",
+      "turn": 72,
+      "clock": 91
     },
     {
       "type": "ChargeChanged",
-      "unitId": "marek-sump",
+      "unitId": "wick",
       "delta": -3,
-      "charge": 0
+      "charge": 4
     },
     {
       "type": "AbilityCharging",
-      "unitId": "marek-sump",
+      "unitId": "wick",
       "abilityId": "shaped-charge",
       "target": {
         "kind": "tile",
         "tile": {
-          "x": 6,
-          "y": 12
+          "x": 2,
+          "y": 13
         }
       },
-      "chargeId": "charge-21",
+      "chargeId": "charge-22",
       "castSpeed": 35
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "wick",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 93
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "marek-sump",
+      "turn": 73,
+      "clock": 93
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "marek-sump",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "provocateur-barricade"
+      },
+      "tiles": [
+        {
+          "x": 6,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "provocateur-barricade",
+      "sourceUnitId": "marek-sump",
+      "amount": 18,
+      "damageType": "kinetic",
+      "hpRemaining": 19
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "marek-sump",
+      "amount": 10,
+      "total": 100
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "marek-sump",
+      "facing": "south"
     },
     {
       "type": "TurnEnded",
@@ -5171,78 +5937,56 @@
     },
     {
       "type": "ClockAdvanced",
-      "clock": 80
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "torch-hand-east-room",
-      "turn": 64,
-      "clock": 80
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "torch-hand-east-room",
-      "from": {
-        "x": 6,
-        "y": 13
-      },
-      "to": {
-        "x": 3,
-        "y": 13
-      },
-      "path": [
-        {
-          "x": 6,
-          "y": 13
-        },
-        {
-          "x": 6,
-          "y": 14
-        },
-        {
-          "x": 5,
-          "y": 14
-        },
-        {
-          "x": 4,
-          "y": 14
-        },
-        {
-          "x": 4,
-          "y": 13
-        },
-        {
-          "x": 3,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "torch-hand-east-room",
-      "facing": "south"
+      "clock": 94
     },
     {
       "type": "AbilityUsed",
-      "unitId": "torch-hand-east-room",
-      "abilityId": "basic-attack",
+      "unitId": "wick",
+      "abilityId": "shaped-charge",
       "target": {
-        "kind": "unit",
-        "unitId": "rowen"
+        "kind": "tile",
+        "tile": {
+          "x": 2,
+          "y": 13
+        }
       },
       "tiles": [
         {
+          "x": 1,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
           "x": 3,
+          "y": 13
+        },
+        {
+          "x": 2,
           "y": 14
         }
       ]
     },
     {
       "type": "DamageDealt",
+      "unitId": "jory-slate",
+      "sourceUnitId": "wick",
+      "amount": 34,
+      "damageType": "kinetic",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "jory-slate"
+    },
+    {
+      "type": "DamageDealt",
       "unitId": "rowen",
-      "sourceUnitId": "torch-hand-east-room",
-      "amount": 22,
-      "damageType": "thermal",
+      "sourceUnitId": "wick",
+      "amount": 34,
+      "damageType": "kinetic",
       "hpRemaining": 0
     },
     {
@@ -5251,184 +5995,24 @@
     },
     {
       "type": "StandingAwarded",
-      "unitId": "torch-hand-east-room",
-      "amount": 10,
-      "total": 40
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "torch-hand-east-room",
-      "ctSpent": 100
-    },
-    {
-      "type": "ClockAdvanced",
-      "clock": 82
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "marek-sump",
-      "abilityId": "shaped-charge",
-      "target": {
-        "kind": "tile",
-        "tile": {
-          "x": 6,
-          "y": 12
-        }
-      },
-      "tiles": [
-        {
-          "x": 6,
-          "y": 11
-        },
-        {
-          "x": 6,
-          "y": 12
-        },
-        {
-          "x": 7,
-          "y": 12
-        },
-        {
-          "x": 6,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
-      "unitId": "cell-machinist",
-      "sourceUnitId": "marek-sump",
-      "amount": 32,
-      "damageType": "kinetic",
-      "hpRemaining": 0
-    },
-    {
-      "type": "UnitDowned",
-      "unitId": "cell-machinist"
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "marek-sump",
+      "unitId": "wick",
       "amount": 10,
       "total": 80
     },
     {
       "type": "ClockAdvanced",
-      "clock": 84
+      "clock": 97
     },
     {
       "type": "TurnStarted",
-      "unitId": "jory-slate",
-      "turn": 65,
-      "clock": 84
-    },
-    {
-      "type": "AbilityUsed",
-      "unitId": "jory-slate",
-      "abilityId": "basic-attack",
-      "target": {
-        "kind": "unit",
-        "unitId": "torch-hand-east-room"
-      },
-      "tiles": [
-        {
-          "x": 3,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "DamageDealt",
       "unitId": "torch-hand-east-room",
-      "sourceUnitId": "jory-slate",
-      "amount": 8,
-      "damageType": "chemical",
-      "hpRemaining": 26
-    },
-    {
-      "type": "StandingAwarded",
-      "unitId": "jory-slate",
-      "amount": 10,
-      "total": 50
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "jory-slate",
-      "from": {
-        "x": 2,
-        "y": 14
-      },
-      "to": {
-        "x": 2,
-        "y": 13
-      },
-      "path": [
-        {
-          "x": 2,
-          "y": 14
-        },
-        {
-          "x": 2,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "jory-slate",
-      "facing": "north"
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "jory-slate",
-      "facing": "east"
-    },
-    {
-      "type": "TurnEnded",
-      "unitId": "jory-slate",
-      "ctSpent": 100
-    },
-    {
-      "type": "TurnStarted",
-      "unitId": "provocateur-barricade",
-      "turn": 66,
-      "clock": 84
-    },
-    {
-      "type": "UnitMoved",
-      "unitId": "provocateur-barricade",
-      "from": {
-        "x": 7,
-        "y": 14
-      },
-      "to": {
-        "x": 5,
-        "y": 14
-      },
-      "path": [
-        {
-          "x": 7,
-          "y": 14
-        },
-        {
-          "x": 6,
-          "y": 14
-        },
-        {
-          "x": 5,
-          "y": 14
-        }
-      ]
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "provocateur-barricade",
-      "facing": "north"
+      "turn": 74,
+      "clock": 97
     },
     {
       "type": "AbilityUsed",
-      "unitId": "provocateur-barricade",
-      "abilityId": "pin",
+      "unitId": "torch-hand-east-room",
+      "abilityId": "basic-attack",
       "target": {
         "kind": "unit",
         "unitId": "marek-sump"
@@ -5443,61 +6027,55 @@
     {
       "type": "DamageDealt",
       "unitId": "marek-sump",
-      "sourceUnitId": "provocateur-barricade",
-      "amount": 16,
-      "damageType": "kinetic",
-      "hpRemaining": 44
-    },
-    {
-      "type": "StatusResisted",
-      "unitId": "marek-sump",
-      "statusId": "stunned"
+      "sourceUnitId": "torch-hand-east-room",
+      "amount": 22,
+      "damageType": "thermal",
+      "hpRemaining": 15
     },
     {
       "type": "StandingAwarded",
-      "unitId": "provocateur-barricade",
+      "unitId": "torch-hand-east-room",
       "amount": 10,
-      "total": 40
-    },
-    {
-      "type": "UnitFacingChanged",
-      "unitId": "provocateur-barricade",
-      "facing": "west"
+      "total": 50
     },
     {
       "type": "TurnEnded",
-      "unitId": "provocateur-barricade",
-      "ctSpent": 100
+      "unitId": "torch-hand-east-room",
+      "ctSpent": 80
     },
     {
       "type": "TurnStarted",
       "unitId": "vale",
-      "turn": 67,
-      "clock": 84
+      "turn": 75,
+      "clock": 97
     },
     {
       "type": "UnitMoved",
       "unitId": "vale",
       "from": {
-        "x": 0,
-        "y": 17
-      },
-      "to": {
         "x": 1,
         "y": 16
       },
+      "to": {
+        "x": 1,
+        "y": 13
+      },
       "path": [
         {
-          "x": 0,
-          "y": 17
-        },
-        {
-          "x": 0,
+          "x": 1,
           "y": 16
         },
         {
           "x": 1,
-          "y": 16
+          "y": 15
+        },
+        {
+          "x": 1,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 13
         }
       ]
     },
@@ -5507,45 +6085,486 @@
       "facing": "north"
     },
     {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": -5,
+      "charge": 25
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "vale",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityCharging",
+      "unitId": "vale",
+      "abilityId": "ground",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 4,
+          "y": 13
+        }
+      },
+      "chargeId": "charge-23",
+      "castSpeed": 60
+    },
+    {
       "type": "TurnEnded",
       "unitId": "vale",
-      "ctSpent": 80
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 99
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "vale",
+      "abilityId": "ground",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 4,
+          "y": 13
+        }
+      },
+      "tiles": [
+        {
+          "x": 4,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "StatusApplied",
+      "unitId": "torch-hand-east-room",
+      "statusId": "grounded",
+      "turnsRemaining": 3
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "torch-hand-east-room",
+      "delta": -2,
+      "charge": 0
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "vale",
+      "delta": 2,
+      "charge": 27
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "vale",
+      "amount": 10,
+      "total": 10
     },
     {
       "type": "TurnStarted",
       "unitId": "wick",
-      "turn": 68,
-      "clock": 84
+      "turn": 76,
+      "clock": 99
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "wick",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "marek-sump"
+      },
+      "tiles": [
+        {
+          "x": 5,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "marek-sump",
+      "sourceUnitId": "wick",
+      "amount": 27,
+      "damageType": "thermal",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "marek-sump"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "wick",
+      "amount": 10,
+      "total": 90
     },
     {
       "type": "UnitMoved",
       "unitId": "wick",
       "from": {
-        "x": 8,
-        "y": 1
+        "x": 5,
+        "y": 14
       },
       "to": {
-        "x": 6,
-        "y": 0
+        "x": 2,
+        "y": 13
       },
       "path": [
         {
-          "x": 8,
-          "y": 1
+          "x": 5,
+          "y": 14
         },
         {
-          "x": 8,
-          "y": 0
+          "x": 5,
+          "y": 13
         },
         {
-          "x": 7,
-          "y": 0
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "west"
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "wick",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 100
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "cell-machinist",
+      "turn": 77,
+      "clock": 100
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "cell-machinist",
+      "from": {
+        "x": 6,
+        "y": 12
+      },
+      "to": {
+        "x": 5,
+        "y": 14
+      },
+      "path": [
+        {
+          "x": 6,
+          "y": 12
         },
         {
           "x": 6,
-          "y": 0
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 14
         }
       ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "cell-machinist",
+      "facing": "south"
+    },
+    {
+      "type": "ChargeChanged",
+      "unitId": "cell-machinist",
+      "delta": -4,
+      "charge": 10
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "cell-machinist",
+      "facing": "west"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "cell-machinist",
+      "abilityId": "tripwire-charge",
+      "target": {
+        "kind": "tile",
+        "tile": {
+          "x": 1,
+          "y": 14
+        }
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "ObjectSpawned",
+      "objectId": "spawned-mine-24",
+      "kind": "mine",
+      "owner": "enemy",
+      "tiles": [
+        {
+          "x": 1,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "cell-machinist",
+      "amount": 10,
+      "total": 50
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "cell-machinist",
+      "ctSpent": 100
+    },
+    {
+      "type": "StatusRemoved",
+      "unitId": "cell-machinist",
+      "statusId": "smoked"
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "provocateur-barricade",
+      "turn": 78,
+      "clock": 100
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "provocateur-barricade",
+      "from": {
+        "x": 6,
+        "y": 13
+      },
+      "to": {
+        "x": 3,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 6,
+          "y": 13
+        },
+        {
+          "x": 5,
+          "y": 13
+        },
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "provocateur-barricade",
+      "ctSpent": 80
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 108
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "wick",
+      "turn": 79,
+      "clock": 108
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "wick",
+      "from": {
+        "x": 2,
+        "y": 13
+      },
+      "to": {
+        "x": 0,
+        "y": 13
+      },
+      "path": [
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 14
+        },
+        {
+          "x": 0,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "north"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "wick",
+      "facing": "east"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "wick",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "vale"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "vale",
+      "sourceUnitId": "wick",
+      "amount": 27,
+      "damageType": "thermal",
+      "hpRemaining": 20
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "wick",
+      "amount": 10,
+      "total": 100
+    },
+    {
+      "type": "TurnEnded",
+      "unitId": "wick",
+      "ctSpent": 100
+    },
+    {
+      "type": "ClockAdvanced",
+      "clock": 110
+    },
+    {
+      "type": "TurnStarted",
+      "unitId": "torch-hand-east-room",
+      "turn": 80,
+      "clock": 110
+    },
+    {
+      "type": "UnitMoved",
+      "unitId": "torch-hand-east-room",
+      "from": {
+        "x": 4,
+        "y": 13
+      },
+      "to": {
+        "x": 1,
+        "y": 14
+      },
+      "path": [
+        {
+          "x": 4,
+          "y": 13
+        },
+        {
+          "x": 3,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 13
+        },
+        {
+          "x": 2,
+          "y": 14
+        },
+        {
+          "x": 1,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-east-room",
+      "facing": "west"
+    },
+    {
+      "type": "UnitFacingChanged",
+      "unitId": "torch-hand-east-room",
+      "facing": "north"
+    },
+    {
+      "type": "AbilityUsed",
+      "unitId": "torch-hand-east-room",
+      "abilityId": "basic-attack",
+      "target": {
+        "kind": "unit",
+        "unitId": "vale"
+      },
+      "tiles": [
+        {
+          "x": 1,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "type": "DamageDealt",
+      "unitId": "vale",
+      "sourceUnitId": "torch-hand-east-room",
+      "amount": 22,
+      "damageType": "thermal",
+      "hpRemaining": 0
+    },
+    {
+      "type": "UnitDowned",
+      "unitId": "vale"
+    },
+    {
+      "type": "StandingAwarded",
+      "unitId": "torch-hand-east-room",
+      "amount": 10,
+      "total": 60
     },
     {
       "type": "BattleEnded",
