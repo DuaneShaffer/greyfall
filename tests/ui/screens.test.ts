@@ -21,6 +21,7 @@ import {
 import { DeploymentScreen } from "../../src/ui/screens/deployment.js";
 import { EquipmentScreen } from "../../src/ui/screens/equipment.js";
 import { BattleResultsScreen, ChapterCloseScreen } from "../../src/ui/screens/results.js";
+import { resetVerbHint } from "../../src/ui/screens/firstUse.js";
 import { RosterScreen } from "../../src/ui/screens/roster.js";
 import { UnitSheetScreen } from "../../src/ui/screens/unitSheet.js";
 
@@ -142,6 +143,45 @@ describe("TurnOrderStrip", () => {
 });
 
 describe("RosterScreen", () => {
+  it("marks who is going out and counts them against the limit", () => {
+    resetVerbHint();
+    const screen = new RosterScreen();
+    screen.update(mockPartyView());
+    expect(screen.el.querySelector(".gf-screen-note")?.textContent).toBe("3/4 deployed");
+
+    const row = (unitId: string): string =>
+      screen.el.querySelector(`.gf-menu-entry[data-entry="${unitId}"]`)?.textContent ?? "";
+    expect(row("rowen")).toContain("Deployed");
+    expect(row("mott-tarr")).toContain("Downed");
+    expect(screen.el.querySelector(".gf-roster-detail .gf-plate-stamp")?.textContent).toBe(
+      "DEPLOYED",
+    );
+  });
+
+  it("says Reserve for a unit who is fit and not staged", () => {
+    const party = mockPartyView();
+    const screen = new RosterScreen();
+    screen.update({
+      ...party,
+      deployedCount: 2,
+      members: party.members.map((member) =>
+        member.unitId === "sella-wick" ? { ...member, deployed: false } : member,
+      ),
+    });
+    expect(
+      screen.el.querySelector('.gf-menu-entry[data-entry="sella-wick"]')?.textContent,
+    ).toContain("Reserve");
+    expect(screen.el.querySelector(".gf-screen-note")?.textContent).toBe("2/4 deployed");
+  });
+
+  it("counts the staged formation itself when the seam sends no count", () => {
+    const party = mockPartyView();
+    const screen = new RosterScreen();
+    const { deployedCount: _dropped, ...withoutCount } = party;
+    screen.update(withoutCount);
+    expect(screen.el.querySelector(".gf-screen-note")?.textContent).toBe("3/4 deployed");
+  });
+
   it("lists the party and greys downed members", () => {
     const screen = new RosterScreen();
     screen.update(mockPartyView());
@@ -149,8 +189,12 @@ describe("RosterScreen", () => {
     const downed = screen.el.querySelector<HTMLElement>('.gf-menu-entry[data-entry="mott-tarr"]');
     expect(downed?.classList.contains("is-disabled")).toBe(true);
     const detail = screen.el.querySelector(".gf-roster-detail")?.textContent ?? "";
-    expect(detail).toContain("Standing");
+    expect(detail).toContain("Standing (Enforcer)");
     expect(detail).toContain("320");
+    // Two tracks, named: the row's "Enforcer 1" is the unit's level and the
+    // record's 2 is the job's, and neither is the other.
+    expect(screen.el.querySelector(".gf-detail-unit-level")?.textContent).toBe("1");
+    expect(screen.el.querySelector(".gf-detail-job-level")?.textContent).toBe("2");
     // Measured, not hidden: the record prints the pair the Assay filed.
     expect(detail).toContain("Resolve");
     expect(detail).toContain("Attunement");
@@ -219,7 +263,32 @@ describe("CampaignSelectScreen", () => {
     ]);
     expect(entries[0]?.textContent).toContain("The Foundry Chapter");
     expect(entries[0]?.textContent).toContain("Filed");
-    expect(entries[1]?.textContent).toContain("New file");
+    // "New file" read as a button. It is a state, and it says so.
+    expect(entries[1]?.textContent).toContain("No save yet");
+    expect(entries[1]?.textContent).not.toContain("New file");
+  });
+
+  it("names the game in text, above its filing cabinet", () => {
+    const screen = new CampaignSelectScreen();
+    screen.update(view());
+    const mark = screen.el.querySelector(".gf-register-mark");
+    expect(mark?.querySelector(".gf-register-title")?.textContent).toBe("GREYFALL");
+    expect(mark?.querySelector(".gf-register-genre")?.textContent).toContain("tactics RPG");
+    // Text only: the logo art is commissioned separately.
+    expect(mark?.querySelector("img")).toBeNull();
+  });
+
+  it("says the verb once, on the first menu of the session", () => {
+    resetVerbHint();
+    const first = new CampaignSelectScreen();
+    first.update(view());
+    expect(first.el.querySelector(".gf-verb-hint")?.textContent).toContain("press Enter to confirm");
+
+    const second = new CampaignSelectScreen();
+    second.update(view());
+    const hint = second.el.querySelector(".gf-verb-hint");
+    expect(hint?.textContent).toBe("");
+    expect(hint?.classList.contains("is-hidden")).toBe(true);
   });
 
   it("puts the description, the engagement count, and the record beside the list", () => {
@@ -275,7 +344,7 @@ describe("CampaignSelectScreen", () => {
     });
     const entry = screen.el.querySelector<HTMLElement>(".gf-menu-entry");
     expect(entry?.textContent).toContain("Unreadable");
-    expect(entry?.textContent).not.toContain("New file");
+    expect(entry?.textContent).not.toContain("No save yet");
     const detail = screen.el.querySelector(".gf-campaign-detail")?.textContent ?? "";
     expect(detail).toContain("Unsupported save version 2");
     expect(detail).not.toContain("Nothing on file");
@@ -392,17 +461,33 @@ describe("EquipmentScreen", () => {
   it("reports the shared field kit without offering to equip it", () => {
     const screen = new EquipmentScreen();
     screen.update(mockEquipmentView());
-    expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe(
-      "Field kit: Coagulant Vial x3 · Cinder Flask x1",
-    );
+    const kit = screen.el.querySelector(".gf-field-kit")?.textContent ?? "";
+    expect(kit).toContain("Coagulant Vial");
+    expect(kit).toContain("Cinder Flask");
     const slots = [...screen.el.querySelectorAll<HTMLElement>('[data-menu="equipment-slots"] .gf-menu-entry')];
     expect(slots.map((node) => node.dataset["entry"])).not.toContain("consumable");
+    // Named once. The header carried the same list the stock panel now carries.
+    expect(screen.el.querySelector(".gf-equipment .gf-satchel")).toBeNull();
   });
 
   it("says so when the satchel is empty", () => {
     const screen = new EquipmentScreen();
     screen.update(mockEquipmentView({ satchel: [] }));
-    expect(screen.el.querySelector(".gf-satchel")?.textContent).toBe("Field kit: empty");
+    expect(screen.el.querySelector(".gf-field-kit .gf-plate-stamp")?.textContent).toBe("0 IN STOCK");
+  });
+
+  it("says what else would fit, and says it differently for an occupied slot", () => {
+    const screen = new EquipmentScreen();
+    screen.update(mockEquipmentView());
+    // Weapon is worn and the only other weapon in stock is a Conduit's.
+    expect(screen.el.querySelector(".gf-equip-detail .gf-detail-note")?.textContent).toBe(
+      "Nothing else in stock fits this slot.",
+    );
+
+    for (let i = 0; i < 2; i++) screen.menus.handleKey(key("ArrowDown"));
+    expect(screen.el.querySelector(".gf-equip-detail .gf-detail-note")?.textContent).toBe(
+      "1 piece in stock would fit.",
+    );
   });
 
   it("filters candidates by slot and flags kit the job cannot bear", () => {

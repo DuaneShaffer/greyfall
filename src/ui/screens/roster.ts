@@ -2,9 +2,29 @@ import { Component, el, meter, plate, portrait, replaceChildren } from "../dom.j
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuStack } from "../menu.js";
 import { PartyView, RosterEntryView } from "../state.js";
+import { takeVerbHint } from "./firstUse.js";
 import { fallenPanel } from "./results.js";
 
 const ROSTER_ID = "roster";
+
+/**
+ * Where the unit stands with the formation. The roster is where the player
+ * decides who fights and it used to print neither the membership nor the count,
+ * so "Move out" was a leap.
+ */
+function rosterNote(member: RosterEntryView): string | undefined {
+  if (member.hp === 0) return "Downed";
+  if (member.deployed === true) return "Deployed";
+  if (member.deployed === false) return "Reserve";
+  return member.note;
+}
+
+/** "3/4 deployed", from the staged formation rather than from the limit alone. */
+function deployedLine(view: PartyView): string {
+  const deployed =
+    view.deployedCount ?? view.members.filter((member) => member.deployed === true).length;
+  return `${deployed}/${view.deployedLimit} deployed`;
+}
 
 /** Between-battle party list; the hub the other screens open from. */
 export class RosterScreen implements Component<PartyView> {
@@ -13,6 +33,7 @@ export class RosterScreen implements Component<PartyView> {
   private readonly intents: UiIntents;
   private readonly detail: HTMLElement;
   private readonly fallen: HTMLElement;
+  private readonly verbHint: HTMLElement;
   private view: PartyView | null = null;
 
   constructor(options: { intents?: Partial<UiIntents> } = {}) {
@@ -20,6 +41,7 @@ export class RosterScreen implements Component<PartyView> {
     this.menus = new MenuStack();
     this.detail = el("aside", { class: "gf-panel gf-roster-detail" });
     this.fallen = el("div", { class: "gf-roster-fallen" });
+    this.verbHint = el("p", { class: "gf-hint gf-verb-hint is-hidden" });
     this.el = el("section", {
       class: "gf-screen gf-roster",
       children: [
@@ -31,6 +53,7 @@ export class RosterScreen implements Component<PartyView> {
               children: [
                 el("h1", { class: "gf-screen-title", text: "Party Roster" }),
                 el("p", { class: "gf-screen-note" }),
+                this.verbHint,
               ],
             }),
           ],
@@ -57,7 +80,17 @@ export class RosterScreen implements Component<PartyView> {
     const fallen = view.fallen ?? [];
     replaceChildren(this.fallen, fallen.length === 0 ? [] : [fallenPanel(fallen, { compact: true })]);
     const note = this.el.querySelector(".gf-screen-note");
-    if (note) note.textContent = `Deployment limit: ${view.deployedLimit}`;
+    if (note) note.textContent = deployedLine(view);
+    this.showVerbHint();
+  }
+
+  /** The verb, on whichever menu the session happens to open on. */
+  private showVerbHint(): void {
+    if (this.verbHint.textContent !== "") return;
+    const hint = takeVerbHint();
+    if (hint === null) return;
+    this.verbHint.textContent = hint;
+    this.verbHint.classList.remove("is-hidden");
   }
 
   attach(target: EventTarget = document): void {
@@ -77,14 +110,17 @@ export class RosterScreen implements Component<PartyView> {
       // One fact per column: who, what they are, and what shape they are in.
       // The job used to be printed twice per row, once as a level and once as a
       // sentence; the job level now lives in the record beside the list.
-      entries: view.members.map((member) => ({
-        id: member.unitId,
-        label: member.name,
-        detail: `${member.jobName} ${member.level}`,
-        ...(member.note === undefined ? {} : { note: member.note }),
-        disabled: member.hp === 0,
-        disabledReason: "Downed — unavailable until the next engagement",
-      })),
+      entries: view.members.map((member) => {
+        const note = rosterNote(member);
+        return {
+          id: member.unitId,
+          label: member.name,
+          detail: `${member.jobName} ${member.level}`,
+          ...(note === undefined ? {} : { note }),
+          disabled: member.hp === 0,
+          disabledReason: "Downed — unavailable until the next engagement",
+        };
+      }),
       onCursor: (entry) => {
         const member = view.members.find((m) => m.unitId === entry.id) ?? null;
         this.renderDetail(member);
@@ -123,7 +159,7 @@ export class RosterScreen implements Component<PartyView> {
       return;
     }
     replaceChildren(this.detail, [
-      plate("Record", member.note ?? "ON ROSTER"),
+      plate("Record", (rosterNote(member) ?? "on roster").toUpperCase()),
       el("div", {
         class: "gf-detail-head",
         children: [
@@ -135,7 +171,7 @@ export class RosterScreen implements Component<PartyView> {
           el("div", {
             children: [
               el("h2", { class: "gf-detail-title", text: member.name }),
-              el("p", { class: "gf-detail-sub", text: `${member.jobName} · Level ${member.level}` }),
+              el("p", { class: "gf-detail-sub", text: member.jobName }),
             ],
           }),
         ],
@@ -154,14 +190,18 @@ export class RosterScreen implements Component<PartyView> {
           el("dl", {
             class: "gf-ledger",
             children: [
-              el("dt", { text: "Standing" }),
-              el("dd", { class: "gf-detail-standing", text: String(member.standing) }),
+              // Two tracks, named. "Level 1" here beside "Enforcer level 2" was
+              // the same contradiction the unit sheet was printing.
+              el("dt", { text: "Unit level" }),
+              el("dd", { class: "gf-detail-unit-level", text: String(member.level) }),
               ...(member.jobLevel === undefined
                 ? []
                 : [
-                    el("dt", { text: `${member.jobName} level` }),
-                    el("dd", { text: String(member.jobLevel) }),
+                    el("dt", { text: `Job level (${member.jobName})` }),
+                    el("dd", { class: "gf-detail-job-level", text: String(member.jobLevel) }),
                   ]),
+              el("dt", { text: `Standing (${member.jobName})` }),
+              el("dd", { class: "gf-detail-standing", text: String(member.standing) }),
               // Resolve and Attunement are measured, not hidden: everywhere a
               // unit is read, the record prints what the Assay filed.
               ...(member.disposition === undefined

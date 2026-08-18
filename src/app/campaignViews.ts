@@ -27,6 +27,7 @@ import { mechanicsView } from "./mechanics.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
+  formatStatDelta,
   type AbilityView,
   type BattleResultsView,
   type ChapterCloseView,
@@ -369,7 +370,7 @@ function statModSummary(mods: Partial<Record<DeltaKey, number>> | undefined): st
   for (const key of DELTA_KEYS) {
     const value = mods[key];
     if (value === undefined || value === 0) continue;
-    parts.push(`${STAT_LABELS[key]} ${value > 0 ? "+" : ""}${value}${key === "evade" ? "%" : ""}`);
+    parts.push(`${STAT_LABELS[key]} ${formatStatDelta(key, value)}`);
   }
   return parts.length === 0 ? null : parts.join(" · ");
 }

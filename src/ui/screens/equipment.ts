@@ -28,7 +28,6 @@ export class EquipmentScreen implements Component<EquipmentView> {
   private readonly detail: HTMLElement;
   private readonly headerEl: HTMLElement;
   private readonly tagsEl: HTMLElement;
-  private readonly satchelEl: HTMLElement;
   private readonly fieldKit: HTMLElement;
   private view: EquipmentView | null = null;
 
@@ -38,7 +37,6 @@ export class EquipmentScreen implements Component<EquipmentView> {
     this.detail = el("aside", { class: "gf-panel gf-equip-detail" });
     this.headerEl = el("p", { class: "gf-screen-note" });
     this.tagsEl = el("p", { class: "gf-screen-note gf-equip-tags" });
-    this.satchelEl = el("p", { class: "gf-screen-note gf-satchel" });
     this.fieldKit = el("div", { class: "gf-field-kit" });
     this.el = el("section", {
       class: "gf-screen gf-equipment",
@@ -52,7 +50,6 @@ export class EquipmentScreen implements Component<EquipmentView> {
                 el("h1", { class: "gf-screen-title", text: "Equipment" }),
                 this.headerEl,
                 this.tagsEl,
-                this.satchelEl,
               ],
             }),
           ],
@@ -72,7 +69,8 @@ export class EquipmentScreen implements Component<EquipmentView> {
     this.view = view;
     this.headerEl.textContent = `${view.unitName} · ${view.jobName}`;
     this.tagsEl.textContent = `Can carry: ${equipTagList(view.jobEquipTags)}`;
-    this.satchelEl.textContent = summarizeSatchel(view.satchel);
+    // The kit is a stock list beside the slots now; naming it in the header too
+    // was the same list twice.
     replaceChildren(this.fieldKit, [fieldKitPanel(view.satchel)]);
     const menu = this.slotsMenu(view);
     if (this.menus.path[0] === SLOTS_ID) this.menus.refresh(menu);
@@ -170,10 +168,7 @@ export class EquipmentScreen implements Component<EquipmentView> {
           el("p", { class: "gf-detail-sub", text: current.itemId === null ? "Nothing worn" : current.summary }),
           el("p", {
             class: "gf-detail-note",
-            text:
-              available === 0
-                ? "Nothing in stock fits this slot."
-                : `${available} in stock would fit this slot.`,
+            text: alternativesLine(available, current.itemId !== null),
           }),
         ],
       }),
@@ -216,6 +211,18 @@ export class EquipmentScreen implements Component<EquipmentView> {
       }),
     ]);
   }
+}
+
+/** What else the unit could put here — which is a different fact when the slot
+    is already occupied than when it is bare. */
+function alternativesLine(available: number, occupied: boolean): string {
+  if (available === 0) {
+    return occupied ? "Nothing else in stock fits this slot." : "Nothing in stock fits this slot.";
+  }
+  const piece = available === 1 ? "piece" : "pieces";
+  return occupied
+    ? `${available} other ${piece} in stock would fit.`
+    : `${available} ${piece} in stock would fit.`;
 }
 
 /**

@@ -65,7 +65,7 @@ const REPLAY_MENU_ID = "replay-engagements";
 /** What each screen is for, said once, at the foot of the page. */
 const SCREEN_HINT: Record<BetweenScreenId, string> = {
   roster: "Confirm a name to open their record, kit and jobs. Move out when the party is ready.",
-  sheet: "Read-only record. Escape returns to the roster.",
+  sheet: "Read-only record. Escape or Backspace returns to the roster.",
   learning: "Confirm an ability to spend Standing on it.",
   equipment: "Confirm a slot to see what the job can carry in it.",
   jobs: "Confirm a job to take it as primary or borrow its skillset.",
@@ -266,7 +266,7 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     if (this.roster.menus.path.includes(REPLAY_MENU_ID)) return;
     this.roster.menus.push({
       id: REPLAY_MENU_ID,
-      title: "Return to",
+      title: "Engagements won",
       entries: completed.map((entry) => ({ id: entry.id, label: entry.name })),
       onSelect: (entry) => {
         this.roster.menus.pop();
@@ -449,7 +449,8 @@ export class BetweenBattleScreens implements CampaignScreenPort {
       button("Roster", () => this.showRoster()),
     ];
     const replay = handlers.replayEncounter;
-    if (replay) children.push(button("Return to…", () => this.openReplayMenu(replay)));
+    // "Return to…" named nowhere. The destination is an engagement already won.
+    if (replay) children.push(button("Return to an engagement", () => this.openReplayMenu(replay)));
     if (handlers.save) children.push(button("Save", handlers.save));
     if (handlers.load) children.push(button("Load", handlers.load));
     if (handlers.leaveCampaign) children.push(button("Campaigns", handlers.leaveCampaign));

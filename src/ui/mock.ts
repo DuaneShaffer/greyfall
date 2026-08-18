@@ -15,6 +15,7 @@ import type {
   LearningView,
   MechanicsView,
   PartyView,
+  RosterEntryView,
   PowerLedgerView,
   SkillsetView,
   StatLineView,
@@ -23,7 +24,7 @@ import type {
   UnitView,
 } from "./state.js";
 import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
-import { equipTagLabel } from "./screens/vocabulary.js";
+import { equipTagLabel, formatStatDelta } from "./screens/vocabulary.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
 // verbatim from data/*.json (tests/ui/mock.test.ts fails if it drifts) so the
@@ -634,15 +635,19 @@ export const mockFallen: FallenEntryView[] = [
 ];
 
 export function mockPartyView(overrides: Partial<PartyView> = {}): PartyView {
+  // Three of four staged, one down: the counter and the row marks both have
+  // something to say, which is the state the roster was silent about.
+  const members: RosterEntryView[] = [
+    { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, disposition: { resolve: 72, attunement: 38 }, jobLevel: 2, deployed: true },
+    { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, disposition: { resolve: 61, attunement: 30 }, jobLevel: 3, deployed: true },
+    { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, disposition: { resolve: 44, attunement: 78 }, jobLevel: 2, deployed: true },
+    { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, disposition: { resolve: 58, attunement: 26 }, jobLevel: 1, deployed: false },
+  ];
   return {
     deployedLimit: 4,
+    deployedCount: members.filter((member) => member.deployed === true).length,
     fallen: mockFallen,
-    members: [
-      { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, disposition: { resolve: 72, attunement: 38 }, note: "Deployed" },
-      { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, disposition: { resolve: 61, attunement: 30 }, note: "Deployed" },
-      { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, disposition: { resolve: 44, attunement: 78 }, note: "Deployed" },
-      { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, disposition: { resolve: 58, attunement: 26 }, note: "Downed" },
-    ],
+    members,
     ...overrides,
   };
 }
@@ -723,13 +728,22 @@ function equipSlotViews(equipment: Partial<Record<EquipSlot, string>>): EquipSlo
   });
 }
 
+/** Mirrors `itemSummary` in src/app/campaignViews.ts, units and all. */
 function summarizeItem(item: Item): string {
-  if (item.slot === "weapon") return `Power ${item.power} · ${item.damageType}`;
-  if (item.slot === "consumable") return "Consumable";
+  if (item.slot === "weapon") {
+    const reach =
+      item.range.min === item.range.max ? `${item.range.max}` : `${item.range.min}–${item.range.max}`;
+    return `Power ${item.power} ${item.damageType} · Reach ${reach} (±${item.range.vertical}h)`;
+  }
+  if (item.slot === "consumable") return "Carried, never worn";
   const mods = Object.entries(item.statMods)
-    .map(([key, value]) => `${STAT_LABELS[key as keyof typeof STAT_LABELS]} ${value > 0 ? "+" : ""}${value}`)
+    .filter(([, value]) => value !== 0)
+    .map(([key, value]) => {
+      const stat = key as keyof typeof STAT_LABELS;
+      return `${STAT_LABELS[stat]} ${formatStatDelta(stat, value ?? 0)}`;
+    })
     .join(" · ");
-  return mods.length > 0 ? mods : "No modifiers";
+  return mods.length > 0 ? mods : "No stat change";
 }
 
 export function mockUnitSheetView(overrides: Partial<UnitSheetView> = {}): UnitSheetView {

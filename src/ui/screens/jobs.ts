@@ -154,8 +154,6 @@ export class JobScreen implements Component<JobsView> {
               el("dd", { text: `${option.jobLevel} of ${MAX_JOB_LEVEL}` }),
               el("dt", { text: "Standing banked here" }),
               el("dd", { class: "gf-detail-standing", text: String(option.standing) }),
-              el("dt", { text: "Standing" }),
-              el("dd", { text: "Earned per job, never shared between them" }),
             ],
           }),
           el("p", { class: "gf-detail-text", text: option.description }),

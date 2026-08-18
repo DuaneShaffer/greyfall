@@ -179,8 +179,9 @@ describe("BetweenBattleScreens", () => {
   });
 
   it("offers the engagements already won, and nothing before one is", () => {
+    // "Return to…" named nowhere; the destination is an engagement already won.
     const returnTo = [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].find(
-      (node) => node.textContent === "Return to…",
+      (node) => node.textContent === "Return to an engagement",
     );
     expect(returnTo).toBeDefined();
 
@@ -189,12 +190,23 @@ describe("BetweenBattleScreens", () => {
 
     h.session.state.completedEncounterIds.push("e1-marshaling-yard");
     returnTo!.click();
+    expect(
+      h.screens.roster.el.querySelector<HTMLElement>('[data-menu="replay-engagements"] .gf-menu-title')
+        ?.textContent,
+    ).toBe("Engagements won");
     const entry = h.screens.roster.el.querySelector<HTMLElement>(
       '.gf-menu-entry[data-entry="e1-marshaling-yard"]',
     );
     expect(entry).toBeDefined();
     entry!.click();
     expect(h.replayRequests).toEqual(["e1-marshaling-yard"]);
+  });
+
+  it("counts the staged formation on the roster it deploys from", () => {
+    h.session.beginDeployment("e1-marshaling-yard");
+    h.screens.showRoster();
+    const note = h.screens.roster.el.querySelector(".gf-screen-note")?.textContent ?? "";
+    expect(note).toMatch(/^\d+\/\d+ deployed$/);
   });
 
   it("offers a way back to the campaign register", () => {

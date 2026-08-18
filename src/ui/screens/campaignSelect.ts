@@ -1,5 +1,6 @@
 import { Component, el, plate, replaceChildren } from "../dom.js";
 import { MenuDef, MenuStack } from "../menu.js";
+import { takeVerbHint } from "./firstUse.js";
 
 const CAMPAIGN_MENU_ID = "campaign-select";
 
@@ -33,7 +34,7 @@ const engagements = (count: number): string =>
 // An unreadable record must never read as a campaign nobody has played: the
 // difference is the whole reason the fresh state is not written over it.
 const fileState = (entry: CampaignEntryView): string =>
-  entry.unreadable !== null ? "Unreadable" : entry.file === null ? "New file" : "Filed";
+  entry.unreadable !== null ? "Unreadable" : entry.file === null ? "No save yet" : "Filed";
 
 /**
  * The register the game opens on: every campaign on file, and which of them
@@ -45,15 +46,30 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
   readonly menus: MenuStack;
   private readonly options: CampaignSelectOptions;
   private readonly detail: HTMLElement;
+  private readonly verbHint: HTMLElement;
   private view: CampaignSelectView = { campaigns: [] };
 
   constructor(options: CampaignSelectOptions = {}) {
     this.options = options;
     this.menus = new MenuStack();
     this.detail = el("aside", { class: "gf-panel gf-campaign-detail" });
+    this.verbHint = el("p", { class: "gf-hint gf-verb-hint is-hidden" });
     this.el = el("section", {
       class: "gf-screen gf-campaign-select",
       children: [
+        // The game's own name, before its filing cabinet. Text only: the logo is
+        // art, it is commissioned separately, and a title card that waits for it
+        // is a title card the player never sees.
+        el("div", {
+          class: "gf-register-mark",
+          children: [
+            el("p", { class: "gf-register-title", text: "GREYFALL" }),
+            el("p", {
+              class: "gf-register-genre",
+              text: "A tactics RPG in a city that runs on metered magic.",
+            }),
+          ],
+        }),
         el("header", {
           class: "gf-screen-head",
           children: [
@@ -80,6 +96,7 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
               class: "gf-hint",
               text: "Confirm a campaign to open it. A campaign with a record on file resumes where it stopped.",
             }),
+            this.verbHint,
           ],
         }),
       ],
@@ -92,6 +109,16 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
     if (this.menus.depth === 0) this.menus.push(menu);
     else this.menus.refresh(menu);
     this.renderDetail(view.campaigns[Math.max(0, this.menus.cursor)] ?? null);
+    this.showVerbHint();
+  }
+
+  /** The verb, once. This is the first menu of almost every session. */
+  private showVerbHint(): void {
+    if (this.verbHint.textContent !== "") return;
+    const hint = takeVerbHint();
+    if (hint === null) return;
+    this.verbHint.textContent = hint;
+    this.verbHint.classList.remove("is-hidden");
   }
 
   attach(target: EventTarget = document): void {

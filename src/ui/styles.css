@@ -3694,3 +3694,60 @@
   white-space: normal;
   overflow-wrap: break-word;
 }
+
+/* --- the register's own title, and the verb said once ---------------------- */
+
+.gf-register-mark {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--gf-s-2) var(--gf-s-4);
+}
+
+/* Text only, deliberately: the logo is art and is commissioned separately, and
+   a title card that waits for it is a title card nobody ever sees. */
+.gf-register-title {
+  margin: 0;
+  font-size: var(--gf-t-600);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--gf-text);
+  text-shadow: var(--gf-engrave);
+}
+
+.gf-register-genre {
+  margin: 0;
+  font-size: var(--gf-t-200);
+  letter-spacing: var(--gf-track-label);
+  color: var(--gf-dim);
+}
+
+.gf-verb-hint.is-hidden {
+  display: none;
+}
+
+/* --- the register and the roster, at the size they are actually read ------- */
+/* At 1600×1000 both pages spread two short lists across a 1440px frame, so the
+   menu the player is reading sat in the middle of a column twice its width and
+   the record beside it stretched the height of the viewport under one paragraph.
+   Narrower frame, and panels that hug their content rather than the row. */
+
+.gf-campaign-select,
+.gf-roster {
+  max-width: 1120px;
+}
+
+.gf-campaign-select .gf-screen-cols,
+.gf-roster .gf-screen-cols {
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1fr);
+  align-items: start;
+  align-content: start;
+}
+
+@media (max-width: 880px) {
+  .gf-campaign-select .gf-screen-cols,
+  .gf-roster .gf-screen-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -117,7 +117,9 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
             children: [
               ...view.stats.map((stat) =>
                 labelledValue(
-                  stat.label,
+                  // The Condition panel above prints HP and Charge as
+                  // current-of-max; these are the maxima the rules derive.
+                  stat.key === "hp" || stat.key === "charge" ? `Max ${stat.label}` : stat.label,
                   stat.delta === undefined || stat.delta === 0
                     ? formatStatValue(stat.key, stat.value)
                     : `${formatStatValue(stat.key, stat.value)} (${formatSigned(stat.delta)})`,
@@ -161,7 +163,10 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
                           data: { ability: ability.id },
                           children: [
                             el("span", { class: "gf-ability-name", text: ability.name }),
-                            el("span", { class: "gf-ability-cost", text: `Charge ${ability.chargeCost}` }),
+                            el("span", {
+                              class: "gf-ability-cost",
+                              text: ability.chargeCost === 0 ? "No charge" : `Charge ${ability.chargeCost}`,
+                            }),
                             ability.mechanics !== undefined &&
                               el("p", {
                                 class: "gf-ability-mechanics",
