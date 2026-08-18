@@ -88,6 +88,36 @@ describe("the head chip's crop", () => {
   });
 });
 
+describe("a row under an open submenu", () => {
+  /** Every selector list in the sheet that mentions a menu row. */
+  const rowSelectors = [...CSS.matchAll(/([^{}]*\.gf-menu-entry[^{}]*)\{/g)].map(
+    (match) => match[1] ?? "",
+  );
+
+  it("takes no highlight from hover or press", () => {
+    // The two selectors carried the same specificity, so source order decided it
+    // and `.is-inert` lost: an inert list drew a hover fill and a cursor row that
+    // meant nothing. Every reactive rule has to name `.is-inert` — to neutralise
+    // it or to exclude itself from it — or the cascade goes back to a coin toss.
+    const reactive = rowSelectors.filter((selector) => /:hover|:active/.test(selector));
+    expect(reactive.length).toBeGreaterThan(0);
+    for (const selector of reactive) {
+      expect(selector, `${selector} does not account for an inert row`).toContain(".is-inert");
+    }
+  });
+
+  it("takes no selection fill either, in any menu", () => {
+    const selected = rowSelectors.filter(
+      (selector) => selector.includes(".is-selected") && !selector.includes(".is-inert"),
+    );
+    // What is left may only be the active menu's own cursor row, which an inert
+    // row can never be: `is-inert` is set for every menu below the top.
+    for (const selector of selected) {
+      expect(selector, `${selector} would fill an inert row`).toContain(".gf-menu.is-active");
+    }
+  });
+});
+
 describe("the chrome's budgets (UI_DESIGN §12)", () => {
   /** Declaration blocks, so a budget can be counted in rules rather than in
       occurrences — a two-stop gradient is one decision, not two. */

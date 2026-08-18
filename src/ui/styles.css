@@ -829,8 +829,10 @@
 }
 
 /* Hover is the same gesture as the cursor, one weight down: a finger resting on
-   the row rather than the pointer arriving at it (mouse parity, §8). */
-.gf-menu-entry:hover:not(.is-disabled) {
+   the row rather than the pointer arriving at it (mouse parity, §8). An inert
+   row is excluded here rather than overridden above: the two selectors carry the
+   same specificity, so whichever came second won, and it was this one. */
+.gf-menu-entry:hover:not(.is-disabled):not(.is-inert) {
   background-color: rgba(120, 130, 142, 0.09);
   box-shadow: inset 2px 0 0 var(--gf-bronze-300);
 }
@@ -849,7 +851,7 @@
   transform: translateX(2px);
 }
 
-.gf-menu-entry.is-selected {
+.gf-menu-entry.is-selected:not(.is-inert) {
   background-color: rgba(120, 130, 142, 0.12);
   box-shadow: var(--gf-fitting);
 }
@@ -859,7 +861,7 @@
   cursor: not-allowed;
 }
 
-.gf-menu-entry:active:not(.is-disabled) {
+.gf-menu-entry:active:not(.is-disabled):not(.is-inert) {
   transform: translateY(1px);
 }
 
@@ -4124,4 +4126,198 @@
   max-width: none;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* ============================================ playtest remediation, wave D */
+/* One appended block, so the additions this pass made are reviewable as a set.
+   Targeted corrections to rules above live where those rules live. */
+
+/* --- what an order does, printed beside what it is for -------------------- */
+/* The purchase list, the field kit and the unit's own record all read the one
+   `MechanicsView`; these are the two densities it is drawn at. */
+
+.gf-mechanics {
+  display: grid;
+  gap: var(--gf-s-1);
+  min-width: 0;
+}
+
+.gf-mechanics-ledger {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+/* A figure that states its scale is the point; it should not read as prose. */
+.gf-mechanics-amount {
+  color: var(--gf-live);
+}
+
+.gf-mechanics-scale-note,
+.gf-mechanics-absent {
+  margin: 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+}
+
+/* The rule nobody found: where Standing comes from and what it belongs to. */
+.gf-standing-rule {
+  max-width: 74ch;
+}
+
+/* A summary is a sentence of figures, and it wraps rather than clipping: the
+   closing clause is where the charge cost and the status roll are. */
+.gf-menu-note {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* --- the field kit as stock, not as a sentence ---------------------------- */
+/* It is the party's only healing, and the screen used to name it in the header
+   and stop there. One row per consumable, with what the thing actually does. */
+
+.gf-field-kit {
+  min-width: 0;
+}
+
+.gf-kit-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-kit-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: var(--gf-s-2);
+  align-items: baseline;
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  padding: var(--gf-s-2) 0;
+}
+
+.gf-kit-entry:first-child {
+  border-top: none;
+  box-shadow: none;
+}
+
+.gf-kit-count {
+  font-family: var(--gf-face-ledger);
+  color: var(--gf-live);
+  font-size: var(--gf-t-100);
+}
+
+.gf-kit-mechanics {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.gf-kit-note,
+.gf-equip-tags {
+  margin: var(--gf-s-2) 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+}
+
+.gf-equip-tags {
+  margin: 0;
+}
+
+/* Before→after is two figures and an arrow; it needs the room a bare delta did
+   not, and it must wrap rather than push the panel wider. */
+.gf-delta {
+  white-space: normal;
+}
+
+/* --- the unit's record: two level tracks, and the slots nobody filled ------ */
+
+.gf-sheet-rule {
+  margin: var(--gf-s-2) 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  color: var(--gf-dim);
+}
+
+/* An unfilled ability slot is a free upgrade sitting on the floor, so the slot
+   carries the instruction rather than the word "Unassigned". It is an
+   instruction, not a value: it reads at the label's weight. */
+.gf-field.gf-slot-empty .gf-field-value {
+  font-family: inherit;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  text-align: right;
+}
+
+.gf-ability-mechanics {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* --- the register's own title, and the verb said once ---------------------- */
+
+.gf-register-mark {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--gf-s-2) var(--gf-s-4);
+}
+
+/* Text only, deliberately: the logo is art and is commissioned separately, and
+   a title card that waits for it is a title card nobody ever sees. */
+.gf-register-title {
+  margin: 0;
+  font-size: var(--gf-t-600);
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--gf-text);
+  text-shadow: var(--gf-engrave);
+}
+
+.gf-register-genre {
+  margin: 0;
+  font-size: var(--gf-t-200);
+  letter-spacing: var(--gf-track-label);
+  color: var(--gf-dim);
+}
+
+.gf-verb-hint.is-hidden {
+  display: none;
+}
+
+/* --- the register and the roster, at the size they are actually read ------- */
+/* At 1600×1000 both pages spread two short lists across a 1440px frame, so the
+   menu the player is reading sat in the middle of a column twice its width and
+   the record beside it stretched the height of the viewport under one paragraph.
+   Narrower frame, and panels that hug their content rather than the row. */
+
+.gf-campaign-select,
+.gf-roster {
+  max-width: 1120px;
+}
+
+.gf-campaign-select .gf-screen-cols,
+.gf-roster .gf-screen-cols {
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1fr);
+  align-items: start;
+  align-content: start;
+}
+
+@media (max-width: 880px) {
+  .gf-campaign-select .gf-screen-cols,
+  .gf-roster .gf-screen-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

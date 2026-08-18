@@ -27,6 +27,7 @@ import { mechanicsView } from "./mechanics.js";
 import {
   EQUIP_SLOTS,
   STAT_LABELS,
+  formatStatDelta,
   type AbilityView,
   type BattleResultsView,
   type ChapterCloseView,
@@ -250,9 +251,7 @@ export function campaignUnitSheetView(
   const stats = unit === null ? null : campaignStats(content, unit);
   if (unit === null || view === null || stats === null) return null;
 
-  const statLines: StatLineView[] = (["hp", "charge", "speed", "phys", "mag"] as const).map(
-    (key) => ({ key, label: STAT_LABELS[key], value: stats[key] }),
-  );
+  const statLines = sheetStatLines(stats);
 
   const learned = learnedAbilities(state, unitId)
     .map((id) => content.abilities[id])
@@ -273,6 +272,7 @@ export function campaignUnitSheetView(
   return {
     unit: view,
     standing: jobProgress(state, unitId, unit.jobId).balance,
+    jobLevel: jobLevel(state, unitId, unit.jobId),
     stats: statLines,
     move: stats.move,
     jump: stats.jump,
@@ -281,6 +281,18 @@ export function campaignUnitSheetView(
     learnedAbilities: learned,
     passives,
   };
+}
+
+/** The sheet's own five; Move, Jump and Evade ride on their own fields there. */
+const SHEET_STAT_KEYS = ["hp", "charge", "speed", "phys", "mag"] as const;
+
+function sheetStatLines(stats: DerivedStats): StatLineView[] {
+  return SHEET_STAT_KEYS.map((key) => ({ key, label: STAT_LABELS[key], value: stats[key] }));
+}
+
+/** Every stat a kit change can move, so a delta has a figure to move from. */
+function statLines(stats: DerivedStats): StatLineView[] {
+  return DELTA_KEYS.map((key) => ({ key, label: STAT_LABELS[key], value: stats[key] }));
 }
 
 export function campaignLearningView(
@@ -335,8 +347,33 @@ function statDeltas(
   return out;
 }
 
-const itemSummary = (item: Item): string =>
-  item.slot === "weapon" ? `Power ${item.power}` : item.description;
+/**
+ * The kit's own figures, in one line. It used to return the description for
+ * anything that was not a weapon, so the equipment screen printed the same
+ * sentence twice and said nothing about what the piece did.
+ */
+const itemSummary = (item: Item): string => {
+  if (item.slot === "weapon") {
+    const reach =
+      item.range.min === item.range.max ? `${item.range.max}` : `${item.range.min}–${item.range.max}`;
+    return `Power ${item.power} ${item.damageType} · Reach ${reach} (±${item.range.vertical}h)`;
+  }
+  if (item.slot === "consumable") return "Carried, never worn";
+  const mods = statModSummary(item.statMods);
+  return mods === null ? "No stat change" : mods;
+};
+
+/** "HP +24 · Speed -1", in the stat order the sheet reads them in. */
+function statModSummary(mods: Partial<Record<DeltaKey, number>> | undefined): string | null {
+  if (mods === undefined) return null;
+  const parts: string[] = [];
+  for (const key of DELTA_KEYS) {
+    const value = mods[key];
+    if (value === undefined || value === 0) continue;
+    parts.push(`${STAT_LABELS[key]} ${formatStatDelta(key, value)}`);
+  }
+  return parts.length === 0 ? null : parts.join(" · ");
+}
 
 /**
  * The chapter's consumables. One shared pile: it is not per-unit kit, so it
@@ -418,6 +455,7 @@ export function campaignEquipmentView(
     unitName: unit.name,
     jobName: job.name,
     jobEquipTags: [...job.equipTags],
+    stats: statLines(baseline),
     slots: equipSlotViews(content, unit),
     options,
     satchel: campaignSatchelView(state, content),

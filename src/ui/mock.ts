@@ -13,7 +13,9 @@ import type {
   ItemOptionView,
   JobsView,
   LearningView,
+  MechanicsView,
   PartyView,
+  RosterEntryView,
   PowerLedgerView,
   SkillsetView,
   StatLineView,
@@ -22,6 +24,7 @@ import type {
   UnitView,
 } from "./state.js";
 import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
+import { equipTagLabel, formatStatDelta } from "./screens/vocabulary.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
 // verbatim from data/*.json (tests/ui/mock.test.ts fails if it drifts) so the
@@ -153,6 +156,44 @@ export const shockMaul: Item = {
   range: { min: 1, max: 1, vertical: 1 },
 };
 
+export const coagulantVial: Item = {
+  schemaVersion: 1,
+  id: "coagulant-vial",
+  name: "Coagulant Vial",
+  description:
+    "Standard field clotting compound. Every satchel in the Compact has three of these in it.",
+  equipTags: ["field-issue"],
+  price: 120,
+  slot: "consumable",
+  targeting: {
+    range: { min: 0, max: 1, vertical: 1 },
+    area: { shape: "single" },
+    requiresLos: false,
+    validTargets: ["self", "ally"],
+  },
+  effects: [{ kind: "heal", amount: { base: "fixed", power: 30 } }],
+};
+
+export const cinderFlask: Item = {
+  schemaVersion: 1,
+  id: "cinder-flask",
+  name: "Cinder Flask",
+  description: "Accelerant in thin glass with a friction cap. Thrown, not poured.",
+  equipTags: ["field-issue"],
+  price: 300,
+  slot: "consumable",
+  targeting: {
+    range: { min: 1, max: 3, vertical: 2 },
+    area: { shape: "single" },
+    requiresLos: true,
+    validTargets: ["enemy"],
+  },
+  effects: [
+    { kind: "damage", damageType: "thermal", amount: { base: "fixed", power: 25 } },
+    { kind: "applyStatus", statusId: "scalded", chance: 60 },
+  ],
+};
+
 export const stunnedStatus: Status = {
   schemaVersion: 1,
   id: "stunned",
@@ -180,7 +221,11 @@ export const rowen: Unit = {
 export const realContent = {
   jobs: { enforcer: enforcerJob, conduit: conduitJob },
   abilities: { pin: pinAbility, "overload-cell": overloadCellAbility },
-  items: { "shock-maul": shockMaul },
+  items: {
+    "shock-maul": shockMaul,
+    "coagulant-vial": coagulantVial,
+    "cinder-flask": cinderFlask,
+  },
   statuses: { stunned: stunnedStatus },
   units: { rowen },
 } as const;
@@ -298,6 +343,84 @@ export function mockEnemyView(overrides: Partial<UnitView> = {}): UnitView {
   });
 }
 
+// What each listed order actually does. Written out rather than derived, because
+// `src/ui` does not reach into `src/app` for the derivation — tests/ui/mock.test.ts
+// re-derives every one of these through `mechanicsView` and fails if it drifts.
+export const mockAbilityMechanics: Record<string, MechanicsView> = {
+  pin: {
+    range: { min: 1, max: 1, vertical: 1 },
+    area: { shape: "single" },
+    targets: ["enemy"],
+    targetsLabel: "Enemy",
+    requiresLos: true,
+    amounts: [
+      {
+        kind: "damage",
+        against: "unit",
+        scale: "weapon",
+        power: 80,
+        damageType: "kinetic",
+        label: "Weapon 80% kinetic",
+      },
+    ],
+    statuses: [{ id: "stunned", name: "Stunned", chancePercent: 35 }],
+    chargeCost: 0,
+    castSpeed: null,
+    summary: "Range 1 (±1h) · Single target · Enemy · Damage Weapon 80% kinetic · Stunned 35%",
+  },
+  "overload-cell": {
+    range: { min: 1, max: 4, vertical: 2 },
+    area: { shape: "single" },
+    targets: ["object"],
+    targetsLabel: "Machinery",
+    requiresLos: true,
+    amounts: [{ kind: "damage", against: "integrity", scale: "mag", power: 20, label: "Mag ×20" }],
+    statuses: [],
+    chargeCost: 5,
+    castSpeed: null,
+    summary: "Range 1–4 (±2h) · Single target · Machinery · Integrity Mag ×20 · Charge 5",
+  },
+};
+
+/** Keyed by item, with the stock the field kit below would leave after one use. */
+export const mockItemMechanics: Record<string, MechanicsView> = {
+  "coagulant-vial": {
+    range: { min: 0, max: 1, vertical: 1 },
+    area: { shape: "single" },
+    targets: ["self", "ally"],
+    targetsLabel: "Self or ally",
+    requiresLos: false,
+    amounts: [{ kind: "recovery", against: "unit", scale: "fixed", power: 30, label: "30" }],
+    statuses: [],
+    chargeCost: 0,
+    castSpeed: null,
+    usesRemaining: 2,
+    summary: "Range 0–1 (±1h) · Single target · Self or ally · Recovery 30 · 2 in stock",
+  },
+  "cinder-flask": {
+    range: { min: 1, max: 3, vertical: 2 },
+    area: { shape: "single" },
+    targets: ["enemy"],
+    targetsLabel: "Enemy",
+    requiresLos: true,
+    amounts: [
+      {
+        kind: "damage",
+        against: "unit",
+        scale: "fixed",
+        power: 25,
+        damageType: "thermal",
+        label: "25 thermal",
+      },
+    ],
+    statuses: [{ id: "scalded", name: "Scalded", chancePercent: 60 }],
+    chargeCost: 0,
+    castSpeed: null,
+    usesRemaining: 0,
+    summary: "Range 1–3 (±2h) · Single target · Enemy · Damage 25 thermal · Scalded 60% · 0 in stock",
+  },
+};
+
 function abilityView(ability: Ability, charge: number) {
   const chargeCost = ability.slot === "action" ? ability.chargeCost : 0;
   const castSpeed = ability.slot === "action" ? ability.castSpeed : null;
@@ -311,6 +434,9 @@ function abilityView(ability: Ability, charge: number) {
     castSpeed,
     standingCost: ability.standingCost,
     ...(unaffordable ? { unavailableReason: "Insufficient charge" } : {}),
+    ...(mockAbilityMechanics[ability.id] === undefined
+      ? {}
+      : { mechanics: mockAbilityMechanics[ability.id] }),
   };
 }
 
@@ -332,20 +458,15 @@ export function mockSkillsets(unit: UnitView, learnedAbilityIds: string[] = ["pi
 
 /** The shared field kit, in the Chemist register the item files use. */
 export function mockSatchel(): ItemEntryView[] {
-  return [
-    {
-      itemId: "coagulant-vial",
-      name: "Coagulant Vial",
-      description: "Standard field clotting compound.",
-      count: 3,
-    },
-    {
-      itemId: "cinder-flask",
-      name: "Cinder Flask",
-      description: "Accelerant in thin glass with a friction cap.",
-      count: 1,
-    },
-  ];
+  return [coagulantVial, cinderFlask].map((item, index) => ({
+    itemId: item.id,
+    name: item.name,
+    description: item.description,
+    count: index === 0 ? 3 : 1,
+    ...(mockItemMechanics[item.id] === undefined
+      ? {}
+      : { mechanics: mockItemMechanics[item.id] }),
+  }));
 }
 
 export function mockActionMenuView(overrides: Partial<ActionMenuView> = {}): ActionMenuView {
@@ -514,15 +635,19 @@ export const mockFallen: FallenEntryView[] = [
 ];
 
 export function mockPartyView(overrides: Partial<PartyView> = {}): PartyView {
+  // Three of four staged, one down: the counter and the row marks both have
+  // something to say, which is the state the roster was silent about.
+  const members: RosterEntryView[] = [
+    { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, disposition: { resolve: 72, attunement: 38 }, jobLevel: 2, deployed: true },
+    { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, disposition: { resolve: 61, attunement: 30 }, jobLevel: 3, deployed: true },
+    { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, disposition: { resolve: 44, attunement: 78 }, jobLevel: 2, deployed: true },
+    { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, disposition: { resolve: 58, attunement: 26 }, jobLevel: 1, deployed: false },
+  ];
   return {
     deployedLimit: 4,
+    deployedCount: members.filter((member) => member.deployed === true).length,
     fallen: mockFallen,
-    members: [
-      { unitId: "rowen", name: "Rowen Corvane", jobName: "Enforcer", level: 1, portraitId: "rowen", hp: 41, maxHp: 58, standing: 320, disposition: { resolve: 72, attunement: 38 }, note: "Deployed" },
-      { unitId: "dunn-brack", name: "Dunn Brack", jobName: "Enforcer", level: 2, hp: 66, maxHp: 66, standing: 140, disposition: { resolve: 61, attunement: 30 }, note: "Deployed" },
-      { unitId: "sella-wick", name: "Sella Wick", jobName: "Conduit", level: 2, hp: 38, maxHp: 47, standing: 275, disposition: { resolve: 44, attunement: 78 }, note: "Deployed" },
-      { unitId: "mott-tarr", name: "Mott Tarr", jobName: "Enforcer", level: 1, hp: 0, maxHp: 54, standing: 60, disposition: { resolve: 58, attunement: 26 }, note: "Downed" },
-    ],
+    members,
     ...overrides,
   };
 }
@@ -603,19 +728,30 @@ function equipSlotViews(equipment: Partial<Record<EquipSlot, string>>): EquipSlo
   });
 }
 
+/** Mirrors `itemSummary` in src/app/campaignViews.ts, units and all. */
 function summarizeItem(item: Item): string {
-  if (item.slot === "weapon") return `Power ${item.power} · ${item.damageType}`;
-  if (item.slot === "consumable") return "Consumable";
+  if (item.slot === "weapon") {
+    const reach =
+      item.range.min === item.range.max ? `${item.range.max}` : `${item.range.min}–${item.range.max}`;
+    return `Power ${item.power} ${item.damageType} · Reach ${reach} (±${item.range.vertical}h)`;
+  }
+  if (item.slot === "consumable") return "Carried, never worn";
   const mods = Object.entries(item.statMods)
-    .map(([key, value]) => `${STAT_LABELS[key as keyof typeof STAT_LABELS]} ${value > 0 ? "+" : ""}${value}`)
+    .filter(([, value]) => value !== 0)
+    .map(([key, value]) => {
+      const stat = key as keyof typeof STAT_LABELS;
+      return `${STAT_LABELS[stat]} ${formatStatDelta(stat, value ?? 0)}`;
+    })
     .join(" · ");
-  return mods.length > 0 ? mods : "No modifiers";
+  return mods.length > 0 ? mods : "No stat change";
 }
 
 export function mockUnitSheetView(overrides: Partial<UnitSheetView> = {}): UnitSheetView {
   return {
     unit: mockUnitView(),
     standing: 320,
+    // Unit level 1, Enforcer level 2: two tracks, and the record has to say so.
+    jobLevel: 2,
     stats: MOCK_STATS,
     move: enforcerJob.baseMove,
     jump: enforcerJob.baseJump,
@@ -642,6 +778,9 @@ export function mockLearningView(overrides: Partial<LearningView> = {}): Learnin
     standingCost: ability.standingCost,
     chargeCost: ability.slot === "action" ? ability.chargeCost : 0,
     learned: learnedIds.has(ability.id),
+    ...(mockAbilityMechanics[ability.id] === undefined
+      ? {}
+      : { mechanics: mockAbilityMechanics[ability.id] }),
   }));
   return {
     unitId: "rowen",
@@ -652,6 +791,14 @@ export function mockLearningView(overrides: Partial<LearningView> = {}): Learnin
     ...overrides,
   };
 }
+
+/** The eight stats a kit change can move, so a delta has a figure to move from. */
+const MOCK_EQUIP_STATS: StatLineView[] = [
+  ...MOCK_STATS,
+  { key: "move", label: STAT_LABELS.move, value: enforcerJob.baseMove },
+  { key: "jump", label: STAT_LABELS.jump, value: enforcerJob.baseJump },
+  { key: "evade", label: STAT_LABELS.evade, value: enforcerJob.baseEvade },
+];
 
 export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): EquipmentView {
   const equipped: Partial<Record<EquipSlot, string>> = {
@@ -680,7 +827,11 @@ export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): Equip
             label: STAT_LABELS[key as StatLineView["key"]],
             delta: value ?? 0,
           })),
-          ...(usable ? {} : { unavailableReason: `${job.name} cannot bear ${item.equipTags[0]}` }),
+          ...(usable
+            ? {}
+            : {
+                unavailableReason: `${job.name} cannot bear ${equipTagLabel(item.equipTags[0] ?? "")}`,
+              }),
         };
       });
   }
@@ -689,6 +840,7 @@ export function mockEquipmentView(overrides: Partial<EquipmentView> = {}): Equip
     unitName: "Rowen Corvane",
     jobName: job.name,
     jobEquipTags: job.equipTags,
+    stats: MOCK_EQUIP_STATS,
     slots: equipSlotViews(equipped),
     options,
     satchel: mockSatchel(),

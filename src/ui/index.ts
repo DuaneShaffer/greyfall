@@ -21,6 +21,14 @@ export {
 } from "./screens/campaignSelect.js";
 export { DeploymentScreen } from "./screens/deployment.js";
 export { EquipmentScreen } from "./screens/equipment.js";
+export {
+  equipTagLabel,
+  equipTagList,
+  formatStatDelta,
+  formatStatShift,
+  formatStatValue,
+  statUnit,
+} from "./screens/vocabulary.js";
 export { JobScreen } from "./screens/jobs.js";
 export { LearningScreen } from "./screens/learning.js";
 export { RosterScreen } from "./screens/roster.js";

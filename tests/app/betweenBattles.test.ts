@@ -179,8 +179,9 @@ describe("BetweenBattleScreens", () => {
   });
 
   it("offers the engagements already won, and nothing before one is", () => {
+    // "Return to…" named nowhere; the destination is an engagement already won.
     const returnTo = [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")].find(
-      (node) => node.textContent === "Return to…",
+      (node) => node.textContent === "Return to an engagement",
     );
     expect(returnTo).toBeDefined();
 
@@ -189,12 +190,23 @@ describe("BetweenBattleScreens", () => {
 
     h.session.state.completedEncounterIds.push("e1-marshaling-yard");
     returnTo!.click();
+    expect(
+      h.screens.roster.el.querySelector<HTMLElement>('[data-menu="replay-engagements"] .gf-menu-title')
+        ?.textContent,
+    ).toBe("Engagements won");
     const entry = h.screens.roster.el.querySelector<HTMLElement>(
       '.gf-menu-entry[data-entry="e1-marshaling-yard"]',
     );
     expect(entry).toBeDefined();
     entry!.click();
     expect(h.replayRequests).toEqual(["e1-marshaling-yard"]);
+  });
+
+  it("counts the staged formation on the roster it deploys from", () => {
+    h.session.beginDeployment("e1-marshaling-yard");
+    h.screens.showRoster();
+    const note = h.screens.roster.el.querySelector(".gf-screen-note")?.textContent ?? "";
+    expect(note).toMatch(/^\d+\/\d+ deployed$/);
   });
 
   it("offers a way back to the campaign register", () => {
@@ -273,6 +285,31 @@ describe("BetweenBattleScreens", () => {
     h.screens.showRoster();
     document.dispatchEvent(key("Enter"));
     expect(h.screens.roster.menus.depth).toBe(2);
+  });
+
+  // The sheet is the only page with no menu of its own, so it was the only page
+  // nothing was listening on: its own hint promised Escape and Escape was dead.
+  it("hands the unit sheet back to the roster on Escape", () => {
+    h.screens.roster.menus.handleKey(key("Enter"));
+    h.screens.roster.menus.handleKey(key("Enter"));
+    expect(h.screens.current).toBe("sheet");
+
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.current).toBe("roster");
+  });
+
+  it("gives the keyboard back rather than keeping a second listener on it", () => {
+    h.screens.roster.menus.handleKey(key("Enter"));
+    h.screens.roster.menus.handleKey(key("Enter"));
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.current).toBe("roster");
+
+    // The roster's own cancel key still reaches the roster: the sheet's listener
+    // is off the target, not stacked under the one that replaced it.
+    expect(h.screens.roster.menus.depth).toBe(2);
+    document.dispatchEvent(key("Escape"));
+    expect(h.screens.roster.menus.depth).toBe(1);
+    expect(h.screens.current).toBe("roster");
   });
 
   it("falls back to the roster when a screen has no view model", () => {
