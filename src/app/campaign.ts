@@ -257,6 +257,10 @@ export class CampaignSession {
    * Stage a formation for `encounterId`, pre-filling the deployment tiles from
    * the top of the roster so a player who never opens the screen still fields
    * a party.
+   *
+   * A formation already staged for the *same* engagement is kept: Move out is
+   * the way back onto the screen, and re-filling from the roster head threw
+   * away the layout the player had just walked back off it to check something.
    */
   beginDeployment(encounterId: string): PendingDeployment | null {
     const encounter = this.content.encounters[encounterId];
@@ -265,12 +269,14 @@ export class CampaignSession {
     if (map === undefined) return null;
 
     const tileCount = Math.min(encounter.maxDeployedUnits, map.deploymentTiles.length);
+    const staged = this.pending?.encounterId === encounterId ? this.pending.assignments : null;
     const assignments: (string | null)[] = new Array<string | null>(tileCount).fill(null);
     for (let i = 0; i < tileCount; i += 1) {
-      assignments[i] = this.campaignState.roster[i]?.id ?? null;
+      assignments[i] = (staged === null ? this.campaignState.roster[i]?.id : staged[i]) ?? null;
     }
 
     this.pending = { encounterId, encounter, map, assignments };
+    this.pruneAssignments();
     return this.pending;
   }
 

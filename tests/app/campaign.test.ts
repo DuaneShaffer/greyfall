@@ -302,6 +302,26 @@ describe("CampaignSession — formation", () => {
     expect(reserve?.unavailableReason).toBe("No deployment tile free");
   });
 
+  it("keeps the formation the player laid out when they walk back into it", () => {
+    const h = harness();
+    const pending = h.session.beginDeployment(ENCOUNTER_ID)!;
+    const benched = pending.assignments[0]!;
+    expect(h.session.toggleDeployment(benched)).toBe(true);
+    const laidOut = [...pending.assignments];
+
+    // Move out, off the screen and back on again: the same engagement.
+    expect(h.session.beginDeployment(ENCOUNTER_ID)!.assignments).toEqual(laidOut);
+    expect(h.session.deploymentPlacements().some((p) => p.unitId === benched)).toBe(false);
+  });
+
+  it("re-fills from the roster head for a different engagement", () => {
+    const h = harness();
+    const pending = h.session.beginDeployment(ENCOUNTER_ID)!;
+    h.session.toggleDeployment(pending.assignments[0]!);
+    const other = h.session.beginDeployment("e2-foundry-floor-nine")!;
+    expect(other.assignments[0]).toBe(h.session.state.roster[0]!.id);
+  });
+
   it("blocks confirmation with an empty formation", () => {
     const h = harness();
     const pending = h.session.beginDeployment(ENCOUNTER_ID)!;
@@ -380,6 +400,38 @@ describe("CampaignRunner", () => {
     expect(h.runner.phase).toBe("roster");
     expect(h.runner.beginDeployment()).toBe(true);
     expect(h.session.deployment?.encounterId).toBe(ENCOUNTER_ID);
+  });
+
+  it("takes a forfeited battle as the loss it is, and files the record for it", () => {
+    h.runner.start();
+    h.runner.beginDeployment();
+    h.runner.confirmDeployment();
+    const before = h.session.state;
+    // The briefing's forfeit hands the battle over unfinished: the rules never
+    // called it, so the state carries no result at all.
+    const given = finished({ result: "win", earned: { rowen: 70 } });
+    given.result = null;
+    h.battle.finish(given);
+
+    expect(h.runner.lastOutcome?.result).toBe("loss");
+    expect(h.runner.lastOutcome?.advanced).toBe(false);
+    expect(h.session.state).toBe(before);
+    expect(h.screens.results).toHaveLength(1);
+    expect(h.runner.phase).toBe("roster");
+    expect(h.runner.beginDeployment()).toBe(true);
+  });
+
+  it("keeps the staged formation when Move out is pressed a second time", () => {
+    h.runner.start();
+    h.runner.beginDeployment();
+    const benched = h.session.deployment!.assignments[0]!;
+    expect(h.session.toggleDeployment(benched)).toBe(true);
+    const laidOut = [...h.session.deployment!.assignments];
+
+    // Back to the roster off the formation screen, then out again: same
+    // engagement, so the layout is the player's and not the roster head's.
+    expect(h.runner.beginDeployment()).toBe(true);
+    expect(h.session.deployment!.assignments).toEqual(laidOut);
   });
 
   it("strikes a unit that stayed down through a win", () => {

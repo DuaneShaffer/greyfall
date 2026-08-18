@@ -239,9 +239,25 @@ function forwardingIntents(): UiIntents {
   return out;
 }
 
+/**
+ * Hand the battle over to the chapter loop: the banner's Continue after a
+ * battle ended itself, and the briefing's forfeit, are the same handover. A
+ * forfeited state carries no result, which `applyBattleResults` reads as the
+ * loss it is — nothing is banked and the roster comes back exactly as it went
+ * out (PROGRESSION §3), which is what the confirm promised.
+ */
+function concludeBattle(): void {
+  const final = controller?.state;
+  const finish = onBattleEnd;
+  if (final === undefined || finish === null) return;
+  onBattleEnd = null;
+  finish(final);
+}
+
 const hud = new BattleHud({
   intents: forwardingIntents(),
   onOrbit: (direction) => renderer.rig.orbit(direction),
+  onForfeit: () => concludeBattle(),
 });
 
 const battlePort: BattlePort = {
@@ -473,13 +489,7 @@ function closeCampaign(): void {
   runner = null;
 }
 
-bannerContinue.addEventListener("click", () => {
-  const final = controller?.state;
-  const finish = onBattleEnd;
-  if (final === undefined || finish === null) return;
-  onBattleEnd = null;
-  finish(final);
-});
+bannerContinue.addEventListener("click", () => concludeBattle());
 
 overlayHost.classList.add("gf-root", "is-overlay");
 overlayHost.append(hud.el, banner, pickerHost);
