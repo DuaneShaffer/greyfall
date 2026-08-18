@@ -368,7 +368,7 @@ export function auditObjectFace(
   const colorIndices = [...distinctColors(grid)].sort((a, b) => a - b);
   const colors = colorIndices.map((index) => INDEXED_PALETTE[index] as Hex);
   if (colors.length > MAX_OBJECT_COLORS) {
-    warnings.push(`${colors.length} colours, the brief's ceiling is ${MAX_OBJECT_COLORS}`);
+    errors.push(`${colors.length} colours, the brief's ceiling is ${MAX_OBJECT_COLORS}`);
   }
 
   const allowedIndices = new Set(spec.allowed.map((hex) => paletteIndex(hex)));

@@ -47,7 +47,7 @@ export const TILE_MASTER_SCALE = 4;
 /** §5: the top 2 shipped rows of a side face are the strata cut line. */
 export const STRATA_BAND_ROWS = 2;
 
-/** §5's ceiling on a tile face, before the reduction of painted art blows it. */
+/** §5's ceiling on a tile face. A face over it declares its own `colorCeiling`. */
 export const MAX_TILE_COLORS = 6;
 
 export type StrataRule = "flat" | "interrupted" | "none";
@@ -65,6 +65,14 @@ export interface TileTextureSpec {
   readonly railMetal: boolean;
   /** Edges that must wrap for the face to tile without a visible grid of seams. */
   readonly wraps: { readonly horizontal: boolean; readonly vertical: boolean };
+  /**
+   * Per-face raise of `MAX_TILE_COLORS`, for a delivered face whose reduction
+   * lands over §5's ceiling and ships anyway. Declared here so the overage is a
+   * named exception on a named face rather than a warning nobody reads: a face
+   * with no ceiling of its own, or one that climbs past the one it declares,
+   * fails the audit.
+   */
+  readonly colorCeiling?: number;
 }
 
 const SOOT = RAMPS.soot;
@@ -137,6 +145,9 @@ export const TILE_TEXTURE: Readonly<Record<TileTextureId, TileTextureSpec>> = {
     strata: "none",
     railMetal: false,
     wraps: SIDE_WRAPS,
+    // The delivered painting spends the whole dark half of soot and umber on
+    // this face: `soot-900` for the deepest cavity is the seventh colour.
+    colorCeiling: 7,
   },
   "rail-top": {
     id: "rail-top",
@@ -147,6 +158,9 @@ export const TILE_TEXTURE: Readonly<Record<TileTextureId, TileTextureSpec>> = {
     strata: "none",
     railMetal: true,
     wraps: TOP_WRAPS,
+    // Same seven as `impassable-side`: the ballast shadow between the ties
+    // reaches `soot-900`.
+    colorCeiling: 7,
   },
   "rough-top": {
     id: "rough-top",
@@ -333,6 +347,8 @@ export interface TileAudit {
   readonly height: number;
   readonly colors: readonly Hex[];
   readonly colorCount: number;
+  /** `MAX_TILE_COLORS`, or the face's own declared raise of it. */
+  readonly colorCeiling: number;
   readonly amberPixels: number;
   readonly reservedPixels: number;
   readonly copper300Pixels: number;
@@ -364,8 +380,12 @@ export function auditTile(grid: PixelGrid, spec: TileTextureSpec): TileAudit {
   const counts = histogram(grid);
   const colorIndices = [...distinctColors(grid)].sort((a, b) => a - b);
   const colors = colorIndices.map((index) => INDEXED_PALETTE[index] as Hex);
-  if (colors.length > MAX_TILE_COLORS) {
-    warnings.push(`${colors.length} colours, the brief's ceiling is ${MAX_TILE_COLORS}`);
+  const colorCeiling = spec.colorCeiling ?? MAX_TILE_COLORS;
+  if (colors.length > colorCeiling) {
+    errors.push(
+      `${colors.length} colours, the brief's ceiling is ${MAX_TILE_COLORS}` +
+        (spec.colorCeiling === undefined ? "" : ` and this face declares ${spec.colorCeiling}`),
+    );
   }
 
   const allowedIndices = new Set(spec.allowed.map((hex) => paletteIndex(hex)));
@@ -426,6 +446,7 @@ export function auditTile(grid: PixelGrid, spec: TileTextureSpec): TileAudit {
     height: grid.height,
     colors,
     colorCount: colors.length,
+    colorCeiling,
     amberPixels,
     reservedPixels,
     copper300Pixels,
@@ -446,7 +467,7 @@ export function formatTileAudit(audit: TileAudit): string {
     `  ${name} rows ${m.rows.join(",")}: ${m.flatRows} flat, ${m.colors.join(" ")}, soot-300 ${(m.cutLineShare * 100).toFixed(0)}%, lighter-than-body ${(m.lighterShare * 100).toFixed(0)}%, luminance ${m.meanLuminance.toFixed(4)} vs body ${m.bodyMeanLuminance.toFixed(4)}`;
   const lines = [
     `${audit.id}: ${audit.ok ? "CONFORMS" : "REJECTED"} (${audit.width}x${audit.height})`,
-    `  colours ${audit.colorCount}/${MAX_TILE_COLORS}: ${audit.colors.join(" ")}`,
+    `  colours ${audit.colorCount}/${audit.colorCeiling}: ${audit.colors.join(" ")}`,
     `  amber ${audit.amberPixels}, reserved ramps ${audit.reservedPixels}, copper-300 ${audit.copper300Pixels}, off-ramp ${audit.outsideRampPixels}`,
     seam("east/west", audit.seamHorizontal),
     seam("north/south", audit.seamVertical),

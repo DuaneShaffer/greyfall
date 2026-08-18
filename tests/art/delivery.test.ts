@@ -13,6 +13,14 @@ import {
   formatSheetCut,
 } from "../../src/art/delivery.js";
 import { EXTERNAL_JOBS, externalArt } from "../../src/art/external.js";
+import * as AUGMENTED from "../../src/art/masters/augmented.js";
+import * as CHEMIST from "../../src/art/masters/chemist.js";
+import * as CONDUIT from "../../src/art/masters/conduit.js";
+import * as ENFORCER from "../../src/art/masters/enforcer.js";
+import * as MACHINIST from "../../src/art/masters/machinist.js";
+import * as RAILRUNNER from "../../src/art/masters/railrunner.js";
+import * as SABOTEUR from "../../src/art/masters/saboteur.js";
+import { DELIVERIES, ingest } from "../../tools/ingest-master.js";
 import {
   FIELD_PALETTE,
   RESERVED_SIGNAL_COLORS,
@@ -280,6 +288,43 @@ describe("several prop regions in one view", () => {
     const total = props.reduce((n, p) => n + p.pixels.length, 0);
     expect(total).toBe(60 + 60);
   });
+});
+
+describe("committed masters reproduce from art-src", () => {
+  // The terrain and object faces have had this guard since they landed
+  // (tiles.test.ts, objects.test.ts); the seven sprite masters did not, so a
+  // hand edit to a base64 payload, or a drift in the cut/fit/quantize path,
+  // changed the art nothing checked. This runs the tool's own path — its
+  // delivery declarations, its `ingest` — and compares byte for byte.
+  const committed: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+    conduit: { se: CONDUIT.SE_BASE64 },
+    enforcer: { se: ENFORCER.SE_BASE64, ne: ENFORCER.NE_BASE64 },
+    machinist: { se: MACHINIST.SE_BASE64, ne: MACHINIST.NE_BASE64 },
+    saboteur: { se: SABOTEUR.SE_BASE64, ne: SABOTEUR.NE_BASE64 },
+    chemist: { se: CHEMIST.SE_BASE64, ne: CHEMIST.NE_BASE64 },
+    augmented: { se: AUGMENTED.SE_BASE64, ne: AUGMENTED.NE_BASE64 },
+    railrunner: { se: RAILRUNNER.SE_BASE64, ne: RAILRUNNER.NE_BASE64 },
+  };
+
+  it("has a delivery declaration and a committed payload for every job", () => {
+    expect(Object.keys(DELIVERIES).sort()).toEqual([...EXTERNAL_JOBS].sort());
+    expect(Object.keys(committed).sort()).toEqual([...EXTERNAL_JOBS].sort());
+  });
+
+  for (const jobId of Object.keys(committed)) {
+    it(`re-derives ${jobId} from its delivered sheet`, () => {
+      const delivery = DELIVERIES[jobId];
+      expect(delivery, jobId).toBeDefined();
+      if (!delivery) return;
+      const views = ingest(jobId, delivery).views;
+      const payloads = committed[jobId] as Readonly<Record<string, string>>;
+      expect(views.map((v) => v.view)).toEqual(Object.keys(payloads));
+      for (const view of views) {
+        const fresh = Buffer.from(view.grid.data).toString("base64");
+        expect(fresh, `${jobId}/${view.view}`).toBe(payloads[view.view]);
+      }
+    });
+  }
 });
 
 describe("the shipped masters", () => {

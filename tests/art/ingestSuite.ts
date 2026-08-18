@@ -9,11 +9,16 @@
 //
 // One fallback job is a whole vitest file's worth of work, so the per-job suite
 // is registered from here and each job gets its own `ingest.<job>.test.ts`.
+//
+// The same per-frame sweep also runs over the seven delivered masters — the art
+// that actually reaches the GPU — from the `sheet.<job>.test.ts` shards, with
+// each delivery's C.8.6 colour overage declared here rather than left unmeasured.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { JOB_ART, jobFrame } from "../../src/art/jobs.js";
+import { externalArt } from "../../src/art/external.js";
+import { JOB_ART, jobFrame, type JobId } from "../../src/art/jobs.js";
 import { AMBER_BUDGET, MAX_FRAME_COLORS } from "../../src/art/ingest.js";
 import { importExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
 import { EMISSIVE_COLORS, RAMPS, TEAM_TINT } from "../../src/art/palette.js";
@@ -111,6 +116,122 @@ export function coveredFallbackJobs(): Set<string> {
   return covered;
 }
 
+type DerivedFrames = ReturnType<typeof everyExternalFrame>;
+
+const frameName = (jobId: string, ref: DerivedFrames[number]): string =>
+  `${jobId}/${ref.state}/${ref.view}/${ref.frame}`;
+
+/** §3 on one derived frame: canvas, anchor, sub-floor band, palette validity. */
+export function expectFrameGeometry(frames: DerivedFrames, jobId: string): void {
+  for (const ref of frames) {
+    const { grid } = ref;
+    const where = frameName(jobId, ref);
+    expect(grid.width, where).toBe(SPRITE_WIDTH);
+    expect(grid.height, where).toBe(SPRITE_HEIGHT);
+    expect(gridBounds(grid), where).not.toBeNull();
+    for (const value of grid.data) {
+      if (value === TRANSPARENT) continue;
+      expect(INDEXED_PALETTE[value], `${where}:${value}`).toBeTruthy();
+    }
+    let figureBottom = -1;
+    for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
+      for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+        if (gridGet(grid, x, y) !== TRANSPARENT) figureBottom = y;
+      }
+    }
+    expect(figureBottom, where).toBe(SPRITE_ANCHOR.y - 1);
+    for (let y = SPRITE_ANCHOR.y; y < SPRITE_HEIGHT; y += 1) {
+      for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+        const value = gridGet(grid, x, y);
+        if (value !== TRANSPARENT) expect(value, `${where} band`).toBe(OUTLINE_INDEX);
+      }
+    }
+  }
+}
+
+/**
+ * §2 and §3 on one derived frame: color budget, amber budget, closed outline.
+ * The ceiling is a parameter because delivered art is over the hand-drawing
+ * budget by C.8.6 and each delivery declares how far.
+ */
+export function expectFrameBudgets(
+  frames: DerivedFrames,
+  jobId: string,
+  colorCeiling: number,
+): void {
+  const edge = new Set([OUTLINE_INDEX, ...HALO_INDICES]);
+  for (const ref of frames) {
+    const { grid } = ref;
+    const where = frameName(jobId, ref);
+    expect(distinctColors(grid).size, where).toBeLessThanOrEqual(colorCeiling);
+    const counts = histogram(grid);
+    let amber = 0;
+    for (const [index, count] of counts) if (AMBER_INDICES.has(index)) amber += count;
+    expect(amber, where).toBeLessThanOrEqual(AMBER_BUDGET);
+    expect(counts.get(OUTLINE_INDEX) ?? 0, where).toBeGreaterThan(20);
+
+    const sample = (x: number, y: number): number =>
+      y > FIGURE_BOX_BOTTOM ? OUTLINE_INDEX : gridGet(grid, x, y);
+    for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
+      for (let x = 0; x < SPRITE_WIDTH; x += 1) {
+        const value = gridGet(grid, x, y);
+        if (value === TRANSPARENT || edge.has(value)) continue;
+        let open = x === 0 || y === 0 || x === SPRITE_WIDTH - 1;
+        for (let ny = -1; ny <= 1 && !open; ny += 1) {
+          for (let nx = -1; nx <= 1; nx += 1) {
+            if (sample(x + nx, y + ny) === TRANSPARENT) open = true;
+          }
+        }
+        expect(open, `${where} leak @${x},${y}`).toBe(false);
+      }
+    }
+  }
+}
+
+/**
+ * How many colors each delivery's derived frames may spend. Every one is over
+ * `MAX_FRAME_COLORS` — that is the C.8.6 cost of painted art reduced to the
+ * canvas, recorded per job so a delivery that climbs further fails here rather
+ * than passing by being unmeasured.
+ */
+export const DELIVERED_COLOR_CEILING = {
+  enforcer: 21,
+  machinist: 23,
+  conduit: 22,
+  saboteur: 18,
+  chemist: 24,
+  augmented: 23,
+  railrunner: 17,
+} as const satisfies Readonly<Record<JobId, number>>;
+
+/**
+ * The same per-frame sweep, run over a real delivered master's 56 derived
+ * frames instead of a synthesised one: segment cut, shear, seam close, ground
+ * settle, outline re-derivation and mirror, on the art that reaches the GPU.
+ */
+export function registerDeliveredMasterSuite(jobId: JobId): void {
+  const art = externalArt(jobId);
+  if (!art) return;
+  describe("delivered master, frame by frame", () => {
+    let frames: DerivedFrames;
+    beforeAll(() => {
+      frames = everyExternalFrame(art.master);
+    });
+
+    it("derives every frame the tick tables declare", () => {
+      expect(frames).toHaveLength(DRAWN_FRAMES_PER_JOB);
+    });
+
+    it("keeps §3: canvas, anchor, sub-floor band, palette validity", () => {
+      expectFrameGeometry(frames, jobId);
+    });
+
+    it("keeps §2 and §3: declared color budget, amber budget, closed outline", () => {
+      expectFrameBudgets(frames, jobId, DELIVERED_COLOR_CEILING[jobId]);
+    });
+  });
+}
+
 export function registerExternalMasterSuite(jobId: FallbackJob): void {
   describe("external masters become full animations", () => {
     describe(jobId, () => {
@@ -140,59 +261,11 @@ export function registerExternalMasterSuite(jobId: FallbackJob): void {
       });
 
       it("keeps §3: canvas, anchor, sub-floor band, palette validity", () => {
-        for (const { state, view, frame, grid } of frames) {
-          const where = `${jobId}/${state}/${view}/${frame}`;
-          expect(grid.width, where).toBe(SPRITE_WIDTH);
-          expect(grid.height, where).toBe(SPRITE_HEIGHT);
-          const bounds = gridBounds(grid);
-          expect(bounds, where).not.toBeNull();
-          for (const value of grid.data) {
-            if (value === TRANSPARENT) continue;
-            expect(INDEXED_PALETTE[value], `${where}:${value}`).toBeTruthy();
-          }
-          let figureBottom = -1;
-          for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
-            for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-              if (gridGet(grid, x, y) !== TRANSPARENT) figureBottom = y;
-            }
-          }
-          expect(figureBottom, where).toBe(SPRITE_ANCHOR.y - 1);
-          for (let y = SPRITE_ANCHOR.y; y < SPRITE_HEIGHT; y += 1) {
-            for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-              const value = gridGet(grid, x, y);
-              if (value !== TRANSPARENT) expect(value, `${where} band`).toBe(OUTLINE_INDEX);
-            }
-          }
-        }
+        expectFrameGeometry(frames, jobId);
       });
 
       it("keeps §2 and §3: color budget, amber budget, closed outline", () => {
-        const edge = new Set([OUTLINE_INDEX, ...HALO_INDICES]);
-        for (const { state, view, frame, grid } of frames) {
-          const where = `${jobId}/${state}/${view}/${frame}`;
-          expect(distinctColors(grid).size, where).toBeLessThanOrEqual(MAX_FRAME_COLORS);
-          const counts = histogram(grid);
-          let amber = 0;
-          for (const [index, count] of counts) if (AMBER_INDICES.has(index)) amber += count;
-          expect(amber, where).toBeLessThanOrEqual(AMBER_BUDGET);
-          expect(counts.get(OUTLINE_INDEX) ?? 0, where).toBeGreaterThan(20);
-
-          const sample = (x: number, y: number): number =>
-            y > FIGURE_BOX_BOTTOM ? OUTLINE_INDEX : gridGet(grid, x, y);
-          for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
-            for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-              const value = gridGet(grid, x, y);
-              if (value === TRANSPARENT || edge.has(value)) continue;
-              let open = x === 0 || y === 0 || x === SPRITE_WIDTH - 1;
-              for (let ny = -1; ny <= 1 && !open; ny += 1) {
-                for (let nx = -1; nx <= 1; nx += 1) {
-                  if (sample(x + nx, y + ny) === TRANSPARENT) open = true;
-                }
-              }
-              expect(open, `${where} leak @${x},${y}`).toBe(false);
-            }
-          }
-        }
+        expectFrameBudgets(frames, jobId, MAX_FRAME_COLORS);
       });
 
       it("animates: adjacent frames of a state differ", () => {

@@ -6,6 +6,7 @@ import type { JobId } from "../../src/art/jobs.js";
 import { gridGet, opaqueCount } from "../../src/art/pixel.js";
 import { buildJobSheet, sheetKey } from "../../src/art/sheet.js";
 import { SPRITE_ANCHOR, SPRITE_HEIGHT, SPRITE_WIDTH } from "../../src/art/sprites.js";
+import { registerDeliveredMasterSuite } from "./ingestSuite.js";
 
 // One `sheet.<job>.test.ts` file per entry; the coverage guard in sheet.test.ts
 // checks this against JOB_IDS and EXTERNAL_JOBS so a dropped roster entry fails.
@@ -71,4 +72,6 @@ export function describeJobSheet(job: JobId): void {
       }
     });
   });
+
+  registerDeliveredMasterSuite(job);
 }

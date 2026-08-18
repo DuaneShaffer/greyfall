@@ -20,9 +20,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { quantizeGrid, resampleRGBA, type RGBASource } from "../../src/art/ingest.js";
 import * as MASTERS from "../../src/art/masters/tiles.js";
-import { PALETTE, RAMPS } from "../../src/art/palette.js";
+import { PALETTE, RAMPS, type Hex } from "../../src/art/palette.js";
 import { decodePNG } from "../../src/art/png.js";
-import { createGrid, gridGet, paletteIndex, type PixelGrid } from "../../src/art/pixel.js";
+import { cloneGrid, createGrid, gridGet, paletteIndex, type PixelGrid } from "../../src/art/pixel.js";
 import {
   MAX_TILE_COLORS,
   SEAM_RATIO_LIMIT,
@@ -32,6 +32,7 @@ import {
   TILE_TEXTURE_IDS,
   auditTile,
   tileTextureFor,
+  type TileAudit,
   type TileTextureId,
 } from "../../src/art/tiles.js";
 import { TERRAIN_SHEET_CELLS, cutTerrainSheet, findSheetFrames } from "../../src/art/tileSheet.js";
@@ -171,7 +172,13 @@ describe("terrain audit, as delivered", () => {
     expect(RAMPS.copper.some((hex) => of("rail-top").colors.includes(hex))).toBe(false);
   });
 
-  it("pins the colour count of every face", () => {
+  it("conforms on every delivered face", () => {
+    for (const audit of audits) {
+      expect(audit.ok, `${audit.id}: ${audit.errors.join("; ")}`).toBe(true);
+    }
+  });
+
+  it("pins the colour count of every face, and every overage is declared per face", () => {
     expect(Object.fromEntries(audits.map((a) => [a.id, a.colorCount]))).toEqual({
       "plain-top": 3,
       "plain-side": 5,
@@ -185,6 +192,31 @@ describe("terrain audit, as delivered", () => {
     });
     const over = audits.filter((a) => a.colorCount > MAX_TILE_COLORS).map((a) => a.id);
     expect(over).toEqual(["impassable-side", "rail-top"]);
+    for (const audit of audits) {
+      expect(TILE_TEXTURE[audit.id].colorCeiling, audit.id).toBe(over.includes(audit.id) ? 7 : undefined);
+      expect(audit.colorCeiling, audit.id).toBe(over.includes(audit.id) ? 7 : MAX_TILE_COLORS);
+    }
+  });
+
+  it("fails a face that goes over its ceiling, declared or not", () => {
+    const extra = (id: TileTextureId, hexes: readonly Hex[]): TileAudit => {
+      const grid = cloneGrid(tileGrid(id));
+      hexes.forEach((hex, i) => {
+        grid.data[i] = paletteIndex(hex);
+      });
+      return auditTile(grid, TILE_TEXTURE[id]);
+    };
+    // A seventh colour on a face with no declared raise, and an eighth on one
+    // that declares seven: both are errors, so `ok` moves.
+    const seventh = extra("impassable-top", [PALETTE["soot-900"]]);
+    expect(seventh.colorCount).toBe(7);
+    expect(seventh.ok).toBe(false);
+    expect(seventh.errors.join(" ")).toMatch(/7 colours, the brief's ceiling is 6$/);
+
+    const eighth = extra("rail-top", [PALETTE["copper-300"]]);
+    expect(eighth.colorCount).toBe(8);
+    expect(eighth.ok).toBe(false);
+    expect(eighth.errors.join(" ")).toMatch(/8 colours, the brief's ceiling is 6 and this face declares 7/);
   });
 
   it("pins the wrap-edge measurements per face", () => {

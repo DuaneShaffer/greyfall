@@ -22,6 +22,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { cutDeliverySheet, formatSheetCut, type CellCut } from "../src/art/delivery.js";
 import {
   FIELD_PALETTE,
@@ -65,7 +66,8 @@ type Delivery =
   | (Common & { readonly kind: "crop"; readonly crop: Rect })
   | (Common & { readonly kind: "sheet" });
 
-const DELIVERIES: Readonly<Record<string, Delivery>> = {
+/** Exported so `tests/art/delivery.test.ts` can re-derive every committed master. */
+export const DELIVERIES: Readonly<Record<string, Delivery>> = {
   conduit: {
     kind: "crop",
     jobId: "conduit",
@@ -127,7 +129,7 @@ const DELIVERIES: Readonly<Record<string, Delivery>> = {
 
 const root = resolve(import.meta.dirname, "..");
 
-interface ViewIngest {
+export interface ViewIngest {
   readonly view: DrawnView;
   readonly grid: PixelGrid;
   readonly report: ConformanceReport;
@@ -151,7 +153,7 @@ const rowSpans = (grid: PixelGrid): string[] => {
   return rows;
 };
 
-function ingest(id: string, delivery: Delivery): { views: ViewIngest[]; cutLog: string } {
+export function ingest(id: string, delivery: Delivery): { views: ViewIngest[]; cutLog: string } {
   const image = decodePNG(readFileSync(resolve(root, delivery.source)));
   const coverage = delivery.coverage ?? 127;
   const allowed = delivery.allowed ?? FIELD_PALETTE;
@@ -233,40 +235,47 @@ ${body}
   return out;
 }
 
-const args = process.argv.slice(2);
-const dry = args.includes("--dry");
-const spans = args.includes("--spans");
-const ids = args.includes("--all")
-  ? Object.keys(DELIVERIES)
-  : args.filter((a) => !a.startsWith("--"));
-if (ids.length === 0) {
-  throw new Error(`name a delivery or pass --all; known: ${Object.keys(DELIVERIES).join(", ")}`);
+function main(args: readonly string[]): void {
+  const dry = args.includes("--dry");
+  const spans = args.includes("--spans");
+  const ids = args.includes("--all")
+    ? Object.keys(DELIVERIES)
+    : args.filter((a) => !a.startsWith("--"));
+  if (ids.length === 0) {
+    throw new Error(`name a delivery or pass --all; known: ${Object.keys(DELIVERIES).join(", ")}`);
+  }
+
+  for (const id of ids) {
+    const delivery = DELIVERIES[id];
+    if (!delivery) {
+      throw new Error(`no delivery named "${id}"; known: ${Object.keys(DELIVERIES).join(", ")}`);
+    }
+    console.log(`\n${"=".repeat(72)}\n${id} — ${delivery.note}\n${"=".repeat(72)}`);
+    const { views, cutLog } = ingest(id, delivery);
+    console.log(cutLog);
+    for (const v of views) {
+      const extent = gridBounds(v.grid);
+      console.log(
+        extent === null
+          ? `\nsource cell ${v.fitted.width}x${v.fitted.height} -> empty canvas`
+          : `\nsource cell ${v.fitted.width}x${v.fitted.height} -> canvas rows ${extent.y0}..${extent.y1}` +
+              ` (${extent.y1 - extent.y0 + 1} tall), columns ${extent.x0}..${extent.x1}` +
+              ` (${extent.x1 - extent.x0 + 1} wide)`,
+      );
+      console.log(formatReport(v.report, `${id}/${v.view}`));
+      if (spans) {
+        console.log(`\nrow spans (${v.view}), for measuring the shoulder and hip lines:`);
+        console.log(rowSpans(v.grid).join("\n"));
+      }
+    }
+    if (dry) continue;
+    const out = write(id, delivery, views, cutLog);
+    console.log(`\nwrote ${out}`);
+  }
 }
 
-for (const id of ids) {
-  const delivery = DELIVERIES[id];
-  if (!delivery) {
-    throw new Error(`no delivery named "${id}"; known: ${Object.keys(DELIVERIES).join(", ")}`);
-  }
-  console.log(`\n${"=".repeat(72)}\n${id} — ${delivery.note}\n${"=".repeat(72)}`);
-  const { views, cutLog } = ingest(id, delivery);
-  console.log(cutLog);
-  for (const v of views) {
-    const extent = gridBounds(v.grid);
-    console.log(
-      extent === null
-        ? `\nsource cell ${v.fitted.width}x${v.fitted.height} -> empty canvas`
-        : `\nsource cell ${v.fitted.width}x${v.fitted.height} -> canvas rows ${extent.y0}..${extent.y1}` +
-            ` (${extent.y1 - extent.y0 + 1} tall), columns ${extent.x0}..${extent.x1}` +
-            ` (${extent.x1 - extent.x0 + 1} wide)`,
-    );
-    console.log(formatReport(v.report, `${id}/${v.view}`));
-    if (spans) {
-      console.log(`\nrow spans (${v.view}), for measuring the shoulder and hip lines:`);
-      console.log(rowSpans(v.grid).join("\n"));
-    }
-  }
-  if (dry) continue;
-  const out = write(id, delivery, views, cutLog);
-  console.log(`\nwrote ${out}`);
+// Importing this file is how the tests re-derive the committed masters, so the
+// run only happens when it is the entry point.
+if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  main(process.argv.slice(2));
 }

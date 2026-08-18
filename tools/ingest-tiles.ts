@@ -118,7 +118,7 @@ if (!dry) {
   const sorted = [...ingested].sort(
     (a, b) => (order.get(a.id) as number) - (order.get(b.id) as number),
   );
-  const constName = (id: TileTextureId) => `${id.replace("-", "_").toUpperCase()}_BASE64`;
+  const constName = (id: TileTextureId) => `${id.replace(/-/g, "_").toUpperCase()}_BASE64`;
   const body = sorted
     .map((item) => {
       const spec = TILE_TEXTURE[item.id];

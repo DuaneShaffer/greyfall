@@ -395,7 +395,7 @@ describe("what the object audit would reject", () => {
     expect(auditObjectFace(lit, "flux-main", dark).errors.join(" ")).toMatch(/amber means live/);
   });
 
-  it("warns when a face is over the colour ceiling", () => {
+  it("fails a face that is over the colour ceiling", () => {
     const grid = cloneGrid(objectFaceGrid("flux-main", "end"));
     const extras = [
       PALETTE["soot-900"],
@@ -407,7 +407,8 @@ describe("what the object audit would reject", () => {
     extras.forEach((hex, i) => gridSet(grid, i, 0, paletteIndex(hex)));
     const audit = auditObjectFace(grid, "flux-main", spec.faces.end);
     expect(audit.colorCount).toBe(9);
-    expect(audit.warnings.join(" ")).toMatch(/9 colours, the brief's ceiling is 8/);
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/9 colours, the brief's ceiling is 8/);
   });
 });
 
