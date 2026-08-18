@@ -505,6 +505,10 @@ export function forecastView(
 const machineList = (names: readonly string[]): string =>
   names.length <= 2 ? names.join(" and ") : `${names.length} machines`;
 
+/** One machine takes the singular; two names and a count both take the plural. */
+const machinePhrase = (names: readonly string[], singular: string, plural: string): string =>
+  `${machineList(names)} ${names.length === 1 ? singular : plural}`;
+
 /**
  * What working this machine's controls would do to the grid, per the real
  * recompute. Operate is the only order the player sends with no aim step, so it
@@ -527,9 +531,11 @@ export function operateForecastView(
     (objectEnergized(state, flipped) ? lost : gained).push(name);
   }
   const effects: string[] = [];
-  if (lost.length > 0) effects.push(`${machineList(lost)} lose power`);
-  if (gained.length > 0) effects.push(`${machineList(gained)} come back up`);
-  if (effects.length === 0) effects.push("No change on the grid");
+  if (lost.length > 0) effects.push(machinePhrase(lost, "loses power", "lose power"));
+  if (gained.length > 0) effects.push(machinePhrase(gained, "comes back up", "come back up"));
+  // Most maps declare no grid at all, so the old wording promised a grid the
+  // player could not see and reported honestly about nothing.
+  if (effects.length === 0) effects.push("No powered machines affected");
 
   return {
     attacker: {

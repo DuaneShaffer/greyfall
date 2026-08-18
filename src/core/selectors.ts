@@ -495,6 +495,11 @@ const GRID_EFFECT_KINDS = new Set(["setPower", "severLine", "addLoad", "damageOb
  * the grid-mutating effects are replayed against a throwaway clone and the
  * energization is diffed. There is no second model of the graph here, and the
  * hypothetical consumes no RNG and mutates nothing the caller can see.
+ *
+ * Both previews answer on a gridless map too, and must: `powerSnapshot` reads a
+ * lone `powered` object as its own one-node circuit, resolution flips it, and
+ * five of the six maps declare no grid. Short-circuiting on `grids.length === 0`
+ * made every one of those maps forecast that nothing would happen.
  */
 export function gridFlipPreview(
   state: GameState,
@@ -502,7 +507,6 @@ export function gridFlipPreview(
   abilityId: string,
   target: TargetRef,
 ): string[] {
-  if (state.content.map.grids.length === 0) return [];
   const unit = unitById(state, unitId);
   if (unit === undefined) return [];
   const ability = abilityById(state, unit, abilityId);
@@ -546,7 +550,6 @@ export function objectOperationPreview(
   unitId: string,
   objectId: string,
 ): string[] {
-  if (state.content.map.grids.length === 0) return [];
   const unit = unitById(state, unitId);
   const object = objectById(state, objectId);
   if (unit === undefined || object === undefined || object.def.operable === null) return [];

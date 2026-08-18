@@ -190,6 +190,26 @@ describe("intent to command translation", () => {
     expect(h.ui.noticeTones.at(-1)).toBe("machine");
   });
 
+  // Every slice map but the meter house declares no flux grid, and the operate
+  // preview used to short-circuit on exactly that: all seven power operables
+  // forecast no change and then flipped the machine anyway.
+  it("forecasts the flip on a map that declares no grid", () => {
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 2, y: 4 });
+    h.controller.intents.previewOperable("rowen", "yard-switch");
+
+    expect(h.ui.latest()?.forecast?.abilityName).toBe("Operate — Signal Switch");
+    expect(h.ui.latest()?.forecast?.effects).toEqual(["Freight Lift loses power"]);
+    expect(h.renderer.highlights.get("grid-flip")).toEqual([{ x: 5, y: 4 }]);
+  });
+
+  it("marks what a staged order would take dark on a gridless map too", () => {
+    runUntilPlayer(h, "vale");
+    h.controller.intents.selectAbility("vale", "overload-cell");
+    h.controller.onTileClick({ x: 1, y: 1 });
+    expect(h.renderer.highlights.get("grid-flip")).toEqual([{ x: 1, y: 1 }]);
+  });
+
   it("keeps a persistent readout of what is still live", () => {
     const before = h.ui.latest()?.power?.entries ?? [];
     expect(before).toEqual([{ objectId: "freight-lift", name: "Freight Lift", powered: true }]);

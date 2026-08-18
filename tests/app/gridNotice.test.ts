@@ -249,7 +249,7 @@ describe("the Operate cursor forecasts what it would do", () => {
   it("reports an order that changes nothing on the grid as changing nothing", () => {
     const h = harness(operableMains);
     h.controller.intents.previewOperable(HAND, "west-main");
-    expect(lastView(h)?.forecast?.effects).toEqual(["No change on the grid"]);
+    expect(lastView(h)?.forecast?.effects).toEqual(["No powered machines affected"]);
     expect(h.renderer.highlights.has("grid-flip")).toBe(false);
   });
 
