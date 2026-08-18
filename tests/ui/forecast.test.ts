@@ -68,7 +68,7 @@ describe("ForecastPanel", () => {
       mockForecastView({
         abilityName: "Sentry Frame",
         targets: [],
-        effects: ["Sentry frame placed · 24 integrity"],
+        effects: ["Sentry Frame placed · 24 integrity"],
         aimedAt: { kind: "tile", tile: { x: 3, y: 2 } },
       }),
     );
@@ -342,14 +342,14 @@ describe("ForecastPanel", () => {
         abilityId: "sentry-frame",
         abilityName: "Sentry Frame",
         targets: [],
-        effects: ["Sentry frame placed · 24 integrity"],
+        effects: ["Sentry Frame placed · 24 integrity"],
         aimedAt: { kind: "tile", tile: { x: 3, y: 2 } },
       }),
     );
 
     const commit = panel.el.querySelector<HTMLButtonElement>(".gf-button");
     expect(commit?.disabled).toBe(false);
-    expect(textOf(panel.el, ".gf-forecast-effects.is-ability")).toContain("Sentry frame placed");
+    expect(textOf(panel.el, ".gf-forecast-effects.is-ability")).toContain("Sentry Frame placed");
     commit?.click();
     expect(calls).toEqual([
       { name: "confirmTarget", args: ["rowen", "sentry-frame", { kind: "tile", tile: { x: 3, y: 2 } }] },

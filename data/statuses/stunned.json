@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "stunned",
   "name": "Stunned",
-  "description": "Rattled and pinned; can neither act nor move.",
+  "description": "Rattled hard enough that the body has stopped taking orders. It passes; it does not pass now.",
   "category": "debuff",
   "duration": { "kind": "turns", "turns": 1 },
   "hooks": {

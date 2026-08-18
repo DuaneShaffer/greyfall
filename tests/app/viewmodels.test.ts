@@ -199,7 +199,7 @@ describe("forecastView", () => {
     const view = forecastView(state, "ivo", "sentry-frame", { kind: "tile", tile: { x: 1, y: 3 } });
 
     expect(view?.targets).toEqual([]);
-    expect(view?.effects[0]).toContain("Sentry frame placed");
+    expect(view?.effects[0]).toContain("Sentry Frame placed");
     expect(view?.aimedAt).toEqual({ kind: "tile", tile: { x: 1, y: 3 } });
   });
 });

@@ -127,7 +127,7 @@ export const overloadCellAbility: Ability = {
   id: "overload-cell",
   name: "Overload Cell",
   description:
-    "Force charge into a machine past its rated draw until something gives. Voids the Assay warranty and usually the machine.",
+    "Force charge into a live machine past its rated draw until something gives. Voids the Assay warranty and usually the machine.",
   jobId: "conduit",
   standingCost: 250,
   slot: "action",
@@ -198,7 +198,8 @@ export const stunnedStatus: Status = {
   schemaVersion: 1,
   id: "stunned",
   name: "Stunned",
-  description: "Rattled and pinned; can neither act nor move.",
+  description:
+    "Rattled hard enough that the body has stopped taking orders. It passes; it does not pass now.",
   category: "debuff",
   duration: { kind: "turns", turns: 1 },
   hooks: { preventsAction: true, preventsMove: true },

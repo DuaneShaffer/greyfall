@@ -343,10 +343,12 @@ const damageTypeOf = (ability: ActionAbility): DamageType | undefined => {
   return undefined;
 };
 
+// Content's canonical display names (docs/SYSTEMS_COPY.md, "Named deployables").
+// Display side only: the object's own `name` is the raw spawn kind and is core's.
 const SPAWN_LABELS: Record<"turret" | "mine" | "drone", string> = {
-  turret: "Sentry frame",
-  mine: "Charge",
-  drone: "Drone",
+  turret: "Sentry Frame",
+  mine: "Tripwire Charge",
+  drone: "Skitter Drone",
 };
 
 const MOVE_SELF_LABELS: Record<"toward-target" | "away-from-target" | "forward", string> = {

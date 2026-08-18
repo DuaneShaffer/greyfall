@@ -109,12 +109,47 @@ describe("the briefing", () => {
     }
   });
 
-  it("closes a page of prose from the row, because the rows are not orders", () => {
+  it("opens a system's own page, and closes it from the row it was read on", () => {
     const { hud } = rig();
     hud.openBriefing();
     row(hud, "systems").click();
-    row(hud, "facing").click();
-    expect(hud.actionMenu.menus.path.at(-1)).toBe("battle-briefing");
+    row(hud, "standing").click();
+    expect(hud.actionMenu.menus.path.at(-1)).toBe("briefing-systems-standing");
+    // Every paragraph of the canonical entry, in the order the file has it.
+    const standing = SYSTEMS_NOTES.find((note) => note.id === "standing")!;
+    standing.body.forEach((paragraph, index) => {
+      expect(row(hud, `standing-${index + 1}`).textContent).toContain(paragraph);
+    });
+
+    // The rows are something to read, not orders to give: confirming closes.
+    row(hud, "standing-1").click();
+    expect(hud.actionMenu.menus.path.at(-1)).toBe("briefing-systems");
+  });
+
+  it("says what the copy file says, and says it about every entry the file has", () => {
+    // docs/SYSTEMS_COPY.md is the source (UI_DESIGN §15.3); the interface holds
+    // no second opinion about what Standing is or what a cast speed buys.
+    expect(SYSTEMS_NOTES.map((note) => note.id)).toEqual([
+      "power",
+      "power-breaker",
+      "power-freight-lift",
+      "standing",
+      "charge",
+      "cast-speed",
+      "resolve",
+      "attunement",
+      "damage-types",
+      "borrow-a-skillset",
+      "doctrine",
+    ]);
+    for (const note of SYSTEMS_NOTES) {
+      expect(note.body.length).toBeGreaterThan(0);
+      // A page that quoted the rules file at the player would be a page nobody
+      // finishes; the citations stay in docs.
+      for (const paragraph of [note.line, ...note.body]) {
+        expect(paragraph).not.toMatch(/§|\*\*/);
+      }
+    }
   });
 
   it("never forfeits without a second answer, and unwinds when it does", () => {
