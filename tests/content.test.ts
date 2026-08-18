@@ -277,8 +277,10 @@ describe("content cross-references", () => {
     expect(painted).toEqual([
       "meter-house/west-main",
       "meter-house/west-feeder",
+      "meter-house/charge-hoist-west",
       "meter-house/gallery-run",
       "meter-house/sump-run",
+      "meter-house/charge-hoist-east",
       "meter-house/east-feeder",
       "meter-house/east-main",
     ]);
