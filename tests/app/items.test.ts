@@ -84,7 +84,9 @@ describe("using an item through the controller", () => {
 
   it("lights the reachable tiles and forecasts the item before committing", () => {
     h.controller.intents.selectItem("rowen", "coagulant-vial");
-    expect(h.renderer.highlights.get("target-range")?.length).toBeGreaterThan(0);
+    // A vial heals: it lights the support layer, never the enemy's colour.
+    expect(h.renderer.highlights.get("support")?.length).toBeGreaterThan(0);
+    expect(h.renderer.highlights.has("target-range")).toBe(false);
 
     h.controller.onTileClick({ x: 1, y: 4 });
     const view = h.ui.latest()?.forecast;

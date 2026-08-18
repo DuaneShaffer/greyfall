@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   activeUnit,
+  aimVerdicts,
   canUndoMove,
   createBattle,
   getObject,
@@ -397,17 +398,73 @@ describe("aiming at something the ability cannot take", () => {
     return { controller, renderer, ui };
   }
 
+  // A red tile means "this can be hit". A repair is neither red nor hostile, and
+  // the tiles it would be refused at are blocked rather than lit as targets.
   it("lights only the tiles the ability may legally be sent at", () => {
     const h = repairHarness();
     h.controller.start();
     runUntilPlayer(h, "ivo");
     h.controller.intents.selectAbility("ivo", "field-repair");
 
-    const legal = h.renderer.highlights.get("target-range") ?? [];
-    const reach = h.renderer.highlights.get("target-reach") ?? [];
-    expect(reach).toContainEqual({ x: 1, y: 2 });
+    const verdicts = aimVerdicts(h.controller.state, "ivo", "field-repair");
+    const legal = h.renderer.highlights.get("support") ?? [];
+    expect(h.renderer.highlights.get("blocked")).toEqual(
+      verdicts.filter((verdict) => verdict.refusal !== null).map((verdict) => verdict.tile),
+    );
+    expect(h.renderer.highlights.get("blocked")).toContainEqual({ x: 1, y: 2 });
     expect(legal).not.toContainEqual({ x: 1, y: 2 });
     expect(legal).toContainEqual({ x: 3, y: 4 });
+    // Nothing hostile was staged, so the enemy's colour is not on the field.
+    expect(h.renderer.highlights.has("target-range")).toBe(false);
+  });
+
+  it("keeps a hostile order in the enemy's colour, and paints the gate's verdict", () => {
+    const h = harness();
+    h.controller.start();
+    runUntilPlayer(h, "vale");
+    h.controller.intents.selectAbility("vale", "overload-cell");
+
+    const verdicts = aimVerdicts(h.controller.state, "vale", "overload-cell");
+    expect(h.renderer.highlights.get("target-range")).toEqual(
+      verdicts.filter((verdict) => verdict.refusal === null).map((verdict) => verdict.tile),
+    );
+    expect(h.renderer.highlights.has("support")).toBe(false);
+    // Nothing in reach was refused, so no tile is dimmed for the sake of it.
+    expect(verdicts.every((verdict) => verdict.refusal === null)).toBe(true);
+    expect(h.renderer.highlights.has("blocked")).toBe(false);
+  });
+
+  it("answers a click on an in-range tile it will not take, rather than nothing", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+    const before = h.ui.notices.length;
+
+    // An empty tile inside the reach: the click used to change nothing and say
+    // nothing, which reads as a dead interface rather than a refusal.
+    expect(h.renderer.highlights.get("blocked")).toContainEqual({ x: 1, y: 3 });
+    h.controller.onTileClick({ x: 1, y: 3 });
+    expect(h.ui.notices.length).toBe(before + 1);
+    expect(h.ui.noticeTones.at(-1)).toBe("refusal");
+    expect(h.ui.latest()?.forecast).toBeNull();
+  });
+
+  it("refuses in the aim gate's own words, so the reason names itself", () => {
+    const h = repairHarness();
+    h.controller.start();
+    runUntilPlayer(h, "ivo");
+    h.controller.intents.selectAbility("ivo", "field-repair");
+
+    const blocked = h.renderer.highlights.get("blocked") ?? [];
+    const refused = blocked.find((tile) => tile.x === 1 && tile.y === 2);
+    expect(refused).toBeDefined();
+    h.controller.onTileClick({ x: 1, y: 2 });
+    const gate = aimVerdicts(h.controller.state, "ivo", "field-repair").find(
+      (verdict) => verdict.tile.x === 1 && verdict.tile.y === 2,
+    );
+    expect(gate?.refusal).not.toBeNull();
+    expect(h.ui.notices.at(-1)).toBe(gate?.refusal?.message);
   });
 
   it("refuses an enemy, arms no forecast, and never offers a commit", () => {
