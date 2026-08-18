@@ -240,7 +240,10 @@ describe("content cross-references", () => {
    * the authored word for **both** the mains that feed a floor and the boards
    * that merely open a branch of it, and the renderer drew neither. The mains now
    * say what they are, and because `src/render` reads `spriteId` the word has to
-   * keep meaning it — a board wearing `flux-main` would be drawn as a main.
+   * keep meaning it — a board wearing `flux-main` would be drawn as a main, and a
+   * board wearing a trough's art would be drawn as a wire in the floor. Every
+   * delivered sheet was drawn for one job on the bus and `ObjectArtSpec.role` is
+   * where that job is written down.
    */
   it("gives a delivered spriteId only to the role its art was drawn for", () => {
     const painted: string[] = [];
@@ -250,19 +253,35 @@ describe("content cross-references", () => {
         const art = objectArtFor(obj.spriteId);
         if (art === null) continue;
         painted.push(`${map.id}/${obj.id}`);
-        expect(roleOf.get(obj.id), `${map.id}/${obj.id}: ${obj.spriteId} is a source's art`).toBe("source");
-        expect(obj.operable, `${map.id}/${obj.id}: ${art.id} paints a copper-500 handle`).not.toBeNull();
+        expect(roleOf.get(obj.id), `${map.id}/${obj.id}: ${obj.spriteId} is a ${art.role}'s art`).toBe(art.role);
+        // A `copper-500` handle on the art and nothing to touch on the map would
+        // break §6's binding rule from the other end.
+        if (art.operable) {
+          expect(obj.operable, `${map.id}/${obj.id}: ${art.id} paints a copper-500 handle`).not.toBeNull();
+        } else {
+          expect(obj.operable, `${map.id}/${obj.id}: ${art.id} paints no handle`).toBeFalsy();
+        }
         // The face art *is* the massing: 64 shipped columns over two tiles is the
         // ground plane's own 32 texels per world unit, and a footprint the art was
-        // not drawn for would stretch the painting.
+        // not drawn for would stretch the painting. A run is the exception and says
+        // so — its cells tile head to tail, so the map decides how long it is.
         const xs = new Set(obj.tiles.map((t) => t.x));
         const ys = new Set(obj.tiles.map((t) => t.y));
         const along = Math.max(xs.size, ys.size);
         const across = Math.min(xs.size, ys.size);
-        expect([along, across], `${map.id}/${obj.id} footprint`).toEqual([art.along, art.across]);
+        expect(across, `${map.id}/${obj.id} width`).toBe(art.across);
+        if (art.tilesAlongRun) expect(along, `${map.id}/${obj.id} run`).toBeGreaterThanOrEqual(art.along);
+        else expect(along, `${map.id}/${obj.id} footprint`).toBe(art.along);
       }
     }
-    expect(painted).toEqual(["meter-house/west-main", "meter-house/east-main"]);
+    expect(painted).toEqual([
+      "meter-house/west-main",
+      "meter-house/west-feeder",
+      "meter-house/gallery-run",
+      "meter-house/sump-run",
+      "meter-house/east-feeder",
+      "meter-house/east-main",
+    ]);
     // And nothing that is a source is still hiding behind a switchboard's word.
     for (const map of maps.values()) {
       for (const grid of map.grids) {

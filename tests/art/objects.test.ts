@@ -1,71 +1,52 @@
-// Wave 1 map-object intake (ART_DIRECTION §6, D.6, `art-src/OBJECT_BRIEFS.md`).
+// Wave 1 map-object intake, the rules that hold across the whole set
+// (ART_DIRECTION §6, D.6, `art-src/OBJECT_BRIEFS.md`).
 //
-// The same three things `tiles.test.ts` locks down for the ground, for the
-// machinery, and a fourth that only this set has:
+// Four things, three of which `tiles.test.ts` locks down for the ground:
 //
-//  1. **The cut is reproducible.** The three crop rects are hand-measured off one
-//     delivered file, so the checks that keep them honest are automatic: an
-//     opaque-run sweep finds the same content without being told where it is,
-//     every rect is fenced by transparency on all four edges, every rect is
-//     filled flush by its painting, and every opaque pixel on the sheet is
-//     accounted for.
-//  2. **The committed grids are what the tool produces.** The whole path is run
-//     against the delivered PNG and compared byte for byte with
-//     `src/art/masters/objects.ts`.
-//  3. **The audit numbers are pinned.** Amber share, the carrier column, the
-//     `copper-500` affordance and the `copper-300` reservation are what §6 makes
-//     binding and what a human cannot count by eye.
+//  1. **One ruler.** Every face's shipped size is derived from a footprint and a
+//     height at 32 texels per world unit, and the brief's own table of sizes is
+//     stated here independently of the derivation that must produce it.
+//  2. **The set's binding rules are structural.** The `copper-500` affordance, the
+//     carrier that runs a face's full extent, the `copper-300` reservation: §6
+//     makes them binding and a human cannot count them by eye, so they are held on
+//     the spec table as well as on the pixels.
+//  3. **The cut is reproducible and the committed grids are what the tool
+//     produces.** Per sheet, in `objectsSuite.ts`, run from the three
+//     `objects.<name>.test.ts` files.
 //  4. **The state substitution is a substitution.** §6's unpowered row is the
 //     powered painting with the light taken out and *nothing else moved*, which is
 //     the whole reason the player learns that the seam is the power indicator. A
 //     test can hold that exactly: every non-amber pixel must be untouched and
 //     every amber pixel must have changed.
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { quantizeGrid, resampleRGBA, type RGBASource } from "../../src/art/ingest.js";
 import * as MASTERS from "../../src/art/masters/objects.js";
 import { PALETTE, RAMPS } from "../../src/art/palette.js";
-import { decodePNG } from "../../src/art/png.js";
 import { cloneGrid, gridGet, gridSet, paletteIndex, type PixelGrid } from "../../src/art/pixel.js";
 import {
+  BOX_FACE_IDS,
   MAX_OBJECT_COLORS,
   OBJECT_AMBER_SHARE,
   OBJECT_ART,
   OBJECT_ART_IDS,
   OBJECT_FACE_IDS,
-  OBJECT_MASTER_SCALE,
+  OBJECT_FACE_STATES,
   OBJECT_POWER_STATES,
   OBJECT_TEXELS_PER_UNIT,
   auditObjectFace,
   faceInState,
   objectArtFor,
+  objectCellSpec,
+  objectFaceIds,
   type ObjectFaceId,
+  type ObjectFaceSpec,
 } from "../../src/art/objects.js";
-import {
-  FLUX_MAIN_PALETTE_STRIP,
-  FLUX_MAIN_SHEET_CELLS,
-  cutObjectSheet,
-  findObjectSheetContent,
-} from "../../src/art/objectIntake.js";
+import { OBJECT_SHEETS } from "../../src/art/objectIntake.js";
 import { objectCarrierGrid, objectFaceGrid, objectFaceLevels } from "../../src/art/objectset.js";
 import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../../src/art/sprites.js";
+import { specOf } from "./objectsSuite.js";
 
-const SHEET = resolve(import.meta.dirname, "../../art-src/flux_main.png");
-const sheet = decodePNG(readFileSync(SHEET));
 const spec = OBJECT_ART["flux-main"];
-
-/** The shipped path, start to finish, exactly as `tools/ingest-objects.ts` runs it. */
-const ingest = (image: RGBASource, face: ObjectFaceId): PixelGrid => {
-  const faceSpec = spec.faces[face];
-  const shipped = resampleRGBA(image, faceSpec.width, faceSpec.height);
-  return quantizeGrid(shipped, { allowed: faceSpec.allowed, alphaThreshold: 127 }).grid;
-};
-
-const cut = cutObjectSheet(sheet);
-const cellFor = (face: ObjectFaceId) => cut.cells.find((c) => c.face === face) as (typeof cut.cells)[number];
-const auditOf = (face: ObjectFaceId) => auditObjectFace(objectFaceGrid("flux-main", face), "flux-main", spec.faces[face]);
 
 describe("the object set's one ruler", () => {
   it("spends the same texels per world unit as the ground plane", () => {
@@ -74,341 +55,204 @@ describe("the object set's one ruler", () => {
     expect(HEIGHT_STEP_PX * 2).toBe(OBJECT_TEXELS_PER_UNIT);
   });
 
-  it("lands the flux main on the brief's own table of face sizes", () => {
-    // OBJECT_BRIEFS §1: A long side 64 x 48, B short end 32 x 48, C top 32 x 64,
-    // for a 1 x 2 tile footprint standing 1.5 world units. The spec derives these
-    // from the massing; this is the independent statement of what it must derive.
-    expect([spec.along, spec.across, spec.heightUnits]).toEqual([2, 1, 1.5]);
-    expect([spec.faces.long.width, spec.faces.long.height]).toEqual([64, 48]);
-    expect([spec.faces.end.width, spec.faces.end.height]).toEqual([32, 48]);
-    expect([spec.faces.top.width, spec.faces.top.height]).toEqual([32, 64]);
+  it("lands every delivered object on its brief's own table of face sizes", () => {
+    // OBJECT_BRIEFS §1: a main is 1 x 2 tiles standing 1.5 units, A 64 x 48,
+    // B 32 x 48, C 32 x 64. §2: a trough is one tile of run standing 0.25, A run
+    // top 32 x 32, B end-cap top 32 x 32, C lip 32 x 8. §3: a hoist is 1 x 2 tiles
+    // standing 1.75, A 64 x 56, B 32 x 56, C 32 x 64. The specs derive these from
+    // the massing; this is the independent statement of what they must derive.
+    const table: Record<string, readonly [number, number, number, Record<string, readonly [number, number]>]> = {
+      "flux-main": [2, 1, 1.5, { long: [64, 48], end: [32, 48], top: [32, 64] }],
+      "cable-trough": [1, 1, 0.25, { long: [32, 8], end: [32, 8], top: [32, 32], cap: [32, 32] }],
+      "charge-hoist": [2, 1, 1.75, { long: [64, 56], end: [32, 56], top: [32, 64] }],
+    };
+    for (const id of OBJECT_ART_IDS) {
+      const art = OBJECT_ART[id];
+      const [along, across, heightUnits, faces] = table[id] as (typeof table)[string];
+      expect([art.along, art.across, art.heightUnits], id).toEqual([along, across, heightUnits]);
+      expect(objectFaceIds(art), id).toEqual(Object.keys(faces).sort(
+        (a, b) => OBJECT_FACE_IDS.indexOf(a as ObjectFaceId) - OBJECT_FACE_IDS.indexOf(b as ObjectFaceId),
+      ));
+      for (const [face, size] of Object.entries(faces)) {
+        const faceSpec = specOf(id, face as ObjectFaceId);
+        expect([faceSpec.width, faceSpec.height], `${id}/${face}`).toEqual(size);
+      }
+    }
   });
 
   it("sizes every face off its object's own footprint and height", () => {
     for (const id of OBJECT_ART_IDS) {
       const art = OBJECT_ART[id];
       const px = OBJECT_TEXELS_PER_UNIT;
-      expect([art.faces.long.width, art.faces.long.height], `${id} long`).toEqual([
-        art.along * px,
-        art.heightUnits * px,
-      ]);
-      expect([art.faces.end.width, art.faces.end.height], `${id} end`).toEqual([
-        art.across * px,
-        art.heightUnits * px,
-      ]);
-      expect([art.faces.top.width, art.faces.top.height], `${id} top`).toEqual([
-        art.across * px,
-        art.along * px,
-      ]);
+      // `cap` is a second top and sizes like one; that is what makes it a top.
+      const expected: Record<ObjectFaceId, readonly [number, number]> = {
+        long: [art.along * px, art.heightUnits * px],
+        end: [art.across * px, art.heightUnits * px],
+        top: [art.across * px, art.along * px],
+        cap: [art.across * px, art.along * px],
+      };
+      for (const face of objectFaceIds(art)) {
+        const faceSpec = specOf(id, face);
+        expect([faceSpec.width, faceSpec.height], `${id}/${face}`).toEqual(expected[face]);
+      }
     }
   });
 
-  it("puts the copper-500 affordance on exactly one face of an operable object", () => {
+  it("wears every face the box has slots for, so no material slot goes undressed", () => {
+    // `render/objectTextures.ts` dresses six slots from three faces and asks for
+    // them by name. An object registered without one would throw at build time,
+    // which is why this is a structural check and not a rendering one.
+    for (const id of OBJECT_ART_IDS) {
+      for (const face of BOX_FACE_IDS) {
+        expect(OBJECT_ART[id].faces[face], `${id}/${face}`).toBeDefined();
+      }
+    }
+  });
+
+  it("points a face with no painting of its own at the one cell that answers it", () => {
+    // One delivery, one master. A trough's ends are its lip because the tray wall
+    // is banded and uniform along its length (§2); everything else is its own.
+    for (const id of OBJECT_ART_IDS) {
+      for (const face of objectFaceIds(OBJECT_ART[id])) {
+        const faceSpec = specOf(id, face);
+        const target = specOf(id, faceSpec.paintedAs);
+        expect([target.width, target.height], `${id}/${face}`).toEqual([faceSpec.width, faceSpec.height]);
+      }
+    }
+    expect(specOf("cable-trough", "end").paintedAs).toBe("long");
+    for (const [id, face] of [
+      ["flux-main", "long"],
+      ["flux-main", "end"],
+      ["flux-main", "top"],
+      ["cable-trough", "long"],
+      ["cable-trough", "top"],
+      ["cable-trough", "cap"],
+      ["charge-hoist", "long"],
+      ["charge-hoist", "end"],
+      ["charge-hoist", "top"],
+    ] as const) {
+      expect(specOf(id, face).paintedAs, `${id}/${face}`).toBe(face);
+    }
+  });
+
+  it("shows the copper-500 affordance on every operable object and on nothing else", () => {
+    // §6 binds the object, not the face: one lever standing at the corner of a
+    // frame is visible from both faces that meet there, which is the hoist.
     for (const id of OBJECT_ART_IDS) {
       const art = OBJECT_ART[id];
-      const controls = OBJECT_FACE_IDS.filter((face) => art.faces[face].control);
-      expect(controls.length, `${id} control faces`).toBe(art.operable ? 1 : 0);
+      const controls = objectFaceIds(art).filter((face) => specOf(id, face).control);
+      if (art.operable) expect(controls.length, `${id} control faces`).toBeGreaterThanOrEqual(1);
+      else expect(controls, `${id} control faces`).toEqual([]);
+    }
+    expect(objectFaceIds(spec).filter((f) => specOf("flux-main", f).control)).toEqual(["long"]);
+    expect(objectFaceIds(OBJECT_ART["charge-hoist"]).filter((f) => specOf("charge-hoist", f).control)).toEqual([
+      "long",
+      "end",
+    ]);
+    expect(OBJECT_ART["cable-trough"].operable).toBe(false);
+  });
+
+  it("gives the full-extent carrier to at most one face per object", () => {
+    // A main's is vertical up its long side; a trough's is the filament along its
+    // run top. No third object in the set may be given either (§1, §2).
+    const carriers = OBJECT_ART_IDS.map((id) => [
+      id,
+      objectFaceIds(OBJECT_ART[id]).filter((face) => specOf(id, face).amberColumn),
+    ]);
+    expect(carriers).toEqual([
+      ["flux-main", ["long"]],
+      ["cable-trough", ["top"]],
+      ["charge-hoist", []],
+    ]);
+  });
+
+  it("names the job on the bus each sheet was drawn for", () => {
+    // `spriteId` is the map author's word and the renderer reads it, so the art
+    // has to say which job it was drawn to announce or the word stops meaning
+    // anything (`tests/content.test.ts` holds the maps to this).
+    expect(OBJECT_ART_IDS.map((id) => [id, OBJECT_ART[id].role, OBJECT_ART[id].tilesAlongRun])).toEqual([
+      ["flux-main", "source", false],
+      ["cable-trough", "line", true],
+      ["charge-hoist", "sink", false],
+    ]);
+    // Only a run tiles, and a run is the only object whose registered `along` is a
+    // tiling unit rather than the footprint the map gives it.
+    for (const id of OBJECT_ART_IDS) {
+      if (!OBJECT_ART[id].tilesAlongRun) continue;
+      expect(OBJECT_ART[id].along, id).toBe(1);
     }
   });
 
-  it("gives the carrier column to at most one face, and only where a main has one", () => {
+  it("keeps the amber ceiling at the set's 4% except where a brief cuts it", () => {
     for (const id of OBJECT_ART_IDS) {
-      const columns = OBJECT_FACE_IDS.filter((face) => OBJECT_ART[id].faces[face].amberColumn);
-      expect(columns.length, `${id} column faces`).toBeLessThanOrEqual(1);
+      for (const face of objectFaceIds(OBJECT_ART[id])) {
+        const ceiling = specOf(id, face).amberShare;
+        expect(ceiling, `${id}/${face}`).toBeLessThanOrEqual(OBJECT_AMBER_SHARE);
+        // §3: a sink consumes and does not supply, so a hoist gets a quarter of it.
+        expect(ceiling, `${id}/${face}`).toBe(id === "charge-hoist" ? 0.01 : OBJECT_AMBER_SHARE);
+      }
     }
-    expect(OBJECT_FACE_IDS.filter((f) => spec.faces[f].amberColumn)).toEqual(["long"]);
+  });
+
+  it("declares a state painting only where a substitution cannot reach it", () => {
+    const declared = OBJECT_ART_IDS.flatMap((id) =>
+      OBJECT_FACE_STATES.flatMap((state) =>
+        Object.keys(OBJECT_ART[id].stateFaces[state] ?? {}).map(
+          (face) => `${id}/${face}:${state}${(objectCellSpec(id, face as ObjectFaceId, state) as ObjectFaceSpec).derivable ? " (derivable)" : ""}`,
+        ),
+      ),
+    );
+    // §4 is a state of §2 and not a fourth object, and it arrived as two cells:
+    // the break, which no colour swap can produce, and the dead run, which the
+    // engine already produces exactly.
+    expect(declared).toEqual([
+      "cable-trough/top:unpowered (derivable)",
+      "cable-trough/top:severed",
+    ]);
+  });
+
+  it("keeps every state painting dark: a cut span and a dead run carry nothing", () => {
+    for (const id of OBJECT_ART_IDS) {
+      for (const state of OBJECT_FACE_STATES) {
+        for (const face of Object.keys(OBJECT_ART[id].stateFaces[state] ?? {}) as ObjectFaceId[]) {
+          const faceSpec = objectCellSpec(id, face, state) as ObjectFaceSpec;
+          expect(faceSpec.amber, `${id}/${face}:${state}`).toBe(false);
+          expect(faceSpec.amberColumn, `${id}/${face}:${state}`).toBe(false);
+          expect(faceSpec.control, `${id}/${face}:${state}`).toBe(false);
+        }
+      }
+    }
   });
 
   it("answers only spriteIds with delivered art", () => {
-    expect(objectArtFor("flux-main")).toBe(spec);
-    for (const unpainted of ["switch-board", "gantry-grate", "hydraulic-press", "switch-lever"]) {
+    for (const id of OBJECT_ART_IDS) expect(objectArtFor(id), id).toBe(OBJECT_ART[id]);
+    // Wave 2, named and not yet commissioned; and the primitive `charge-hoist`
+    // still shares with a press, which is `data/maps` and not this file's to fix.
+    for (const unpainted of [
+      "switch-board",
+      "switch-lever",
+      "gantry-grate",
+      "hydraulic-press",
+      "flux-cell",
+      "freight-lift",
+      "severed-span",
+    ]) {
       expect(objectArtFor(unpainted), unpainted).toBeNull();
     }
   });
-});
 
-describe("object sheet cell location", () => {
-  it("reads the delivered sheet at its stated size", () => {
-    expect([sheet.width, sheet.height]).toEqual([576, 328]);
-  });
-
-  it("finds the sheet's content runs without being told where the cells are", () => {
-    const content = findObjectSheetContent(sheet);
-    expect(content.columns).toEqual([
-      { from: 4, to: 12 },
-      { from: 16, to: 415 },
-      { from: 420, to: 428 },
-      { from: 432, to: 559 },
-      { from: 564, to: 572 },
-    ]);
-    expect(content.rows).toEqual([
-      { from: 4, to: 12 },
-      { from: 16, to: 271 },
-      { from: 276, to: 284 },
-      { from: 288, to: 311 },
-    ]);
-  });
-
-  it("declares three cells at exactly the brief's 4x sizes", () => {
-    expect(FLUX_MAIN_SHEET_CELLS).toHaveLength(3);
-    for (const cell of FLUX_MAIN_SHEET_CELLS) {
-      const faceSpec = OBJECT_ART[cell.sprite].faces[cell.face];
-      expect([cell.rect.w, cell.rect.h], cell.face).toEqual([
-        faceSpec.width * OBJECT_MASTER_SCALE,
-        faceSpec.height * OBJECT_MASTER_SCALE,
-      ]);
-    }
-    expect(FLUX_MAIN_SHEET_CELLS.map((c) => [c.face, c.rect.x, c.rect.y])).toEqual([
-      ["long", 16, 16],
-      ["end", 288, 16],
-      ["top", 432, 16],
-    ]);
-  });
-
-  it("fences every cell with transparency and fills every cell flush", () => {
-    for (const cell of cut.cells) {
-      expect(cell.fence, cell.face).toEqual({ left: 0, right: 0, top: 0, bottom: 0 });
-      expect(cell.fenceOk, cell.face).toBe(true);
-      expect(cell.fillsRect, cell.face).toBe(true);
-      // Alpha is binary on the whole delivery: no soft edge to resolve by guess.
-      expect(cell.partialAlpha, cell.face).toBe(0);
-    }
-  });
-
-  it("accounts for every opaque pixel: three cells, a swatch row, and the corner guides", () => {
-    expect(cut.unaccountedOpaque).toBe(177);
-  });
-
-  it("reads a swatch row carrying exactly the colours the cells use", () => {
-    expect(cut.swatches).toEqual([
-      PALETTE["soot-800"],
-      PALETTE["soot-700"],
-      PALETTE["soot-500"],
-      PALETTE["copper-700"],
-      PALETTE["copper-500"],
-      PALETTE["amber-700"],
-      PALETTE["amber-500"],
-      PALETTE["amber-300"],
-      PALETTE["amber-glow"],
-    ]);
-    const used = new Set(OBJECT_FACE_IDS.flatMap((face) => auditOf(face).colors));
-    expect([...used].sort()).toEqual([...cut.swatches].sort());
-  });
-
-  it("rejects a rect that is not the size the brief delivers", () => {
-    expect(() =>
-      cutObjectSheet(sheet, [{ sprite: "flux-main", face: "long", rect: { x: 16, y: 16, w: 255, h: 192 } }], null),
-    ).toThrow(/the brief delivers 256x192/);
-  });
-
-  it("catches a rect off by one: the fence breaks and the fill goes slack", () => {
-    const shifted = cutObjectSheet(
-      sheet,
-      [{ sprite: "flux-main", face: "long", rect: { x: 15, y: 16, w: 256, h: 192 } }],
-      null,
-    ).cells[0] as (typeof cut.cells)[number];
-    expect(shifted.fenceOk).toBe(false);
-    expect(shifted.fillsRect).toBe(false);
-  });
-
-  it("cuts the same pixels twice", () => {
-    const again = cutObjectSheet(sheet);
-    for (const face of OBJECT_FACE_IDS) {
-      expect([...cellFor(face).image.data]).toEqual([...(again.cells.find((c) => c.face === face) as (typeof cut.cells)[number]).image.data]);
-    }
-  });
-
-  it("declares the swatch row as reference, outside every cell", () => {
-    const strip = FLUX_MAIN_PALETTE_STRIP.rect;
-    for (const cell of FLUX_MAIN_SHEET_CELLS) {
-      const overlaps =
-        strip.x < cell.rect.x + cell.rect.w &&
-        cell.rect.x < strip.x + strip.w &&
-        strip.y < cell.rect.y + cell.rect.h &&
-        cell.rect.y < strip.y + strip.h;
-      expect(overlaps, cell.face).toBe(false);
-    }
-  });
-});
-
-describe("object intake determinism", () => {
-  const BASE64: Record<ObjectFaceId, string> = {
-    long: MASTERS.FLUX_MAIN_LONG_BASE64,
-    end: MASTERS.FLUX_MAIN_END_BASE64,
-    top: MASTERS.FLUX_MAIN_TOP_BASE64,
-  };
-
-  it("reproduces every committed grid byte for byte from the delivered PNG", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      const grid = ingest(cellFor(face).image, face);
-      expect(Buffer.from(grid.data).toString("base64"), face).toBe(BASE64[face]);
-    }
-  });
-
-  it("reduces 4:1 with nothing to quantize and nothing ambiguous", () => {
-    // The one delivery in the set that meets C.8.2's bar literally: the art is
-    // already palette-exact at 4x, so the box filter is lossless and the
-    // `ambiguous` list is empty rather than merely small.
-    for (const face of OBJECT_FACE_IDS) {
-      const faceSpec = spec.faces[face];
-      const shipped = resampleRGBA(cellFor(face).image, faceSpec.width, faceSpec.height);
-      const { stats } = quantizeGrid(shipped, { allowed: faceSpec.allowed, alphaThreshold: 127 });
-      expect(stats.movedCount, face).toBe(0);
-      expect(stats.ambiguous, face).toEqual([]);
-      expect(stats.opaqueCount, face).toBe(faceSpec.width * faceSpec.height);
-    }
-  });
-
-  it("ships every face at the size the brief fixes, fully opaque", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      const grid = objectFaceGrid("flux-main", face);
-      expect([grid.width, grid.height], face).toEqual([spec.faces[face].width, spec.faces[face].height]);
-      expect(auditOf(face).transparentPixels, face).toBe(0);
-    }
-  });
-
-  it("has a base64 constant for every face and no others", () => {
-    expect(Object.keys(MASTERS).sort()).toEqual(
-      OBJECT_FACE_IDS.map((face) => `FLUX_MAIN_${face.toUpperCase()}_BASE64`).sort(),
+  it("has a stored constant for every stored cell and no others", () => {
+    const stored = OBJECT_SHEETS.flatMap((sheet) =>
+      sheet.cells
+        .filter((cell) => !(objectCellSpec(cell.sprite, cell.face, cell.state) as ObjectFaceSpec).derivable)
+        .map((cell) =>
+          [cell.sprite.replace(/-/g, "_"), cell.face, cell.state ?? null, "base64"]
+            .filter((part) => part !== null)
+            .join("_")
+            .toUpperCase(),
+        ),
     );
-  });
-});
-
-describe("flux main audit, as delivered", () => {
-  it("conforms on all three faces", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      const audit = auditOf(face);
-      expect(audit.ok, `${face}: ${audit.errors.join("; ")}`).toBe(true);
-    }
-  });
-
-  it("pins the colour count of every face", () => {
-    expect(OBJECT_FACE_IDS.map((face) => auditOf(face).colorCount)).toEqual([8, 4, 7]);
-    for (const face of OBJECT_FACE_IDS) {
-      expect(auditOf(face).colorCount, face).toBeLessThanOrEqual(MAX_OBJECT_COLORS);
-    }
-  });
-
-  it("spends amber inside the budget on the two faces that carry any", () => {
-    const long = auditOf("long");
-    expect([long.amberPixels, long.amberBudget]).toEqual([96, 122]);
-    expect(long.amberShare).toBeCloseTo(0.03125, 5);
-    expect(long.amberShare).toBeLessThan(OBJECT_AMBER_SHARE);
-
-    expect(auditOf("end").amberPixels).toBe(0);
-    const top = auditOf("top");
-    expect(top.amberPixels).toBe(16);
-    expect(top.amberShare).toBeLessThan(OBJECT_AMBER_SHARE);
-  });
-
-  it("runs a continuous carrier column the full height of the long face, and nowhere else", () => {
-    const long = auditOf("long");
-    expect(long.column.rows).toBe(spec.faces.long.height);
-    expect(long.column.continuous).toBe(true);
-    // Two game pixels wide: a recess and a body, dead centre of the 2-tile run.
-    expect(long.column.columns).toEqual([31, 32]);
-    expect(auditOf("end").column.rows).toBe(0);
-    expect(auditOf("top").column.continuous).toBe(false);
-  });
-
-  it("carries one copper-500 handle, low on the long face, and none anywhere else", () => {
-    const long = auditOf("long");
-    expect(long.control.pixels).toBe(26);
-    expect(long.control.clusters).toBe(1);
-    expect(long.control.rows).toEqual({ from: 33, to: 40 });
-    expect(long.control.reachable).toBe(true);
-    expect(auditOf("end").control.pixels).toBe(0);
-    expect(auditOf("top").control.pixels).toBe(0);
-  });
-
-  it("spends copper-300 nowhere: the rail head specular is not this object's", () => {
-    for (const face of OBJECT_FACE_IDS) expect(auditOf(face).copper300Pixels, face).toBe(0);
-  });
-
-  it("keeps every reserved signal ramp off the machinery", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      expect(auditOf(face).reservedPixels, face).toBe(0);
-      expect(auditOf(face).outsideRampPixels, face).toBe(0);
-    }
-  });
-
-  it("reports the three amber-glow pixels drawn off the core", () => {
-    // The brief puts the halo colour on core pixels only; the column's core is
-    // drawn as intermittent ticks and three glow pixels land between them. A
-    // warning, not an error — the intake reports and never repairs (C.8.2).
-    expect(auditOf("long").glowOffCore).toBe(3);
-    expect(auditOf("long").warnings).toHaveLength(1);
-    expect(auditOf("end").glowOffCore).toBe(0);
-    expect(auditOf("top").glowOffCore).toBe(0);
-  });
-});
-
-describe("what the object audit would reject", () => {
-  const poison = (face: ObjectFaceId, x: number, y: number, hex: string): PixelGrid => {
-    const grid = cloneGrid(objectFaceGrid("flux-main", face));
-    gridSet(grid, x, y, paletteIndex(hex as `#${string}`));
-    return grid;
-  };
-
-  it("fails a copper-500 pixel on a face with no authored control", () => {
-    const audit = auditObjectFace(poison("end", 4, 4, PALETTE["copper-500"]), "flux-main", spec.faces.end);
-    expect(audit.ok).toBe(false);
-    expect(audit.errors.join(" ")).toMatch(/copper-500 pixels on a face with no authored control/);
-  });
-
-  it("fails an operable object whose control face lost its handle", () => {
-    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
-    const handle = paletteIndex(PALETTE["copper-500"]);
-    for (let y = 0; y < grid.height; y += 1) {
-      for (let x = 0; x < grid.width; x += 1) {
-        if (gridGet(grid, x, y) === handle) gridSet(grid, x, y, paletteIndex(PALETTE["copper-700"]));
-      }
-    }
-    const audit = auditObjectFace(grid, "flux-main", spec.faces.long);
-    expect(audit.ok).toBe(false);
-    expect(audit.errors.join(" ")).toMatch(/no copper-500 handle/);
-  });
-
-  it("fails a copper-300 specular anywhere on the set", () => {
-    const audit = auditObjectFace(poison("top", 4, 4, PALETTE["copper-300"]), "flux-main", spec.faces.top);
-    expect(audit.ok).toBe(false);
-    expect(audit.errors.join(" ")).toMatch(/copper-300/);
-  });
-
-  it("fails a broken carrier column", () => {
-    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
-    for (const x of [31, 32]) gridSet(grid, x, 20, paletteIndex(PALETTE["soot-700"]));
-    const audit = auditObjectFace(grid, "flux-main", spec.faces.long);
-    expect(audit.ok).toBe(false);
-    expect(audit.errors.join(" ")).toMatch(/the carrier column reaches 47\/48 rows/);
-  });
-
-  it("fails an over-budget amber and an amber on a face allowed none", () => {
-    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
-    for (let y = 0; y < grid.height; y += 1) {
-      for (let x = 0; x < 8; x += 1) gridSet(grid, x, y, paletteIndex(PALETTE["amber-500"]));
-    }
-    expect(auditObjectFace(grid, "flux-main", spec.faces.long).errors.join(" ")).toMatch(/budget is 122/);
-
-    const dark = { ...spec.faces.end, amber: false };
-    const lit = poison("end", 4, 4, PALETTE["amber-500"]);
-    expect(auditObjectFace(lit, "flux-main", dark).errors.join(" ")).toMatch(/amber means live/);
-  });
-
-  it("fails a face that is over the colour ceiling", () => {
-    const grid = cloneGrid(objectFaceGrid("flux-main", "end"));
-    const extras = [
-      PALETTE["soot-900"],
-      PALETTE["soot-300"],
-      PALETTE["soot-100"],
-      PALETTE["umber-700"],
-      PALETTE["umber-500"],
-    ];
-    extras.forEach((hex, i) => gridSet(grid, i, 0, paletteIndex(hex)));
-    const audit = auditObjectFace(grid, "flux-main", spec.faces.end);
-    expect(audit.colorCount).toBe(9);
-    expect(audit.ok).toBe(false);
-    expect(audit.errors.join(" ")).toMatch(/9 colours, the brief's ceiling is 8/);
+    expect(Object.keys(MASTERS).sort()).toEqual([...stored].sort());
   });
 });
 
@@ -416,7 +260,7 @@ describe("§6's states on a painted face", () => {
   const AMBER = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
 
   it("leaves the powered painting exactly as delivered", () => {
-    for (const face of OBJECT_FACE_IDS) {
+    for (const face of objectFaceIds(spec)) {
       const grid = objectFaceGrid("flux-main", face);
       expect(faceInState(grid, "powered")).toBe(grid);
     }
@@ -443,12 +287,24 @@ describe("§6's states on a painted face", () => {
     }
   });
 
+  it("reads a severed face as the unpowered one wherever no break was painted", () => {
+    // §6 separates severed from destroyed by *geometry*, and the colour half of
+    // the severed row is the unpowered row exactly. So an object with no delivered
+    // break still answers in the state rather than throwing or blazing.
+    for (const face of objectFaceIds(spec)) {
+      expect(base64Of(objectFaceGrid("flux-main", face, "severed"))).toBe(
+        base64Of(objectFaceGrid("flux-main", face, "unpowered")),
+      );
+      expect(objectCarrierGrid("flux-main", face, "severed")).toBeNull();
+    }
+  });
+
   it("takes every amber pixel out of an unpowered main — identical shapes, dead", () => {
-    const audit = auditObjectFace(
-      objectFaceGrid("flux-main", "long", "unpowered"),
-      "flux-main",
-      { ...spec.faces.long, amber: false, amberColumn: false },
-    );
+    const audit = auditObjectFace(objectFaceGrid("flux-main", "long", "unpowered"), "flux-main", {
+      ...specOf("flux-main", "long"),
+      amber: false,
+      amberColumn: false,
+    });
     expect(audit.amberPixels).toBe(0);
     expect(audit.colors).toContain(PALETTE["soot-700"]);
     // The handle is not a power indicator and does not go out with the light.
@@ -458,7 +314,7 @@ describe("§6's states on a painted face", () => {
   it("carries a bloom-eligible halo only where §6 gives the state one", () => {
     const glow = paletteIndex(PALETTE["amber-glow"]);
     const overloadCore = paletteIndex(PALETTE["overload-100"]);
-    const countOf = (state: (typeof OBJECT_POWER_STATES)[number], index: number): number => {
+    const countOf = (state: (typeof OBJECT_FACE_STATES)[number], index: number): number => {
       const grid = objectFaceGrid("flux-main", "long", state);
       let n = 0;
       for (let i = 0; i < grid.data.length; i += 1) if (grid.data[i] === index) n += 1;
@@ -468,6 +324,7 @@ describe("§6's states on a painted face", () => {
     expect(countOf("unpowered", glow)).toBe(0);
     expect(countOf("destroyed", glow)).toBe(0);
     expect(countOf("overloading", glow)).toBe(0);
+    expect(countOf("severed", glow)).toBe(0);
     // Overload moves the readout to its own ramp rather than putting it out.
     expect(countOf("overloading", overloadCore)).toBe(12);
   });
@@ -515,26 +372,138 @@ describe("§6's states on a painted face", () => {
 });
 
 describe("object face mip chains", () => {
-  it("runs every face down to 1x1, halving both axes", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      const levels = objectFaceLevels("flux-main", face);
-      const last = levels[levels.length - 1] as (typeof levels)[number];
-      expect([last.width, last.height], face).toEqual([1, 1]);
-      for (let i = 1; i < levels.length; i += 1) {
-        const above = levels[i - 1] as (typeof levels)[number];
-        const level = levels[i] as (typeof levels)[number];
-        expect(level.width, `${face} level ${i}`).toBe(Math.max(1, above.width >> 1));
-        expect(level.height, `${face} level ${i}`).toBe(Math.max(1, above.height >> 1));
+  it("runs every face of every object down to 1x1, halving both axes", () => {
+    for (const id of OBJECT_ART_IDS) {
+      for (const face of objectFaceIds(OBJECT_ART[id])) {
+        const levels = objectFaceLevels(id, face);
+        const last = levels[levels.length - 1] as (typeof levels)[number];
+        expect([last.width, last.height], `${id}/${face}`).toEqual([1, 1]);
+        for (let i = 1; i < levels.length; i += 1) {
+          const above = levels[i - 1] as (typeof levels)[number];
+          const level = levels[i] as (typeof levels)[number];
+          expect(level.width, `${id}/${face} level ${i}`).toBe(Math.max(1, above.width >> 1));
+          expect(level.height, `${id}/${face} level ${i}`).toBe(Math.max(1, above.height >> 1));
+        }
       }
     }
   });
 
-  it("keeps level 0 exactly the shipped grid, fully opaque", () => {
-    for (const face of OBJECT_FACE_IDS) {
-      const grid = objectFaceGrid("flux-main", face);
-      const base = objectFaceLevels("flux-main", face)[0] as { width: number; height: number; data: Uint8ClampedArray };
-      expect([base.width, base.height], face).toEqual([grid.width, grid.height]);
-      for (let i = 3; i < base.data.length; i += 4) expect(base.data[i], face).toBe(255);
+  it("keeps level 0 exactly the shipped grid, alpha and all", () => {
+    for (const id of OBJECT_ART_IDS) {
+      for (const face of objectFaceIds(OBJECT_ART[id])) {
+        const grid = objectFaceGrid(id, face);
+        const base = objectFaceLevels(id, face)[0] as { width: number; height: number; data: Uint8ClampedArray };
+        expect([base.width, base.height], `${id}/${face}`).toEqual([grid.width, grid.height]);
+        // A hoist's open frame is transparent inside its bbox and the chain must
+        // keep it that way — `alphaTest 0.5` is what cuts the hole.
+        for (let i = 0; i < grid.data.length; i += 1) {
+          expect(base.data[i * 4 + 3], `${id}/${face} px ${i}`).toBe(grid.data[i] === 0 ? 0 : 255);
+        }
+      }
     }
   });
 });
+
+describe("what the object audit would reject", () => {
+  const poison = (face: ObjectFaceId, x: number, y: number, hex: string): PixelGrid => {
+    const grid = cloneGrid(objectFaceGrid("flux-main", face));
+    gridSet(grid, x, y, paletteIndex(hex as `#${string}`));
+    return grid;
+  };
+
+  it("fails a copper-500 pixel on a face with no authored control", () => {
+    const audit = auditObjectFace(
+      poison("end", 4, 4, PALETTE["copper-500"]),
+      "flux-main",
+      specOf("flux-main", "end"),
+    );
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/copper-500 pixels on a face with no authored control/);
+  });
+
+  it("fails an operable object whose control face lost its handle", () => {
+    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
+    const handle = paletteIndex(PALETTE["copper-500"]);
+    for (let y = 0; y < grid.height; y += 1) {
+      for (let x = 0; x < grid.width; x += 1) {
+        if (gridGet(grid, x, y) === handle) gridSet(grid, x, y, paletteIndex(PALETTE["copper-700"]));
+      }
+    }
+    const audit = auditObjectFace(grid, "flux-main", specOf("flux-main", "long"));
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/no copper-500 handle/);
+  });
+
+  it("fails a copper-300 specular anywhere on the set", () => {
+    const audit = auditObjectFace(
+      poison("top", 4, 4, PALETTE["copper-300"]),
+      "flux-main",
+      specOf("flux-main", "top"),
+    );
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/copper-300/);
+  });
+
+  it("fails a broken carrier", () => {
+    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
+    for (const x of [31, 32]) gridSet(grid, x, 20, paletteIndex(PALETTE["soot-700"]));
+    const audit = auditObjectFace(grid, "flux-main", specOf("flux-main", "long"));
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/the carrier reaches 47\/48 rows/);
+  });
+
+  it("fails an over-budget amber and an amber on a face allowed none", () => {
+    const grid = cloneGrid(objectFaceGrid("flux-main", "long"));
+    for (let y = 0; y < grid.height; y += 1) {
+      for (let x = 0; x < 8; x += 1) gridSet(grid, x, y, paletteIndex(PALETTE["amber-500"]));
+    }
+    expect(auditObjectFace(grid, "flux-main", specOf("flux-main", "long")).errors.join(" ")).toMatch(
+      /budget is 122/,
+    );
+
+    const dark = { ...specOf("flux-main", "end"), amber: false };
+    const lit = poison("end", 4, 4, PALETTE["amber-500"]);
+    expect(auditObjectFace(lit, "flux-main", dark).errors.join(" ")).toMatch(/amber means live/);
+  });
+
+  it("fails a sink that spends a source's amber budget", () => {
+    // The one rule the whole set turns on: a consumer given a generous amber dress
+    // would undo the main's brief in one image (§3). The hoist's own ceiling is 1%,
+    // so the set's 4% is not a licence it holds.
+    const grid = cloneGrid(objectFaceGrid("charge-hoist", "top"));
+    let painted = 0;
+    for (let y = 0; y < grid.height && painted < 20; y += 1) {
+      for (let x = 0; x < grid.width && painted < 20; x += 1) {
+        if (gridGet(grid, x, y) === 0) continue;
+        gridSet(grid, x, y, paletteIndex(PALETTE["amber-500"]));
+        painted += 1;
+      }
+    }
+    const audit = auditObjectFace(grid, "charge-hoist", specOf("charge-hoist", "top"));
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(/budget is 9 \(1% of the face\)/);
+    // The same face would pass the set's ceiling, which is why §3 cuts it.
+    expect(
+      auditObjectFace(grid, "charge-hoist", { ...specOf("charge-hoist", "top"), amberShare: OBJECT_AMBER_SHARE })
+        .ok,
+    ).toBe(true);
+  });
+
+  it("fails a face that is over the colour ceiling", () => {
+    const grid = cloneGrid(objectFaceGrid("flux-main", "end"));
+    const extras = [
+      PALETTE["soot-900"],
+      PALETTE["soot-300"],
+      PALETTE["soot-100"],
+      PALETTE["umber-700"],
+      PALETTE["umber-500"],
+    ];
+    extras.forEach((hex, i) => gridSet(grid, i, 0, paletteIndex(hex)));
+    const audit = auditObjectFace(grid, "flux-main", specOf("flux-main", "end"));
+    expect(audit.colorCount).toBe(9);
+    expect(audit.ok).toBe(false);
+    expect(audit.errors.join(" ")).toMatch(new RegExp(`9 colours, the brief's ceiling is ${MAX_OBJECT_COLORS}`));
+  });
+});
+
+const base64Of = (grid: PixelGrid): string => Buffer.from(grid.data).toString("base64");

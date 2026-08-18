@@ -1,26 +1,37 @@
 // Wave 1 object delivery intake, cell location half (ART_DIRECTION D.6).
 //
-// The flux main arrived as `art-src/flux_main.png` (576 × 328): three painted
-// cells side by side on transparent ground, corner guide brackets outside them,
-// and a row of flat swatches along the bottom. It is a very different sheet from
-// the terrain one and the difference decides the method.
+// One delivered file per brief, three of them so far. The flux main arrived as
+// `art-src/flux_main.png` (576 × 328); the cable trough, the charge hoist and the
+// trough's cut state followed as `cable_trough.png` (448 × 216),
+// `charge_hoist.png` (576 × 344) and `severed_span.png` (304 × 216). They are all
+// the same kind of sheet — painted cells side by side on transparent ground,
+// corner guide brackets outside them, a row of flat swatches along the bottom —
+// and that shape is what decides the method.
 //
-// The terrain sheet was labelled, framed and drawn at preview sizes, so its
-// intake had to find nine boxes by their warm frame rules and then check
-// hand-measured interiors against a near-black inset line. This sheet needs
-// none of that, because it answers the brief literally:
+// It is a very different sheet from the terrain one. The terrain sheet was
+// labelled, framed and drawn at preview sizes, so its intake had to find nine
+// boxes by their warm frame rules and then check hand-measured interiors against
+// a near-black inset line. These sheets need none of that, because they answer
+// the brief literally:
 //
-//  1. **The cells are at exactly nominal size.** 256 × 192, 128 × 192, 128 × 256
-//     — the brief's 4× numbers to the pixel. So a declared rect is checkable
-//     against the spec rather than only against the file.
-//  2. **The fence is the alpha channel.** Every cell is fully opaque and every
-//     gutter is fully transparent, alpha strictly 0 or 255 with nothing between.
-//     That makes the fence check exact instead of a luma comparison: the 1px ring
-//     just outside a correct rect is transparent on all four edges, and a rect
-//     off by one anywhere fails.
-//  3. **The painting fills its cell.** A cell's opaque bounding box *is* its
+//  1. **The cells are at exactly nominal size.** The brief's 4× numbers to the
+//     pixel. So a declared rect is checkable against the spec rather than only
+//     against the file.
+//  2. **The fence is the alpha channel.** Every gutter is fully transparent,
+//     alpha strictly 0 or 255 with nothing between. That makes the fence check
+//     exact instead of a luma comparison: the 1px ring just outside a correct rect
+//     is transparent on all four edges, and a rect off by one anywhere fails.
+//  3. **The painting fills its cell.** A cell's opaque bounding **box** is its
 //     rect, so a rect that is too large shows as slack and one that is too small
 //     shows as a fence breach. The two checks together pin all four edges.
+//
+// Note (3) is a statement about the bounding box and not about coverage, and the
+// hoist is why that distinction is load-bearing. An A-frame gantry is **open** —
+// the brief makes the daylight under the beam the silhouette — so its cells reach
+// all four edges while only half their pixels are opaque. Interior transparency is
+// the delivery, not a defect: the renderer cuts the hole with `alphaTest 0.5`, and
+// a fill check that demanded solid coverage would reject the one thing that stops
+// a hoist reading as a hydraulic press.
 //
 // So the rects below are still hand-measured and **declared** — the same honesty
 // `tileIntake.ts` and `tools/ingest-master.ts` use — while an automatic opaque-run
@@ -31,7 +42,13 @@
 import { contentBounds, type RGBASource, type Rect } from "./ingest.js";
 import type { Hex } from "./palette.js";
 import { rgbToHex } from "./palette.js";
-import { masterSize, OBJECT_ART, type ObjectFaceId, type ObjectSpriteId } from "./objects.js";
+import {
+  masterSize,
+  objectCellSpec,
+  type ObjectFaceId,
+  type ObjectFaceState,
+  type ObjectSpriteId,
+} from "./objects.js";
 
 /** One contiguous run of opaque pixels along an axis, found automatically. */
 export interface OpaqueRun {
@@ -87,7 +104,27 @@ export function findObjectSheetContent(source: RGBASource): SheetContent {
 export interface DeclaredObjectCell {
   readonly sprite: ObjectSpriteId;
   readonly face: ObjectFaceId;
+  /**
+   * The §6 state this painting is of; absent for the powered painting. A state
+   * painting is the same face at the same size — that is what makes it a state —
+   * so it is checked against the same rect the powered cell would be.
+   */
+  readonly state?: ObjectFaceState;
   readonly rect: Rect;
+}
+
+export interface DeclaredPaletteStrip {
+  readonly rect: Rect;
+  readonly swatch: number;
+}
+
+export interface ObjectSheet {
+  /** Path under the repo root. The delivered art in `art-src/` is read-only. */
+  readonly source: string;
+  readonly width: number;
+  readonly height: number;
+  readonly cells: readonly DeclaredObjectCell[];
+  readonly strip: DeclaredPaletteStrip;
 }
 
 /**
@@ -103,11 +140,102 @@ export const FLUX_MAIN_SHEET_CELLS: readonly DeclaredObjectCell[] = [
 ];
 
 /** The reference swatch row: nine flat 24 × 24 squares of the colours used. */
-export const FLUX_MAIN_PALETTE_STRIP = { rect: { x: 180, y: 288, w: 216, h: 24 }, swatch: 24 } as const;
+export const FLUX_MAIN_PALETTE_STRIP: DeclaredPaletteStrip = {
+  rect: { x: 180, y: 288, w: 216, h: 24 },
+  swatch: 24,
+};
+
+/**
+ * `art-src/cable_trough.png` (448 × 216), brief §2. A run's top and its side are
+ * one tile each and the third cell is the gland box that lands on one tile of the
+ * run — so cells A and B are the same size and only B is `cap`. There is no
+ * fourth cell for the short end because a trough has no distinct one: the tray
+ * wall is eight horizontal bands, uniform along its length, so the run's flanks
+ * and its ends are the lip (see `paintedAs` in `objects.ts`).
+ */
+export const CABLE_TROUGH_SHEET_CELLS: readonly DeclaredObjectCell[] = [
+  { sprite: "cable-trough", face: "top", rect: { x: 16, y: 16, w: 128, h: 128 } },
+  { sprite: "cable-trough", face: "cap", rect: { x: 160, y: 16, w: 128, h: 128 } },
+  { sprite: "cable-trough", face: "long", rect: { x: 304, y: 16, w: 128, h: 32 } },
+];
+
+export const CABLE_TROUGH_PALETTE_STRIP: DeclaredPaletteStrip = {
+  rect: { x: 128, y: 168, w: 192, h: 32 },
+  swatch: 32,
+};
+
+/**
+ * `art-src/charge_hoist.png` (576 × 344), brief §3. The set's only delivery with
+ * interior transparency: the gap under the beam is the silhouette, so each cell
+ * fills its rect edge to edge at roughly half coverage.
+ */
+export const CHARGE_HOIST_SHEET_CELLS: readonly DeclaredObjectCell[] = [
+  { sprite: "charge-hoist", face: "long", rect: { x: 16, y: 16, w: 256, h: 224 } },
+  { sprite: "charge-hoist", face: "end", rect: { x: 288, y: 16, w: 128, h: 224 } },
+  { sprite: "charge-hoist", face: "top", rect: { x: 432, y: 16, w: 128, h: 256 } },
+];
+
+export const CHARGE_HOIST_PALETTE_STRIP: DeclaredPaletteStrip = {
+  rect: { x: 176, y: 300, w: 224, h: 28 },
+  swatch: 28,
+};
+
+/**
+ * `art-src/severed_span.png` (304 × 216), brief §4 — the **cut state of the
+ * trough**, not a fourth object, which is why both cells declare `cable-trough`
+ * and the trough's own `top` face. Cell A is the break; cell B is the dead run,
+ * declared so the sheet is fully accounted for and so the intake can hold the
+ * artist's dead run against the substitution the engine already computes.
+ */
+export const SEVERED_SPAN_SHEET_CELLS: readonly DeclaredObjectCell[] = [
+  { sprite: "cable-trough", face: "top", state: "severed", rect: { x: 16, y: 16, w: 128, h: 128 } },
+  { sprite: "cable-trough", face: "top", state: "unpowered", rect: { x: 160, y: 16, w: 128, h: 128 } },
+];
+
+export const SEVERED_SPAN_PALETTE_STRIP: DeclaredPaletteStrip = {
+  rect: { x: 40, y: 168, w: 224, h: 32 },
+  swatch: 32,
+};
+
+/**
+ * Every delivered object sheet, in delivery order. One table, so the ingest tool
+ * and the tests read the same declaration rather than each carrying half of it.
+ */
+export const OBJECT_SHEETS: readonly ObjectSheet[] = [
+  {
+    source: "art-src/flux_main.png",
+    width: 576,
+    height: 328,
+    cells: FLUX_MAIN_SHEET_CELLS,
+    strip: FLUX_MAIN_PALETTE_STRIP,
+  },
+  {
+    source: "art-src/cable_trough.png",
+    width: 448,
+    height: 216,
+    cells: CABLE_TROUGH_SHEET_CELLS,
+    strip: CABLE_TROUGH_PALETTE_STRIP,
+  },
+  {
+    source: "art-src/charge_hoist.png",
+    width: 576,
+    height: 344,
+    cells: CHARGE_HOIST_SHEET_CELLS,
+    strip: CHARGE_HOIST_PALETTE_STRIP,
+  },
+  {
+    source: "art-src/severed_span.png",
+    width: 304,
+    height: 216,
+    cells: SEVERED_SPAN_SHEET_CELLS,
+    strip: SEVERED_SPAN_PALETTE_STRIP,
+  },
+];
 
 export interface ObjectCellCheck {
   readonly sprite: ObjectSpriteId;
   readonly face: ObjectFaceId;
+  readonly state: ObjectFaceState;
   readonly rect: Rect;
   /** Opaque pixels found on the 1px ring just outside the rect, per edge. */
   readonly fence: {
@@ -120,6 +248,12 @@ export interface ObjectCellCheck {
   /** The rect's own opaque bounding box, relative to the rect. */
   readonly fill: Rect | null;
   readonly fillsRect: boolean;
+  /**
+   * Opaque pixels inside the rect. Less than its area on a delivery whose
+   * silhouette is a hole rather than an outline — the hoist's open frame — which
+   * `fillsRect` deliberately does not care about.
+   */
+  readonly opaquePixels: number;
   /** Alpha values strictly between the two modes: counted, never guessed (C.8.2). */
   readonly partialAlpha: number;
   readonly image: RGBASource;
@@ -164,10 +298,14 @@ const sampleHex = (source: RGBASource, x: number, y: number): Hex => {
 export function cutObjectSheet(
   source: RGBASource,
   cells: readonly DeclaredObjectCell[] = FLUX_MAIN_SHEET_CELLS,
-  strip: { rect: Rect; swatch: number } | null = FLUX_MAIN_PALETTE_STRIP,
+  strip: DeclaredPaletteStrip | null = FLUX_MAIN_PALETTE_STRIP,
 ): ObjectSheetCut {
   const checks = cells.map((cell): ObjectCellCheck => {
-    const spec = OBJECT_ART[cell.sprite].faces[cell.face];
+    const state = cell.state ?? "powered";
+    const spec = objectCellSpec(cell.sprite, cell.face, state);
+    if (spec === null) {
+      throw new Error(`cutObjectSheet: ${cell.sprite} wears no ${cell.face} face in ${state}`);
+    }
     const nominal = masterSize(spec);
     const r = cell.rect;
     if (r.w !== nominal.width || r.h !== nominal.height) {
@@ -193,10 +331,12 @@ export function cutObjectSheet(
       if (opaque(source, x, r.y + r.h)) bottom += 1;
     }
     let partialAlpha = 0;
+    let opaquePixels = 0;
     for (let y = r.y; y < r.y + r.h; y += 1) {
       for (let x = r.x; x < r.x + r.w; x += 1) {
         const alpha = alphaAt(source, x, y);
         if (alpha !== 0 && alpha !== 255) partialAlpha += 1;
+        if (alpha > ALPHA_THRESHOLD) opaquePixels += 1;
       }
     }
     const bounds = contentBounds(source, r, ALPHA_THRESHOLD);
@@ -204,11 +344,13 @@ export function cutObjectSheet(
     return {
       sprite: cell.sprite,
       face: cell.face,
+      state,
       rect: r,
       fence: { left, right, top, bottom },
       fenceOk: left + right + top + bottom === 0,
       fill,
       fillsRect: fill !== null && fill.x === 0 && fill.y === 0 && fill.w === r.w && fill.h === r.h,
+      opaquePixels,
       partialAlpha,
       image: crop(source, r),
     };
@@ -246,10 +388,13 @@ export function formatObjectSheetCut(cut: ObjectSheetCut): string {
   ];
   for (const cell of cut.cells) {
     const f = cell.fence;
+    const area = cell.rect.w * cell.rect.h;
+    const label = cell.state === "powered" ? `${cell.sprite}/${cell.face}` : `${cell.sprite}/${cell.face}:${cell.state}`;
     lines.push(
-      `  ${`${cell.sprite}/${cell.face}`.padEnd(20)} ${cell.rect.w}x${cell.rect.h} at (${cell.rect.x},${cell.rect.y})` +
+      `  ${label.padEnd(28)} ${cell.rect.w}x${cell.rect.h} at (${cell.rect.x},${cell.rect.y})` +
         ` — fence L${f.left} R${f.right} T${f.top} B${f.bottom} ${cell.fenceOk ? "ok" : "BREACHED"}` +
         `, fill ${cell.fill ? `${cell.fill.w}x${cell.fill.h} at (${cell.fill.x},${cell.fill.y})` : "empty"} ${cell.fillsRect ? "flush" : "SLACK"}` +
+        `, opaque ${cell.opaquePixels}/${area} (${Math.round((100 * cell.opaquePixels) / area)}%)` +
         `, partial alpha ${cell.partialAlpha}`,
     );
   }
