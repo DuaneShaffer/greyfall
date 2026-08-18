@@ -37,7 +37,7 @@ import {
 import { PALETTE, type Hex } from "../src/art/palette.js";
 import { SPRITE_HEIGHT, SPRITE_WIDTH, type DrawnView } from "../src/art/sprites.js";
 import { decodePNG } from "../src/art/png.js";
-import type { PixelGrid } from "../src/art/pixel.js";
+import { gridBounds, type PixelGrid } from "../src/art/pixel.js";
 import type { JobId } from "../src/art/jobs.js";
 
 interface Common {
@@ -151,24 +151,6 @@ const rowSpans = (grid: PixelGrid): string[] => {
   return rows;
 };
 
-/** Where the fitted figure actually sits on the canvas, for the log. */
-function figureExtent(grid: PixelGrid): { top: number; bottom: number; left: number; right: number } {
-  let top = SPRITE_HEIGHT;
-  let bottom = -1;
-  let left = SPRITE_WIDTH;
-  let right = -1;
-  for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
-    for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-      if (!grid.data[y * SPRITE_WIDTH + x]) continue;
-      if (y < top) top = y;
-      if (y > bottom) bottom = y;
-      if (x < left) left = x;
-      if (x > right) right = x;
-    }
-  }
-  return { top, bottom, left, right };
-}
-
 function ingest(id: string, delivery: Delivery): { views: ViewIngest[]; cutLog: string } {
   const image = decodePNG(readFileSync(resolve(root, delivery.source)));
   const coverage = delivery.coverage ?? 127;
@@ -270,11 +252,13 @@ for (const id of ids) {
   const { views, cutLog } = ingest(id, delivery);
   console.log(cutLog);
   for (const v of views) {
-    const extent = figureExtent(v.grid);
+    const extent = gridBounds(v.grid);
     console.log(
-      `\nsource cell ${v.fitted.width}x${v.fitted.height} -> canvas rows ${extent.top}..${extent.bottom}` +
-        ` (${extent.bottom - extent.top + 1} tall), columns ${extent.left}..${extent.right}` +
-        ` (${extent.right - extent.left + 1} wide)`,
+      extent === null
+        ? `\nsource cell ${v.fitted.width}x${v.fitted.height} -> empty canvas`
+        : `\nsource cell ${v.fitted.width}x${v.fitted.height} -> canvas rows ${extent.y0}..${extent.y1}` +
+            ` (${extent.y1 - extent.y0 + 1} tall), columns ${extent.x0}..${extent.x1}` +
+            ` (${extent.x1 - extent.x0 + 1} wide)`,
     );
     console.log(formatReport(v.report, `${id}/${v.view}`));
     if (spans) {

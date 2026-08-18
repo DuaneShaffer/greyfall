@@ -201,7 +201,7 @@ const uiPort: UiPort = {
  */
 function forwardingIntents(): UiIntents {
   const out = {} as UiIntents;
-  for (const name of Object.keys(noopIntents()) as (keyof UiIntents)[]) {
+  for (const name of Object.keys(noopIntents())) {
     (out as unknown as Record<string, (...args: never[]) => void>)[name] = (...args: never[]) => {
       const target = controller?.intents as
         | Record<string, ((...args: never[]) => void) | undefined>

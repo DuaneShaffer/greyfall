@@ -1424,9 +1424,8 @@ light exactly as §1 and D.4 require.
 **Rail rotates, it is not redrawn.** Rails are painted running north–south; an
 east–west run is the same texture turned a quarter (`(u,v) → (v, 1−u)`, a
 rotation, never a mirror). The placeholder inset rail strips were removed with
-this pass — leaving engine geometry on top of delivered art is how a renderer
-starts lying about what the artist drew — which leaves `railStripColor` in
-`render/palette.ts` with no consumer.
+this pass: leaving engine geometry on top of delivered art is how a renderer
+starts lying about what the artist drew.
 
 **The water shimmer is a translation, not a repaint.** §5 wants two `water-top`
 frames alternating every 30 ticks; Wave 1 delivered one. Interim: `water-top` is

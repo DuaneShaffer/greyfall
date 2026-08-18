@@ -15,12 +15,12 @@ import {
   EMISSIVE_COLORS,
   OUTLINE_COLOR,
   PALETTE,
-  RAMPS,
   TEAM_TINT,
   hexToRgb,
   type Hex,
 } from "./palette.js";
 import {
+  AMBER_INDICES,
   INDEXED_PALETTE,
   OUTLINE_INDEX,
   TRANSPARENT,
@@ -195,7 +195,7 @@ export function fitMasterToCanvas(source: RGBASource, options: FitOptions = {}):
   };
   for (let y = 0; y < bounds.h; y += 1) {
     const from = ((bounds.y + y) * source.width + bounds.x) * 4;
-    (cut.data as Uint8ClampedArray).set(
+    cut.data.set(
       source.data.subarray(from, from + bounds.w * 4),
       y * bounds.w * 4,
     );
@@ -299,7 +299,7 @@ export interface QuantizeResult {
   readonly report: ConformanceReport;
 }
 
-const ALL_HEXES = Object.values(PALETTE) as readonly Hex[];
+const ALL_HEXES = Object.values(PALETTE);
 
 /**
  * §2's reserved signal colors: an overload aura, a vein-glass deposit, a hazard
@@ -332,7 +332,6 @@ export const fieldPaletteWith = (...extra: readonly Hex[]): readonly Hex[] => [
   ...FIELD_PALETTE,
   ...extra.filter((hex) => !FIELD_PALETTE.includes(hex)),
 ];
-const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
 const EMISSIVE_INDICES = new Set(EMISSIVE_COLORS.map((hex) => paletteIndex(hex)));
 /**
  * Only the player and enemy tints are countable: §2 draws them from steel and

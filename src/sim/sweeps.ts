@@ -295,7 +295,7 @@ export function encounterRuns(
 }
 
 function rosterIds(content: SimContent): string[] {
-  const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id]!)[0];
+  const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id])[0];
   if (campaign !== undefined) return [...campaign.startingRosterUnitIds];
   return Object.keys(content.units).sort();
 }
@@ -318,7 +318,7 @@ function partyFor(content: SimContent, ids: readonly string[], level: number | n
  */
 export function encounterSweep(content: SimContent, cfg: SweepConfig): SweepBattle[] {
   const out: SweepBattle[] = [];
-  const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id]!)[0];
+  const campaign = Object.keys(content.campaigns).sort().map((id) => content.campaigns[id])[0];
   const order = campaign?.encounterIds ?? [];
 
   const discovered = Object.keys(content.library.encounters).sort().slice(0, cfg.encounterLimit);

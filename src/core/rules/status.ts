@@ -17,10 +17,6 @@ export function sortedStatusIds(unit: BattleUnit): string[] {
   return unit.statuses.map((s) => s.statusId).sort();
 }
 
-export function hasStatus(unit: BattleUnit, statusId: string): boolean {
-  return unit.statuses.some((s) => s.statusId === statusId);
-}
-
 /** Union of every hook the unit's statuses contribute, in status-id order. */
 export function statusHooks(state: GameState, unit: BattleUnit): StatusHooks {
   const hooks: StatusHooks = {

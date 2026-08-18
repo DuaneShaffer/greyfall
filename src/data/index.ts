@@ -8,6 +8,7 @@ import { Job } from "./schemas/job.js";
 import { Status } from "./schemas/status.js";
 import { Unit } from "./schemas/unit.js";
 
+export * from "./coords.js";
 export * from "./schemas/common.js";
 export * from "./schemas/effect.js";
 export { Ability, AbilityRequirement, Targeting } from "./schemas/ability.js";

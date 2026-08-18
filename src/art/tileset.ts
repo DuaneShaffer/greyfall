@@ -7,9 +7,9 @@
 // the audit it imports may not depend on the generated data.
 
 import * as MASTERS from "./masters/tiles.js";
-import { createGrid, type PixelGrid } from "./pixel.js";
+import { bytesFromBase64, createGrid, type PixelGrid } from "./pixel.js";
 import { sheetTextureLevels, type TextureLevel } from "./sheet.js";
-import { TILE_TEXTURE, TILE_TEXTURE_IDS, type TileTextureId } from "./tiles.js";
+import { TILE_TEXTURE, type TileTextureId } from "./tiles.js";
 
 const BASE64: Readonly<Record<TileTextureId, string>> = {
   "plain-top": MASTERS.PLAIN_TOP_BASE64,
@@ -23,13 +23,6 @@ const BASE64: Readonly<Record<TileTextureId, string>> = {
   "water-side": MASTERS.WATER_SIDE_BASE64,
 };
 
-const decode = (base64: string): Uint8Array => {
-  const binary = atob(base64);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
-};
-
 const grids = new Map<TileTextureId, PixelGrid>();
 
 /** The shipped palette-index grid for a tile face. Cached; do not mutate. */
@@ -37,7 +30,7 @@ export function tileGrid(id: TileTextureId): PixelGrid {
   const cached = grids.get(id);
   if (cached) return cached;
   const spec = TILE_TEXTURE[id];
-  const bytes = decode(BASE64[id]);
+  const bytes = bytesFromBase64(BASE64[id]);
   if (bytes.length !== spec.width * spec.height) {
     throw new Error(`tileGrid: ${id} decoded to ${bytes.length} px, spec is ${spec.width}x${spec.height}`);
   }
@@ -58,5 +51,3 @@ export function tileGrid(id: TileTextureId): PixelGrid {
 export function tileTextureLevels(id: TileTextureId): readonly TextureLevel[] {
   return sheetTextureLevels(tileGrid(id), 1);
 }
-
-export const tileTextureIds = (): readonly TileTextureId[] => TILE_TEXTURE_IDS;

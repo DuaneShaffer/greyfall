@@ -50,34 +50,11 @@ export function replaceChildren(parent: Node, children: Child[]): void {
   append(parent, children);
 }
 
-export function mount(parent: Node, component: Component<never> | { el: HTMLElement }): void {
-  parent.appendChild(component.el);
-}
-
-export function unmount(component: { el: HTMLElement }): void {
-  component.el.remove();
-}
-
 /** Every screen and panel is a component: an element plus update/destroy. */
 export interface Component<V> {
   readonly el: HTMLElement;
   update(view: V): void;
   destroy(): void;
-}
-
-/** Remembers what had focus so a closing overlay can hand it back. */
-export class FocusMemory {
-  private readonly stack: HTMLElement[] = [];
-
-  capture(): void {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement) this.stack.push(active);
-    else this.stack.push(document.body);
-  }
-
-  restore(): void {
-    this.stack.pop()?.focus();
-  }
 }
 
 export function focusable(node: HTMLElement): HTMLElement {

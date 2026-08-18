@@ -1,3 +1,4 @@
+import { coordEq } from "../data/coords.js";
 import type { Facing, TileCoord } from "../data/schemas/common.js";
 import type { GameMap, Tile } from "../data/schemas/map.js";
 
@@ -25,9 +26,6 @@ export const tileAt = (map: GameMap, x: number, y: number): Tile | undefined =>
 export const tileHeight = (map: GameMap, x: number, y: number): number =>
   tileAt(map, x, y)?.height ?? 0;
 
-export const isVoid = (map: GameMap, x: number, y: number): boolean =>
-  tileAt(map, x, y)?.terrain === "void";
-
 export const minTileHeight = (map: GameMap): number => {
   const lowest = map.tiles.reduce(
     (best, tile) => Math.min(best, tile.height),
@@ -50,7 +48,7 @@ export const standingHeight = (map: GameMap, tile: TileCoord): number => {
   let height = tileHeight(map, tile.x, tile.y);
   for (const object of map.objects) {
     if (object.surfaceHeight === undefined) continue;
-    if (!object.tiles.some((t) => t.x === tile.x && t.y === tile.y)) continue;
+    if (!object.tiles.some((t) => coordEq(t, tile))) continue;
     height = Math.max(height, object.surfaceHeight);
   }
   return height;
@@ -63,17 +61,10 @@ const FACING_VECTORS: Record<Facing, readonly [number, number]> = {
   west: [-1, 0],
 };
 
-export const facingVector = (facing: Facing): readonly [number, number] => FACING_VECTORS[facing];
-
 /** Y-rotation that turns a +Z-facing object toward `facing`. */
 export const facingYaw = (facing: Facing): number => {
   const [dx, dz] = FACING_VECTORS[facing];
   return Math.atan2(dx, dz);
 };
 
-export const facingBetween = (from: TileCoord, to: TileCoord): Facing => {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "east" : "west";
-  return dy >= 0 ? "south" : "north";
-};
+export { facingToward as facingBetween } from "../data/coords.js";

@@ -18,14 +18,7 @@
 import * as THREE from "three";
 import { isJobId, type JobId } from "../art/jobs.js";
 import { EMISSIVE_COLORS } from "../art/palette.js";
-import {
-  buildJobSheet,
-  cellUV,
-  flipRows,
-  sheetCell,
-  sheetKey,
-  sheetTextureLevels,
-} from "../art/sheet.js";
+import { buildJobSheet, cellUV, sheetCell, sheetKey, sheetTextureLevels } from "../art/sheet.js";
 import {
   SPRITE_ANCHOR,
   SPRITE_HEIGHT,
@@ -35,6 +28,7 @@ import {
   type DrawnView,
 } from "../art/sprites.js";
 import type { Team } from "../data/schemas/common.js";
+import { configureTexture, mippedTexture } from "./textures.js";
 
 export const SPRITE_PIXELS_X = SPRITE_WIDTH;
 export const SPRITE_PIXELS_Y = SPRITE_HEIGHT;
@@ -51,18 +45,8 @@ const clones = new Set<THREE.Texture>();
 export const jobForSprite = (spriteId: string): JobId =>
   isJobId(spriteId) ? spriteId : DEFAULT_JOB;
 
-const configure = (texture: THREE.Texture): THREE.Texture => {
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
-};
-
-const asBytes = (data: Uint8ClampedArray): Uint8Array =>
-  new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+const configure = (texture: THREE.Texture): THREE.Texture =>
+  configureTexture(texture, THREE.ClampToEdgeWrapping);
 
 /** The shared sheet for a job/team. Built once, cached for the session. */
 export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
@@ -71,22 +55,10 @@ export const unitSheet = (spriteId: string, team: Team): THREE.Texture => {
   const cached = sheets.get(key);
   if (cached) return cached;
 
-  // WebGL ignores flipY for buffer uploads, so every level ships bottom-up.
-  const levels = sheetTextureLevels(buildJobSheet(jobId, team)).map(flipRows);
-  const base = levels[0] as (typeof levels)[number];
-  const texture = new THREE.DataTexture(
-    asBytes(base.data),
-    base.width,
-    base.height,
-    THREE.RGBAFormat,
+  const texture = mippedTexture(
+    sheetTextureLevels(buildJobSheet(jobId, team)),
+    THREE.ClampToEdgeWrapping,
   );
-  texture.mipmaps = levels.map((level) => ({
-    data: asBytes(level.data),
-    width: level.width,
-    height: level.height,
-  }));
-  texture.needsUpdate = true;
-  configure(texture);
   sheets.set(key, texture);
   return texture;
 };
@@ -160,11 +132,4 @@ ${bloomKeyTest()}
 
 export const releaseSheetView = (texture: THREE.Texture): void => {
   if (clones.delete(texture)) texture.dispose();
-};
-
-export const disposeSpriteCache = (): void => {
-  for (const texture of clones) texture.dispose();
-  clones.clear();
-  for (const texture of sheets.values()) texture.dispose();
-  sheets.clear();
 };

@@ -28,7 +28,7 @@ import * as THREE from "three";
 import { TICKS_PER_SECOND } from "../art/sprites.js";
 import { TILE_TEXTURE, TILE_TEXTURE_IDS, type TileTextureId } from "../art/tiles.js";
 import { tileTextureLevels } from "../art/tileset.js";
-import { flipRows } from "../art/sheet.js";
+import { mippedTexture } from "./textures.js";
 
 /**
  * §5 asks for a 2-frame water shimmer alternating every 30 ticks. Wave 1
@@ -43,30 +43,8 @@ export const WATER_SHIMMER_TICKS = 30;
 export const WATER_SHIMMER_SECONDS = WATER_SHIMMER_TICKS / TICKS_PER_SECOND;
 export const WATER_SHIMMER_TEXTURE: TileTextureId = "water-top";
 
-const asBytes = (data: Uint8ClampedArray): Uint8Array =>
-  new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-
-const buildTexture = (id: TileTextureId): THREE.Texture => {
-  // WebGL ignores flipY for buffer uploads, so every level ships bottom-up. That
-  // also puts the art's own top row at v = 1, which is where the strata band has
-  // to be for a stacked face to show a cut line at every height step.
-  const levels = tileTextureLevels(id).map(flipRows);
-  const base = levels[0] as (typeof levels)[number];
-  const texture = new THREE.DataTexture(asBytes(base.data), base.width, base.height, THREE.RGBAFormat);
-  texture.mipmaps = levels.map((level) => ({
-    data: asBytes(level.data),
-    width: level.width,
-    height: level.height,
-  }));
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.needsUpdate = true;
-  return texture;
-};
+const buildTexture = (id: TileTextureId): THREE.Texture =>
+  mippedTexture(tileTextureLevels(id), THREE.RepeatWrapping);
 
 /**
  * One material per tile face, in `TILE_TEXTURE_IDS` order so a quad's material

@@ -30,7 +30,6 @@ import {
   inBounds,
   tileAt,
   tileCenter,
-  tileHeight,
   tileIndex,
   type WorldPoint,
 } from "./grid.js";
@@ -302,6 +301,3 @@ export const tileFromTriangle = (
   if (index === undefined || index < 0) return null;
   return { x: index % map.width, y: Math.floor(index / map.width) };
 };
-
-export const terrainSurfaceY = (map: GameMap, x: number, y: number): number =>
-  tileHeight(map, x, y) * HEIGHT_STEP;

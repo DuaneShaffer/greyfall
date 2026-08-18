@@ -566,46 +566,8 @@ export const TINT_TRIM_DROP = 0;
 export const TINT_MASK_SEPARATION =
   toPx(TINT_BAND_DROP) - 2 - (toPx(TINT_TRIM_DROP) + 4) - 1;
 
-/**
- * Per-row width inset in canvas pixels: a tapered crown and jaw keep the head
- * off "box". Four rows of taper at each end of the 26-row box.
- */
-const HEAD_PROFILE = [
-  -8, -6, -4, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2, -4, -6, -8,
-] as const;
-
 /** Canvas rows from the head joint up to head row 0. */
 const HEAD_TOP_OFFSET = Math.floor((HEAD_HEIGHT - 1) / 2);
-
-export interface HeadRow {
-  readonly x: number;
-  readonly y: number;
-  readonly w: number;
-}
-
-/** Canvas span of a head row, honoring the taper. `grow` widens it, in px. */
-export function headRow(ctx: GearContext, row: number, grow = 0): HeadRow {
-  const c = at(ctx.joints.head.dx, ctx.joints.head.up);
-  const clamped = Math.max(0, Math.min(HEAD_HEIGHT - 1, Math.round(row)));
-  const w = Math.max(2, toPx(ctx.build.headW) + (HEAD_PROFILE[clamped] ?? 0) + grow * 2);
-  return { x: Math.round(c.x - w / 2), y: c.y - HEAD_TOP_OFFSET + clamped, w };
-}
-
-/** Rows [from, to] of head furniture in one color. */
-export function headBand(
-  ctx: GearContext,
-  from: number,
-  to: number,
-  color: number,
-  grow = 0,
-): Prim[] {
-  const prims: Prim[] = [];
-  for (let row = from; row <= to; row += 1) {
-    const r = headRow(ctx, row, grow);
-    prims.push(rect(r.x, r.y, r.w, 1, color));
-  }
-  return prims;
-}
 
 /**
  * Head glyph geometry, in canvas pixels — glyphs are literal pixel data, so
@@ -926,7 +888,11 @@ export function basePose(state: AnimState, frame: number): Pose {
   }
 }
 
-export function poseFor(art: JobArt, state: AnimState, frame: number): Pose {
+export function poseFor(
+  art: { readonly posePass?: JobArt["posePass"] | undefined },
+  state: AnimState,
+  frame: number,
+): Pose {
   const clip = ANIMATIONS[state];
   if (frame < 0 || frame >= clip.frames) {
     throw new RangeError(`${state} has ${clip.frames} frames; got ${frame}`);

@@ -29,6 +29,8 @@ import {
   applyCommand,
   battleMap,
   battleResult,
+  coordEq,
+  facingToward,
   getObject,
   gridFlipPreview,
   gridRestoringTies,
@@ -179,11 +181,9 @@ const LAYER_CHARGE_LANDING = "charge-landing";
  */
 const AI_STEP_SECONDS = 0.18;
 
-const sameTile = (a: TileCoord, b: TileCoord): boolean => a.x === b.x && a.y === b.y;
-
 const sameTarget = (a: TargetRef, b: TargetRef): boolean => {
   if (a.kind !== b.kind) return false;
-  if (a.kind === "tile" && b.kind === "tile") return sameTile(a.tile, b.tile);
+  if (a.kind === "tile" && b.kind === "tile") return coordEq(a.tile, b.tile);
   if (a.kind === "unit" && b.kind === "unit") return a.unitId === b.unitId;
   if (a.kind === "object" && b.kind === "object") return a.objectId === b.objectId;
   return false;
@@ -445,13 +445,6 @@ const needsSceneRebuild = (event: BattleEvent): boolean => {
   return event.type === "UnitMoveUndone" && event.revertedConsequences;
 };
 
-const facingToward = (from: TileCoord, to: TileCoord): Facing => {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "east" : "west";
-  return dy >= 0 ? "south" : "north";
-};
-
 export class BattleController {
   readonly intents: UiIntents;
 
@@ -580,13 +573,13 @@ export class BattleController {
       this.selection.mode !== "move" ||
       // The unit's own tile is a legal zero-distance move with nothing to show:
       // it is already standing there.
-      sameTile(acting.position, tile) ||
-      !this.moveTargets.some((candidate) => sameTile(candidate, tile))
+      coordEq(acting.position, tile) ||
+      !this.moveTargets.some((candidate) => coordEq(candidate, tile))
     ) {
       this.clearMovePreview();
       return;
     }
-    if (this.previewedMove !== null && sameTile(this.previewedMove, tile)) return;
+    if (this.previewedMove !== null && coordEq(this.previewedMove, tile)) return;
     this.previewedMove = { ...tile };
     this.renderer.setMovePreview({ unitId: acting.id, tile: { ...tile } });
   }
@@ -613,11 +606,11 @@ export class BattleController {
         return;
       }
       case "move": {
-        if (!this.moveTargets.some((candidate) => sameTile(candidate, tile))) {
+        if (!this.moveTargets.some((candidate) => coordEq(candidate, tile))) {
           this.refuse("No path there");
           return;
         }
-        if (this.selection.pending !== null && sameTile(this.selection.pending, tile)) {
+        if (this.selection.pending !== null && coordEq(this.selection.pending, tile)) {
           this.intents.confirmMove(acting.id, tile);
           return;
         }
@@ -631,7 +624,7 @@ export class BattleController {
       }
       case "target": {
         const abilityId = this.selection.abilityId;
-        const target = this.aimTargets.some((candidate) => sameTile(candidate, tile))
+        const target = this.aimTargets.some((candidate) => coordEq(candidate, tile))
           ? aimTarget(this.gameState, acting.id, abilityId, tile)
           : null;
         if (target === null) {
@@ -1007,7 +1000,7 @@ export class BattleController {
 
   /** Why a click on `tile` was not a target: out of reach, or the wrong thing. */
   private aimRefusal(actor: BattleUnit, abilityId: string, tile: TileCoord): string {
-    if (!this.aimReach.some((candidate) => sameTile(candidate, tile))) return "Out of reach";
+    if (!this.aimReach.some((candidate) => coordEq(candidate, tile))) return "Out of reach";
     const name = abilityInfo(this.gameState, actor.id, abilityId)?.name ?? "That";
     return `${name} cannot target that`;
   }
@@ -1121,14 +1114,14 @@ export class BattleController {
 
   private unitAt(tile: TileCoord): BattleUnit | null {
     return (
-      allUnits(this.gameState).find((unit) => !unit.downed && sameTile(unit.position, tile)) ?? null
+      allUnits(this.gameState).find((unit) => !unit.downed && coordEq(unit.position, tile)) ?? null
     );
   }
 
   private objectAt(tile: TileCoord): string | null {
     return (
       allObjects(this.gameState).find((object) =>
-        object.def.tiles.some((covered) => sameTile(covered, tile)),
+        object.def.tiles.some((covered) => coordEq(covered, tile)),
       )?.def.id ?? null
     );
   }

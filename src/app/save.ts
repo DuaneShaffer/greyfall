@@ -57,6 +57,36 @@ export function encodeSave(campaign: CampaignState): string {
   return JSON.stringify(envelope);
 }
 
+const property = (value: object, key: string): unknown =>
+  key in value ? (value as Record<string, unknown>)[key] : undefined;
+
+/**
+ * One entry per `CampaignState` field, so the gate below cannot fall behind the
+ * type it guards: adding a field to `CampaignState` is a compile error until it
+ * is listed here. `null` is the explicit "decode does not check this" answer —
+ * `completedEncounterIds` predates the gate and rejecting saves without it would
+ * refuse blobs that load today.
+ */
+const CAMPAIGN_FIELD_CHECKS: {
+  readonly [K in keyof CampaignState]: ((value: unknown) => boolean) | null;
+} = {
+  version: (value) => value === CAMPAIGN_STATE_VERSION,
+  campaignId: (value) => typeof value === "string",
+  roster: Array.isArray,
+  progress: Array.isArray,
+  inventory: Array.isArray,
+  fallen: Array.isArray,
+  encounterIndex: (value) => typeof value === "number",
+  completedEncounterIds: null,
+};
+
+function isCampaignState(value: unknown): value is CampaignState {
+  if (typeof value !== "object" || value === null) return false;
+  return Object.entries(CAMPAIGN_FIELD_CHECKS).every(
+    ([key, check]) => check === null || check(property(value, key)),
+  );
+}
+
 export function decodeSave(text: string): LoadOutcome {
   let parsed: unknown;
   try {
@@ -67,22 +97,12 @@ export function decodeSave(text: string): LoadOutcome {
   if (typeof parsed !== "object" || parsed === null) {
     return { ok: false, reason: "Save data is not an object" };
   }
-  const envelope = parsed as Partial<SaveEnvelope>;
-  if (envelope.saveVersion !== SAVE_VERSION) {
-    return { ok: false, reason: `Unsupported save version ${String(envelope.saveVersion)}` };
+  const saveVersion = property(parsed, "saveVersion");
+  if (saveVersion !== SAVE_VERSION) {
+    return { ok: false, reason: `Unsupported save version ${String(saveVersion)}` };
   }
-  const campaign = envelope.campaign;
-  if (
-    typeof campaign !== "object" ||
-    campaign === null ||
-    campaign.version !== CAMPAIGN_STATE_VERSION ||
-    typeof campaign.campaignId !== "string" ||
-    !Array.isArray(campaign.roster) ||
-    !Array.isArray(campaign.progress) ||
-    !Array.isArray(campaign.inventory) ||
-    !Array.isArray(campaign.fallen) ||
-    typeof campaign.encounterIndex !== "number"
-  ) {
+  const campaign = property(parsed, "campaign");
+  if (!isCampaignState(campaign)) {
     return { ok: false, reason: "Save data is not a campaign" };
   }
   return { ok: true, campaign };

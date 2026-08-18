@@ -12,7 +12,9 @@ import {
   consumableStock,
   currentEncounterId,
   equipItem,
+  facingToward,
   learnAbility,
+  manhattan,
   rosterUnit,
   setAbilitySlot,
   setSecondaryJob,
@@ -74,17 +76,13 @@ const facingTowardNearest = (from: TileCoord, targets: TileCoord[]): Facing => {
   let best: TileCoord | null = null;
   let bestDistance = Infinity;
   for (const target of targets) {
-    const distance = Math.abs(target.x - from.x) + Math.abs(target.y - from.y);
+    const distance = manhattan(from, target);
     if (distance < bestDistance) {
       bestDistance = distance;
       best = target;
     }
   }
-  if (best === null) return "north";
-  const dx = best.x - from.x;
-  const dy = best.y - from.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "east" : "west";
-  return dy >= 0 ? "south" : "north";
+  return best === null ? "north" : facingToward(from, best);
 };
 
 export class CampaignSession {

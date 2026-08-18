@@ -27,33 +27,9 @@ import * as THREE from "three";
 import { FACE_SHADE } from "../art/palette.js";
 import type { ObjectFaceId, ObjectPowerState, ObjectSpriteId } from "../art/objects.js";
 import { objectCarrierLevels, objectFaceLevels } from "../art/objectset.js";
-import { flipRows } from "../art/sheet.js";
-
-const asBytes = (data: Uint8ClampedArray): Uint8Array =>
-  new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+import { mippedTexture } from "./textures.js";
 
 const cache = new Map<string, THREE.Texture | null>();
-
-const build = (levels: readonly { width: number; height: number; data: Uint8ClampedArray }[]): THREE.Texture => {
-  // WebGL ignores flipY for buffer uploads, so every level ships bottom-up —
-  // which also puts the painting's top row at v = 1, where a box's UVs want it.
-  const flipped = levels.map(flipRows);
-  const base = flipped[0] as (typeof flipped)[number];
-  const texture = new THREE.DataTexture(asBytes(base.data), base.width, base.height, THREE.RGBAFormat);
-  texture.mipmaps = flipped.map((level) => ({
-    data: asBytes(level.data),
-    width: level.width,
-    height: level.height,
-  }));
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.needsUpdate = true;
-  return texture;
-};
 
 /**
  * The shared texture for one face in one of §6's states. Built once, cached for
@@ -68,7 +44,7 @@ export function objectFaceTexture(
   const key = `paint:${sprite}:${face}:${state}`;
   const cached = cache.get(key);
   if (cached) return cached;
-  const texture = build(objectFaceLevels(sprite, face, state));
+  const texture = mippedTexture(objectFaceLevels(sprite, face, state), THREE.ClampToEdgeWrapping);
   cache.set(key, texture);
   return texture;
 }
@@ -87,7 +63,7 @@ export function objectCarrierTexture(
   const key = `carrier:${sprite}:${face}:${state}`;
   if (cache.has(key)) return cache.get(key) ?? null;
   const levels = objectCarrierLevels(sprite, face, state);
-  const texture = levels === null ? null : build(levels);
+  const texture = levels === null ? null : mippedTexture(levels, THREE.ClampToEdgeWrapping);
   cache.set(key, texture);
   return texture;
 }

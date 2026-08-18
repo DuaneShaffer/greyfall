@@ -21,7 +21,7 @@ import type {
   UnitSheetView,
   UnitView,
 } from "./state.js";
-import { EQUIP_SLOTS, EQUIP_SLOT_LABELS, STAT_LABELS } from "./state.js";
+import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
 // verbatim from data/*.json (tests/ui/mock.test.ts fails if it drifts) so the
@@ -610,7 +610,7 @@ function summarizeItem(item: Item): string {
   if (item.slot === "weapon") return `Power ${item.power} · ${item.damageType}`;
   if (item.slot === "consumable") return "Consumable";
   const mods = Object.entries(item.statMods)
-    .map(([key, value]) => `${STAT_LABELS[key as keyof typeof STAT_LABELS]} ${value! > 0 ? "+" : ""}${value}`)
+    .map(([key, value]) => `${STAT_LABELS[key as keyof typeof STAT_LABELS]} ${value > 0 ? "+" : ""}${value}`)
     .join(" · ");
   return mods.length > 0 ? mods : "No modifiers";
 }
@@ -714,8 +714,6 @@ export const mockDialogue: DialogueLine[] = [
     text: "There goes the cell! Mind the flare!",
   },
 ];
-
-export const SLOT_LABELS = EQUIP_SLOT_LABELS;
 
 export function mockJobsView(overrides: Partial<JobsView> = {}): JobsView {
   return {

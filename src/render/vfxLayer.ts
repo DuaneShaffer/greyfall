@@ -81,7 +81,7 @@ const disposeObject = (object: THREE.Object3D): void => {
   object.traverse((child) => {
     const mesh = child as Partial<THREE.Mesh>;
     if (mesh.geometry) mesh.geometry.dispose();
-    if (mesh.material) disposeMaterial(mesh.material as THREE.Material);
+    if (mesh.material) disposeMaterial(mesh.material);
   });
 };
 
@@ -203,7 +203,7 @@ export class VfxLayer {
 
   private placePopup(sprite: THREE.Sprite, popup: Popup): void {
     sprite.position.set(popup.anchor.x, popupHeight(popup), popup.anchor.z);
-    const material = sprite.material as THREE.SpriteMaterial;
+    const material = sprite.material;
     material.opacity = Math.round(popupOpacity(popup) * FADE_STEPS) / FADE_STEPS;
   }
 
@@ -372,7 +372,7 @@ export class VfxLayer {
         const frame = impactFrame("kinetic", age);
         wedgeMaterial.opacity = frame === 0 ? 1 : 1 - t;
         wedgeMesh.scale.setScalar(1 + t * 0.6);
-        const attribute = geometry.getAttribute("position") as THREE.BufferAttribute;
+        const attribute = geometry.getAttribute("position");
         for (let i = 0; i < count; i += 1) {
           const dir = directions[i] as Vec3;
           const reach = t * 0.55;
@@ -566,7 +566,7 @@ export class VfxLayer {
     for (const [id, sprite] of [...this.sprites]) {
       if (live.has(id)) continue;
       this.group.remove(sprite);
-      (sprite.material as THREE.SpriteMaterial).dispose();
+      sprite.material.dispose();
       this.sprites.delete(id);
     }
     for (const popup of this.popups.active) {
@@ -592,7 +592,7 @@ export class VfxLayer {
     this.popups.clear();
     for (const sprite of this.sprites.values()) {
       this.group.remove(sprite);
-      (sprite.material as THREE.SpriteMaterial).dispose();
+      sprite.material.dispose();
     }
     this.sprites.clear();
     for (const effect of this.effects) {
@@ -613,11 +613,3 @@ export class VfxLayer {
     effect.update(0);
   }
 }
-
-/** Test/teardown hook: the popup and dither texture caches are module-scoped. */
-export const disposeVfxTextures = (): void => {
-  for (const texture of popupTextures.values()) texture.dispose();
-  popupTextures.clear();
-  for (const texture of chemicalTextures.values()) texture.dispose();
-  chemicalTextures.clear();
-};

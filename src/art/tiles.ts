@@ -15,7 +15,17 @@
 
 import type { TerrainType } from "../data/schemas/map.js";
 import { PALETTE, RAMPS, hexToRgb, relativeLuminance, type Hex } from "./palette.js";
-import { INDEXED_PALETTE, distinctColors, gridGet, histogram, paletteIndex, type PixelGrid } from "./pixel.js";
+import {
+  AMBER_INDICES,
+  COPPER_300_INDEX,
+  INDEXED_PALETTE,
+  RESERVED_INDICES,
+  distinctColors,
+  gridGet,
+  histogram,
+  paletteIndex,
+  type PixelGrid,
+} from "./pixel.js";
 import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "./sprites.js";
 
 export type TileFace = "top" | "side";
@@ -338,13 +348,6 @@ export interface TileAudit {
   readonly warnings: readonly string[];
 }
 
-const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
-const RESERVED_INDICES = new Set(
-  [...RAMPS.overload, ...RAMPS.veinglass, ...RAMPS.blood, ...RAMPS.steel, ...RAMPS.bone, PALETTE.hazard, PALETTE.brightblood].map(
-    (hex) => paletteIndex(hex),
-  ),
-);
-const COPPER_300_INDEX = paletteIndex(PALETTE["copper-300"]);
 /** A wrap join this much worse than the material's own grain reads as a seam. */
 export const SEAM_RATIO_LIMIT = 2;
 

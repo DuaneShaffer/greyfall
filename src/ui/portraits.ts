@@ -50,10 +50,6 @@ export function portraitAsset(portraitId: string | undefined): PortraitAsset | n
   return assets.get(portraitId) ?? null;
 }
 
-export function portraitIds(): string[] {
-  return [...assets.keys()].sort();
-}
-
 /** Tests and the harness; the app registers once at boot and never clears. */
 export function clearPortraits(): void {
   assets.clear();

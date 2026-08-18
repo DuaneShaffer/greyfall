@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { frameEndTick } from "../art/player.js";
 import { TICKS_PER_SECOND } from "../art/sprites.js";
+import { coordEq } from "../data/coords.js";
 import type { DamageType, Facing, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
 import { TacticsCamera } from "./camera.js";
@@ -960,7 +961,5 @@ const exitDirection = (
   return options.reduce((best, option) => (option.distance < best.distance ? option : best));
 };
 
-const sameTileOrNull = (a: TileCoord | null, b: TileCoord | null): boolean => {
-  if (a === null || b === null) return a === b;
-  return a.x === b.x && a.y === b.y;
-};
+const sameTileOrNull = (a: TileCoord | null, b: TileCoord | null): boolean =>
+  a === null || b === null ? a === b : coordEq(a, b);

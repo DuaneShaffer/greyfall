@@ -92,7 +92,7 @@ export function distanceField(
   const map = state.content.map;
   const count = map.width * map.depth;
   const dist = new Array<number>(count).fill(UNREACHABLE);
-  const origins = Array.isArray(from) ? (from as readonly TileCoord[]) : [from as TileCoord];
+  const origins = Array.isArray(from) ? from : [from];
 
   const heap: number[] = [];
   for (const origin of origins) {

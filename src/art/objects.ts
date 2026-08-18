@@ -19,7 +19,10 @@
 
 import { OBJECT_STATE_PAINT, PALETTE, RAMPS, type Hex } from "./palette.js";
 import {
+  AMBER_INDICES,
+  COPPER_300_INDEX,
   INDEXED_PALETTE,
+  RESERVED_INDICES,
   TRANSPARENT,
   colorClusters,
   createGrid,
@@ -300,20 +303,7 @@ export function faceInState(grid: PixelGrid, state: ObjectPowerState): PixelGrid
 
 // --- the audit --------------------------------------------------------------
 
-const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
-const RESERVED_INDICES = new Set(
-  [
-    ...RAMPS.overload,
-    ...RAMPS.veinglass,
-    ...RAMPS.blood,
-    ...RAMPS.steel,
-    ...RAMPS.bone,
-    PALETTE.hazard,
-    PALETTE.brightblood,
-  ].map((hex) => paletteIndex(hex)),
-);
 const COPPER_500_INDEX = paletteIndex(PALETTE["copper-500"]);
-const COPPER_300_INDEX = paletteIndex(PALETTE["copper-300"]);
 const AMBER_CORE_INDEX = paletteIndex(PALETTE["amber-300"]);
 const AMBER_GLOW_INDEX = paletteIndex(PALETTE["amber-glow"]);
 

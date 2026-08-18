@@ -121,7 +121,7 @@ export {
   itemIdFromAbilityId,
 } from "./rules/items.js";
 export type { AttackAngle } from "./rules/grid.js";
-export { isDecked } from "./rules/grid.js";
+export { coordEq, facingToward, isDecked, manhattan } from "./rules/grid.js";
 export { moveProfile, type MoveProfile, type ReachableTile } from "./rules/movement.js";
 
 export { deriveStats, equippedItems, STAT_BASE, type DerivedStats } from "./progression/stats.js";

@@ -86,7 +86,7 @@ const tintIndicesOf = (team: Team): readonly number[] => [
  * with any declared prop regions cut first.
  */
 export function importExternalMaster(request: ImportRequest): ImportResult {
-  const rest = request.rest ?? { state: "idle" as AnimState, frame: 0 };
+  const rest = request.rest ?? { state: "idle", frame: 0 };
   const views: Partial<Record<DrawnView, PixelGrid>> = {};
   const maps: Partial<Record<DrawnView, RegionMap>> = {};
   const reports: Partial<Record<DrawnView, ConformanceReport>> = {};

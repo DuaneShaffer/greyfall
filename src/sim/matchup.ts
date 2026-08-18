@@ -8,6 +8,7 @@
  */
 
 import type { Deployment } from "../core/index.js";
+import { coordEq } from "../data/coords.js";
 import type {
   Ability,
   Encounter,
@@ -255,7 +256,7 @@ export function arenaMatchup(
 // ---------------------------------------------------------------------------
 
 function objectAt(map: GameMap, tile: TileCoord) {
-  return map.objects.find((obj) => obj.tiles.some((t) => t.x === tile.x && t.y === tile.y));
+  return map.objects.find((obj) => obj.tiles.some((t) => coordEq(t, tile)));
 }
 
 /** Tiles a unit could conceivably stand on, ignoring reachability. */
@@ -293,7 +294,7 @@ export function farStations(map: GameMap, count: number): TileCoord[] {
   const taken: TileCoord[] = [];
   for (const entry of scored) {
     if (taken.length >= count) break;
-    if (taken.some((t) => t.x === entry.tile.x && t.y === entry.tile.y)) continue;
+    if (taken.some((t) => coordEq(t, entry.tile))) continue;
     taken.push(entry.tile);
   }
   return taken;

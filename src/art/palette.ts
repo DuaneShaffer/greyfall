@@ -254,8 +254,6 @@ export const STRATUM_LIGHT = {
   underveins: { ambient: SOOT_900, key: VEINGLASS_700, ambientStrength: 0.15 },
 } as const;
 
-export type StratumName = keyof typeof STRATUM_LIGHT;
-
 const HEX_PATTERN = /^#[0-9a-f]{6}$/;
 
 export function isHex(value: string): value is Hex {

@@ -13,7 +13,7 @@
 // with the art it is a state of.
 
 import * as MASTERS from "./masters/objects.js";
-import { createGrid, type PixelGrid } from "./pixel.js";
+import { bytesFromBase64, createGrid, type PixelGrid } from "./pixel.js";
 import { sheetTextureLevels, type TextureLevel } from "./sheet.js";
 import {
   OBJECT_ART,
@@ -32,13 +32,6 @@ const BASE64: Readonly<Record<ObjectSpriteId, Readonly<Record<ObjectFaceId, stri
   },
 };
 
-const decode = (base64: string): Uint8Array => {
-  const binary = atob(base64);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
-};
-
 const key = (sprite: ObjectSpriteId, face: ObjectFaceId, state: ObjectPowerState): string =>
   `${sprite}:${face}:${state}`;
 
@@ -54,7 +47,7 @@ export function objectFaceGrid(
   const cached = grids.get(cacheKey);
   if (cached) return cached;
   const spec = OBJECT_ART[sprite].faces[face];
-  const bytes = decode(BASE64[sprite][face]);
+  const bytes = bytesFromBase64(BASE64[sprite][face]);
   if (bytes.length !== spec.width * spec.height) {
     throw new Error(
       `objectFaceGrid: ${sprite}/${face} decoded to ${bytes.length} px, the brief fixes ${spec.width}x${spec.height}`,

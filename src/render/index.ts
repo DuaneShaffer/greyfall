@@ -50,7 +50,7 @@ export {
   type PopupSpec,
   type PopupStyle,
 } from "./popups.js";
-export { VfxLayer, disposeVfxTextures } from "./vfxLayer.js";
+export { VfxLayer } from "./vfxLayer.js";
 export {
   buildTerrainMeshData,
   buildTerrainQuads,
@@ -63,7 +63,6 @@ export {
   blockedTiles,
   buildViewModel,
   cloneViewModel,
-  sameTile,
   findObjectView,
   findUnitView,
   objectViewFromMapObject,

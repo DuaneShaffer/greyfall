@@ -136,8 +136,7 @@ export interface ExternalMaster {
 const canvasOf = (p: { dx: number; up: number }): { x: number; y: number } => at(p.dx, p.up);
 
 function posed(master: ExternalMaster, state: AnimState, frame: number): Pose {
-  const art = { posePass: master.posePass } as JobArt;
-  return poseFor(art, state, frame);
+  return poseFor({ posePass: master.posePass }, state, frame);
 }
 
 function jointsAt(master: ExternalMaster, state: AnimState, frame: number): Joints {
@@ -178,7 +177,7 @@ export function defaultRegionMap(
   posePass?: JobArt["posePass"],
   landmarks: Landmarks = {},
 ): RegionMap {
-  const pose = poseFor({ posePass } as JobArt, rest.state, rest.frame);
+  const pose = poseFor({ posePass }, rest.state, rest.frame);
   const j = jointsFor(build, pose);
   const shoulderRow = landmarks.shoulderRow ?? Math.round(canvasOf(j.shoulder).y);
   const hipRow = landmarks.hipRow ?? Math.round(canvasOf(j.hip).y);

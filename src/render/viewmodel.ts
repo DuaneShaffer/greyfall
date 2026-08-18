@@ -123,6 +123,4 @@ export const blockedTiles = (map: GameMap): TileCoord[] =>
     .filter((object) => object.blocksMovement)
     .flatMap((object) => object.tiles.map((tile) => ({ ...tile })));
 
-export const sameTile = (a: TileCoord, b: TileCoord): boolean => a.x === b.x && a.y === b.y;
-
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));

@@ -36,12 +36,6 @@ export const hexToRgb = (hex: number): Rgb => [
   (hex & 0xff) / 255,
 ];
 
-export const scaleRgb = (rgb: Rgb, factor: number): Rgb => [
-  Math.min(1, Math.max(0, rgb[0] * factor)),
-  Math.min(1, Math.max(0, rgb[1] * factor)),
-  Math.min(1, Math.max(0, rgb[2] * factor)),
-];
-
 export const palette = {
   fluxAmber: hexToNumber(AMBER_500),
   fluxGlow: hexToNumber(AMBER_GLOW),
@@ -95,19 +89,10 @@ export const terrainAccentColor: Record<TerrainType, number> = {
   void: hexToNumber(TERRAIN_COLOR.void.accent),
 };
 
-// Inset strip drawn on rail tops so rails read as rails before textures exist.
-export const railStripColor = terrainAccentColor.rail;
-
 export const teamColor: Record<Team, number> = {
   player: hexToNumber(TEAM_TINT.player.base),
   enemy: hexToNumber(TEAM_TINT.enemy.base),
   neutral: hexToNumber(TEAM_TINT.neutral.base),
-};
-
-export const teamShadeColor: Record<Team, number> = {
-  player: hexToNumber(TEAM_TINT.player.shadow),
-  enemy: hexToNumber(TEAM_TINT.enemy.shadow),
-  neutral: hexToNumber(TEAM_TINT.neutral.shadow),
 };
 
 export const objectColor = {

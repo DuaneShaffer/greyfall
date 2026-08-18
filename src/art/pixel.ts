@@ -11,8 +11,10 @@ import {
   OVERLOAD_100,
   OVERLOAD_500,
   PALETTE,
+  RAMPS,
   VEINGLASS_100,
   VEINGLASS_500,
+  hexToRgb,
   type ColorName,
   type Hex,
 } from "./palette.js";
@@ -28,7 +30,7 @@ export const INDEXED_PALETTE: readonly (Hex | null)[] = [
 ];
 
 const INDEX_BY_HEX = new Map<string, number>(
-  COLOR_NAMES.map((name, i) => [PALETTE[name] as string, i + 1]),
+  COLOR_NAMES.map((name, i) => [PALETTE[name], i + 1]),
 );
 
 export function paletteIndex(hex: Hex): number {
@@ -42,6 +44,24 @@ export function colorAt(index: number): Hex | null {
 }
 
 export const OUTLINE_INDEX = paletteIndex(OUTLINE_COLOR);
+
+/** The amber ramp as indices — the emissive signal every surface audit counts. */
+export const AMBER_INDICES = new Set(RAMPS.amber.map((hex) => paletteIndex(hex)));
+
+/** Signal ramps a surface painting may not spend: they mean something elsewhere. */
+export const RESERVED_INDICES = new Set(
+  [
+    ...RAMPS.overload,
+    ...RAMPS.veinglass,
+    ...RAMPS.blood,
+    ...RAMPS.steel,
+    ...RAMPS.bone,
+    PALETTE.hazard,
+    PALETTE.brightblood,
+  ].map((hex) => paletteIndex(hex)),
+);
+
+export const COPPER_300_INDEX = paletteIndex(PALETTE["copper-300"]);
 
 /**
  * Emissive elements bleed outward instead of taking a black edge
@@ -74,6 +94,14 @@ export function createGrid(width: number, height: number): PixelGrid {
   return { width, height, data: new Uint8Array(width * height) };
 }
 
+/** Palette indices as the generated masters modules store them. */
+export function bytesFromBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
 export function cloneGrid(grid: PixelGrid): PixelGrid {
   return { width: grid.width, height: grid.height, data: Uint8Array.from(grid.data) };
 }
@@ -100,8 +128,6 @@ export interface Shade3 {
   readonly shadow: number;
   readonly line: number;
 }
-
-export const KEY_LIGHT = { dx: -1, dy: -1 } as const;
 
 export const shade3 = (light: number, base: number, shadow: number, line = shadow): Shade3 => ({
   light,
@@ -177,19 +203,6 @@ export function scaleGlyph(g: Glyph, factor: number): Glyph {
     }
   }
   return { w, h, data };
-}
-
-export function mirrorGlyph(g: Glyph): Glyph {
-  const data: number[] = [];
-  for (let y = 0; y < g.h; y += 1) {
-    for (let x = 0; x < g.w; x += 1) data.push(g.data[y * g.w + (g.w - 1 - x)] ?? TRANSPARENT);
-  }
-  return { w: g.w, h: g.h, data };
-}
-
-/** Recolor a glyph in place, e.g. to flash it or to swap a tint index. */
-export function remapGlyph(g: Glyph, remap: ReadonlyMap<number, number>): Glyph {
-  return { w: g.w, h: g.h, data: g.data.map((v) => remap.get(v) ?? v) };
 }
 
 export type Prim =
@@ -289,53 +302,6 @@ export const dither = (
   color: number,
   phase = 0,
 ): Prim => ({ kind: "dither", x, y, w, h, color, phase });
-
-export interface ShadedRectOptions {
-  /** Suppress the light rim (cloth stops 1px short of the silhouette). */
-  readonly softLeft?: boolean;
-  readonly softTop?: boolean;
-  /** Skip the shadow column/row where another form already occludes it. */
-  readonly noRight?: boolean;
-  readonly noBottom?: boolean;
-}
-
-/**
- * A rectangular mass carrying Appendix C.1's three steps: light on the top row
- * and left column, shadow on the bottom row and right column, base between.
- * Degrades gracefully — a 1px-wide form is just its base.
- */
-export function shadedRect(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  s: Shade3,
-  options: ShadedRectOptions = {},
-): Prim[] {
-  if (w <= 0 || h <= 0) return [];
-  const prims: Prim[] = [rect(x, y, w, h, s.base)];
-  if (w >= 3 && !options.noRight) prims.push(rect(x + w - 1, y, 1, h, s.shadow));
-  if (h >= 3 && !options.noBottom) prims.push(rect(x, y + h - 1, w, 1, s.shadow));
-  if (w >= 3 && !options.softLeft) {
-    const top = options.softTop || h < 3 ? y : y + 1;
-    const bottom = options.noBottom || h < 3 ? y + h : y + h - 1;
-    if (bottom > top) prims.push(rect(x, top, 1, bottom - top, s.light));
-  }
-  if (h >= 3 && !options.softTop) {
-    const left = options.softLeft || w < 3 ? x : x + 1;
-    const right = options.noRight || w < 3 ? x + w : x + w - 1;
-    if (right > left) prims.push(rect(left, y, right - left, 1, s.light));
-  }
-  return prims;
-}
-
-/** A horizontal band (belt, hem, bevel): lit on top, shadowed underneath. */
-export function shadedBand(x: number, y: number, w: number, h: number, s: Shade3): Prim[] {
-  if (w <= 0 || h <= 0) return [];
-  const prims: Prim[] = [rect(x, y, w, h, s.base)];
-  if (h >= 2) prims.push(rect(x, y, w, 1, s.light), rect(x, y + h - 1, w, 1, s.shadow));
-  return prims;
-}
 
 export interface Layer {
   readonly name: string;
@@ -628,14 +594,8 @@ export function gridBounds(
   return x1 < 0 ? null : { x0, y0, x1, y1 };
 }
 
-const rgbOf = (hex: Hex): readonly [number, number, number] => [
-  Number.parseInt(hex.slice(1, 3), 16),
-  Number.parseInt(hex.slice(3, 5), 16),
-  Number.parseInt(hex.slice(5, 7), 16),
-];
-
 const RGB_TABLE: readonly (readonly [number, number, number] | null)[] = INDEXED_PALETTE.map(
-  (hex) => (hex === null ? null : rgbOf(hex)),
+  (hex) => (hex === null ? null : hexToRgb(hex)),
 );
 
 /** Anything ImageData-shaped: `{ data, width }`. Keeps the engine DOM-free. */

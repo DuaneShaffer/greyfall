@@ -1,3 +1,4 @@
+import { coordEq, facingToward, manhattan } from "../../data/coords.js";
 import type { Facing, GameMap, Team, Tile, TileCoord } from "../../data/index.js";
 import type { BattleUnit, GameState, ObjectRuntime } from "../state/types.js";
 import { isEnergized } from "./power.js";
@@ -33,13 +34,7 @@ export function tileAt(map: GameMap, c: TileCoord): Tile | undefined {
   return map.tiles[tileIndex(map, c)];
 }
 
-export function coordEq(a: TileCoord, b: TileCoord): boolean {
-  return a.x === b.x && a.y === b.y;
-}
-
-export function manhattan(a: TileCoord, b: TileCoord): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+export { coordEq, facingToward, manhattan };
 
 export function neighbors(c: TileCoord): TileCoord[] {
   return NEIGHBOR_ORDER.map((f) => ({ x: c.x + FACING_VECTORS[f].dx, y: c.y + FACING_VECTORS[f].dy }));
@@ -139,14 +134,6 @@ export function areEnemies(a: BattleUnit, b: BattleUnit): boolean {
 export function teamsHostile(a: Team, b: Team): boolean {
   if (a === "neutral" || b === "neutral") return false;
   return a !== b;
-}
-
-/** Direction from `from` to `to`; ties resolve to the x axis. */
-export function facingToward(from: TileCoord, to: TileCoord): Facing {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  if (Math.abs(dx) >= Math.abs(dy)) return dx >= 0 ? "east" : "west";
-  return dy >= 0 ? "south" : "north";
 }
 
 export type AttackAngle = "front" | "side" | "back";
