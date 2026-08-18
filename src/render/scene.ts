@@ -446,7 +446,9 @@ export class BattleRenderer {
     if (sameBoard) this.rig.setMapBounds(map);
     else this.rig.frameMap(map);
     this.hovered = null;
-    this.hoveredUnit = null;
+    // Rebuilt figures are not the ones that were under the pointer, and nothing
+    // moved it to say so.
+    this.setHoveredUnit(null);
     this.selected = null;
     this.preview = null;
     this.readout.hide();

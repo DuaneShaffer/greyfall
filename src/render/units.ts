@@ -469,10 +469,6 @@ export class UnitVisual {
     this.refreshMarks();
   }
 
-  get isActing(): boolean {
-    return this.acting;
-  }
-
   /** Buffs and debuffs in force, as the chips over the head report them. */
   setStatusCounts(counts: UnitStatusCounts): void {
     this.statuses = counts;

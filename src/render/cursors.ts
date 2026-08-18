@@ -27,16 +27,11 @@ const arrowHead = (
   sweep: number,
   size: number,
 ): void => {
+  // Tip along the arc, shoulders across it: a chevron closing the ring's end.
   const tip = angle + sweep * 0.18;
-  const tangent = tip + (sweep > 0 ? Math.PI / 2 : -Math.PI / 2);
-  const tx = cx + Math.cos(tip) * radius;
-  const ty = cy + Math.sin(tip) * radius;
   ctx.beginPath();
-  ctx.moveTo(tx, ty);
-  ctx.lineTo(
-    cx + Math.cos(angle) * (radius + size) - Math.cos(tangent) * 0,
-    cy + Math.sin(angle) * (radius + size),
-  );
+  ctx.moveTo(cx + Math.cos(tip) * radius, cy + Math.sin(tip) * radius);
+  ctx.lineTo(cx + Math.cos(angle) * (radius + size), cy + Math.sin(angle) * (radius + size));
   ctx.lineTo(cx + Math.cos(angle) * (radius - size), cy + Math.sin(angle) * (radius - size));
   ctx.closePath();
   ctx.fill();

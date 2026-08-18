@@ -531,10 +531,53 @@ attachControls(renderer, canvas, {
 });
 renderer.start();
 
+/**
+ * The queue panel stands on playable board at battle zoom, so where it is in the
+ * way it gets out of the way: inside its own rectangle it ghosts and stops taking
+ * the pointer, and the tile under it answers instead. A pointer that stays there
+ * is asking for the queue and not for the tile, so after a moment's dwell the
+ * panel comes back solid — which is what keeps its own hover-inspect reachable.
+ * Woken, it stays woken until the pointer leaves, or it would flicker under a
+ * hand reading down the list.
+ */
+const QUEUE_DWELL_MS = 320;
+let pointerInQueue = false;
+let queueDwellMs = 0;
+let queueAwake = false;
+
+const withinQueue = (clientX: number, clientY: number): boolean => {
+  if (hud.el.classList.contains("is-hidden")) return false;
+  const rect = hud.turnOrder.el.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return false;
+  return (
+    clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom
+  );
+};
+
+const yieldQueue = (yielding: boolean): void => {
+  hud.turnOrder.el.classList.toggle("is-yielding", yielding);
+};
+
+// Window-level: while the panel is ghosted the pointer is not over it as far as
+// the DOM is concerned, so the panel's own events cannot be what tracks this.
+window.addEventListener("pointermove", (event) => {
+  const inside = withinQueue(event.clientX, event.clientY);
+  if (inside === pointerInQueue) return;
+  pointerInQueue = inside;
+  queueDwellMs = 0;
+  queueAwake = false;
+  yieldQueue(inside);
+});
+
 renderer.addFrameHook((delta) => {
   controller?.tick(delta);
   hud.tick(delta * 1000);
   screens?.tick(delta * 1000);
+  if (!pointerInQueue || queueAwake) return;
+  queueDwellMs += delta * 1000;
+  if (queueDwellMs < QUEUE_DWELL_MS) return;
+  queueAwake = true;
+  yieldQueue(false);
 });
 
 window.addEventListener("keydown", (event) => {
