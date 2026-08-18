@@ -64,10 +64,12 @@ import type { BattleViewModel } from "../render/viewmodel.js";
 import type {
   BattleHudView,
   HudMode,
+  LogEntryView,
   NoticeTone,
   TargetRef as UiTargetRef,
   UiIntents,
 } from "../ui/index.js";
+import { BattleLog } from "./battleLog.js";
 import {
   battleHudView,
   chargeLandingTiles,
@@ -493,6 +495,14 @@ export class BattleController {
   private operating = false;
   /** The events the last command settled into, for a notice composed after it. */
   private lastBatch: readonly BattleEvent[] = [];
+  /** The battle's record, filed from every batch of events the rules return. */
+  private readonly battleLog = new BattleLog();
+  /** The tile under the cursor, for the elevation readout. */
+  private hoveredTile: TileCoord | null = null;
+  /** The last frame handed to the UI, so a probe reads exactly what was drawn. */
+  private lastRendered: BattleHudView | null = null;
+  /** What each overlay layer is currently painting, mirrored for the same reason. */
+  private readonly painted = new Map<string, TileCoord[]>();
 
   constructor(options: ControllerOptions) {
     this.gameState = options.state;
@@ -525,6 +535,21 @@ export class BattleController {
 
   get dialogue(): readonly DialogueLine[] {
     return this.pendingDialogue;
+  }
+
+  /** The battle's record so far, oldest first. */
+  get log(): readonly LogEntryView[] {
+    return this.battleLog.entries;
+  }
+
+  /** The last view handed to the UI. Never a fresh build: what was drawn. */
+  get lastView(): BattleHudView | null {
+    return this.lastRendered;
+  }
+
+  /** Tiles each overlay layer is painting, by layer id. */
+  get highlights(): ReadonlyMap<string, readonly TileCoord[]> {
+    return this.painted;
   }
 
   /** Build the scene, play the opening events, and hand over the first turn. */
@@ -568,6 +593,7 @@ export class BattleController {
     const hovered = tile === null ? null : this.unitAt(tile);
     this.inspectedObjectId = hovered !== null || tile === null ? null : this.objectAt(tile);
     this.inspectedUnitId = hovered?.id ?? acting?.id ?? null;
+    this.hoveredTile = tile === null ? null : { ...tile };
     this.previewMove(tile);
     this.refresh();
   }
@@ -633,7 +659,7 @@ export class BattleController {
           return;
         }
         this.selection = { mode: "move", pending: { ...tile } };
-        this.renderer.setHighlight(LAYER_MOVE_PICK, [tile], palette.highlightPath, {
+        this.paint(LAYER_MOVE_PICK, [tile], palette.highlightPath, {
           opacity: 0.45,
           yOffset: 0.04,
         });
@@ -654,7 +680,7 @@ export class BattleController {
           return;
         }
         this.selection = { mode: "target", abilityId, pending: target };
-        this.renderer.setHighlight(
+        this.paint(
           LAYER_AFFECTED,
           affectedTiles(this.gameState, acting.id, abilityId, target),
           palette.highlightTarget,
@@ -730,7 +756,7 @@ export class BattleController {
       .filter((reachable) => reachable.canStop)
       .map((reachable) => reachable.tile);
     this.selection = { mode: "move", pending: null };
-    this.renderer.setHighlight(LAYER_MOVE, this.moveTargets, palette.highlightMove, {
+    this.paint(LAYER_MOVE, this.moveTargets, palette.highlightMove, {
       opacity: 0.3,
     });
     this.refresh();
@@ -756,10 +782,10 @@ export class BattleController {
     this.aimReach = targetableTiles(this.gameState, unitId, abilityId);
     this.aimTargets = legalTargetTiles(this.gameState, unitId, abilityId);
     this.selection = { mode: "target", abilityId, pending: null };
-    this.renderer.setHighlight(LAYER_TARGET_REACH, this.aimReach, palette.highlightTarget, {
+    this.paint(LAYER_TARGET_REACH, this.aimReach, palette.highlightTarget, {
       opacity: 0.1,
     });
-    this.renderer.setHighlight(LAYER_TARGET, this.aimTargets, palette.highlightTarget, {
+    this.paint(LAYER_TARGET, this.aimTargets, palette.highlightTarget, {
       opacity: 0.32,
     });
 
@@ -784,13 +810,13 @@ export class BattleController {
 
   private markFlipped(flipped: readonly string[]): void {
     if (flipped.length === 0) {
-      this.renderer.clearHighlight(LAYER_GRID_FLIP);
+      this.unpaint(LAYER_GRID_FLIP);
       return;
     }
     const tiles = flipped.flatMap(
       (objectId) => getObject(this.gameState, objectId)?.def.tiles.map((tile) => ({ ...tile })) ?? [],
     );
-    this.renderer.setHighlight(LAYER_GRID_FLIP, tiles, palette.overloadViolet, {
+    this.paint(LAYER_GRID_FLIP, tiles, palette.overloadViolet, {
       opacity: 0.42,
       yOffset: 0.05,
     });
@@ -805,7 +831,7 @@ export class BattleController {
     if (this.currentPhase !== "player") return;
     this.previewedOperable = objectId;
     if (objectId === null) {
-      this.renderer.clearHighlight(LAYER_GRID_FLIP);
+      this.unpaint(LAYER_GRID_FLIP);
       this.refresh();
       return;
     }
@@ -921,6 +947,7 @@ export class BattleController {
     }
     const renderEvents = toRenderEventList(events, stateAfter);
     if (renderEvents.length > 0) this.renderer.applyRenderEvents(renderEvents);
+    this.battleLog.record(events, stateAfter, stateBefore);
     for (const event of events) {
       if (event.type === "DialogueRequested") this.pendingDialogue.push(...event.lines);
     }
@@ -986,8 +1013,8 @@ export class BattleController {
     // Nothing is charging on a closed field, for the same reason nothing is
     // queued on one.
     if (phase === "ended") {
-      this.renderer.clearHighlight(LAYER_CHARGING);
-      this.renderer.clearHighlight(LAYER_CHARGE_LANDING);
+      this.unpaint(LAYER_CHARGING);
+      this.unpaint(LAYER_CHARGE_LANDING);
     }
     this.currentPhase = phase;
     this.ui.setBusy(phase !== "player");
@@ -1034,6 +1061,7 @@ export class BattleController {
       forecast: null,
       dialogue: [],
       turnOrderCount: this.turnOrderCount,
+      log: this.battleLog.entries,
     });
     if (view === null) return null;
     // Nobody is queued once the field is closed. Listing the next few turns —
@@ -1078,8 +1106,14 @@ export class BattleController {
       forecast: this.pendingForecast(),
       dialogue: this.pendingDialogue,
       turnOrderCount: this.turnOrderCount,
+      hoveredTile: this.hoveredTile,
+      targetingAbilityId: this.selection.mode === "target" ? this.selection.abilityId : null,
+      log: this.battleLog.entries,
     });
-    if (view !== null) this.ui.render(view);
+    if (view !== null) {
+      this.lastRendered = view;
+      this.ui.render(view);
+    }
     this.markCharges();
     this.announceMode();
   }
@@ -1096,9 +1130,9 @@ export class BattleController {
       .map((charge) => getUnit(this.gameState, charge.actorId))
       .filter((unit): unit is BattleUnit => unit !== null && !unit.downed)
       .map((unit) => ({ ...unit.position }));
-    if (tiles.length === 0) this.renderer.clearHighlight(LAYER_CHARGING);
+    if (tiles.length === 0) this.unpaint(LAYER_CHARGING);
     else {
-      this.renderer.setHighlight(LAYER_CHARGING, tiles, palette.overloadViolet, {
+      this.paint(LAYER_CHARGING, tiles, palette.overloadViolet, {
         opacity: 0.62,
         yOffset: 0.06,
         // A mark on the tile rather than a wash over it: the tile itself is
@@ -1108,9 +1142,9 @@ export class BattleController {
     }
     const asked = this.inspectedUnitId;
     const landing = asked === null ? [] : chargeLandingTiles(this.gameState, asked);
-    if (landing.length === 0) this.renderer.clearHighlight(LAYER_CHARGE_LANDING);
+    if (landing.length === 0) this.unpaint(LAYER_CHARGE_LANDING);
     else {
-      this.renderer.setHighlight(LAYER_CHARGE_LANDING, landing, palette.overloadViolet, {
+      this.paint(LAYER_CHARGE_LANDING, landing, palette.overloadViolet, {
         opacity: 0.3,
         yOffset: 0.052,
       });
@@ -1141,12 +1175,35 @@ export class BattleController {
     this.moveTargets = [];
     this.aimTargets = [];
     this.aimReach = [];
-    this.renderer.clearHighlight(LAYER_MOVE);
-    this.renderer.clearHighlight(LAYER_MOVE_PICK);
-    this.renderer.clearHighlight(LAYER_TARGET);
-    this.renderer.clearHighlight(LAYER_TARGET_REACH);
-    this.renderer.clearHighlight(LAYER_AFFECTED);
-    this.renderer.clearHighlight(LAYER_GRID_FLIP);
+    this.unpaint(LAYER_MOVE);
+    this.unpaint(LAYER_MOVE_PICK);
+    this.unpaint(LAYER_TARGET);
+    this.unpaint(LAYER_TARGET_REACH);
+    this.unpaint(LAYER_AFFECTED);
+    this.unpaint(LAYER_GRID_FLIP);
+  }
+
+  /**
+   * Every overlay change goes through this pair, so the controller always knows
+   * what the field is painting. A probe (and a test) can then read the overlay
+   * as data instead of inferring it from pixels.
+   */
+  private paint(
+    layerId: string,
+    tiles: readonly TileCoord[],
+    color: number,
+    options?: HighlightStyle,
+  ): void {
+    this.painted.set(
+      layerId,
+      tiles.map((tile) => ({ ...tile })),
+    );
+    this.renderer.setHighlight(layerId, tiles, color, options);
+  }
+
+  private unpaint(layerId: string): void {
+    this.painted.delete(layerId);
+    this.renderer.clearHighlight(layerId);
   }
 
   private unitAt(tile: TileCoord): BattleUnit | null {
