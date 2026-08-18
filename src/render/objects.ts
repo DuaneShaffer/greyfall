@@ -462,7 +462,7 @@ export class ObjectVisual {
     const halo = new Map<ObjectFaceId, THREE.Material>();
     for (const face of new Set(BOX_FACE_SLOTS)) {
       const texture = objectFaceTexture(art.id, face, "powered");
-      const material = new THREE.MeshLambertMaterial({ map: texture });
+      const material = new THREE.MeshLambertMaterial({ map: texture, alphaTest: 0.5 });
       // The only thing the body's colour carries is §5's face shade. Everything
       // else the player sees on this box is the delivered painting.
       material.color.setScalar(faceShade(face, this.runAxis));

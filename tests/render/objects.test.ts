@@ -220,6 +220,14 @@ describe("spriteId with delivered art", () => {
     expect(sizes).toEqual([long, long, top, top, end, end]);
   });
 
+  it("gates painted faces on alpha so a transparent texel becomes a hole", () => {
+    const visual = built(MAIN);
+    for (const material of paintOf(visual)) expect(material.alphaTest).toBe(0.5);
+    const halo = meshes(visual).find((mesh) => mesh.layers.test(BLOOM_ONLY)) as THREE.Mesh;
+    const keys = halo.material as unknown as THREE.MeshBasicMaterial[];
+    for (const key of keys) expect(key.alphaTest).toBe(0.5);
+  });
+
   it("turns the mesh, not the paint, for an east-west main", () => {
     const alongZ = built(MAIN);
     const alongX = built({
