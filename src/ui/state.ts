@@ -265,6 +265,14 @@ export interface ForecastView {
   /** Set when the pending action is machinery being worked rather than an ability. */
   operate?: { objectId: string };
   targets: ForecastTargetView[];
+  /**
+   * The footprint the order actually resolved to, and whether the thing the
+   * cursor was on is standing in it. A line carries a fixed length from the
+   * caster, so an order aimed past that length resolves nowhere near the cursor
+   * — the one case where the panel has to say the aim missed the area instead of
+   * quietly listing whoever the area caught.
+   */
+  area?: { tiles: number; coversAimedTarget: boolean };
   /** Consequences aimed at nobody in the area: the caster's own step, a machine laid. */
   effects: string[];
   /** Exactly what the stamp will send, so the panel never has to guess from a row. */

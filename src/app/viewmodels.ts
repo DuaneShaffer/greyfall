@@ -23,6 +23,7 @@ import {
   battleEncounter,
   battleMap,
   canUndoMove,
+  coordEq,
   forecast,
   getAbility,
   getItem,
@@ -400,6 +401,21 @@ function outcomeLine(state: GameState, outcome: ForecastOutcome): string | null 
 const outcomeLines = (state: GameState, outcomes: readonly ForecastOutcome[]): string[] =>
   outcomes.map((outcome) => outcomeLine(state, outcome)).filter((line): line is string => line !== null);
 
+/**
+ * The tiles the cursor was actually on, so the resolved area can be asked
+ * whether it covers them. An empty answer — a unit or machine that is already
+ * gone — is never reported as a miss.
+ */
+function aimedTiles(state: GameState, target: TargetRef): readonly TileCoord[] {
+  if (target.kind === "tile") return [target.tile];
+  if (target.kind === "unit") {
+    const unit = getUnit(state, target.unitId);
+    return unit === null ? [] : [unit.position];
+  }
+  const object = getObject(state, target.objectId);
+  return object === null ? [] : object.def.tiles;
+}
+
 const uiTarget = (target: TargetRef): UiTargetRef => {
   if (target.kind === "unit") return { kind: "unit", unitId: target.unitId };
   if (target.kind === "object") return { kind: "object", objectId: target.objectId };
@@ -418,6 +434,10 @@ export function forecastView(
 
   const itemId = itemIdFromAbilityId(abilityId);
   const damageType = damageTypeOf(ability);
+  const area = affectedTiles(state, unitId, abilityId, target);
+  const aimed = aimedTiles(state, target);
+  const coversAimedTarget =
+    aimed.length === 0 || aimed.some((tile) => area.some((covered) => coordEq(covered, tile)));
   const targets: ForecastTargetView[] = [];
   for (const entry of forecast(state, unitId, abilityId, target)) {
     const amount = entry.heal > 0 && entry.damage === 0 ? entry.heal : entry.damage;
@@ -496,6 +516,7 @@ export function forecastView(
     castSpeed: ability.castSpeed,
     ...(itemId === null ? {} : { item: { itemId, remaining: itemRemaining(state, unitId, itemId) } }),
     targets,
+    area: { tiles: area.length, coversAimedTarget },
     effects: outcomeLines(state, abilityOutcomes(state, unitId, abilityId)),
     aimedAt: uiTarget(target),
   };

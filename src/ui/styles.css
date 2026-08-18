@@ -2075,9 +2075,10 @@
   content: "";
   position: absolute;
   left: 0;
-  top: 0.55em;
-  width: 5px;
-  border-top: 1px solid currentColor;
+  top: 0.5em;
+  width: 3px;
+  height: 3px;
+  background: currentColor;
 }
 
 /* Ability-scoped consequences sit under the cost line, above the target rows:
@@ -3554,4 +3555,79 @@
 .gf-notice-line.is-machine {
   border-left-color: var(--gf-operable);
   color: var(--gf-operable);
+}
+
+/* --- wave A: the forecast tells the truth about who it caught ------------- */
+/* Everything below is one finding each from the blind playtest: the resting
+   receipt standing on the field, and the two readings the numbers underneath
+   cannot correct — an order that resolved somewhere other than where it was
+   pointed, and an order that lands on the caster's own side. */
+
+/* The resting card climbed out of the bottom of the centre column and into the
+   middle of the frame: 460px wide and as tall as its target list, over the tiles
+   the decision is being read off. It keeps the corner and bounds the part that
+   grows — the rows scroll inside the card instead of pushing its head up across
+   the field — so head, consequences and stamp are always the same size and
+   always below the middle of the frame. */
+.gf-battle-hud > .gf-forecast:not(.is-armed) {
+  min-width: 0;
+  width: 100%;
+  max-width: 320px;
+}
+
+.gf-battle-hud > .gf-forecast:not(.is-armed) .gf-forecast-targets {
+  max-height: 26vh;
+  overflow-y: auto;
+}
+
+/* Both warnings sit at the head of the card, above the portrait, because they
+   are the reading the figures below them cannot correct. Hazard is the colour:
+   copper stays machinery, amber stays flux, and blood is the enemy's tint — a
+   friend in the blast is neither of those, it is a warning. */
+.gf-forecast-warning {
+  margin: 0;
+  padding: 3px var(--gf-s-3);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-200);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--gf-ink);
+}
+
+/* The aim missed the area: loud enough to stop a commit, quiet enough that the
+   friendly-fire band still reads as the worse of the two. */
+.gf-forecast-warning.is-aim {
+  color: var(--gf-warn);
+  background: rgba(232, 98, 42, 0.12);
+  border-left: 3px solid var(--gf-warn);
+}
+
+/* Friendly fire is struck across the whole head: hazard ground, ink text. There
+   is no reading of this band that is not "you are about to hit your own". */
+.gf-forecast-warning.is-ally {
+  color: var(--gf-ink);
+  background: var(--gf-warn);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* And the row says it too, so a scrolled list cannot hide the band's subject. */
+.gf-forecast-target.is-ally,
+.gf-forecast-party.is-target.is-ally {
+  border-left: 3px solid var(--gf-warn);
+  background: rgba(232, 98, 42, 0.1);
+}
+
+.gf-forecast-target.is-ally .gf-forecast-target-name,
+.gf-forecast-party.is-target.is-ally .gf-forecast-party-name {
+  color: var(--gf-warn);
+}
+
+.gf-forecast-ally-flag {
+  margin: 0;
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  color: var(--gf-warn);
 }

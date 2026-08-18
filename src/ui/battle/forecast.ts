@@ -19,7 +19,65 @@ function costLine(view: ForecastView): string {
 function aimLabel(aimedAt: TargetRef): string {
   if (aimedAt.kind === "tile") return `Tile ${aimedAt.tile.x}, ${aimedAt.tile.y}`;
   if (aimedAt.kind === "object") return "Machinery";
+  // A unit aim with no rows means the area resolved somewhere else entirely;
+  // calling that "The caster" was the panel naming the wrong party.
+  if (aimedAt.kind === "unit") return "The aimed target";
   return "The caster";
+}
+
+/**
+ * The id of whoever the cursor was on. Machinery rides in `unitId` on a target
+ * row, so both kinds answer against the same field.
+ */
+function aimedId(view: ForecastView): string | null {
+  const aimedAt = view.aimedAt;
+  if (aimedAt.kind === "unit") return aimedAt.unitId;
+  if (aimedAt.kind === "object") return aimedAt.objectId;
+  if (aimedAt.kind === "self") return view.attacker.unitId;
+  return null;
+}
+
+/**
+ * Rows with the aimed one first. Core hands them over sorted by unit id, so an
+ * ally standing in the blast could take the headline — the portrait, the name,
+ * the numbers in the exchange — off the enemy the order was actually sent at.
+ */
+function stagedTargets(view: ForecastView): ForecastTargetView[] {
+  const id = aimedId(view);
+  const at = id === null ? -1 : view.targets.findIndex((target) => target.unitId === id);
+  if (at <= 0) return view.targets;
+  return [view.targets[at] as ForecastTargetView, ...view.targets.filter((_, index) => index !== at)];
+}
+
+/** Same side as the caster, and about to take the caster's damage. */
+function caughtAlly(view: ForecastView, target: ForecastTargetView): boolean {
+  return (
+    view.attacker.team !== undefined &&
+    target.team === view.attacker.team &&
+    target.damage?.kind === "damage"
+  );
+}
+
+/** How the strip names the friendly fire: who, or how many. */
+function allyWarning(caught: readonly ForecastTargetView[], casterId: string): string {
+  if (caught.length > 1) return `CAUGHT IN THE LINE — ${caught.length} ALLIES`;
+  const only = caught[0];
+  if (only === undefined) return "";
+  if (only.unitId === casterId) return "CAUGHT IN THE LINE — THE CASTER";
+  return `CAUGHT IN THE LINE — ALLY: ${only.name}`;
+}
+
+/**
+ * A line's length is measured from the caster, not from the cursor: aimed past
+ * it, the order resolves short and the tile under the cursor is not in the area
+ * at all. Say the number of tiles it does carry.
+ */
+function aimMissLine(view: ForecastView): string | null {
+  const area = view.area;
+  if (area === undefined || area.coversAimedTarget) return null;
+  return `Out of the line — ${view.abilityName} carries ${area.tiles} ${
+    area.tiles === 1 ? "tile" : "tiles"
+  }`;
 }
 
 /**
@@ -158,6 +216,10 @@ export class ForecastPanel implements Component<ForecastView | null> {
     });
     const footer = el("footer", { class: "gf-forecast-footer", children: [commit, withdraw] });
     this.el.classList.toggle("is-armed", armed);
+    this.el.classList.toggle(
+      "has-ally-caught",
+      view.targets.some((target) => caughtAlly(view, target)),
+    );
     this.stampEl.textContent = armed ? "CONFIRM" : "";
     replaceChildren(
       this.body,
@@ -168,6 +230,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
   /** The resting shape: a side panel reporting the order it is previewing. */
   private compact(view: ForecastView, empty: boolean, footer: HTMLElement): Child[] {
     return [
+      ...this.warnings(view),
       el("header", {
         class: "gf-forecast-head",
         children: [
@@ -194,10 +257,31 @@ export class ForecastPanel implements Component<ForecastView | null> {
           ? el("p", { class: "gf-empty-note", text: "Nobody in the area — the order stands." })
           : el("ul", {
               class: "gf-forecast-targets",
-              children: view.targets.map((target) => this.renderTarget(target)),
+              children: stagedTargets(view).map((target) => this.renderTarget(view, target)),
             }),
       footer,
     ];
+  }
+
+  /**
+   * What the panel must say before anything else, because it is the reading the
+   * numbers underneath cannot correct: the order landed somewhere other than
+   * where it was pointed, or it lands on the caster's own side.
+   */
+  private warnings(view: ForecastView): Child[] {
+    const out: Child[] = [];
+    const miss = aimMissLine(view);
+    if (miss !== null) out.push(el("p", { class: "gf-forecast-warning is-aim", text: miss }));
+    const caught = view.targets.filter((target) => caughtAlly(view, target));
+    if (caught.length > 0) {
+      out.push(
+        el("p", {
+          class: "gf-forecast-warning is-ally",
+          text: allyWarning(caught, view.attacker.unitId),
+        }),
+      );
+    }
+    return out;
   }
 
   /**
@@ -207,9 +291,11 @@ export class ForecastPanel implements Component<ForecastView | null> {
    * being folded away, because a panel never hides what it can do.
    */
   private stage(view: ForecastView, empty: boolean, footer: HTMLElement): Child[] {
-    const primary = view.targets[0];
-    const rest = view.targets.slice(1);
+    const ordered = stagedTargets(view);
+    const primary = ordered[0];
+    const rest = ordered.slice(1);
     return [
+      ...this.warnings(view),
       el("div", {
         class: "gf-forecast-stage",
         children: [
@@ -249,6 +335,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
                 ...(primary.hp === undefined ? {} : { hp: primary.hp }),
                 ...(primary.maxHp === undefined ? {} : { maxHp: primary.maxHp }),
                 machine: this.isObject(primary),
+                ally: caughtAlly(view, primary),
               }),
         ],
       }),
@@ -258,7 +345,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
         : [
             el("ul", {
               class: "gf-forecast-targets",
-              children: rest.map((target) => this.renderTarget(target)),
+              children: rest.map((target) => this.renderTarget(view, target)),
             }),
           ]),
       footer,
@@ -275,6 +362,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
       hp?: number;
       maxHp?: number;
       machine?: boolean;
+      ally?: boolean;
     },
   ): HTMLElement {
     const hp =
@@ -289,7 +377,9 @@ export class ForecastPanel implements Component<ForecastView | null> {
             ],
           });
     return el("div", {
-      class: `gf-forecast-party is-${side}${subject.machine === true ? " is-object" : ""}`,
+      class: `gf-forecast-party is-${side}${subject.machine === true ? " is-object" : ""}${
+        subject.ally === true ? " is-ally" : ""
+      }`,
       children: [
         subject.machine === true
           ? null
@@ -324,9 +414,12 @@ export class ForecastPanel implements Component<ForecastView | null> {
     return target.attackAngle === null && target.portraitId === undefined;
   }
 
-  private renderTarget(target: ForecastTargetView): HTMLElement {
+  private renderTarget(view: ForecastView, target: ForecastTargetView): HTMLElement {
+    const ally = caughtAlly(view, target);
     return el("li", {
-      class: `gf-forecast-target${this.isObject(target) ? " is-object" : ""}`,
+      class: `gf-forecast-target${this.isObject(target) ? " is-object" : ""}${
+        ally ? " is-ally" : ""
+      }`,
       data: { unit: target.unitId },
       children: [
         portrait(target.portraitId, target.name),
@@ -334,6 +427,7 @@ export class ForecastPanel implements Component<ForecastView | null> {
           class: "gf-forecast-numbers",
           children: [
             el("h3", { class: "gf-forecast-target-name", text: target.name }),
+            ally ? el("p", { class: "gf-forecast-ally-flag", text: "ALLY" }) : null,
             ...this.numbers(target),
           ],
         }),
