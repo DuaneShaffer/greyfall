@@ -63,6 +63,8 @@ export interface ImportRequest {
   readonly quantize?: QuantizeOptions;
   /** Which team's tint the masters were painted in. Defaults to player. */
   readonly sourceTeam?: Team;
+  /** Per-view facing correction; see `ExternalMaster.mirror`. */
+  readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;
 }
 
 export interface ImportResult {
@@ -111,6 +113,7 @@ export function importExternalMaster(request: ImportRequest): ImportResult {
     maps: maps as Record<DrawnView, RegionMap>,
     ...(request.posePass ? { posePass: request.posePass } : {}),
     ...(request.patches ? { patches: request.patches } : {}),
+    ...(request.mirror ? { mirror: request.mirror } : {}),
   };
 
   const full = reports as Record<DrawnView, ConformanceReport>;

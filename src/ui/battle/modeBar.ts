@@ -11,9 +11,9 @@ interface ModeCopy {
 }
 
 const CAMERA_KEYS: readonly [string, string][] = [
-  ["Q / E", "or middle-drag to orbit"],
+  ["Q / E", "or ⟲ / ⟳ to orbit"],
   ["Wheel", "zoom"],
-  ["WASD", "pan"],
+  ["WASD", "or middle-drag to pan"],
 ];
 
 /** Modes the player entered on purpose, and can therefore leave. */

@@ -24,6 +24,7 @@ import {
   gridGet,
   gridSet,
   layer,
+  mirrorGrid,
   outlineGrid,
   overlayGrid,
   rasterize,
@@ -119,6 +120,17 @@ export interface ExternalMaster {
   /** Applied to the shared pose table exactly as `JobArt.posePass` would be. */
   readonly posePass?: JobArt["posePass"];
   readonly patches?: readonly FramePatch[];
+  /**
+   * Per-view horizontal-flip correction. The convention (ART_DIRECTION C.8,
+   * facing normalization) is that a drawn `se` cell faces down-screen-right and
+   * a drawn `ne` cell faces up-screen-right; a delivery that violates it on one
+   * view declares that view here rather than have every apparent-view mapping
+   * built on it come out backwards. Applied last, after derivation, so it
+   * flips the whole finished frame — outline, contact shadow and all — rather
+   * than the master's raw pixels, which would desync the hand-measured prop
+   * rects from what they are meant to cut.
+   */
+  readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;
 }
 
 const canvasOf = (p: { dx: number; up: number }): { x: number; y: number } => at(p.dx, p.up);
@@ -447,7 +459,8 @@ export function deriveExternalFrame(master: ExternalMaster, options: DeriveOptio
   for (let y = 0; y <= FIGURE_BOX_BOTTOM; y += 1) {
     for (let x = 0; x < SPRITE_WIDTH; x += 1) contact.data[y * SPRITE_WIDTH + x] = TRANSPARENT;
   }
-  return overlayGrid(overlayGrid(contact, outline), body);
+  const composed = overlayGrid(overlayGrid(contact, outline), body);
+  return master.mirror?.[options.view] ? mirrorGrid(composed) : composed;
 }
 
 /**

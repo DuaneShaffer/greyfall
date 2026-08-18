@@ -33,6 +33,7 @@ describe("ModeBar", () => {
       bar.update(mode);
       expect(buttons(bar)).toHaveLength(2);
     }
-    expect(bar.el.textContent).toContain("middle-drag");
+    expect(bar.el.textContent).toContain("⟲ / ⟳ to orbit");
+    expect(bar.el.textContent).toContain("middle-drag to pan");
   });
 });

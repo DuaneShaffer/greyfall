@@ -51,6 +51,15 @@ interface Delivery {
   readonly props?: Partial<Readonly<Record<DrawnView, readonly Segment[]>>>;
   /** Which team's tint the master was painted in. */
   readonly sourceTeam: Team;
+  /**
+   * Facing normalization (ART_DIRECTION C.8, facing convention): every drawn
+   * `se` cell must face down-screen-right and every drawn `ne` cell must face
+   * up-screen-right, so a facing's mirror decision (`sprites.ts`,
+   * `APPARENT_VIEWS`) always lands the figure on the intended side. A delivery
+   * that violates this on one view declares that view here; the flip is
+   * applied to the derived frame, never to the committed master pixels.
+   */
+  readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;
 }
 
 const DELIVERIES: Partial<Record<JobId, Delivery>> = {
@@ -184,6 +193,7 @@ export function externalArt(jobId: JobId): ExternalArt | null {
     landmarks: delivery.landmarks,
     sourceTeam: delivery.sourceTeam,
     ...(art.posePass ? { posePass: art.posePass } : {}),
+    ...(delivery.mirror ? { mirror: delivery.mirror } : {}),
   });
   const result: ExternalArt = { ...built, drawnViews: delivery.ne ? 2 : 1 };
   CACHE.set(jobId, result);

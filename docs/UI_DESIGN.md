@@ -260,14 +260,23 @@ entered on purpose (`move`, `target`, `facing`) — offers a **Withdraw** button
   visible way out. This is a contract, not a nicety: it is the bug the interface
   shipped with.
 - **The camera's bearing is one of those things.** The rig turns in 90° steps on
-  **Q / E**, on **middle-drag** (one quarter per ~110px of travel), and on the
-  **⟲ / ⟳ pair in the mode bar**. Right-drag is deliberately not it: right-click
-  already means withdraw. This is not a convenience — at one fixed bearing the
-  taller geometry occludes whole columns of the board from the terrain raycast,
-  and on the Meter House the entire East Main could not be picked with the
-  pointer at all. The parity claim is measured rather than assumed: every tile
-  is reachable from at least one of the four bearings
-  (`tests/render/orbitReach.test.ts`).
+  **Q / E** and on the **⟲ / ⟳ pair in the mode bar**. This is not a
+  convenience — at one fixed bearing the taller geometry occludes whole columns
+  of the board from the terrain raycast, and on the Meter House the entire East
+  Main could not be picked with the pointer at all. The parity claim is measured
+  rather than assumed: every tile is reachable from at least one of the four
+  bearings (`tests/render/orbitReach.test.ts`).
+- **The middle button is the hand.** The pointer rests as an open hand over the
+  board and closes while the button is held; the drag carries the ground with
+  it, pixel for pixel, at every bearing and zoom (`tests/render/camera.test.ts`).
+  Screen vertical is foreshortened by the rig's 33° pitch, so a pixel down the
+  screen buys a longer step across the ground than a pixel across it — a drag
+  that ignored that would slide the board out from under the hand. Middle rather
+  than right: right-click already means withdraw. The bearing gave the button
+  up because it has the mode bar; panning had only keys and the screen edge, and
+  the edge is not a gesture anyone reaches for on purpose. Edge pan stands down
+  while the hand is closed — a hand that has dragged the board to the edge is
+  holding it there, not asking for more.
 - **The cursor never rebuilds the list.** `MenuStack.setCursor` is a no-op when
   the index has not changed, and `refresh` patches in place unless the entries
   themselves changed. Rebuilding under a resting pointer destroys the node that

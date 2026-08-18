@@ -110,6 +110,18 @@ export class TacticsCamera {
     this.applyTransform();
   }
 
+  /**
+   * Grab-pan: keep the ground under the pointer under the pointer. Screen
+   * vertical is foreshortened by the rig's fixed pitch, so a pixel down the
+   * screen is a longer step across the ground than a pixel across it, and a
+   * drag that ignored that would slide the board out from under the hand.
+   */
+  panPixels(dx: number, dy: number, viewportHeight: number): void {
+    if (viewportHeight <= 0) return;
+    const worldPerPixel = (this.camera.top - this.camera.bottom) / viewportHeight;
+    this.pan(-dx * worldPerPixel, (dy * worldPerPixel) / Math.sin(PITCH));
+  }
+
   focusOn(map: GameMap, tile: { x: number; y: number }): void {
     const center = tileCenter(map, tile.x, tile.y);
     this.target.set(center.x, center.y, center.z);
