@@ -16,6 +16,7 @@ import {
   OVERLOAD_100,
   OVERLOAD_500,
   SOOT_100,
+  SOOT_300,
   SOOT_500,
   SOOT_700,
   SOOT_800,
@@ -23,6 +24,7 @@ import {
   TERRAIN_COLOR,
   UMBER_500,
   VEINGLASS_500,
+  VERDIGRIS_300,
   VERDIGRIS_500,
   hexToNumber,
   shade,
@@ -56,6 +58,14 @@ export const palette = {
   highlightPath: hexToNumber(HIGHLIGHT.path),
   highlightDeployment: hexToNumber(HIGHLIGHT.deployment),
   highlightHazard: hexToNumber(HIGHLIGHT.hazard),
+  /**
+   * In range and refused. Grey rather than a second red: UI_DESIGN §14.3's whole
+   * point is that a tile painted as a target can be trusted to be one, so the
+   * illegal half of a reach must not wear the target colour.
+   */
+  highlightBlocked: hexToNumber(SOOT_300),
+  /** Beneficial aim: the world's verdigris, never the target's blood. */
+  highlightSupport: hexToNumber(VERDIGRIS_300),
 } as const;
 
 export type TerrainFace = "top" | "sideNorthSouth" | "sideEastWest";

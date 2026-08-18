@@ -1,7 +1,15 @@
 export { BattleRenderer, type BattleRendererOptions, type MovePreview } from "./scene.js";
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
-export { TileHighlights, type HighlightOptions } from "./highlights.js";
+export {
+  HIGHLIGHT_STYLES,
+  LAYER_BLOCKED,
+  LAYER_SUPPORT,
+  TileHighlights,
+  highlightStyleFor,
+  type HighlightOptions,
+  type HighlightLayerStyle,
+} from "./highlights.js";
 export { BASE_LAYER, BLOOM_LAYER, DRAW_ORDER } from "./layers.js";
 export {
   BLOOM_RADIUS,
