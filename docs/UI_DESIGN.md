@@ -999,3 +999,157 @@ reports must be the forecast the panel printed — same ability name, same hit
 percentages, same amounts, and exactly the same set of named parties. If a panel
 and the seam ever diverge, that test fails rather than the probe quietly
 disagreeing with the screen.
+
+---
+
+# 15. The panels this phase adds
+
+**Status: landing with this phase.** Everything in this section is being built
+now, across parallel waves, against the seam §14 describes. It is recorded here
+before the paint dries so five waves do not each invent a different answer to
+"where does the log go". Section 14 says what the seam *carries*; this one says
+what is drawn with it, and what the player may press.
+
+The findings behind it are the same blind playtest's second half: the record of
+the battle scrolled away unread, nobody could say what the engagement was for,
+there was no way out of a battle and no way to look anything up from inside one,
+right-click meant three different things depending on where the pointer was, and
+a red tile could mean *out of reach*, *refused* or *your own man* with nothing to
+tell them apart.
+
+## 15.1 The combat log panel — bottom-left, three lines, expandable
+
+The battle-long record, drawn where the eye already goes for the order column.
+
+- **Position: bottom-left**, under the order column, sharing its gutter. The
+  order column is where the hand rests (§6.1); the record of what the last order
+  did belongs directly beneath the place the next one is given.
+- **Collapsed it is three lines** — the newest three entries, oldest at the top,
+  in the register's own type. Three because that is one exchange: an order, its
+  answer, and the consequence nobody aimed at. It is `is-quiet` and never
+  competes with the forecast.
+- **Expanded it is the whole battle**, scrolled to the tail, over the board
+  rather than reflowing it, and it closes the way everything closes (§15.4).
+  Expansion is a mode with a visible way out and it does not stop the clock.
+- **It is fed by `BattleHudView.log`** (§14.2) and nothing else. The panel
+  formats; it never computes. Every figure in it is what the rules did — a vial
+  that would have restored 30 to an unhurt unit files `0 recovered` — because the
+  finding this answers was "I cannot tell whether it hit", and a panel that
+  re-derived its own numbers could disagree with the engine and look right.
+- **Enemy turns land in it the same way**, which is the other half of the same
+  finding: an enemy turn resolved behind a dialogue box happened off screen, and
+  the log is where it stops having happened off screen.
+- The annunciator (§8) keeps its short scrollback and keeps its job. The
+  annunciator is *transient and about now*; the log is *permanent and about the
+  battle*. A line may reasonably appear in both.
+
+## 15.2 The objective chip
+
+One line, in the HUD, saying what the engagement is for.
+
+- **Source: `BattleHudView.objective`** — the encounter's own `objective` string
+  (§14.4). **Null means the chip is not drawn.** It is never filled with a guess,
+  a win-condition paraphrase, or "Defeat all enemies": an engagement nobody has
+  written up says nothing, which is honest, where an invented goal is a lie the
+  interface tells with total confidence.
+- **It is a chip, not a plate**: one line, no title bar, soot ground, no amber —
+  amber's three places on a battle frame are spoken for (§5) and an objective is
+  standing information, not the decision being made now.
+- It sits with the mode bar's information rather than the live column: the mode
+  bar says what the interface wants, the chip says what the battle wants.
+- The same string is the Objectives page's first line (§15.3), so the chip and
+  the page can never disagree — there is one string.
+
+Shipped objectives, for reference (`data/encounters/*.json`):
+
+| Encounter | Objective |
+|---|---|
+| The Marshaling Yard | Clear the yard gate and put down whoever swung first. |
+| Foundry Floor Nine | Take the aisle and put down the three who set Floor Nine. |
+| Tallow Row | Take Wick before he reaches the tram lane. |
+| Corvane Refinery Three | Get Marek to the gallery switchboard, or take Nessa Kiln off the floor. |
+| The Charterhouse Steps | Climb the terraces and put Aldric Corvane down on them. |
+| The Meter House | Take the meter house boards off the crew holding them. |
+
+## 15.3 The battle menu — Escape at root
+
+**Escape with no mode open opens the battle menu.** Escape inside a mode still
+backs out of that mode, one step at a time, exactly as it did; the menu is what
+Escape means when there is nothing left to back out of. Three entries:
+
+- **Objectives** — the encounter's objective line, then the win and loss
+  conditions in words. This is where a player checks what they are being asked
+  for without guessing from the enemy roster. An encounter with no objective
+  string still lists its conditions.
+- **Systems** — the help pages. **The copy is `docs/SYSTEMS_COPY.md` and that
+  file is the source**: Power (with LIVE/DEAD, throwing a breaker, and the
+  Marshaling Yard's Freight Lift), Standing, Charge, Cast speed, Resolve,
+  Attunement, damage types and resistance, borrowing a skillset, and doctrine.
+  A wave shipping provisional inline strings reconciles *to* that file. Every
+  entry there carries a `key` for exactly that.
+- **Forfeit** — and it confirms. Forfeit is the one destructive thing a player
+  can do from inside a battle, so it borrows §13.3's discipline rather than its
+  shape: §13.3's bar is built around an actor and a target and a forfeit has
+  neither, but the rule that a takeover **names the consequence in words and
+  will not accept the press that reaches it as the press that commits it**
+  carries over exactly. A forfeit is a loss, and a loss banks nothing and
+  changes nothing (`docs/PROGRESSION.md` §3) — the confirm says so, because a
+  player who thinks they are throwing away a chapter's Standing will sit in a
+  battle they cannot win rather than take the retry that is actually on offer.
+
+The menu is a mode like any other: it names itself in the mode bar, it does not
+stop the clock from being read, and it closes on Escape and on right-click.
+
+## 15.4 Right-click backs out, everywhere — and right-drag orbits
+
+Two gestures on one button, told apart by whether the pointer moved.
+
+- **Right-click — press and release without dragging — backs out one step, from
+  anywhere.** Out of a targeting mode, out of a submenu, out of the expanded log,
+  out of the battle menu, out of a confirm. This was already the contract for the
+  board and the menus (§8) and was not honoured by every panel; the rule is that
+  there is no surface where right-click means nothing and no surface where it
+  means something else.
+- **Right-drag orbits the camera.** Held and moved, the right button turns the
+  rig, and **the cursor becomes the rotate cursor** for as long as it is held, so
+  the gesture names itself the moment it starts. The 90° steps on **Q / E** and
+  the **⟲ / ⟳** pair in the mode bar stay exactly as they were — the drag is a
+  finer-grained way to reach the same bearings, not a replacement, and the
+  measured reach guarantee (`tests/render/orbitReach.test.ts`) is about the four
+  bearings and is unaffected.
+- **The middle button is still the hand** (§8) and keeps the whole pan gesture.
+  The note in §8 that panning took the middle button "because right-click already
+  means withdraw" still holds and is now more precisely true: right-*click*
+  withdraws, right-*drag* orbits, and neither is a pan.
+- A drag that starts on the board and a drag that starts on a panel behave the
+  same way. The camera is not a panel's business, and a gesture that worked in
+  one place and died in another is the bug this whole section exists to close.
+
+## 15.5 Blocked and support highlight layers
+
+Two new tile layers, so a coloured tile means one thing.
+
+The aim overlays already separate reach from legality in the *data*
+(`BattleHudView.targeting`: `inRange`, `legal`, `illegal`, each refusal carrying
+the gate's own code and reason — §14.3). On the board they were one colour, so
+"too far", "the gate refuses this" and "that is your own man" all painted the
+same and the player had to guess which.
+
+- **Blocked** — tiles inside reach that the aim gate will refuse. Blood, and
+  dimmer than the legal layer: it is a refusal, which is what blood is reserved
+  for (§5). It reads as *the reach goes there and the order does not*, which is a
+  different sentence from *out of reach* and needs to look like one. Hovering a
+  blocked tile puts the gate's own `reason` in the annunciator — the same words
+  the command layer would have refused with, never a second opinion.
+- **Support** — tiles where the staged order would land on your own side: allies,
+  neutrals, and the acting unit itself. Verdigris, which is already health and
+  buffs (§5). It is drawn for helpful orders so the player can see the whole
+  reach of a heal, and it is drawn for harmful ones **so friendly fire is legible
+  before it is committed** rather than after — everything standing in an area is
+  affected, allies included (`COMBAT_RULES` §12), and that has always been
+  correct mechanics badly reported.
+
+Both layers go through the controller's one `setHighlight` pair, so
+`controller.highlights` — and therefore the probe and the tests — knows what is
+painted (§14.5). Neither layer takes amber and neither takes copper: copper is
+operable machinery and nothing else.
