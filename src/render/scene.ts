@@ -9,9 +9,11 @@ import type { Vec3 } from "./effects.js";
 import { HEIGHT_STEP, standingHeight, tileCenter } from "./board.js";
 import { TileHighlights, type HighlightOptions } from "./highlights.js";
 import { DRAW_ORDER } from "./layers.js";
+import { NO_MARKS, statusesOf, type FieldMarks } from "./marks.js";
 import { ObjectVisual } from "./objects.js";
 import { damagePopup, missPopup, resistPopup } from "./popups.js";
 import { PostChain } from "./post.js";
+import { CursorReadout } from "./readout.js";
 import {
   PresentationQueue,
   easeInOut,
@@ -87,6 +89,18 @@ export interface BattleRendererOptions {
   canvas: HTMLCanvasElement;
   onTileHover?: (tile: TileCoord | null) => void;
   onTileSelect?: (tile: TileCoord | null) => void;
+  /**
+   * The figure under the pointer, or null for bare ground. Screens that own the
+   * field outside a battle read a unit off this; in battle the controller
+   * answers off `onTileHover`, because a torso and its tile are one pick.
+   */
+  onUnitHover?: (unitId: string | null) => void;
+}
+
+/** What the pointer landed on: the tile, and the figure standing on it. */
+export interface FieldPick {
+  tile: TileCoord | null;
+  unitId: string | null;
 }
 
 const worldPositionOf = (map: GameMap, tile: TileCoord): THREE.Vector3 => {
@@ -184,6 +198,41 @@ export function snapAnimation(
   });
 }
 
+/** The part of a unit's visual the pointer resolves against. `UnitVisual` satisfies it. */
+export interface PickableFigure {
+  readonly unitId: string;
+  readonly currentView: UnitView;
+  coversUv(u: number, v: number): boolean;
+}
+
+/**
+ * A sorted intersection list -> what the pointer landed on.
+ *
+ * The terrain and the figures are cast together and the nearest hit wins, so a
+ * figure behind a wall stays behind it while a figure in front of one answers
+ * for its own tile. The empty air inside a sprite's quad is not the sprite: it
+ * falls through to whatever the ray found behind it, which is the ground the
+ * player is actually pointing at.
+ */
+export function resolveFieldPick(
+  hits: readonly THREE.Intersection[],
+  terrain: THREE.Object3D,
+  tileOfFace: (faceIndex: number) => TileCoord | null,
+  figureOf: (object: THREE.Object3D) => PickableFigure | undefined,
+): FieldPick {
+  for (const hit of hits) {
+    if (hit.object === terrain) {
+      if (hit.faceIndex === undefined || hit.faceIndex === null) continue;
+      return { tile: tileOfFace(hit.faceIndex), unitId: null };
+    }
+    const figure = figureOf(hit.object);
+    if (figure === undefined || hit.uv === undefined) continue;
+    if (!figure.coversUv(hit.uv.x, hit.uv.y)) continue;
+    return { tile: { ...figure.currentView.position }, unitId: figure.unitId };
+  }
+  return { tile: null, unitId: null };
+}
+
 /** The part of an object's visual the network-level events drive. */
 export interface GridNodeVisual {
   setOverload(amount: number): void;
@@ -275,16 +324,21 @@ export class BattleRenderer {
   private readonly units = new Map<string, UnitVisual>();
   private readonly objects = new Map<string, ObjectVisual>();
   private readonly vfx = new VfxLayer();
+  private readonly readout = new CursorReadout();
   /** The tile-face materials, shared by every board this renderer builds. */
   private readonly terrain = new TerrainTextures();
   private readonly onTileHover: ((tile: TileCoord | null) => void) | undefined;
   private readonly onTileSelect: ((tile: TileCoord | null) => void) | undefined;
+  private readonly onUnitHover: ((unitId: string | null) => void) | undefined;
 
   private highlights: TileHighlights | null = null;
   private terrainMesh: THREE.Mesh | null = null;
   private terrainData: TerrainMeshData | null = null;
   private viewModel: BattleViewModel | null = null;
+  private marks: FieldMarks = NO_MARKS;
+  private cursorHeightDelta: number | null = null;
   private hovered: TileCoord | null = null;
+  private hoveredUnit: string | null = null;
   private selected: TileCoord | null = null;
   private preview: MovePreview | null = null;
   private readonly frameHooks: Array<(deltaSeconds: number) => void> = [];
@@ -296,6 +350,7 @@ export class BattleRenderer {
     this.canvas = options.canvas;
     this.onTileHover = options.onTileHover;
     this.onTileSelect = options.onTileSelect;
+    this.onUnitHover = options.onUnitHover;
     this.renderer = new THREE.WebGLRenderer({ canvas: options.canvas, antialias: true });
     this.renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
     this.renderer.setClearColor(palette.soot, 1);
@@ -304,7 +359,13 @@ export class BattleRenderer {
     // Ortho depth is measured from the rig's fixed distance, so the near plane
     // of the fog sits just in front of the board: only its far half hazes.
     this.scene.fog = new THREE.Fog(palette.skyGrey, 39, 66);
-    this.scene.add(this.boardGroup, this.objectGroup, this.unitGroup, this.vfx.group);
+    this.scene.add(
+      this.boardGroup,
+      this.objectGroup,
+      this.unitGroup,
+      this.vfx.group,
+      this.readout.group,
+    );
     this.addLighting();
     this.post = new PostChain(this.renderer, this.scene, this.rig.camera);
     this.queue = new PresentationQueue((event) => this.createAnimation(event));
@@ -317,6 +378,11 @@ export class BattleRenderer {
 
   get hoveredTile(): TileCoord | null {
     return this.hovered;
+  }
+
+  /** The figure under the pointer. Null over bare ground or off the board. */
+  get hoveredUnitId(): string | null {
+    return this.hoveredUnit;
   }
 
   get selectedTile(): TileCoord | null {
@@ -380,8 +446,15 @@ export class BattleRenderer {
     if (sameBoard) this.rig.setMapBounds(map);
     else this.rig.frameMap(map);
     this.hovered = null;
+    // Rebuilt figures are not the ones that were under the pointer, and nothing
+    // moved it to say so.
+    this.setHoveredUnit(null);
     this.selected = null;
     this.preview = null;
+    this.readout.hide();
+    // Marks outlive a rebuild: whose turn it is did not change because the graph
+    // was thrown away and built again.
+    this.applyFieldMarks();
     this.updateBillboards();
   }
 
@@ -412,6 +485,23 @@ export class BattleRenderer {
     const to = worldPositionOf(viewModel.map, preview.tile);
     visual.setPreviewOffset({ x: to.x - from.x, y: to.y - from.y, z: to.z - from.z });
     this.preview = { unitId: preview.unitId, tile: { ...preview.tile } };
+  }
+
+  /**
+   * Whose turn it is and what is riding on each unit. Not board state — these are
+   * marks laid over whatever is drawn, so they are held here rather than in the
+   * view model, and survive a rebuild.
+   */
+  setFieldMarks(marks: FieldMarks): void {
+    this.marks = marks;
+    this.applyFieldMarks();
+  }
+
+  private applyFieldMarks(): void {
+    for (const [unitId, visual] of this.units) {
+      visual.setActing(unitId === this.marks.activeUnitId);
+      visual.setStatusCounts(statusesOf(this.marks, unitId));
+    }
   }
 
   /** Enqueue a presentation. Terminal state lands in the snapshot on finish. */
@@ -459,7 +549,59 @@ export class BattleRenderer {
     } else {
       this.clearHighlight("cursor");
     }
+    this.refreshReadout();
     this.onTileHover?.(tile);
+  }
+
+  /**
+   * The height difference the aim gate is measuring, from the HUD seam
+   * (`BattleHudView.cursor.heightDelta`): null outside a targeting mode, where
+   * there is nothing to measure a resting hover against. The height itself is the
+   * board's own fact and is read off the map, so the readout stands whether or not
+   * anything is being aimed.
+   */
+  setCursorHeightDelta(delta: number | null): void {
+    if (delta === this.cursorHeightDelta) return;
+    this.cursorHeightDelta = delta;
+    this.refreshReadout();
+  }
+
+  /** What the cursor's elevation label currently says. Null when it is hidden. */
+  get cursorReadout(): string | null {
+    return this.readout.label;
+  }
+
+  private refreshReadout(): void {
+    const map = this.viewModel?.map;
+    const tile = this.hovered;
+    if (map === undefined || tile === null) {
+      this.readout.hide();
+      return;
+    }
+    this.readout.show(map, tile, standingHeight(map, tile), this.cursorHeightDelta);
+  }
+
+  /**
+   * One pick, both cursors. The tile the pointer is over and the figure standing
+   * on it come out of the same raycast, so a sprite's body and the tile under it
+   * can never disagree about what was pointed at.
+   */
+  hoverAt(clientX: number, clientY: number): void {
+    const pick = this.pickPoint(clientX, clientY);
+    this.setHoveredTile(pick.tile);
+    this.setHoveredUnit(pick.unitId);
+  }
+
+  /** The pointer has left the board: nothing is under it. */
+  clearHover(): void {
+    this.setHoveredTile(null);
+    this.setHoveredUnit(null);
+  }
+
+  private setHoveredUnit(unitId: string | null): void {
+    if (unitId === this.hoveredUnit) return;
+    this.hoveredUnit = unitId;
+    this.onUnitHover?.(unitId);
   }
 
   selectTile(tile: TileCoord | null): void {
@@ -476,19 +618,54 @@ export class BattleRenderer {
     this.onTileSelect?.(tile);
   }
 
-  /** Client-space pointer -> tile, via raycast against the terrain mesh. */
+  /** Client-space pointer -> tile, through the figures standing on the board. */
   pickTile(clientX: number, clientY: number): TileCoord | null {
-    if (!this.terrainMesh || !this.terrainData || !this.viewModel) return null;
+    return this.pickPoint(clientX, clientY).tile;
+  }
+
+  /** The unit whose own figure the pointer is over. Null over bare ground. */
+  pickUnit(clientX: number, clientY: number): string | null {
+    return this.pickPoint(clientX, clientY).unitId;
+  }
+
+  /**
+   * Client-space pointer -> what is there.
+   *
+   * A unit's sprite is a tile and a half tall and stands over the tiles behind
+   * it, so aiming at a torso used to answer with whatever roof was drawn under
+   * the pointer — or with nothing at all. The figure now answers for the tile it
+   * is standing on, which is the tile the player is aiming at.
+   *
+   * A figure displaced by a move preview answers for nothing: that ghost is
+   * drawn on a tile it has not moved to, and the preview is read off the terrain
+   * under the cursor.
+   */
+  pickPoint(clientX: number, clientY: number): FieldPick {
+    const nothing: FieldPick = { tile: null, unitId: null };
+    const terrainMesh = this.terrainMesh;
+    const terrainData = this.terrainData;
+    const viewModel = this.viewModel;
+    if (!terrainMesh || !terrainData || !viewModel) return nothing;
     const rect = this.canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return null;
+    if (rect.width === 0 || rect.height === 0) return nothing;
     const ndc = new THREE.Vector2(
       ((clientX - rect.left) / rect.width) * 2 - 1,
       -(((clientY - rect.top) / rect.height) * 2 - 1),
     );
     this.raycaster.setFromCamera(ndc, this.rig.camera);
-    const hit = this.raycaster.intersectObject(this.terrainMesh, false)[0];
-    if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) return null;
-    return tileFromTriangle(this.viewModel.map, this.terrainData, hit.faceIndex);
+
+    const figures = new Map<THREE.Object3D, UnitVisual>();
+    for (const unit of this.units.values()) {
+      if (unit.previewOffset !== null) continue;
+      figures.set(unit.pickMesh, unit);
+    }
+    const hits = this.raycaster.intersectObjects([terrainMesh, ...figures.keys()], false);
+    return resolveFieldPick(
+      hits,
+      terrainMesh,
+      (faceIndex) => tileFromTriangle(viewModel.map, terrainData, faceIndex),
+      (object) => figures.get(object),
+    );
   }
 
   resize(): void {
@@ -550,6 +727,7 @@ export class BattleRenderer {
   dispose(): void {
     this.stop();
     this.disposeSceneContents();
+    this.readout.dispose();
     this.vfx.dispose();
     this.terrain.dispose();
     this.post.dispose();

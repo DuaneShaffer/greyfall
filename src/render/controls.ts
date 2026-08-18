@@ -1,8 +1,17 @@
+import { rotateCursorValue } from "./cursors.js";
 import type { BattleRenderer } from "./scene.js";
 
 const PAN_SPEED = 6.5;
 const EDGE_MARGIN = 28;
 const EDGE_SPEED = 5;
+/**
+ * Past this much travel the right button is turning the board and is no longer a
+ * click. A few pixels: a hand resting on a button jitters, and a withdraw that
+ * fired anyway would be an order the player did not give.
+ */
+const DRAG_THRESHOLD_PX = 5;
+/** Horizontal travel that buys one quarter turn — the same step Q/E take. */
+const ORBIT_STEP_PX = 96;
 
 export interface ControlsOptions {
   /** Disable edge panning when the pointer is over DOM UI. */
@@ -12,20 +21,32 @@ export interface ControlsOptions {
    * those keys when one is open. Orbit and zoom stay live either way.
    */
   panKeysEnabled?: () => boolean;
+  /**
+   * A right-click that did not turn the board: the mouse's half of UI_DESIGN
+   * §8's parity rule, where right-click means withdraw. Fires on release, so a
+   * press that became a drag never reaches it.
+   */
+  onCancel?: () => void;
 }
 
+type DragMode = "pan" | "turn";
+
 /**
- * Q/E orbit, middle-drag grab-pan, WASD + arrows pan, wheel zoom, edge pan,
- * pointer tile cursor. Input that produces game commands belongs to `src/ui`;
- * this is camera and cursor only.
+ * Q/E orbit, middle-drag grab-pan, right-drag orbit, right-click cancel, WASD +
+ * arrows pan, wheel zoom, edge pan, pointer tile cursor. Input that produces
+ * game commands belongs to `src/ui`; this is camera and cursor only.
  *
  * The board must be turnable with the mouse alone: at one fixed bearing the
  * taller geometry hides whole columns from the terrain raycast — the Meter
  * House's east main sits behind a height-3 wall — which is UI_DESIGN §8's
- * parity rule failing on 22 tiles. That route is the mode bar's ⟲/⟳ pair, so
- * the middle button is free to be the hand: press and hold slides the board
- * under the pointer, which is the gesture players arrive already knowing.
- * Middle rather than right: right-click already means withdraw.
+ * parity rule failing on 22 tiles. The mode bar's ⟲/⟳ pair is one route; the
+ * right button held and dragged is the other, and both step in the same 90°
+ * the keys do.
+ *
+ * The two dragging buttons must not read alike, because they do different
+ * things to the same board: the middle button slides it under the plain closed
+ * hand, the right button turns it under a circular arrow. Right-click with no
+ * drag still means withdraw — the gesture the button already had.
  */
 export const attachControls = (
   renderer: BattleRenderer,
@@ -36,11 +57,16 @@ export const attachControls = (
   let pointerX = -1;
   let pointerY = -1;
   let pointerInside = false;
-  let grabPointerId: number | null = null;
-  let grabX = 0;
-  let grabY = 0;
+  let dragPointerId: number | null = null;
+  let dragMode: DragMode = "pan";
+  let dragX = 0;
+  let dragY = 0;
+  /** Where the last quarter turn fired, so a long drag steps as it travels. */
+  let orbitAnchorX = 0;
+  let dragged = false;
 
   const restingCursor = element.style.cursor;
+  const turnCursor = rotateCursorValue();
   element.style.cursor = "grab";
 
   const onKeyDown = (event: KeyboardEvent): void => {
@@ -59,35 +85,62 @@ export const attachControls = (
     renderer.rig.zoomStep(event.deltaY > 0 ? 1 : -1);
   };
 
+  const beginDrag = (event: PointerEvent, mode: DragMode, cursor: string): void => {
+    // Without this the browser's own middle-click autoscroll takes the drag.
+    event.preventDefault();
+    dragPointerId = event.pointerId;
+    dragMode = mode;
+    dragX = event.clientX;
+    dragY = event.clientY;
+    orbitAnchorX = event.clientX;
+    dragged = false;
+    element.style.cursor = cursor;
+    element.setPointerCapture?.(event.pointerId);
+  };
+
+  /** Quarter turns as the drag travels, one per `ORBIT_STEP_PX` of it. */
+  const turnBy = (clientX: number): void => {
+    while (Math.abs(clientX - orbitAnchorX) >= ORBIT_STEP_PX) {
+      const direction = clientX > orbitAnchorX ? 1 : -1;
+      renderer.rig.orbit(direction);
+      orbitAnchorX += direction * ORBIT_STEP_PX;
+    }
+  };
+
   const onPointerMove = (event: PointerEvent): void => {
     pointerX = event.clientX;
     pointerY = event.clientY;
     pointerInside = true;
-    if (grabPointerId === event.pointerId) {
-      const dx = event.clientX - grabX;
-      const dy = event.clientY - grabY;
-      grabX = event.clientX;
-      grabY = event.clientY;
+    if (dragPointerId === event.pointerId) {
+      const dx = event.clientX - dragX;
+      const dy = event.clientY - dragY;
+      if (dragMode === "turn") {
+        // Measured from the press, not from the last move: a slow drag is still
+        // a drag, and it must not read as a click at the end of it.
+        if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) dragged = true;
+        turnBy(event.clientX);
+        return;
+      }
+      dragX = event.clientX;
+      dragY = event.clientY;
       renderer.rig.panPixels(dx, dy, element.getBoundingClientRect().height);
       return;
     }
-    renderer.setHoveredTile(renderer.pickTile(event.clientX, event.clientY));
+    renderer.hoverAt(event.clientX, event.clientY);
   };
 
   const onPointerLeave = (): void => {
     pointerInside = false;
-    renderer.setHoveredTile(null);
+    renderer.clearHover();
   };
 
   const onPointerDown = (event: PointerEvent): void => {
     if (event.button === 1) {
-      // Without this the browser's own middle-click autoscroll takes the drag.
-      event.preventDefault();
-      grabPointerId = event.pointerId;
-      grabX = event.clientX;
-      grabY = event.clientY;
-      element.style.cursor = "grabbing";
-      element.setPointerCapture?.(event.pointerId);
+      beginDrag(event, "pan", "grabbing");
+      return;
+    }
+    if (event.button === 2) {
+      beginDrag(event, "turn", turnCursor);
       return;
     }
     if (event.button !== 0) return;
@@ -95,18 +148,23 @@ export const attachControls = (
   };
 
   const onPointerUp = (event: PointerEvent): void => {
-    if (grabPointerId !== event.pointerId) return;
-    grabPointerId = null;
+    if (dragPointerId !== event.pointerId) return;
+    const cancelled = dragMode === "turn" && !dragged;
+    dragPointerId = null;
     element.style.cursor = "grab";
     element.releasePointerCapture?.(event.pointerId);
     // The tile under the released hand is a different one than the tile the
     // drag started over, and nothing moved the pointer to say so.
-    renderer.setHoveredTile(renderer.pickTile(event.clientX, event.clientY));
+    renderer.hoverAt(event.clientX, event.clientY);
+    if (cancelled) options.onCancel?.();
   };
 
   const onAuxClick = (event: MouseEvent): void => {
     if (event.button === 1) event.preventDefault();
   };
+
+  /** The board's own menu is the interface; the browser's would cover it. */
+  const onContextMenu = (event: MouseEvent): void => event.preventDefault();
 
   const onResize = (): void => renderer.resize();
 
@@ -125,7 +183,7 @@ export const attachControls = (
 
     // A hand that has dragged the board to the screen edge is holding it there,
     // not asking for edge pan on top of the drag.
-    if (options.edgePan !== false && pointerInside && grabPointerId === null) {
+    if (options.edgePan !== false && pointerInside && dragPointerId === null) {
       const rect = element.getBoundingClientRect();
       let edgeX = 0;
       let edgeZ = 0;
@@ -151,6 +209,7 @@ export const attachControls = (
   element.addEventListener("pointerup", onPointerUp);
   element.addEventListener("pointercancel", onPointerUp);
   element.addEventListener("auxclick", onAuxClick);
+  element.addEventListener("contextmenu", onContextMenu);
 
   return () => {
     removeFrameHook();
@@ -166,5 +225,6 @@ export const attachControls = (
     element.removeEventListener("pointerup", onPointerUp);
     element.removeEventListener("pointercancel", onPointerUp);
     element.removeEventListener("auxclick", onAuxClick);
+    element.removeEventListener("contextmenu", onContextMenu);
   };
 };

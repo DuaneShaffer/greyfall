@@ -3555,3 +3555,32 @@
   border-left-color: var(--gf-operable);
   color: var(--gf-operable);
 }
+
+/* ================================================ the queue yields the field */
+/* Wave C, blind-playtest remediation. The turn order is 286px of the right
+   column standing on top of playable board at battle zoom: the tiles under it
+   could not be hovered, let alone clicked, and nothing on screen said so. It is
+   reference — nothing in it is an order — so where it is in the way, it gets out
+   of the way.
+   The rule is geometric, and it is driven from `src/app/main.ts`: while the
+   pointer is inside the panel's own rectangle the panel ghosts and stops taking
+   the pointer, so the board under it answers instead. A pointer that rests there
+   is asking for the queue rather than for the tile, and the panel comes back
+   solid — which is what keeps the queue's own hover-inspect reachable.
+   Opacity only: nothing moves, nothing reflows, and no row is ever clipped away
+   (§11's silent-loss rule). */
+
+.gf-root.is-overlay .gf-turn-order {
+  transition: opacity 110ms ease-out;
+}
+
+.gf-root.is-overlay .gf-turn-order.is-yielding {
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gf-root.is-overlay .gf-turn-order {
+    transition: none;
+  }
+}

@@ -18,7 +18,15 @@ import {
   type InventoryStack,
 } from "../core/index.js";
 import type { DialogueLine, Encounter, Facing, TileCoord, Unit } from "../data/index.js";
-import { BattleRenderer, attachControls, palette } from "../render/index.js";
+import {
+  BattleRenderer,
+  NO_MARKS,
+  attachControls,
+  fieldMarksFrom,
+  findUnitView,
+  palette,
+  type UnitView,
+} from "../render/index.js";
 import { viewModelFromGameState } from "../render/adapter.js";
 import {
   BattleHud,
@@ -75,7 +83,37 @@ const renderer = new BattleRenderer({
   canvas,
   onTileHover: (tile) => controller?.onTileHover(tile),
   onTileSelect: (tile) => onTileSelected(tile),
+  onUnitHover: (unitId) => onFieldUnitHover(unitId),
 });
+
+/**
+ * A figure the pointer reads outside a battle. In battle the controller already
+ * answers for it off the tile hover — a sprite resolves to its own tile, so a
+ * torso and the tile under it are one pick — and the only other screen that owns
+ * the field is the formation.
+ *
+ * The sink is matched by name rather than imported: the pick belongs to the
+ * renderer and the panel that prints it belongs to the between-battle screens,
+ * and neither has to wait for the other to exist.
+ */
+interface FieldHoverSink {
+  hoverFieldUnit(unit: UnitView | null): void;
+}
+
+const fieldHoverSink = (host: unknown): FieldHoverSink | null =>
+  typeof (host as { hoverFieldUnit?: unknown } | null)?.hoverFieldUnit === "function"
+    ? (host as FieldHoverSink)
+    : null;
+
+function onFieldUnitHover(unitId: string | null): void {
+  if (controller !== null) return;
+  const sink = fieldHoverSink(screens);
+  if (sink === null) return;
+  const snapshot = renderer.snapshot;
+  const unit =
+    unitId === null || snapshot === null ? null : (findUnitView(snapshot, unitId) ?? null);
+  sink.hoverFieldUnit(unit);
+}
 
 let controller: BattleController | null = null;
 let deploymentTiles: readonly TileCoord[] = [];
@@ -141,7 +179,14 @@ let currentEncounter: Encounter | null = null;
 const uiPort: UiPort = {
   // Deliberately not `hud.update`: that would restart an open dialogue's reveal
   // on every refresh. Dialogue is driven through showDialogue instead.
-  render: (view: BattleHudView) => hud.render(view),
+  render: (view: BattleHudView) => {
+    hud.render(view);
+    // The field's own copy of two facts the panels already hold: whose turn it
+    // is, and what is riding on each unit (UI_DESIGN §14.3, §14.4). Reading them
+    // off a panel means holding a name in your head while looking elsewhere.
+    renderer.setFieldMarks(fieldMarksFrom(view.activeUnitId ?? null, view.field?.units ?? []));
+    renderer.setCursorHeightDelta(view.cursor?.heightDelta ?? null);
+  },
   setMode: (mode: HudMode, detail?: string | null) => hud.setMode(mode, detail),
   lockForecast: () => hud.forecast.lock(),
   showFinalState: (view: BattleHudView | null, _result: BattleResult | null) => {
@@ -152,6 +197,7 @@ const uiPort: UiPort = {
     hud.status.update(null);
     hud.setMode("ended", null);
     hud.actionMenu.menus.detach();
+    renderer.setFieldMarks(NO_MARKS);
   },
   showDialogue: (lines: DialogueLine[]) => {
     hud.dialogue.update(lines);
@@ -255,6 +301,8 @@ const battlePort: BattlePort = {
     );
   },
   end: () => {
+    renderer.setFieldMarks(NO_MARKS);
+    renderer.setCursorHeightDelta(null);
     hud.actionMenu.menus.detach();
     hud.dialogue.detach();
     hud.notice.clear();
@@ -472,13 +520,64 @@ const uiOwnsKeyboard = (): boolean => {
   return controller?.phase === "player";
 };
 
-attachControls(renderer, canvas, { panKeysEnabled: () => !uiOwnsKeyboard() });
+attachControls(renderer, canvas, {
+  panKeysEnabled: () => !uiOwnsKeyboard(),
+  // Right-click is withdraw, and the right button held is the camera's turn
+  // gesture (UI_DESIGN §8). Outside a battle nothing is staged to back out of,
+  // so the click has nowhere to land and the drag still turns the board.
+  onCancel: () => {
+    if (controller !== null) hud.withdraw();
+  },
+});
 renderer.start();
+
+/**
+ * The queue panel stands on playable board at battle zoom, so where it is in the
+ * way it gets out of the way: inside its own rectangle it ghosts and stops taking
+ * the pointer, and the tile under it answers instead. A pointer that stays there
+ * is asking for the queue and not for the tile, so after a moment's dwell the
+ * panel comes back solid — which is what keeps its own hover-inspect reachable.
+ * Woken, it stays woken until the pointer leaves, or it would flicker under a
+ * hand reading down the list.
+ */
+const QUEUE_DWELL_MS = 320;
+let pointerInQueue = false;
+let queueDwellMs = 0;
+let queueAwake = false;
+
+const withinQueue = (clientX: number, clientY: number): boolean => {
+  if (hud.el.classList.contains("is-hidden")) return false;
+  const rect = hud.turnOrder.el.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return false;
+  return (
+    clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom
+  );
+};
+
+const yieldQueue = (yielding: boolean): void => {
+  hud.turnOrder.el.classList.toggle("is-yielding", yielding);
+};
+
+// Window-level: while the panel is ghosted the pointer is not over it as far as
+// the DOM is concerned, so the panel's own events cannot be what tracks this.
+window.addEventListener("pointermove", (event) => {
+  const inside = withinQueue(event.clientX, event.clientY);
+  if (inside === pointerInQueue) return;
+  pointerInQueue = inside;
+  queueDwellMs = 0;
+  queueAwake = false;
+  yieldQueue(inside);
+});
 
 renderer.addFrameHook((delta) => {
   controller?.tick(delta);
   hud.tick(delta * 1000);
   screens?.tick(delta * 1000);
+  if (!pointerInQueue || queueAwake) return;
+  queueDwellMs += delta * 1000;
+  if (queueDwellMs < QUEUE_DWELL_MS) return;
+  queueAwake = true;
+  yieldQueue(false);
 });
 
 window.addEventListener("keydown", (event) => {

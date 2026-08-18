@@ -21,13 +21,7 @@ import {
   hexToNumber,
   type Hex,
 } from "../art/palette.js";
-import {
-  dither,
-  paletteIndex,
-  rasterize,
-  writeGridToImageData,
-  type PixelGrid,
-} from "../art/pixel.js";
+import { dither, paletteIndex, rasterize } from "../art/pixel.js";
 import { TICKS_PER_SECOND, TILE_TEXTURE_SIZE } from "../art/sprites.js";
 import type { DamageType, TileCoord } from "../data/schemas/common.js";
 import type { GameMap } from "../data/schemas/map.js";
@@ -45,6 +39,7 @@ import { tileAt } from "../data/coords.js";
 import { HEIGHT_STEP, standingHeight, tileCenter } from "./board.js";
 import { DRAW_ORDER, markBloomEligible } from "./layers.js";
 import { terrainAccentColor, terrainTopColor } from "./palette.js";
+import { gridCanvasTexture } from "./textures.js";
 import {
   PopupField,
   popupHeight,
@@ -87,32 +82,13 @@ const disposeObject = (object: THREE.Object3D): void => {
   });
 };
 
-/** A palette-index grid as a crisp texture: integer size, no filtering. */
-const gridTexture = (grid: PixelGrid, label: string): THREE.Texture => {
-  const canvas = document.createElement("canvas");
-  canvas.width = grid.width;
-  canvas.height = grid.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error(`2d canvas context unavailable for ${label}`);
-  const image = ctx.createImageData(grid.width, grid.height);
-  writeGridToImageData(image, grid);
-  ctx.putImageData(image, 0, 0);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  texture.generateMipmaps = false;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-};
-
 const popupTextures = new Map<string, THREE.Texture>();
 
 const popupTexture = (spec: PopupSpec): THREE.Texture => {
   const key = `${spec.style}|${spec.outlined ? 1 : 0}|${spec.text}`;
   const cached = popupTextures.get(key);
   if (cached) return cached;
-  const texture = gridTexture(
+  const texture = gridCanvasTexture(
     popupGrid(
       spec.text,
       paletteIndex(DAMAGE_NUMBER_COLOR[spec.style]),
@@ -131,7 +107,7 @@ const chemicalTexture = (phase: number): THREE.Texture => {
   const cached = chemicalTextures.get(phase);
   if (cached) return cached;
   const size = DITHER_TEXTURE_SIZE;
-  const texture = gridTexture(
+  const texture = gridCanvasTexture(
     rasterize({
       width: size,
       height: size,

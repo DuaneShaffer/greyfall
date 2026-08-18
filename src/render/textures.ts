@@ -6,6 +6,7 @@
 
 import * as THREE from "three";
 import { flipRows, type TextureLevel } from "../art/sheet.js";
+import { writeGridToImageData, type PixelGrid } from "../art/pixel.js";
 
 const asBytes = (data: Uint8ClampedArray): Uint8Array =>
   new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
@@ -44,5 +45,28 @@ export const mippedTexture = (
   }));
   configureTexture(texture, wrap);
   texture.needsUpdate = true;
+  return texture;
+};
+
+/**
+ * A palette-index grid as a crisp texture: integer size, no filtering, no mip
+ * chain. This is the path for anything rasterized at draw time rather than built
+ * into a sheet — popup numbers, the cursor's elevation readout.
+ */
+export const gridCanvasTexture = (grid: PixelGrid, label: string): THREE.Texture => {
+  const canvas = document.createElement("canvas");
+  canvas.width = grid.width;
+  canvas.height = grid.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error(`2d canvas context unavailable for ${label}`);
+  const image = ctx.createImageData(grid.width, grid.height);
+  writeGridToImageData(image, grid);
+  ctx.putImageData(image, 0, 0);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.generateMipmaps = false;
+  texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 };
