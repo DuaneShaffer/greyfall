@@ -6,6 +6,7 @@ import { createCampaign, type ContentLibrary } from "../../src/core/index.js";
 import { Campaign, type Unit } from "../../src/data/index.js";
 import { CampaignSession } from "../../src/app/campaign.js";
 import { BetweenBattleScreens } from "../../src/app/betweenBattles.js";
+import { campaignStats } from "../../src/app/campaignViews.js";
 import type { BattleResultsView } from "../../src/ui/index.js";
 import { loadContent, loadUnits } from "../core/fixtures.js";
 
@@ -176,6 +177,36 @@ describe("BetweenBattleScreens", () => {
     const slots = h.screens.formation.el.querySelectorAll(".gf-deploy-slot");
     expect(slots.length).toBe(h.session.deployment!.assignments.length);
     expect(h.screens.formation.el.textContent).toContain("tiles filled");
+  });
+
+  it("reads the other side of the board onto the formation screen", () => {
+    [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")]
+      .find((node) => node.textContent === "Move out")!
+      .click();
+
+    const enemies = h.screens.formation.el.querySelectorAll<HTMLElement>(".gf-deploy-enemy");
+    const encounter = CONTENT.encounters["e1-marshaling-yard"]!;
+    expect(enemies.length).toBe(encounter.enemies.length);
+    // Absolute HP off the same derivation the battle runs, not a fraction of it.
+    const stats = campaignStats(CONTENT, encounter.enemies[0]!.unit)!;
+    expect(enemies[0]!.textContent).toContain(`${stats.hp} / ${stats.hp}`);
+    expect(h.screens.formation.el.textContent).toContain("The opposition forms up to the");
+  });
+
+  it("names whoever the pointer found out on the field", () => {
+    [...h.screens.el.querySelectorAll<HTMLElement>(".gf-between-bar .gf-button")]
+      .find((node) => node.textContent === "Move out")!
+      .click();
+
+    const intel = h.screens.formation.el.querySelector<HTMLElement>(".gf-deploy-intel")!;
+    expect(intel.classList.contains("is-hidden")).toBe(true);
+
+    h.screens.hoverFieldUnit({ id: "provocateur-a" });
+    expect(intel.classList.contains("is-hidden")).toBe(false);
+    expect(intel.textContent).toContain("Provocateur");
+
+    h.screens.hoverFieldUnit(null);
+    expect(intel.classList.contains("is-hidden")).toBe(true);
   });
 
   it("offers the engagements already won, and nothing before one is", () => {

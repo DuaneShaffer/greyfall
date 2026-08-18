@@ -98,6 +98,8 @@ export class BetweenBattleScreens implements CampaignScreenPort {
   private selectedUnitId: string | null = null;
   private keyTarget: EventTarget | null = null;
   private toastMs = 0;
+  /** The encounter the opposition block was filled from; refilled when it moves. */
+  private oppositionEncounterId: string | null = null;
   private resultsView: BattleResultsView | null = null;
   private chapterCloseView: ChapterCloseView | null = null;
   private advanceRecord: (() => void) | null = null;
@@ -239,6 +241,18 @@ export class BetweenBattleScreens implements CampaignScreenPort {
     if (this.toastMs <= 0) this.toast.classList.add("is-hidden");
   }
 
+  /**
+   * A figure the pointer found out on the field. The renderer matches this by
+   * name rather than importing the screens (`main.ts`, `FieldHoverSink`), so
+   * the parameter is the pick's own shape and not a render type.
+   *
+   * Only the formation reads the field, and it answers for both sides: one of
+   * ours by name, one of theirs with its condition beside it.
+   */
+  hoverFieldUnit(unit: { id: string } | null): void {
+    this.formation.hoverUnit(unit?.id ?? null);
+  }
+
   // --- plumbing -------------------------------------------------------------
 
   get current(): BetweenScreenId {
@@ -358,6 +372,10 @@ export class BetweenBattleScreens implements CampaignScreenPort {
       case "formation": {
         const view = this.session.deploymentView();
         if (view === null) return this.show("roster");
+        if (this.oppositionEncounterId !== view.encounterId) {
+          this.oppositionEncounterId = view.encounterId;
+          this.formation.setOpposition(this.session.oppositionView());
+        }
         this.formation.update(view);
         replaceChildren(this.stage, [this.formation.el]);
         this.handlers.onFormationChanged?.(this.formation.placingUnitId);

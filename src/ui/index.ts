@@ -19,7 +19,7 @@ export {
   type CampaignSelectOptions,
   type CampaignSelectView,
 } from "./screens/campaignSelect.js";
-export { DeploymentScreen } from "./screens/deployment.js";
+export { DeploymentScreen, type DeployOppositionView } from "./screens/deployment.js";
 export { EquipmentScreen } from "./screens/equipment.js";
 export {
   equipTagLabel,

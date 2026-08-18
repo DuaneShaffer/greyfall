@@ -34,6 +34,7 @@ import type { Campaign, Encounter, Facing, GameMap, TileCoord, Unit } from "../d
 import type {
   BattleResultsView,
   ChapterCloseView,
+  DeployOppositionView,
   DeploymentView,
   EquipmentView,
   JobsView,
@@ -49,6 +50,7 @@ import {
   campaignEquipmentView,
   campaignJobsView,
   campaignLearningView,
+  campaignOppositionView,
   campaignPartyView,
   campaignUnitSheetView,
 } from "./campaignViews.js";
@@ -191,6 +193,12 @@ export class CampaignSession {
 
   chapterCloseView(): ChapterCloseView {
     return campaignChapterCloseView(this.campaignState, this.campaign, this.content);
+  }
+
+  /** The other side of the board the staged formation is being read against. */
+  oppositionView(): DeployOppositionView[] {
+    if (this.pending === null) return [];
+    return campaignOppositionView(this.content, this.pending.encounter);
   }
 
   deploymentView(): DeploymentView | null {

@@ -22,7 +22,7 @@ import {
   type DerivedStats,
   type FallenRecord,
 } from "../core/index.js";
-import type { Ability, Campaign, Item, Job, Unit } from "../data/index.js";
+import type { Ability, Campaign, Encounter, Item, Job, Unit } from "../data/index.js";
 import { mechanicsView } from "./mechanics.js";
 import {
   EQUIP_SLOTS,
@@ -31,6 +31,7 @@ import {
   type AbilityView,
   type BattleResultsView,
   type ChapterCloseView,
+  type DeployOppositionView,
   type DeploymentCandidateView,
   type DeploymentSlotView,
   type DeploymentView,
@@ -514,6 +515,37 @@ export interface DeploymentInputs {
   deploymentTiles: readonly { x: number; y: number }[];
   /** Unit id per tile index, or null for an empty tile. */
   assignments: readonly (string | null)[];
+}
+
+/**
+ * Who else is on the board, for the formation screen's opposition block. The
+ * encounter's own roster, at the HP the battle will actually give them — the
+ * same derivation `createBattleUnit` runs, so the block and the first turn's
+ * bars agree. Units the triggers walk on later are not here: the formation is
+ * decided against what is standing there when it starts.
+ */
+export function campaignOppositionView(
+  content: CampaignContent,
+  encounter: Encounter,
+): DeployOppositionView[] {
+  const out: DeployOppositionView[] = [];
+  for (const placed of encounter.enemies) {
+    if (placed.team === "player") continue;
+    const stats = campaignStats(content, placed.unit);
+    if (stats === null) continue;
+    const job = jobName(content, placed.unit.jobId);
+    out.push({
+      unitId: placed.unit.id,
+      name: placed.unit.name,
+      // Nothing in the data files a faction, so the job is the honest answer —
+      // with the allegiance said out loud where it is not the obvious one.
+      faction: placed.team === "neutral" ? `${job}, neutral` : job,
+      hp: stats.hp,
+      maxHp: stats.hp,
+      tile: { ...placed.position },
+    });
+  }
+  return out;
 }
 
 export function campaignDeploymentView(
