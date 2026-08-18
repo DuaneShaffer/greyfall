@@ -12,6 +12,18 @@ export interface DialogueOptions {
 const ADVANCE_KEYS = new Set(["Enter", " "]);
 
 /**
+ * Take the key out of circulation. One press is one instruction, and the orders
+ * menu listens on the same document node the dialogue does: without this the
+ * Enter that closed a scene also confirmed whatever the menu underneath was
+ * pointing at, which the blind playtest hit as an order it never gave.
+ */
+const consume = (event: Event): void => {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+};
+
+/**
  * What separates a scene from a shout across the yard, decided off what
  * `data/encounters/*.json` actually contains: trigger dialogue carries no
  * importance flag, but it does carry a line count, and the split is clean. Every
@@ -42,11 +54,28 @@ export class DialogueBox implements Component<DialogueLine[]> {
   private revealed = 0;
   private elapsed = 0;
   private keyTarget: EventTarget | null = null;
+  /** An advance key still held down; nothing else may see it until it is up. */
+  private heldKey: string | null = null;
+  /** The caller has detached, but a held key still has to be drained first. */
+  private draining = false;
   private readonly onKeyDown = (event: Event): void => {
-    if (ADVANCE_KEYS.has((event as KeyboardEvent).key)) {
-      event.preventDefault();
-      this.advance();
-    }
+    const key = (event as KeyboardEvent).key;
+    if (!ADVANCE_KEYS.has(key)) return;
+    // A key that arrives with the box already closed is the menu's, unless it is
+    // the tail of the press that closed the box.
+    if (!this.isOpen && this.heldKey !== key) return;
+    consume(event);
+    this.heldKey = key;
+    if (!this.isOpen) return;
+    // One press, one line. A held key auto-repeats fast enough to walk a whole
+    // scene and spend the last of the repeats on the menu the box uncovers.
+    if ((event as KeyboardEvent).repeat) return;
+    this.advance();
+  };
+  private readonly onKeyUp = (event: Event): void => {
+    if ((event as KeyboardEvent).key !== this.heldKey) return;
+    this.heldKey = null;
+    if (this.draining) this.releaseKeys();
   };
 
   constructor(options: DialogueOptions = {}) {
@@ -163,19 +192,40 @@ export class DialogueBox implements Component<DialogueLine[]> {
   }
 
   attach(target: EventTarget = document): void {
-    this.detach();
+    if (this.keyTarget !== null && this.keyTarget !== target) this.releaseKeys();
     this.keyTarget = target;
-    target.addEventListener("keydown", this.onKeyDown);
+    this.draining = false;
+    // Capture, so the box has the key before anything the menus registered on
+    // the same node: in the target phase a bubble listener registered earlier
+    // would otherwise be handed it first.
+    target.addEventListener("keydown", this.onKeyDown, true);
+    target.addEventListener("keyup", this.onKeyUp, true);
   }
 
+  /**
+   * Stop advancing on keys. A key still down stays claimed until it is released:
+   * the press that closed the box belongs to the line it closed, and the menu it
+   * uncovered must not be handed the tail of it.
+   */
   detach(): void {
-    this.keyTarget?.removeEventListener("keydown", this.onKeyDown);
-    this.keyTarget = null;
+    if (this.heldKey !== null && this.keyTarget !== null) {
+      this.draining = true;
+      return;
+    }
+    this.releaseKeys();
   }
 
   destroy(): void {
-    this.detach();
+    this.releaseKeys();
     this.el.remove();
+  }
+
+  private releaseKeys(): void {
+    this.keyTarget?.removeEventListener("keydown", this.onKeyDown, true);
+    this.keyTarget?.removeEventListener("keyup", this.onKeyUp, true);
+    this.keyTarget = null;
+    this.draining = false;
+    this.heldKey = null;
   }
 
   private render(): void {
