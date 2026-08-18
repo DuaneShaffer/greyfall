@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EXTERNAL_JOBS } from "../../src/art/external.js";
 import { JOB_IDS } from "../../src/art/jobs.js";
@@ -130,6 +130,16 @@ describe("per-job shards", () => {
     for (const jobId of SHARDED_JOBS) {
       expect(existsSync(new URL(`./sheet.${jobId}.test.ts`, import.meta.url)), jobId).toBe(true);
     }
+  });
+
+  it("hands the fast lane the same roster to skip", () => {
+    // vite.config.ts cannot import this module, so the one thing it does copy —
+    // the job list inside its brace expansion — is checked as text instead.
+    const config = readFileSync(new URL("../../vite.config.ts", import.meta.url), "utf8");
+    const roster = /const SHARDED_JOBS = "\{([a-z,]+)\}"/.exec(config);
+    expect(roster, "vite.config.ts declares SHARDED_JOBS as a brace expansion").not.toBeNull();
+    expect(roster?.[1]?.split(",")).toEqual([...SHARDED_JOBS]);
+    expect(config).toContain("tests/art/{sheet,figures}.${SHARDED_JOBS}.test.ts");
   });
 });
 

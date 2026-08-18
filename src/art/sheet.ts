@@ -151,7 +151,7 @@ function halve(level: TextureLevel): TextureLevel {
 /**
  * The shipped texture and its mip chain. Level 0 is the sheet at
  * `SPRITE_TEXTURE_SCALE` — a nearest enlargement for generated art, and real
- * detail once an external 256x384 master is ingested at that density — so a
+ * detail once an external 128x192 master is ingested at that density — so a
  * zoomed-in camera has pixels to show. Every level below it is a box filter,
  * which is what keeps a far zoom from shimmering. The chain runs to 1x1 so the
  * texture is complete without the GPU generating anything.

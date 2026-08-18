@@ -12,7 +12,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { JOB_ART, jobFrame } from "../../src/art/jobs.js";
 import { AMBER_BUDGET, MAX_FRAME_COLORS } from "../../src/art/ingest.js";
 import { importExternalMaster, propRegion, retintMaster } from "../../src/art/intake.js";
@@ -114,8 +114,13 @@ export function coveredFallbackJobs(): Set<string> {
 export function registerExternalMasterSuite(jobId: FallbackJob): void {
   describe("external masters become full animations", () => {
     describe(jobId, () => {
-      const imported = importFallback(jobId);
-      const frames = everyExternalFrame(imported.master);
+      let imported: ReturnType<typeof importFallback>;
+      let frames: ReturnType<typeof everyExternalFrame>;
+
+      beforeAll(() => {
+        imported = importFallback(jobId);
+        frames = everyExternalFrame(imported.master);
+      });
 
       it("conforms on intake", () => {
         expect(imported.ok, imported.summary).toBe(true);

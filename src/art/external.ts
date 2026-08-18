@@ -23,7 +23,7 @@ import { SE_BASE64 as ENFORCER_SE, NE_BASE64 as ENFORCER_NE } from "./masters/en
 import { SE_BASE64 as MACHINIST_SE, NE_BASE64 as MACHINIST_NE } from "./masters/machinist.js";
 import { SE_BASE64 as RAILRUNNER_SE, NE_BASE64 as RAILRUNNER_NE } from "./masters/railrunner.js";
 import { SE_BASE64 as SABOTEUR_SE, NE_BASE64 as SABOTEUR_NE } from "./masters/saboteur.js";
-import { createGrid, gridToRGBA, type PixelGrid } from "./pixel.js";
+import { bytesFromBase64, createGrid, gridToRGBA, type PixelGrid } from "./pixel.js";
 import {
   buildExternalSheet,
   type ExternalMaster,
@@ -154,12 +154,12 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
 };
 
 function decodeGrid(base64: string): PixelGrid {
-  const binary = atob(base64);
+  const bytes = bytesFromBase64(base64);
   const grid = createGrid(SPRITE_WIDTH, SPRITE_HEIGHT);
-  if (binary.length !== grid.data.length) {
-    throw new Error(`external master is ${binary.length} bytes, canvas needs ${grid.data.length}`);
+  if (bytes.length !== grid.data.length) {
+    throw new Error(`external master is ${bytes.length} bytes, canvas needs ${grid.data.length}`);
   }
-  for (let i = 0; i < binary.length; i += 1) grid.data[i] = binary.charCodeAt(i);
+  grid.data.set(bytes);
   return grid;
 }
 

@@ -54,7 +54,7 @@ describe("sprite canvas", () => {
 
   it("reserves a sub-floor band below the anchor", () => {
     expect(SUB_FLOOR_BAND_HEIGHT).toBe(8);
-    expect(FIGURE_BOX_BOTTOM).toBe(SPRITE_ANCHOR.y - 1);
+    expect(FIGURE_BOX_BOTTOM).toBe(87);
     expect(FIGURE_BOX_BOTTOM + 1 + SUB_FLOOR_BAND_HEIGHT).toBe(SPRITE_HEIGHT);
   });
 
@@ -62,7 +62,7 @@ describe("sprite canvas", () => {
     // The sprite ruler moved to 64; tile textures stayed at 32.
     expect(TILE_TEXTURE_SIZE).toBe(32);
     expect(SPRITE_PIXELS_PER_TILE).toBe(64);
-    expect(HEIGHT_STEPS_PER_TILE).toBe(TILE_TEXTURE_SIZE / HEIGHT_STEP_PX);
+    expect(HEIGHT_STEP_PX).toBe(16);
     expect(HEIGHT_STEPS_PER_TILE).toBe(2);
     expect(SPRITE_WIDTH / SPRITE_PIXELS_PER_TILE).toBe(1);
     expect(BILLBOARD_WORLD_SIZE.height * HEIGHT_STEPS_PER_TILE).toBe(3);
