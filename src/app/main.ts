@@ -472,7 +472,15 @@ const uiOwnsKeyboard = (): boolean => {
   return controller?.phase === "player";
 };
 
-attachControls(renderer, canvas, { panKeysEnabled: () => !uiOwnsKeyboard() });
+attachControls(renderer, canvas, {
+  panKeysEnabled: () => !uiOwnsKeyboard(),
+  // Right-click is withdraw, and the right button held is the camera's turn
+  // gesture (UI_DESIGN §8). Outside a battle nothing is staged to back out of,
+  // so the click has nowhere to land and the drag still turns the board.
+  onCancel: () => {
+    if (controller !== null) hud.withdraw();
+  },
+});
 renderer.start();
 
 renderer.addFrameHook((delta) => {

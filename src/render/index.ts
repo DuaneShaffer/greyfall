@@ -2,6 +2,11 @@ export { BattleRenderer, type BattleRendererOptions, type MovePreview } from "./
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
 export {
+  ROTATE_CURSOR_FALLBACK,
+  ROTATE_CURSOR_SIZE,
+  rotateCursorValue,
+} from "./cursors.js";
+export {
   HIGHLIGHT_STYLES,
   LAYER_BLOCKED,
   LAYER_SUPPORT,
