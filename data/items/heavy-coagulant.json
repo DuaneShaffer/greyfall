@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "heavy-coagulant",
   "name": "Heavy Coagulant",
-  "description": "Bench-grade compound at four times the dose. Closes what the standard vial only slows.",
+  "description": "Bench-grade compound, mixed thick and dosed heavy. Closes what the standard vial only slows.",
   "equipTags": [
     "field-issue"
   ],

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "pressure-injector",
   "name": "Pressure Injector",
-  "description": "Cell-driven and calibrated to the drop. Doses a wound across a yard or a lung across a room.",
+  "description": "Cell-driven and calibrated to the drop. Doses a wound from outside the swing, or a lung from across the bay.",
   "equipTags": [
     "chemist-kit"
   ],

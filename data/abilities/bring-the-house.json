@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "bring-the-house",
   "name": "Bring the House",
-  "description": "Not a charge. A sequence. Everything standing inside it stops standing, including the building.",
+  "description": "Not one placement \u2014 a sequence, cut and timed. Everything standing inside it stops standing, including the building.",
   "jobId": "saboteur",
   "standingCost": 1100,
   "slot": "action",

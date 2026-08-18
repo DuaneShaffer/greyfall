@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "switch-kick",
   "name": "Switch Kick",
-  "description": "Boot to the hip at the switch stand. Costs nothing and puts them two tiles from where they wanted to be.",
+  "description": "Boot to the hip at the switch stand. It takes nothing but a boot, and it decides where the other man is standing when it is over.",
   "jobId": "railrunner",
   "standingCost": 200,
   "slot": "action",

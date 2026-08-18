@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "field-splice",
   "name": "Field Splice",
-  "description": "Strip both ends, twist, tape, and the span carries again. Machines only, same as the rest of the shop's work — a splice does nothing for a body.",
+  "description": "Strip both ends, twist, tape, and the span carries again. Same as the rest of the shop's work: a splice does nothing for a body.",
   "jobId": "machinist",
   "standingCost": 250,
   "slot": "action",

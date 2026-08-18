@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "rig-machinery",
   "name": "Rig Machinery",
-  "description": "Two minutes with the housing open and the machine belongs to nobody. No charge drawn \u2014 this is a wrench, not a license.",
+  "description": "Two minutes with the housing open and the machine belongs to nobody. A wrench, not a license \u2014 the Assay keeps no form for this.",
   "jobId": "saboteur",
   "standingCost": 350,
   "slot": "action",
