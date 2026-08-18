@@ -13,6 +13,7 @@ import { NO_MARKS, statusesOf, type FieldMarks } from "./marks.js";
 import { ObjectVisual } from "./objects.js";
 import { damagePopup, missPopup, resistPopup } from "./popups.js";
 import { PostChain } from "./post.js";
+import { CursorReadout } from "./readout.js";
 import {
   PresentationQueue,
   easeInOut,
@@ -323,6 +324,7 @@ export class BattleRenderer {
   private readonly units = new Map<string, UnitVisual>();
   private readonly objects = new Map<string, ObjectVisual>();
   private readonly vfx = new VfxLayer();
+  private readonly readout = new CursorReadout();
   /** The tile-face materials, shared by every board this renderer builds. */
   private readonly terrain = new TerrainTextures();
   private readonly onTileHover: ((tile: TileCoord | null) => void) | undefined;
@@ -334,6 +336,7 @@ export class BattleRenderer {
   private terrainData: TerrainMeshData | null = null;
   private viewModel: BattleViewModel | null = null;
   private marks: FieldMarks = NO_MARKS;
+  private cursorHeightDelta: number | null = null;
   private hovered: TileCoord | null = null;
   private hoveredUnit: string | null = null;
   private selected: TileCoord | null = null;
@@ -356,7 +359,13 @@ export class BattleRenderer {
     // Ortho depth is measured from the rig's fixed distance, so the near plane
     // of the fog sits just in front of the board: only its far half hazes.
     this.scene.fog = new THREE.Fog(palette.skyGrey, 39, 66);
-    this.scene.add(this.boardGroup, this.objectGroup, this.unitGroup, this.vfx.group);
+    this.scene.add(
+      this.boardGroup,
+      this.objectGroup,
+      this.unitGroup,
+      this.vfx.group,
+      this.readout.group,
+    );
     this.addLighting();
     this.post = new PostChain(this.renderer, this.scene, this.rig.camera);
     this.queue = new PresentationQueue((event) => this.createAnimation(event));
@@ -440,6 +449,7 @@ export class BattleRenderer {
     this.hoveredUnit = null;
     this.selected = null;
     this.preview = null;
+    this.readout.hide();
     // Marks outlive a rebuild: whose turn it is did not change because the graph
     // was thrown away and built again.
     this.applyFieldMarks();
@@ -537,7 +547,36 @@ export class BattleRenderer {
     } else {
       this.clearHighlight("cursor");
     }
+    this.refreshReadout();
     this.onTileHover?.(tile);
+  }
+
+  /**
+   * The height difference the aim gate is measuring, from the HUD seam
+   * (`BattleHudView.cursor.heightDelta`): null outside a targeting mode, where
+   * there is nothing to measure a resting hover against. The height itself is the
+   * board's own fact and is read off the map, so the readout stands whether or not
+   * anything is being aimed.
+   */
+  setCursorHeightDelta(delta: number | null): void {
+    if (delta === this.cursorHeightDelta) return;
+    this.cursorHeightDelta = delta;
+    this.refreshReadout();
+  }
+
+  /** What the cursor's elevation label currently says. Null when it is hidden. */
+  get cursorReadout(): string | null {
+    return this.readout.label;
+  }
+
+  private refreshReadout(): void {
+    const map = this.viewModel?.map;
+    const tile = this.hovered;
+    if (map === undefined || tile === null) {
+      this.readout.hide();
+      return;
+    }
+    this.readout.show(map, tile, standingHeight(map, tile), this.cursorHeightDelta);
   }
 
   /**
@@ -686,6 +725,7 @@ export class BattleRenderer {
   dispose(): void {
     this.stop();
     this.disposeSceneContents();
+    this.readout.dispose();
     this.vfx.dispose();
     this.terrain.dispose();
     this.post.dispose();

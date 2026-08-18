@@ -185,6 +185,7 @@ const uiPort: UiPort = {
     // is, and what is riding on each unit (UI_DESIGN §14.3, §14.4). Reading them
     // off a panel means holding a name in your head while looking elsewhere.
     renderer.setFieldMarks(fieldMarksFrom(view.activeUnitId ?? null, view.field?.units ?? []));
+    renderer.setCursorHeightDelta(view.cursor?.heightDelta ?? null);
   },
   setMode: (mode: HudMode, detail?: string | null) => hud.setMode(mode, detail),
   lockForecast: () => hud.forecast.lock(),
@@ -301,6 +302,7 @@ const battlePort: BattlePort = {
   },
   end: () => {
     renderer.setFieldMarks(NO_MARKS);
+    renderer.setCursorHeightDelta(null);
     hud.actionMenu.menus.detach();
     hud.dialogue.detach();
     hud.notice.clear();

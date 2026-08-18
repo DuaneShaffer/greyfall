@@ -1,4 +1,5 @@
-// A 3x5 pixel font, just wide enough for damage numbers and the word MISS.
+// A 3x5 pixel font, just wide enough for damage numbers, the word MISS, and the
+// cursor's elevation readout.
 // Rasterizes to the same palette-index grids `src/art/pixel.ts` produces, so
 // the outline rule (ART_DIRECTION §7: soot-100 fill, 1px soot-900 outline) is
 // the same 8-connected ring the sprite pipeline uses, and the result paints to
@@ -37,6 +38,10 @@ const GLYPHS: Readonly<Record<string, readonly string[]>> = {
   M: ["#.#", "###", "###", "#.#", "#.#"],
   I: ["###", ".#.", ".#.", ".#.", "###"],
   S: ["###", "#..", "###", "..#", "###"],
+  // The elevation readout's own two: "H2 +1" is a height and a difference, and
+  // the gap between them has to be a glyph like any other or `textGrid` throws.
+  H: ["#.#", "#.#", "###", "#.#", "#.#"],
+  " ": ["...", "...", "...", "...", "..."],
 };
 
 export const hasGlyph = (char: string): boolean => char in GLYPHS;
