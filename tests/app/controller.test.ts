@@ -301,6 +301,50 @@ describe("power that goes out without the player throwing anything", () => {
   });
 });
 
+/**
+ * `chooseCommand` is pure, so re-asking a state core just refused returns the
+ * same refusal forever: the browser loop has to break the cycle itself, the way
+ * `src/sim/harness` does.
+ */
+describe("an AI command core refuses", () => {
+  const illegal = (state: GameState) => {
+    const acting = activeUnit(state);
+    return acting === null
+      ? null
+      : ({
+          kind: "act",
+          unitId: acting.id,
+          abilityId: "no-such-ability",
+          target: { kind: "unit", unitId: acting.id },
+        } as const);
+  };
+
+  function stubbornHarness(): Harness {
+    const battle = openBattle([rowen(), VALE]);
+    const renderer = fakeRenderer();
+    const ui = fakeUi();
+    const controller = new BattleController({
+      state: battle.state,
+      events: battle.events,
+      renderer: renderer.port,
+      ui: ui.port,
+      ai: illegal,
+    });
+    return { controller, renderer, ui };
+  }
+
+  it("ends the unit's turn rather than re-asking the same state forever", () => {
+    const h = stubbornHarness();
+    h.controller.start();
+    // The floor comes back to a player unit, which it never could if the enemy's
+    // refused order were simply retried on every tick.
+    runUntilPlayer(h, "rowen", 200);
+    expect(h.controller.phase).toBe("player");
+    expect(activeUnit(h.controller.state)?.id).toBe("rowen");
+    expect(h.ui.notices.some((notice) => notice.includes("stood down"))).toBe(true);
+  });
+});
+
 describe("aiming at something the ability cannot take", () => {
   /** A Machinist in the yard with Field Repair, an enemy, and a switch. */
   function repairHarness(): Harness {

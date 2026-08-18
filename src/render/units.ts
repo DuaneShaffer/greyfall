@@ -29,6 +29,8 @@ const ANCHOR_LIFT =
 const BASE_YAW = Math.PI / 4;
 const QUARTER = Math.PI / 2;
 
+const FLASH_COLOR = new THREE.Color(palette.overloadCore);
+
 export const cameraYawIndex = (yaw: number): CameraYaw => {
   const step = Math.round((yaw - BASE_YAW) / QUARTER);
   return ((((-step % 4) + 4) % 4) as CameraYaw);
@@ -134,7 +136,10 @@ export class UnitVisual {
   private yawIndex: CameraYaw = 0;
   private drawnView: DrawnView = "se";
   private mirrored = false;
-  private stamp = "";
+  private lastState: AnimState | null = null;
+  private lastFrame = -1;
+  private lastView: DrawnView | null = null;
+  private lastMirrored = false;
   private preview: Offset | null = null;
 
   constructor(view: UnitView) {
@@ -276,7 +281,7 @@ export class UnitVisual {
       this.rimMaterial.needsUpdate = true;
       this.glowMaterial.map = this.texture;
       this.glowMaterial.needsUpdate = true;
-      this.stamp = "";
+      this.lastState = null;
     }
     this.view = view;
     this.setTeam(view.team);
@@ -438,9 +443,19 @@ export class UnitVisual {
     this.mirrored = selection.mirrored;
     const state = this.player.state;
     const frame = this.player.frame;
-    const stamp = `${state}:${frame}:${selection.view}:${selection.mirrored ? 1 : 0}`;
-    if (!force && stamp === this.stamp) return;
-    this.stamp = stamp;
+    if (
+      !force &&
+      state === this.lastState &&
+      frame === this.lastFrame &&
+      selection.view === this.lastView &&
+      selection.mirrored === this.lastMirrored
+    ) {
+      return;
+    }
+    this.lastState = state;
+    this.lastFrame = frame;
+    this.lastView = selection.view;
+    this.lastMirrored = selection.mirrored;
     applyCellUV(this.texture, state, selection.view, frame, selection.mirrored);
   }
 
@@ -448,7 +463,7 @@ export class UnitVisual {
     const wounded = this.view.downed ? 0.55 : 0.78 + 0.22 * this.view.hpFraction;
     this.material.color.setScalar(wounded);
     if (this.flash > 0) {
-      this.material.color.lerp(new THREE.Color(palette.overloadCore), this.flash);
+      this.material.color.lerp(FLASH_COLOR, this.flash);
       this.material.color.addScalar(this.flash * 0.6);
     }
   }

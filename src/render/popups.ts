@@ -68,6 +68,9 @@ export const damagePopup = (amount: number, damageType: DamageType | null): Popu
 
 export const missPopup = (): PopupSpec => ({ text: "MISS", style: "miss", outlined: false });
 
+/** A status that rolled and did not stick. Quiet, like the miss it rhymes with. */
+export const resistPopup = (): PopupSpec => ({ text: "RESIST", style: "miss", outlined: false });
+
 const distanceSquared = (a: PopupAnchor, b: PopupAnchor): number =>
   (a.x - b.x) ** 2 + (a.z - b.z) ** 2;
 

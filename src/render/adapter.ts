@@ -233,6 +233,10 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
       return [
         { kind: "unitMissed", unitId: event.targetUnitId, sourceUnitId: event.unitId },
       ];
+    // A resisted status leaves no trace in state — no chip, no bar movement — so
+    // without a popup the roll may as well never have happened.
+    case "StatusResisted":
+      return [{ kind: "unitResisted", unitId: event.unitId }];
     case "DamageDealt":
       return hitEvent(
         stateAfter,
@@ -286,6 +290,10 @@ export function toRenderEvents(event: BattleEvent, stateAfter: GameState): Rende
     // impact language until core names one.
     case "ObjectDamaged":
       return [{ kind: "objectHit", objectId: event.objectId, amount: event.amount, damageType: "kinetic" }];
+    // Machinery carries no hp in the view model, so the redraw shows nothing:
+    // the repair is the negative hit `Healed` already established for units.
+    case "ObjectRepaired":
+      return [{ kind: "objectHit", objectId: event.objectId, amount: -event.amount, damageType: null }];
     case "ObjectDestroyed":
       return [{ kind: "objectDestroyed", objectId: event.objectId }];
     case "ObjectTriggered":

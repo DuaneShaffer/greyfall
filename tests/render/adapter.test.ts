@@ -237,6 +237,23 @@ describe("damage-type threading", () => {
       ),
     ).toEqual([{ kind: "objectHit", objectId: "crate-stack", amount: 12, damageType: "kinetic" }]);
   });
+
+  // Machinery carries no hp in the view model, so a repair that maps to nothing
+  // is a repair the player cannot see happening at all.
+  it("plays a repair as a negative hit, the way a heal is one", () => {
+    expect(
+      toRenderEvents(
+        { type: "ObjectRepaired", objectId: "crate-stack", amount: 7, hpRemaining: 25 },
+        state,
+      ),
+    ).toEqual([{ kind: "objectHit", objectId: "crate-stack", amount: -7, damageType: null }]);
+  });
+
+  it("says so when a status is resisted: state alone shows nothing at all", () => {
+    expect(
+      toRenderEvents({ type: "StatusResisted", unitId: "vale", statusId: "stagger" }, state),
+    ).toEqual([{ kind: "unitResisted", unitId: "vale" }]);
+  });
 });
 
 describe("beats that used to be scene rebuilds", () => {

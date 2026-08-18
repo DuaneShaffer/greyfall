@@ -196,6 +196,7 @@ describe("CampaignSelectScreen", () => {
         description: "Rowen Corvane's commission into the House Watch.",
         encounterCount: 5,
         file: { engagementsClosed: 2 },
+        unreadable: null,
       },
       {
         campaignId: "works-skirmishes",
@@ -203,6 +204,7 @@ describe("CampaignSelectScreen", () => {
         description: "Standing engagements in the Corvane works.",
         encounterCount: 1,
         file: null,
+        unreadable: null,
       },
     ],
   });
@@ -263,6 +265,23 @@ describe("CampaignSelectScreen", () => {
     screen.update(view());
     screen.menus.handleKey(key("Escape"));
     expect(screen.menus.depth).toBe(1);
+  });
+
+  it("shows a record that will not open as unreadable, never as a new file", () => {
+    const screen = new CampaignSelectScreen();
+    const broken = view();
+    screen.update({
+      campaigns: [{ ...broken.campaigns[0]!, file: null, unreadable: "Unsupported save version 2" }],
+    });
+    const entry = screen.el.querySelector<HTMLElement>(".gf-menu-entry");
+    expect(entry?.textContent).toContain("Unreadable");
+    expect(entry?.textContent).not.toContain("New file");
+    const detail = screen.el.querySelector(".gf-campaign-detail")?.textContent ?? "";
+    expect(detail).toContain("Unsupported save version 2");
+    expect(detail).not.toContain("Nothing on file");
+    expect(screen.el.querySelector(".gf-campaign-detail .gf-plate-stamp")?.textContent).toBe(
+      "UNREADABLE",
+    );
   });
 });
 

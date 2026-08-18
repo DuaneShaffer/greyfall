@@ -31,7 +31,12 @@ export interface SaveStorage {
 
 export type LoadOutcome =
   | { ok: true; campaign: CampaignState }
-  | { ok: false; reason: string };
+  /**
+   * `unreadable` separates the two failures the caller must treat differently:
+   * true means a blob is on the key and will not open, false means the key is
+   * empty. Only the first is a record worth protecting.
+   */
+  | { ok: false; reason: string; unreadable: boolean };
 
 export function memoryStorage(seed: Record<string, string> = {}): SaveStorage {
   const map = new Map(Object.entries(seed));
@@ -46,10 +51,14 @@ export function memoryStorage(seed: Record<string, string> = {}): SaveStorage {
   };
 }
 
+// One stand-in shared by every call, so a save and the load after it reach the
+// same map when there is no `localStorage` to reach instead.
+const nodeStorage = memoryStorage();
+
 /** Browser `localStorage` when there is one; an in-memory stand-in in Node. */
 export function defaultStorage(): SaveStorage {
   const candidate = (globalThis as { localStorage?: SaveStorage }).localStorage;
-  return candidate ?? memoryStorage();
+  return candidate ?? nodeStorage;
 }
 
 export function encodeSave(campaign: CampaignState): string {
@@ -63,9 +72,7 @@ const property = (value: object, key: string): unknown =>
 /**
  * One entry per `CampaignState` field, so the gate below cannot fall behind the
  * type it guards: adding a field to `CampaignState` is a compile error until it
- * is listed here. `null` is the explicit "decode does not check this" answer —
- * `completedEncounterIds` predates the gate and rejecting saves without it would
- * refuse blobs that load today.
+ * is listed here. `null` is the explicit "decode does not check this" answer.
  */
 const CAMPAIGN_FIELD_CHECKS: {
   readonly [K in keyof CampaignState]: ((value: unknown) => boolean) | null;
@@ -77,7 +84,7 @@ const CAMPAIGN_FIELD_CHECKS: {
   inventory: Array.isArray,
   fallen: Array.isArray,
   encounterIndex: (value) => typeof value === "number",
-  completedEncounterIds: null,
+  completedEncounterIds: Array.isArray,
 };
 
 function isCampaignState(value: unknown): value is CampaignState {
@@ -92,18 +99,22 @@ export function decodeSave(text: string): LoadOutcome {
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, reason: "Save data is not valid JSON" };
+    return { ok: false, reason: "Save data is not valid JSON", unreadable: true };
   }
   if (typeof parsed !== "object" || parsed === null) {
-    return { ok: false, reason: "Save data is not an object" };
+    return { ok: false, reason: "Save data is not an object", unreadable: true };
   }
   const saveVersion = property(parsed, "saveVersion");
   if (saveVersion !== SAVE_VERSION) {
-    return { ok: false, reason: `Unsupported save version ${String(saveVersion)}` };
+    return {
+      ok: false,
+      reason: `Unsupported save version ${String(saveVersion)}`,
+      unreadable: true,
+    };
   }
   const campaign = property(parsed, "campaign");
   if (!isCampaignState(campaign)) {
-    return { ok: false, reason: "Save data is not a campaign" };
+    return { ok: false, reason: "Save data is not a campaign", unreadable: true };
   }
   return { ok: true, campaign };
 }
@@ -117,7 +128,7 @@ export function loadCampaign(
   storage: SaveStorage = defaultStorage(),
 ): LoadOutcome {
   const text = storage.getItem(saveKeyFor(campaignId));
-  if (text === null) return { ok: false, reason: "No save found" };
+  if (text === null) return { ok: false, reason: "No save found", unreadable: false };
   return decodeSave(text);
 }
 
@@ -144,7 +155,7 @@ export function migrateSaves(storage: SaveStorage = defaultStorage()): string | 
   return decoded.campaign.campaignId;
 }
 
-/** Pretty-printed blob for the export-to-file path. */
+/** Pretty-printed blob for an export-to-file path; no screen offers one yet. */
 export function exportSave(campaign: CampaignState): string {
   return JSON.stringify({ saveVersion: SAVE_VERSION, campaign }, null, 2);
 }

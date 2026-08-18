@@ -66,6 +66,7 @@ if (paintedPortraits.length > 0) {
 let session: CampaignSession | null = null;
 let screens: BetweenBattleScreens | null = null;
 let runner: CampaignRunner | null = null;
+let autosave = true;
 
 // --- battle layer -----------------------------------------------------------
 
@@ -353,6 +354,7 @@ function registerView(): CampaignSelectView {
         file: filed.ok
           ? { engagementsClosed: filed.campaign.completedEncounterIds.length }
           : null,
+        unreadable: !filed.ok && filed.unreadable ? filed.reason : null,
       };
     }),
   };
@@ -369,6 +371,10 @@ function startCampaign(campaignId: string): void {
   const campaign = campaignById(campaignId);
   closeCampaign();
   const filed = loadCampaign(campaign.id);
+  const unreadable = !filed.ok && filed.unreadable ? filed.reason : null;
+  // A record that will not open is still a record. Nothing writes to its key
+  // until the player files over it deliberately from the camp menu.
+  autosave = unreadable === null;
   picker.menus.detach();
   pickerHost.classList.add("is-hidden");
 
@@ -377,7 +383,7 @@ function startCampaign(campaignId: string): void {
     content: CONTENT,
     state: filed.ok ? filed.campaign : createCampaign(campaign, UNITS),
     onChange: (next) => {
-      saveCampaign(next);
+      if (autosave) saveCampaign(next);
       screens?.refresh();
     },
     onError: (error) => screens?.notify(error.message),
@@ -395,6 +401,7 @@ function startCampaign(campaignId: string): void {
     onFormationClosed: () => clearFieldPreview(),
     save: () => {
       saveCampaign(opened.state);
+      autosave = true;
       screens?.notify("Progress filed.");
     },
     load: () => {
@@ -420,13 +427,16 @@ function startCampaign(campaignId: string): void {
 
   runner = new CampaignRunner({ session: opened, battle: battlePort, screens });
   runner.start();
+  if (unreadable !== null) {
+    screens.notify(`Save incompatible: ${unreadable}. Nothing is written until you file.`);
+  }
 }
 
 /** File the open campaign's record and tear its layer down. */
 function closeCampaign(): void {
   const active = session;
   if (active === null) return;
-  saveCampaign(active.state);
+  if (autosave) saveCampaign(active.state);
   battlePort.end();
   clearFieldPreview();
   screens?.destroy();

@@ -67,7 +67,7 @@ describe("save round trip", () => {
 describe("save storage", () => {
   it("reports a missing save rather than throwing", () => {
     const outcome = loadCampaign(BENCH_ID, memoryStorage());
-    expect(outcome).toEqual({ ok: false, reason: "No save found" });
+    expect(outcome).toEqual({ ok: false, reason: "No save found", unreadable: false });
   });
 
   it("reports a campaign that has never been filed, even beside one that has", () => {
@@ -76,6 +76,7 @@ describe("save storage", () => {
     expect(loadCampaign("works-skirmishes", storage)).toEqual({
       ok: false,
       reason: "No save found",
+      unreadable: false,
     });
   });
 
@@ -176,7 +177,11 @@ describe("migrating the shared save key", () => {
 
 describe("save validation", () => {
   it("rejects non-JSON", () => {
-    expect(decodeSave("{not json")).toEqual({ ok: false, reason: "Save data is not valid JSON" });
+    expect(decodeSave("{not json")).toEqual({
+      ok: false,
+      reason: "Save data is not valid JSON",
+      unreadable: true,
+    });
   });
 
   it("rejects a non-object", () => {
@@ -192,6 +197,68 @@ describe("save validation", () => {
 
   it("rejects an envelope whose payload is not a campaign", () => {
     const outcome = decodeSave(JSON.stringify({ saveVersion: SAVE_VERSION, campaign: { nope: 1 } }));
-    expect(outcome).toEqual({ ok: false, reason: "Save data is not a campaign" });
+    expect(outcome).toEqual({
+      ok: false,
+      reason: "Save data is not a campaign",
+      unreadable: true,
+    });
+  });
+
+  /**
+   * Every field the campaign screens dereference has to be gated here, or the
+   * blob reaches them typed as a campaign and the screen throws. The register
+   * reads `completedEncounterIds.length` on the way in.
+   */
+  it("rejects a campaign whose completedEncounterIds is missing or not an array", () => {
+    const { completedEncounterIds: _dropped, ...withoutField } = benchState();
+    expect(decodeSave(JSON.stringify({ saveVersion: SAVE_VERSION, campaign: withoutField })).ok).toBe(
+      false,
+    );
+
+    const wrongType = { ...benchState(), completedEncounterIds: "e1-marshaling-yard" };
+    expect(decodeSave(JSON.stringify({ saveVersion: SAVE_VERSION, campaign: wrongType })).ok).toBe(
+      false,
+    );
+  });
+});
+
+/**
+ * A record that will not open is still a record: the caller has to be able to
+ * tell it apart from an empty key, because only one of the two is safe to
+ * write over.
+ */
+describe("a save that will not decode", () => {
+  it("is reported as unreadable, not as a campaign never played", () => {
+    const storage = memoryStorage({ [saveKeyFor(BENCH_ID)]: "{not json" });
+    const outcome = loadCampaign(BENCH_ID, storage);
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.unreadable).toBe(true);
+  });
+
+  it("reads a future save version as unreadable rather than absent", () => {
+    const text = JSON.stringify({ saveVersion: SAVE_VERSION + 1, campaign: benchState() });
+    const outcome = loadCampaign(BENCH_ID, memoryStorage({ [saveKeyFor(BENCH_ID)]: text }));
+    expect(outcome.ok).toBe(false);
+    if (outcome.ok) return;
+    expect(outcome.unreadable).toBe(true);
+  });
+
+  it("leaves the blob exactly where it is: loading never writes", () => {
+    const storage = memoryStorage({ [saveKeyFor(BENCH_ID)]: "{not json" });
+    loadCampaign(BENCH_ID, storage);
+    expect(storage.getItem(saveKeyFor(BENCH_ID))).toBe("{not json");
+  });
+});
+
+describe("the default storage", () => {
+  it("shares one in-memory stand-in across calls, so a save survives to the load", () => {
+    if ("localStorage" in globalThis) return;
+    const state = benchState();
+    saveCampaign(state);
+    const loaded = loadCampaign(BENCH_ID);
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) expect(loaded.campaign).toEqual(state);
+    clearCampaign(BENCH_ID);
   });
 });

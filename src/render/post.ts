@@ -79,6 +79,7 @@ export class PostChain {
   private readonly finalComposer: EffectComposer | null = null;
   private readonly occluderMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
   private readonly occluders: THREE.Mesh[] = [];
+  private readonly occluderMaterials: (THREE.Material | THREE.Material[])[] = [];
 
   constructor(
     renderer: THREE.WebGLRenderer,
@@ -145,6 +146,7 @@ export class PostChain {
   setOccluders(meshes: readonly THREE.Mesh[]): void {
     this.occluders.length = 0;
     this.occluders.push(...meshes);
+    this.occluderMaterials.length = this.occluders.length;
   }
 
   setSize(width: number, height: number): void {
@@ -162,12 +164,12 @@ export class PostChain {
     }
 
     const background = this.scene.background;
-    const swapped = this.occluders.map((mesh) => {
-      const material = mesh.material;
+    for (let i = 0; i < this.occluders.length; i += 1) {
+      const mesh = this.occluders[i] as THREE.Mesh;
+      this.occluderMaterials[i] = mesh.material;
       mesh.material = this.occluderMaterial;
       mesh.layers.enable(BLOOM_LAYER);
-      return { mesh, material };
-    });
+    }
     this.scene.background = null;
     this.camera.layers.set(BLOOM_LAYER);
 
@@ -175,8 +177,9 @@ export class PostChain {
 
     this.camera.layers.set(BASE_LAYER);
     this.scene.background = background;
-    for (const { mesh, material } of swapped) {
-      mesh.material = material;
+    for (let i = 0; i < this.occluders.length; i += 1) {
+      const mesh = this.occluders[i] as THREE.Mesh;
+      mesh.material = this.occluderMaterials[i] as THREE.Material | THREE.Material[];
       mesh.layers.disable(BLOOM_LAYER);
     }
 
@@ -184,9 +187,15 @@ export class PostChain {
   }
 
   dispose(): void {
-    this.bloomComposer?.dispose();
-    this.finalComposer?.dispose();
+    // EffectComposer.dispose() frees only its own targets, never its passes, so
+    // the bloom pass's render targets outlive the chain unless walked here.
+    for (const composer of [this.bloomComposer, this.finalComposer]) {
+      if (!composer) continue;
+      for (const pass of composer.passes) pass.dispose();
+      composer.dispose();
+    }
     this.occluderMaterial.dispose();
     this.occluders.length = 0;
+    this.occluderMaterials.length = 0;
   }
 }

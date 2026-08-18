@@ -10,7 +10,7 @@ import { HEIGHT_STEP, facingBetween, inBounds, standingHeight, tileCenter } from
 import { TileHighlights, type HighlightOptions } from "./highlights.js";
 import { DRAW_ORDER } from "./layers.js";
 import { ObjectVisual } from "./objects.js";
-import { damagePopup, missPopup } from "./popups.js";
+import { damagePopup, missPopup, resistPopup } from "./popups.js";
 import { PostChain } from "./post.js";
 import {
   PresentationQueue,
@@ -706,6 +706,11 @@ export class BattleRenderer {
         if (!head) return null;
         return instantAnimation(() => this.vfx.popup(missPopup(), head));
       }
+      case "unitResisted": {
+        const head = this.unitPoint(event.unitId, POPUP_HEAD_HEIGHT);
+        if (!head) return null;
+        return instantAnimation(() => this.vfx.popup(resistPopup(), head));
+      }
       case "unitHit": {
         const visual = this.units.get(event.unitId);
         const view = findUnitView(viewModel, event.unitId);
@@ -865,7 +870,8 @@ export class BattleRenderer {
           if (struck) return;
           struck = true;
           if (head) this.vfx.popup(damagePopup(event.amount, event.damageType), head);
-          this.vfx.impact(event.damageType, contact, { tile });
+          if (event.amount < 0) this.vfx.healMotes(contact);
+          else this.vfx.impact(event.damageType ?? "kinetic", contact, { tile });
         };
         return { duration: MACHINE_SHOT_SECONDS, update: strike, finish: strike };
       }

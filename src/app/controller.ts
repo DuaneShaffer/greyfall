@@ -430,6 +430,23 @@ function powerChangeNotice(
 }
 
 /**
+ * Somebody other than the player worked a machine. A payload that moves power
+ * announces itself above; one that does anything else — damage on a set of
+ * tiles, a spawn, a door — reaches the floor with nothing naming the machine
+ * that sent it, and an enemy pulling a lever reads as the map misbehaving.
+ */
+function activationNotice(state: GameState, events: readonly BattleEvent[]): string | null {
+  const activated = events.find(
+    (event): event is Extract<BattleEvent, { type: "ObjectActivated" }> =>
+      event.type === "ObjectActivated",
+  );
+  if (activated === undefined) return null;
+  const name = getObject(state, activated.objectId)?.def.name ?? "Machinery";
+  const actor = getUnit(state, activated.unitId)?.unit.name ?? "Someone";
+  return `${actor} worked ${name}.`;
+}
+
+/**
  * Beats the renderer cannot animate its way to, so the scene is rebuilt from
  * state instead.
  *
@@ -907,7 +924,8 @@ export class BattleController {
       if (event.type === "DialogueRequested") this.pendingDialogue.push(...event.lines);
     }
     if (!this.operating) {
-      const notice = powerChangeNotice(stateAfter, events, stateBefore);
+      const notice =
+        powerChangeNotice(stateAfter, events, stateBefore) ?? activationNotice(stateAfter, events);
       if (notice !== null) this.ui.notify?.(notice, "machine");
     }
     this.awaitingPresentation = renderEvents.length > 0;
@@ -1022,14 +1040,32 @@ export class BattleController {
     return { ...view, turnOrder: { entries: [] } };
   }
 
+  /**
+   * A refused AI command cannot simply be re-asked. `chooseCommand` is pure, so
+   * an unchanged state yields the same command and the same refusal on every
+   * tick — the battle would never advance again. Ending the unit's turn is the
+   * one order that moves the state the next tick reads, which is what
+   * `src/sim/harness` does with the same rejection.
+   */
   private stepAi(): void {
-    const command = this.ai(this.gameState);
     const acting = activeUnit(this.gameState);
     if (acting === null) {
       this.advance();
       return;
     }
-    this.dispatch(command ?? { kind: "endTurn", unitId: acting.id });
+    const command = this.ai(this.gameState);
+    const endTurn: Command = { kind: "endTurn", unitId: acting.id };
+    if (this.dispatch(command ?? endTurn)) return;
+
+    const refusal = this.lastCommandError?.message ?? "no reason given";
+    console.error(`[greyfall] ${acting.id}: AI command refused (${refusal}); ending its turn`);
+    if (command !== null && this.dispatch(endTurn)) {
+      this.ui.notify?.(`${acting.unit.name} stood down — ${refusal}`, "refusal");
+      return;
+    }
+    console.error(`[greyfall] ${acting.id}: end turn refused too; closing the field`);
+    this.setPhase("ended");
+    this.ui.showFinalState(this.finalView(), null);
   }
 
   // --- helpers --------------------------------------------------------------

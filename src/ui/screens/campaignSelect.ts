@@ -15,6 +15,8 @@ export interface CampaignEntryView {
   description: string;
   encounterCount: number;
   file: CampaignFileView | null;
+  /** Why the campaign's record would not open, when there is one that will not. */
+  unreadable: string | null;
 }
 
 export interface CampaignSelectView {
@@ -27,6 +29,11 @@ export interface CampaignSelectOptions {
 
 const engagements = (count: number): string =>
   count === 1 ? "1 engagement" : `${String(count)} engagements`;
+
+// An unreadable record must never read as a campaign nobody has played: the
+// difference is the whole reason the fresh state is not written over it.
+const fileState = (entry: CampaignEntryView): string =>
+  entry.unreadable !== null ? "Unreadable" : entry.file === null ? "New file" : "Filed";
 
 /**
  * The register the game opens on: every campaign on file, and which of them
@@ -104,7 +111,7 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
       entries: view.campaigns.map((entry) => ({
         id: entry.campaignId,
         label: entry.name,
-        detail: entry.file === null ? "New file" : "Filed",
+        detail: fileState(entry),
       })),
       onCursor: (entry) =>
         this.renderDetail(
@@ -123,8 +130,10 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
       return;
     }
     const closed = entry.file === null ? 0 : entry.file.engagementsClosed;
+    const stamp =
+      entry.unreadable !== null ? "UNREADABLE" : entry.file === null ? "NEW" : "FILED";
     replaceChildren(this.detail, [
-      plate("File", entry.file === null ? "NEW" : "FILED"),
+      plate("File", stamp),
       el("div", {
         class: "gf-panel-body",
         children: [
@@ -138,9 +147,10 @@ export class CampaignSelectScreen implements Component<CampaignSelectView> {
               el("dt", { text: "Record" }),
               el("dd", {
                 text:
-                  entry.file === null
+                  entry.unreadable ??
+                  (entry.file === null
                     ? "Nothing on file"
-                    : `${String(closed)} of ${String(entry.encounterCount)} closed`,
+                    : `${String(closed)} of ${String(entry.encounterCount)} closed`),
               }),
             ],
           }),

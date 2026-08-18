@@ -46,6 +46,8 @@ export type RenderEvent =
       sourceUnitId: string | null;
     }
   | { kind: "unitMissed"; unitId: string; sourceUnitId: string | null }
+  /** A status rolled against the target and did not stick; state shows nothing. */
+  | { kind: "unitResisted"; unitId: string }
   | { kind: "unitDowned"; unitId: string }
   /** Taken off the field without being downed: walks out and is gone. */
   | { kind: "unitRemoved"; unitId: string }
@@ -62,7 +64,8 @@ export type RenderEvent =
   | { kind: "lineSevered"; objectId: string }
   | { kind: "lineSpliced"; objectId: string }
   | { kind: "loadAttached"; gridId: string; nodeId: string; amount: number }
-  | { kind: "objectHit"; objectId: string; amount: number; damageType: DamageType }
+  /** Negative is a repair, as on `unitHit`; a repair carries no damage type. */
+  | { kind: "objectHit"; objectId: string; amount: number; damageType: DamageType | null }
   | { kind: "objectDestroyed"; objectId: string }
   /** A deployable set off by contact: bursts and is gone. */
   | { kind: "objectTriggered"; objectId: string; unitId: string }

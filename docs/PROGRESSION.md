@@ -277,13 +277,22 @@ The three knobs remain `STANDING_PER_ACTION`, the thresholds, and this.
 { "saveVersion": 1, "campaign": { /* CampaignState */ } }
 ```
 
-- `localStorage` key `greyfall.campaign`, written on every committed op
-  (`CampaignSession.onChange`).
+- One `localStorage` key per campaign, `greyfall.campaign.<campaignId>`, written
+  on every committed op (`CampaignSession.onChange`). Bare `greyfall.campaign`
+  is the legacy key from before saves were filed separately; `migrateSaves`
+  moves such a blob to the key for the campaign it names, once, and leaves it
+  alone if it cannot read it or if that campaign already has a file.
 - `exportSave` / `importSave` produce and consume the same envelope
-  pretty-printed, for the export-to-file path.
-- `decodeSave` validates the envelope version and the payload's shape and
-  returns `{ ok: false, reason }` rather than throwing — a corrupt save is a
-  message, not a crash.
+  pretty-printed. Nothing on screen offers an export yet; the pair exists so the
+  format has one, and is covered by tests only.
+- `decodeSave` validates the envelope version and every `CampaignState` field,
+  and returns `{ ok: false, reason, unreadable }` rather than throwing — a
+  corrupt save is a message, not a crash.
+- `unreadable` separates "there is a file and it will not open" from "there is
+  no file". The register shows the first as *Unreadable* rather than as a new
+  campaign, and opening it suspends autosave, so a record nothing can read is
+  never written over by the fresh campaign that stands in for it. Filing from
+  the camp menu is the deliberate act that replaces it.
 - No timestamps, no derived fields: `encodeSave` of a state is deterministic, so
   a round trip is byte-identical and testable as such.
 - There is no migration machinery, on purpose. It arrives with the first
