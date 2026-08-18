@@ -3,6 +3,7 @@ import { Component, el } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import type { BattleHudView, HudMode } from "../state.js";
 import { ActionMenu, type CameraYawIndex } from "./actionMenu.js";
+import { BRIEFING_ID, NO_OBJECTIVE, briefingMenu } from "./battleMenu.js";
 import { DialogueBox } from "./dialogue.js";
 import { ForecastPanel } from "./forecast.js";
 import { ModeBar } from "./modeBar.js";
@@ -44,6 +45,11 @@ export class BattleHud implements Component<BattleHudView> {
   readonly mode: ModeBar;
   readonly notice: NoticeStrip;
   private readonly intents: UiIntents;
+  /** Where the forfeit goes. The battle seam has no verb for it of its own. */
+  private readonly onForfeit: () => void;
+  /** The encounter's line, for the chip and the briefing's own page. */
+  private objective: string | null = null;
+  private readonly objectiveEl: HTMLElement;
   /** Who the orders belong to, for the withdraw affordance. */
   private actingUnitId: string | null = null;
   /** An order is staged and unsent: the forecast is answering something. */
@@ -55,10 +61,17 @@ export class BattleHud implements Component<BattleHudView> {
       onAbilityPreview?: (abilityId: string | null) => void;
       /** The camera's bearing, from the mode bar's own buttons. */
       onOrbit?: (direction: 1 | -1) => void;
+      /**
+       * The player gave up the field. Nothing in the battle seam ends an
+       * engagement by choice, so the app supplies the verb; without one the
+       * briefing falls back to closing the screen.
+       */
+      onForfeit?: () => void;
     } = {},
   ) {
     const intents = withIntents(options.intents);
     this.intents = intents;
+    this.onForfeit = options.onForfeit ?? ((): void => intents.closeScreen());
     this.actionMenu = new ActionMenu({
       intents,
       onRootCancel: () => void this.withdraw(),
@@ -80,10 +93,17 @@ export class BattleHud implements Component<BattleHudView> {
     this.power = new PowerLedger();
     this.dialogue = new DialogueBox({ intents });
     this.mode = new ModeBar({
-      onWithdraw: () => this.withdraw(),
+      onWithdraw: () => void this.withdraw(),
+      onBriefing: () => this.openBriefing(),
       ...(options.onOrbit ? { onOrbit: options.onOrbit } : {}),
     });
     this.notice = new NoticeStrip();
+    // What the engagement is for, kept where the reference material lives. Null
+    // until an encounter says, and then it is not the interface's to invent.
+    this.objectiveEl = el("p", {
+      class: "gf-objective-chip is-hidden",
+      attrs: { "aria-label": "Objective" },
+    });
     this.el = el("div", {
       class: "gf-battle-hud",
       children: [
@@ -91,7 +111,10 @@ export class BattleHud implements Component<BattleHudView> {
         this.notice.el,
         el("div", { class: "gf-order", children: [this.acting.el, this.actionMenu.el] }),
         this.forecast.el,
-        el("div", { class: "gf-clock", children: [this.turnOrder.el, this.power.el] }),
+        el("div", {
+          class: "gf-clock",
+          children: [this.objectiveEl, this.turnOrder.el, this.power.el],
+        }),
         this.dialogue.el,
         this.mode.el,
       ],
@@ -112,6 +135,9 @@ export class BattleHud implements Component<BattleHudView> {
    */
   withdraw(): WithdrawOutcome {
     if (!PLAYER_MODES.has(this.mode.current)) return "none";
+    // Nothing has been drawn yet, so there is nothing to leave — and a briefing
+    // pushed here would become the root the orders never get back.
+    if (this.actionMenu.menus.depth === 0) return "none";
     if (this.actionMenu.menus.depth > 1) {
       this.actionMenu.menus.cancel();
       return "menu";
@@ -128,9 +154,30 @@ export class BattleHud implements Component<BattleHudView> {
     return "root";
   }
 
-  /** Nothing is staged and the orders stand. The root still owes an answer. */
+  /**
+   * Nothing is staged and the orders stand, so the gesture opens the briefing:
+   * a root that answered Escape with silence is the finding this replaces.
+   */
   private rootWithdraw(): void {
-    this.notify("Nothing staged — the orders stand.");
+    this.openBriefing();
+  }
+
+  /** The briefing, from Escape at the root or from the mode bar's own entry. */
+  openBriefing(): void {
+    if (this.actionMenu.menus.depth === 0) return;
+    if (this.actionMenu.menus.path.includes(BRIEFING_ID)) return;
+    this.actionMenu.menus.push(
+      briefingMenu(this.actionMenu.menus, {
+        objective: () => this.objective,
+        onForfeit: () => this.forfeit(),
+      }),
+    );
+  }
+
+  private forfeit(): void {
+    while (this.actionMenu.menus.depth > 1) this.actionMenu.menus.pop();
+    this.notify("The field is given up.", "refusal");
+    this.onForfeit();
   }
 
   /** An unsent order the forecast is answering. A committed one is a record. */
@@ -141,6 +188,7 @@ export class BattleHud implements Component<BattleHudView> {
   /** Everything but the dialogue, whose reveal must not restart on a redraw. */
   render(view: BattleHudView): void {
     this.actingUnitId = view.action.unit.id;
+    this.setObjective(view.objective ?? null);
     this.actionMenu.update(view.action);
     this.acting.update(view.action.unit);
     // The acting unit already has a panel; repeating it as "inspecting" is
@@ -157,6 +205,13 @@ export class BattleHud implements Component<BattleHudView> {
   update(view: BattleHudView): void {
     this.render(view);
     this.dialogue.update(view.dialogue);
+  }
+
+  /** The encounter's line. Absent is a fact about the encounter, not a blank. */
+  private setObjective(objective: string | null): void {
+    this.objective = objective;
+    this.objectiveEl.textContent = objective ?? NO_OBJECTIVE;
+    this.objectiveEl.classList.toggle("is-hidden", objective === null);
   }
 
   setMode(mode: HudMode, detail?: string | null): void {

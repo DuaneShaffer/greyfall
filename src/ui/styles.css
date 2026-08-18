@@ -3650,3 +3650,48 @@
 .gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="south"] {
   grid-area: nw;
 }
+
+/* --- the briefing, and what the engagement is for ------------------------- */
+
+/* Reference material, in the reference column: one line, above the queue, and
+   gone entirely for an engagement nobody wrote an objective for. */
+.gf-objective-chip {
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gf-dim);
+  background: var(--gf-trough);
+  border: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-inset);
+  padding: 3px var(--gf-s-2);
+  max-width: 40ch;
+  line-height: 1.35;
+}
+
+.gf-objective-chip.is-hidden {
+  display: none;
+}
+
+/* Prose pages, not orders: the lines wrap and the label above them is the
+   heading, so a page reads as a page and a row still takes the cursor. */
+.gf-menu[data-menu="briefing-systems"] .gf-menu-list,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-list {
+  max-width: 52ch;
+}
+
+.gf-menu[data-menu="briefing-systems"] .gf-menu-label,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-label {
+  color: var(--gf-text);
+}
+
+.gf-menu[data-menu="briefing-systems"] .gf-menu-note,
+.gf-menu[data-menu="briefing-objectives"] .gf-menu-note {
+  white-space: normal;
+  line-height: 1.45;
+  padding-bottom: 2px;
+}
+
+/* Giving up the field is a decision, so the row that does it reads like one. */
+.gf-menu[data-menu="briefing-forfeit"] .gf-menu-entry[data-entry="forfeit"] .gf-menu-label {
+  color: var(--gf-enemy);
+}

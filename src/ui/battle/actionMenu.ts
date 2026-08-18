@@ -27,8 +27,13 @@ const OPERABLES_ID = "action-operables";
 const ITEMS_ID = "action-items";
 const UNDO_ID = "undo-move";
 
-/** Why the player is being asked at all — the rule the pick is worth anything for. */
-export const FACING_NOTE = "Attacks from the side and behind land harder.";
+/**
+ * Why the player is being asked at all. Accuracy, not damage: facing halves the
+ * target's evade from the side and ignores it from behind, and changes nothing
+ * about how hard the blow is (COMBAT_RULES §5).
+ */
+export const FACING_NOTE =
+  "Side and back attacks land more often: side halves the target's evade, the back ignores it.";
 
 /** Staging is not sending, and the row has to say which one it just did. */
 export const OPERATE_NOTE = "Forecast only — the stamp sends it.";

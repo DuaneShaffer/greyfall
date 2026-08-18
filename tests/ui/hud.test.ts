@@ -112,7 +112,18 @@ describe("withdraw is the one way back out", () => {
   it("answers at the root instead of doing nothing", () => {
     const { hud, calls } = rig();
     expect(hud.withdraw()).toBe("root");
-    expect(hud.notice.el.textContent).not.toBe("");
+    // Nothing was staged, so the gesture is worth a briefing rather than silence.
+    expect(hud.actionMenu.menus.path).toEqual(["action-root", "battle-briefing"]);
+    expect(calls).toEqual([]);
+  });
+
+  it("is a harmless no-op before anything has been drawn", () => {
+    const { intents, calls } = recordingIntents();
+    const bare = new BattleHud({ intents });
+    bare.setMode("orders");
+    expect(bare.withdraw()).toBe("none");
+    bare.openBriefing();
+    expect(bare.actionMenu.menus.depth).toBe(0);
     expect(calls).toEqual([]);
   });
 
@@ -131,7 +142,7 @@ describe("withdraw is the one way back out", () => {
     const { hud } = rig();
     hud.actionMenu.attach(document);
     document.dispatchEvent(key("Escape"));
-    expect(hud.notice.el.textContent).not.toBe("");
+    expect(hud.actionMenu.menus.path).toEqual(["action-root", "battle-briefing"]);
     hud.destroy();
   });
 
