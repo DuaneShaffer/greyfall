@@ -1,6 +1,12 @@
 /** @vitest-environment happy-dom */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { MenuDef, MenuStack } from "../../src/ui/menu.js";
+import {
+  MenuDef,
+  MenuStack,
+  REFUSE_EMPTY,
+  REFUSE_INERT,
+  REFUSE_NO_WAY_BACK,
+} from "../../src/ui/menu.js";
 
 function key(name: string): KeyboardEvent {
   return new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true });
@@ -236,5 +242,101 @@ describe("MenuStack", () => {
     );
     expect(stack.cursorEntry?.id).toBe("act");
     expect(stack.el.querySelectorAll(".gf-menu-entry.is-disabled").length).toBe(0);
+  });
+});
+
+/**
+ * A refusal the player cannot read is a key that looks broken. The stack
+ * flashes and *names the rule*, at every place a row can say no.
+ */
+describe("MenuStack refusals speak", () => {
+  it("names the reason when a greyed row is confirmed", () => {
+    const onRefuse = vi.fn();
+    const stack = new MenuStack({ onRefuse });
+    stack.push(baseMenu());
+    stack.handleKey(key("ArrowDown"));
+    stack.handleKey(key("ArrowDown"));
+    // The cursor skips the greyed row, so reach it the way a mouse does.
+    stack.el.querySelector<HTMLElement>(".gf-menu-entry.is-disabled")?.click();
+    expect(stack.el.classList.contains("is-refused")).toBe(true);
+    expect(onRefuse).toHaveBeenCalledWith("Insufficient charge", expect.objectContaining({ id: "overload" }));
+  });
+
+  it("falls back to the row's own name when nothing explained it", () => {
+    const onRefuse = vi.fn();
+    const stack = new MenuStack({ onRefuse });
+    stack.push({ id: "orders", entries: [{ id: "act", label: "Act", disabled: true }] });
+    stack.handleKey(key("Enter"));
+    expect(onRefuse).toHaveBeenCalledWith("Act is not available.", expect.objectContaining({ id: "act" }));
+  });
+
+  it("says nothing can be ordered when the list is empty", () => {
+    const onRefuse = vi.fn();
+    const stack = new MenuStack({ onRefuse });
+    stack.push({ id: "empty", entries: [] });
+    stack.handleKey(key("Enter"));
+    expect(onRefuse).toHaveBeenCalledWith(REFUSE_EMPTY, null);
+  });
+
+  it("explains a click on a row under an open submenu instead of eating it", () => {
+    const onRefuse = vi.fn();
+    const onSelect = vi.fn();
+    const stack = new MenuStack({ onRefuse });
+    stack.push(baseMenu({ onSelect }));
+    stack.push({ id: "skillset-enforcer", entries: [{ id: "pin", label: "Pin" }] });
+    stack.el.querySelector<HTMLElement>("[data-menu='orders'] .gf-menu-entry")?.dispatchEvent(
+      new MouseEvent("click", { bubbles: true }),
+    );
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(onRefuse).toHaveBeenCalledWith(REFUSE_INERT, expect.objectContaining({ id: "move" }));
+  });
+
+  it("reports a real back-out, and refuses one it cannot make", () => {
+    const onRefuse = vi.fn();
+    const stack = new MenuStack({ onRefuse });
+    const onCancel = vi.fn();
+    stack.push(baseMenu({ cancellable: false, onCancel }));
+    expect(stack.cancel()).toBe(true);
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(onRefuse).not.toHaveBeenCalled();
+
+    stack.clearStack();
+    stack.push(baseMenu({ cancellable: false }));
+    expect(stack.cancel()).toBe(false);
+    expect(onRefuse).toHaveBeenCalledWith(REFUSE_NO_WAY_BACK, null);
+    expect(stack.depth).toBe(1);
+  });
+
+  it("pops one level per cancel and reports it", () => {
+    const stack = new MenuStack();
+    stack.push(baseMenu({ cancellable: false, onCancel: () => undefined }));
+    stack.push({ id: "skillset-enforcer", entries: [{ id: "pin", label: "Pin" }] });
+    expect(stack.cancel()).toBe(true);
+    expect(stack.depth).toBe(1);
+  });
+
+  it("re-announces a cursor a refresh pushed off a row that just went dead", () => {
+    const onCursor = vi.fn();
+    const stack = new MenuStack();
+    stack.push({
+      id: "operables",
+      entries: [
+        { id: "breaker", label: "North Breaker" },
+        { id: "lift", label: "Lift Deck" },
+      ],
+      onCursor,
+    });
+    onCursor.mockClear();
+    // The row the preview was staged from is gone; the preview must follow the
+    // cursor rather than describing a machine nobody is pointing at.
+    stack.refresh({
+      id: "operables",
+      entries: [
+        { id: "breaker", label: "North Breaker", disabled: true, disabledReason: "Out of reach" },
+        { id: "lift", label: "Lift Deck" },
+      ],
+      onCursor,
+    });
+    expect(onCursor.mock.calls.at(-1)?.[0]).toMatchObject({ id: "lift" });
   });
 });
