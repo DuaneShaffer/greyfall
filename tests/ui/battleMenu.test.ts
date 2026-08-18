@@ -141,6 +141,7 @@ describe("the briefing", () => {
       "damage-types",
       "borrow-a-skillset",
       "doctrine",
+      "elevation",
     ]);
     for (const note of SYSTEMS_NOTES) {
       expect(note.body.length).toBeGreaterThan(0);

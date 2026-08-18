@@ -285,6 +285,35 @@ Source: CREATIVE_BIBLE §4 and §5.5; the word as used in
 
 ---
 
+## `elevation` — Elevation
+
+*Height decides what you can reach and what you can see. It does not decide how
+hard anything hits.*
+
+Every tile has a stand height — the number the cursor readout prints — and an
+order cares about it twice. Reach first: an order's vertical figure is the
+height difference it will accept between you and the aimed tile, and a target
+above or below that band is out of reach at any distance. Sight second: the
+sight line runs from a unit of eye height above your tile to a unit above the
+target's, and ground standing taller than that line blocks it — high ground sees
+over cover that blinds the floor, and the reverse hides you from it.
+
+Movement pays for height in steps: a single step up or down larger than the
+unit's Jump is refused, so a ledge two high is a wall to a Jump of one and a
+stair to a Jump of two. A powered catwalk or lift deck **is** the tile's height
+while it is fed — cut its power and the deck drops with everything the height
+was doing for pathing, reach and sight, in the same instant.
+
+There is no high-ground bonus. A hit from above lands the same figures as a hit
+from the flat, and the honest reading of the +1 on the cursor is *reachable or
+not*, never *harder or softer*. What height buys is position: the reach bands
+you sit inside, the sight lines you own, and the steps an enemy must spend to
+get to you.
+
+Source: `docs/COMBAT_RULES.md` §11–12 (stand height, range, line of sight) and
+§10 (movement steps against Jump).
+
+
 ## Named deployables (canonical display names)
 
 A Machinist's deployables are objects on the board, and the board names them.

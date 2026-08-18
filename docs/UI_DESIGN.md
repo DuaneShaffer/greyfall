@@ -1084,7 +1084,8 @@ Escape means when there is nothing left to back out of. Three entries:
 - **Systems** — the help pages. **The copy is `docs/SYSTEMS_COPY.md` and that
   file is the source**: Power (with LIVE/DEAD, throwing a breaker, and the
   Marshaling Yard's Freight Lift), Standing, Charge, Cast speed, Resolve,
-  Attunement, damage types and resistance, borrowing a skillset, and doctrine.
+  Attunement, damage types and resistance, borrowing a skillset, doctrine, and
+  elevation.
   A wave shipping provisional inline strings reconciles *to* that file. Every
   entry there carries a `key` for exactly that, and `SYSTEMS_NOTES`
   (`src/ui/battle/battleMenu.ts`) is keyed off it: the entry's *one line* is the
