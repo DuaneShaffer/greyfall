@@ -8,22 +8,27 @@ import type {
   EquipSlotView,
   EquipmentView,
   FallenEntryView,
+  FieldCursorView,
+  FieldView,
   ForecastView,
   ItemEntryView,
   ItemOptionView,
   JobsView,
   LearningView,
+  LogEntryView,
   MechanicsView,
   PartyView,
   RosterEntryView,
   PowerLedgerView,
   SkillsetView,
   StatLineView,
+  TargetingView,
   TurnOrderView,
   UnitSheetView,
   UnitView,
 } from "./state.js";
 import { EQUIP_SLOTS, STAT_LABELS } from "./state.js";
+import type { DeployOppositionView } from "./screens/deployment.js";
 import { equipTagLabel, formatStatDelta } from "./screens/vocabulary.js";
 
 // Mock state for the harness and tests. Content marked "real" below is copied
@@ -932,4 +937,246 @@ export function mockDeploymentView(overrides: Partial<DeploymentView> = {}): Dep
     canConfirm: true,
     ...overrides,
   };
+}
+
+/** The engagement's own line, from `data/encounters/e1-marshaling-yard.json`. */
+export const MOCK_OBJECTIVE = "Clear the yard gate and put down whoever swung first.";
+
+/**
+ * The battle's record, one exchange deep: an order, the answer to it, and the
+ * consequence nobody aimed at. Written as the seam formats it (`src/app/
+ * battleLog.ts`), so the panel in the harness is reading the shape it will be
+ * fed rather than a prettier one.
+ */
+export function mockBattleLog(): LogEntryView[] {
+  return [
+    {
+      index: 0,
+      kind: "battle",
+      turn: 1,
+      tick: 0,
+      targets: [],
+      notes: [],
+      text: "The Marshaling Yard — the engagement opens.",
+    },
+    {
+      index: 1,
+      kind: "turn",
+      turn: 1,
+      tick: 0,
+      actor: { id: "rowen", name: "Rowen Corvane", team: "player" },
+      targets: [],
+      notes: [],
+      text: "Turn 1 · Rowen Corvane",
+    },
+    {
+      index: 2,
+      kind: "action",
+      turn: 1,
+      tick: 0,
+      actor: { id: "rowen", name: "Rowen Corvane", team: "player" },
+      action: "Pin",
+      targets: [
+        {
+          id: "provocateur-a",
+          name: "Provocateur",
+          team: "enemy",
+          hit: true,
+          damage: 27,
+          damageType: "kinetic",
+          hpRemaining: 33,
+          statuses: [{ id: "stunned", name: "Stunned", change: "applied", remainingTurns: 1 }],
+          downed: false,
+        },
+      ],
+      notes: [],
+      text: "Rowen Corvane · Pin → Provocateur: 27 kinetic, 33 left, Stunned 1 turn.",
+    },
+    {
+      index: 3,
+      kind: "turn",
+      turn: 2,
+      tick: 12,
+      actor: { id: "provocateur-b", name: "Provocateur", team: "enemy" },
+      targets: [],
+      notes: [],
+      text: "Turn 2 · Provocateur",
+    },
+    {
+      index: 4,
+      kind: "action",
+      turn: 2,
+      tick: 12,
+      actor: { id: "provocateur-b", name: "Provocateur", team: "enemy" },
+      action: "Shock Maul",
+      targets: [
+        {
+          id: "sella-wick",
+          name: "Sella Wick",
+          team: "player",
+          hit: false,
+          statuses: [],
+          downed: false,
+        },
+      ],
+      notes: [],
+      text: "Provocateur · Shock Maul → Sella Wick: missed.",
+    },
+    {
+      index: 5,
+      kind: "grid",
+      turn: 2,
+      tick: 12,
+      targets: [],
+      notes: ["North Bus tripped under load. 4 machines dark."],
+      text: "North Bus tripped under load. 4 machines dark.",
+    },
+  ];
+}
+
+/**
+ * A corner of board, as the seam hands it over: heights the aim gate would use,
+ * both sides standing on it, and one machine with a footprint.
+ */
+export function mockFieldView(): FieldView {
+  const heights = [
+    [0, 0, 0, 1, 1, 1],
+    [0, 0, 0, 1, 2, 2],
+    [0, 0, 1, 1, 2, 2],
+    [0, 0, 0, 1, 1, 1],
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0],
+  ];
+  return {
+    width: 6,
+    depth: 6,
+    heights,
+    units: [
+      {
+        unitId: "rowen",
+        name: "Rowen Corvane",
+        jobName: "Enforcer",
+        team: "player",
+        tile: { x: 1, y: 4 },
+        height: 0,
+        facing: "north",
+        hp: 41,
+        maxHp: 58,
+        charge: 6,
+        maxCharge: 14,
+        downed: false,
+        acting: true,
+        statuses: [],
+      },
+      {
+        unitId: "sella-wick",
+        name: "Sella Wick",
+        jobName: "Conduit",
+        team: "player",
+        tile: { x: 0, y: 5 },
+        height: 0,
+        facing: "north",
+        hp: 30,
+        maxHp: 38,
+        charge: 11,
+        maxCharge: 22,
+        downed: false,
+        acting: false,
+        statuses: [],
+        charging: { abilityName: "Overload Cell", ticksUntil: 18 },
+      },
+      {
+        unitId: "provocateur-a",
+        name: "Provocateur",
+        jobName: "Enforcer",
+        team: "enemy",
+        tile: { x: 4, y: 1 },
+        height: 2,
+        facing: "south",
+        hp: 33,
+        maxHp: 44,
+        charge: 4,
+        maxCharge: 11,
+        downed: false,
+        acting: false,
+        statuses: [{ id: "stunned", label: "Stunned", category: "debuff", remainingTurns: 1 }],
+      },
+    ],
+    objects: [
+      {
+        kind: "object",
+        id: "yard-cell",
+        name: "Yard Cell",
+        category: "Source, rated 14",
+        power: "live",
+        hp: 24,
+        maxHp: 24,
+        destroyed: false,
+        tiles: [
+          { x: 3, y: 2 },
+          { x: 3, y: 3 },
+        ],
+      },
+    ],
+  };
+}
+
+/** The tile under the cursor, two heights up from the unit reading it. */
+export function mockCursorView(): FieldCursorView {
+  return { tile: { x: 4, y: 1 }, height: 2, heightDelta: 2 };
+}
+
+/**
+ * A staged reach with all three answers in it: tiles the order may be sent at,
+ * tiles inside reach the gate refuses, and the gate's own words for why.
+ */
+export function mockTargetingView(): TargetingView {
+  return {
+    abilityId: "pin",
+    abilityName: "Pin",
+    inRange: [
+      { x: 1, y: 3 },
+      { x: 0, y: 4 },
+      { x: 2, y: 4 },
+      { x: 1, y: 5 },
+    ],
+    legal: [
+      { x: 1, y: 3 },
+      { x: 2, y: 4 },
+    ],
+    illegal: [
+      { tile: { x: 0, y: 4 }, code: "noTarget", reason: "Nothing there to pin." },
+      { tile: { x: 1, y: 5 }, code: "blockedLos", reason: "The yard cell is in the way." },
+    ],
+  };
+}
+
+/** The other side of the board, as the formation screen is handed it. */
+export function mockOpposition(): DeployOppositionView[] {
+  return [
+    {
+      unitId: "provocateur-a",
+      name: "Provocateur",
+      faction: "Enforcer",
+      hp: 44,
+      maxHp: 44,
+      tile: { x: 4, y: 0 },
+    },
+    {
+      unitId: "provocateur-b",
+      name: "Provocateur",
+      faction: "Enforcer",
+      hp: 44,
+      maxHp: 44,
+      tile: { x: 5, y: 1 },
+    },
+    {
+      unitId: "maren-voss",
+      name: "Maren Voss",
+      faction: "Conduit, neutral",
+      hp: 38,
+      maxHp: 38,
+      tile: { x: 3, y: 1 },
+    },
+  ];
 }

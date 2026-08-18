@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { objectArtFor, type ObjectArtSpec, type ObjectFaceId, type ObjectPowerState } from "../art/objects.js";
+import { objectArtFor, type ObjectArtSpec, type ObjectFaceId, type ObjectFaceState } from "../art/objects.js";
 import type { GameMap, GridRole, MapObjectKind } from "../data/schemas/map.js";
 import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./board.js";
 import { markBloomEligible, markBloomOnly } from "./layers.js";
@@ -96,9 +96,11 @@ export class ObjectVisual {
    * repainting a colour. Empty on every object still drawn as a primitive.
    */
   private readonly paintedBody: { material: THREE.MeshLambertMaterial; face: ObjectFaceId }[] = [];
+  /** The same materials as a set, for the colour passes that must not touch them. */
+  private readonly paintedMaterials = new Set<THREE.MeshLambertMaterial>();
   private readonly paintedHalo: { material: THREE.MeshBasicMaterial; face: ObjectFaceId }[] = [];
   private paintedArt: ObjectArtSpec | null = null;
-  private paintedState: ObjectPowerState | null = null;
+  private paintedState: ObjectFaceState | null = null;
   private readonly baseY: number;
   /** The footprint's longer side — the direction a run runs, and parts along. */
   private readonly runAxis: "x" | "z";
@@ -186,7 +188,11 @@ export class ObjectVisual {
       const base = this.baseColors.get(material) ?? 0xffffff;
       const seam = this.seamMaterials.has(material);
       material.color.setHex(base).lerp(seam ? seamRubble : bodyRubble, this.collapse);
-      if (this.cut) material.color.lerp(deadSeam, seam ? 1 : SEVERED_FADE);
+      // A painted face says it is cut with its own severed painting; tinting it
+      // toward soot as well would put a fade over art that already reads.
+      if (this.cut && !this.paintedMaterials.has(material)) {
+        material.color.lerp(deadSeam, seam ? 1 : SEVERED_FADE);
+      }
       if (this.collapse > 0 || this.cut) {
         material.emissive.setHex(0x000000);
         material.emissiveIntensity = 0;
@@ -469,6 +475,7 @@ export class ObjectVisual {
       this.materials.push(material);
       this.baseColors.set(material, material.color.getHex());
       this.paintedBody.push({ material, face });
+      this.paintedMaterials.add(material);
       paint.set(face, material);
 
       const key = emissiveKeyMaterial(texture);
@@ -502,13 +509,17 @@ export class ObjectVisual {
    */
   private refreshPaintedFaces(): void {
     if (this.paintedArt === null) return;
-    const state: ObjectPowerState = this.view.destroyed
+    // Destruction outranks the cut: a wreck is a wreck, whatever was done to it
+    // first. Everything under it is §6's own order.
+    const state: ObjectFaceState = this.view.destroyed
       ? "destroyed"
-      : this.overload > 0
-        ? "overloading"
-        : this.view.powered === true
-          ? "powered"
-          : "unpowered";
+      : this.cut
+        ? "severed"
+        : this.overload > 0
+          ? "overloading"
+          : this.view.powered === true
+            ? "powered"
+            : "unpowered";
     const changed = state !== this.paintedState;
     this.paintedState = state;
     for (const { material, face } of this.paintedBody) {

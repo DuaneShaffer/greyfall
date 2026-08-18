@@ -9,6 +9,7 @@ import { FACE_SHADE } from "../../src/art/palette.js";
 import type { GridRole } from "../../src/data/schemas/map.js";
 import type { GameMap } from "../../src/data/schemas/map.js";
 import { BASE_LAYER, BLOOM_LAYER } from "../../src/render/layers.js";
+import { BOX_FACE_SLOTS, objectFaceTexture } from "../../src/render/objectTextures.js";
 import { ObjectVisual } from "../../src/render/objects.js";
 import { palette } from "../../src/render/palette.js";
 import type { MapObjectView } from "../../src/render/viewmodel.js";
@@ -310,6 +311,31 @@ describe("spriteId with delivered art", () => {
     const keys = halo[0]?.material as unknown as THREE.MeshBasicMaterial[];
     expect(keys).toHaveLength(6);
     for (const key of keys) expect(key.map).not.toBeNull();
+  });
+
+  it("wears the cut's own painting rather than a fade over the delivered one", () => {
+    // The trough is the object whose brief ships a severed face: a cut reads as
+    // absent material, which is a painting and not a darker version of one.
+    const TROUGH = { spriteId: "cable-trough", gridRole: "line" as const };
+    const cut = built({ ...TROUGH, severed: true });
+    const whole = built(TROUGH);
+
+    expect(paintOf(cut).map((m) => m.map)).toEqual(
+      BOX_FACE_SLOTS.map((face) => objectFaceTexture("cable-trough", face, "severed")),
+    );
+    // Nothing tints the painting on top of it; the face shade is all it carries.
+    expect(paintOf(cut).map((m) => m.color.getHex())).toEqual(
+      paintOf(whole).map((m) => m.color.getHex()),
+    );
+    // The geometry half of the cut is untouched: parted along the run, kinked.
+    expect(cut.group.scale.z).toBeLessThan(whole.group.scale.z);
+    expect(cut.group.rotation.y).not.toBe(whole.group.rotation.y);
+
+    // A wreck is a wreck: destruction outranks the cut it was cut with.
+    cut.setDestroyed(true);
+    expect(paintOf(cut).map((m) => m.map)).toEqual(
+      BOX_FACE_SLOTS.map((face) => objectFaceTexture("cable-trough", face, "destroyed")),
+    );
   });
 
   it("leaves every spriteId without art on the primitive it already had", () => {

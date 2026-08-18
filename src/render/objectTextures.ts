@@ -25,7 +25,7 @@
 
 import * as THREE from "three";
 import { FACE_SHADE } from "../art/palette.js";
-import type { ObjectFaceId, ObjectPowerState, ObjectSpriteId } from "../art/objects.js";
+import type { ObjectFaceId, ObjectFaceState, ObjectSpriteId } from "../art/objects.js";
 import { objectCarrierLevels, objectFaceLevels } from "../art/objectset.js";
 import { mippedTexture } from "./textures.js";
 
@@ -39,7 +39,7 @@ const cache = new Map<string, THREE.Texture | null>();
 export function objectFaceTexture(
   sprite: ObjectSpriteId,
   face: ObjectFaceId,
-  state: ObjectPowerState,
+  state: ObjectFaceState,
 ): THREE.Texture {
   const key = `paint:${sprite}:${face}:${state}`;
   const cached = cache.get(key);
@@ -58,7 +58,7 @@ export function objectFaceTexture(
 export function objectCarrierTexture(
   sprite: ObjectSpriteId,
   face: ObjectFaceId,
-  state: ObjectPowerState,
+  state: ObjectFaceState,
 ): THREE.Texture | null {
   const key = `carrier:${sprite}:${face}:${state}`;
   if (cache.has(key)) return cache.get(key) ?? null;

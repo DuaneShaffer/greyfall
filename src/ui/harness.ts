@@ -2,16 +2,22 @@ import "./styles.css";
 import { el, replaceChildren } from "./dom.js";
 import { IntentCall, recordingIntents } from "./intents.js";
 import {
+  MOCK_OBJECTIVE,
   mockActionMenuView,
+  mockBattleLog,
+  mockCursorView,
   mockDeploymentView,
   mockDialogue,
   mockEnemyView,
   mockEquipmentView,
+  mockFieldView,
   mockForecastView,
   mockJobsView,
   mockLearningView,
+  mockOpposition,
   mockPartyView,
   mockPowerRegisterView,
+  mockTargetingView,
   mockTurnOrderView,
   mockUnitSheetView,
   mockUnitView,
@@ -65,6 +71,14 @@ const battleView: BattleHudView = {
   forecast: null,
   dialogue: mockDialogue,
   power: mockPowerRegisterView(),
+  // The rest of the seam §14 carries. Without it the harness drew the panels
+  // this phase added as empty frames and nobody could eyeball them.
+  activeUnitId: "rowen",
+  log: mockBattleLog(),
+  objective: MOCK_OBJECTIVE,
+  cursor: mockCursorView(),
+  targeting: mockTargetingView(),
+  field: mockFieldView(),
 };
 
 const hud = new BattleHud({
@@ -197,6 +211,7 @@ const formation = new DeploymentScreen({
     },
   },
 });
+formation.setOpposition(mockOpposition());
 formation.update(formationView);
 
 // --- shell -------------------------------------------------------------------

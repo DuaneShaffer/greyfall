@@ -209,7 +209,7 @@ const uiPort: UiPort = {
     bannerContinue.focus();
   },
   // The rose the HUD owns, not a second list of four words: it carries the note
-  // about what facing is for and it turns with the camera (UI_DESIGN §13.7).
+  // about what facing buys, and it is placed off the camera's own bearing.
   promptFacing: (current, onPick, onCancel) => hud.promptFacing(current, onPick, onCancel),
   closePrompt: () => hud.closePrompt(),
   resetMenus: () => {

@@ -1086,7 +1086,11 @@ Escape means when there is nothing left to back out of. Three entries:
   Marshaling Yard's Freight Lift), Standing, Charge, Cast speed, Resolve,
   Attunement, damage types and resistance, borrowing a skillset, and doctrine.
   A wave shipping provisional inline strings reconciles *to* that file. Every
-  entry there carries a `key` for exactly that.
+  entry there carries a `key` for exactly that, and `SYSTEMS_NOTES`
+  (`src/ui/battle/battleMenu.ts`) is keyed off it: the entry's *one line* is the
+  row, and confirming the row opens the entry's body as a page of its own. The
+  markdown emphasis and the rule citations are the only things dropped on the
+  way in — a help page does not send the player to `COMBAT_RULES`.
 - **Forfeit** — and it confirms. Forfeit is the one destructive thing a player
   can do from inside a battle, so it borrows §13.3's discipline rather than its
   shape: §13.3's bar is built around an actor and a target and a forfeit has
@@ -1096,6 +1100,11 @@ Escape means when there is nothing left to back out of. Three entries:
   changes nothing (`docs/PROGRESSION.md` §3) — the confirm says so, because a
   player who thinks they are throwing away a chapter's Standing will sit in a
   battle they cannot win rather than take the retry that is actually on offer.
+  Nothing in the battle seam ends an engagement by choice, so the app supplies
+  the verb: the confirmed forfeit hands the unfinished `GameState` to the
+  chapter loop through the same door a battle that ended itself goes through,
+  and `applyBattleResults` reads a state with no result as the loss it is —
+  nothing banked, nothing advanced, the roster exactly as it deployed.
 
 The menu is a mode like any other: it names itself in the mode bar, it does not
 stop the clock from being read, and it closes on Escape and on right-click.
