@@ -179,6 +179,20 @@ describe("intent to command translation", () => {
     expect(h.ui.forecastLocks).toBe(before + 1);
   });
 
+  // The receipt is a record of this unit's order, not a standing fixture: it used
+  // to hold the frame for the rest of the battle.
+  it("keeps the receipt for the rest of the turn and drops it on the next one", () => {
+    const before = h.ui.forecastClears;
+    h.controller.intents.beginMove("rowen");
+    h.controller.intents.confirmMove("rowen", { x: 0, y: 3 });
+    expect(h.ui.forecastClears).toBe(before);
+
+    h.controller.intents.wait("rowen", "north");
+    h.ui.facingPrompt?.onPick("north");
+    expect(activeUnit(h.controller.state)?.id).not.toBe("rowen");
+    expect(h.ui.forecastClears).toBe(before + 1);
+  });
+
   it("names the machine that lost power, not just the switch that was thrown", () => {
     h.controller.intents.beginMove("rowen");
     h.controller.intents.confirmMove("rowen", { x: 2, y: 4 });

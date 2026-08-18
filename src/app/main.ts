@@ -144,6 +144,7 @@ const uiPort: UiPort = {
   render: (view: BattleHudView) => hud.render(view),
   setMode: (mode: HudMode, detail?: string | null) => hud.setMode(mode, detail),
   lockForecast: () => hud.forecast.lock(),
+  clearForecast: () => hud.forecast.clear(),
   showFinalState: (view: BattleHudView | null, _result: BattleResult | null) => {
     if (view !== null) hud.render(view);
     // Nothing on the field is live any more: no pending action, no orders, and

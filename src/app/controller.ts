@@ -116,6 +116,13 @@ export interface UiPort {
    * what was ordered but must stop offering to send it again.
    */
   lockForecast(): void;
+  /**
+   * Throw the settled record away. A locked forecast survives redraws on purpose
+   * — that is what makes it a receipt — so the next unit's turn has to say when
+   * it stops being one. Optional: an overlay with no receipt to keep has nothing
+   * to do here.
+   */
+  clearForecast?(): void;
   /** The field is closed: clear every live affordance and settle on the truth. */
   showFinalState(view: BattleHudView | null, result: BattleResult | null): void;
   showDialogue(lines: DialogueLine[]): void;
@@ -522,6 +529,13 @@ export class BattleController {
   private aimRefusals: AimRefusalAt[] = [];
   private lastCommandError: CommandError | null = null;
   private started = false;
+  /**
+   * Who sent the order the settled forecast is the receipt for. The numbers stay
+   * up through the presentation and the rest of that unit's turn — they are the
+   * record of what was ordered — but they are not a fact about anyone else's
+   * turn, and they used to sit on the frame for the rest of the battle.
+   */
+  private filedForecastBy: string | null = null;
   /** Set while the player's own Operate is in flight; it reports itself. */
   private operating = false;
   /** The events the last command settled into, for a notice composed after it. */
@@ -982,6 +996,7 @@ export class BattleController {
     // ordered, but it is describing an action already in flight: kill the stamp
     // now rather than when the queue finally drains.
     this.ui.lockForecast();
+    this.filedForecastBy = activeUnit(before)?.id ?? null;
     this.ui.resetMenus();
     this.consume(result.events, result.state, before);
     // No refresh here: the HUD must not jump ahead of the animation it is
@@ -1047,6 +1062,12 @@ export class BattleController {
       this.setPhase("ended");
       this.ui.showFinalState(this.finalView(), null);
       return;
+    }
+    // Somebody else has the floor: the last order's receipt is not about this
+    // turn, and holding it there is the panel reporting a stale decision.
+    if (this.filedForecastBy !== null && this.filedForecastBy !== acting.id) {
+      this.filedForecastBy = null;
+      this.ui.clearForecast?.();
     }
     this.inspectedUnitId = acting.id;
     this.aiTimer = 0;
