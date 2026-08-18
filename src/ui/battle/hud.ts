@@ -1,7 +1,8 @@
+import type { Facing } from "../../data/index.js";
 import { Component, el } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import type { BattleHudView, HudMode } from "../state.js";
-import { ActionMenu } from "./actionMenu.js";
+import { ActionMenu, type CameraYawIndex } from "./actionMenu.js";
 import { DialogueBox } from "./dialogue.js";
 import { ForecastPanel } from "./forecast.js";
 import { ModeBar } from "./modeBar.js";
@@ -170,6 +171,23 @@ export class BattleHud implements Component<BattleHudView> {
 
   notify(message: string, tone: NoticeTone = "info"): void {
     this.notice.show(message, tone);
+  }
+
+  /**
+   * Which way the rig is looking, in orbit steps. Only the compass rose reads
+   * it, and only so that "north" is drawn where north actually is.
+   */
+  setCameraYaw(index: CameraYawIndex): void {
+    this.actionMenu.setCameraYaw(index);
+  }
+
+  /** Ask which way the unit's turn closes. */
+  promptFacing(current: Facing, onPick: (facing: Facing) => void, onCancel: () => void): void {
+    this.actionMenu.promptFacing(current, onPick, onCancel);
+  }
+
+  closePrompt(): void {
+    this.actionMenu.closePrompt();
   }
 
   /** Frame pump: the dialogue reveal and the notice both need it. */

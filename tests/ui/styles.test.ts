@@ -123,3 +123,35 @@ describe("the chrome's budgets (UI_DESIGN §12)", () => {
     expect(Math.max(...outer)).toBeLessThanOrEqual(3);
   });
 });
+
+/**
+ * The rose's whole job is that the arm labelled North points at the board's
+ * north, and the only thing that knows where that is on screen is the CSS that
+ * places the four rows per camera bearing. No DOM assertion can reach it.
+ */
+describe("the compass rose turns with the rig", () => {
+  it("gives every bearing a complete rose, one arm per quarter", () => {
+    const blocks = [
+      ...CSS.matchAll(/([^{}]*\[data-menu="action-facing"\][^{}]*)\{([^}]*grid-area:[^}]*)\}/g),
+    ];
+    const placed = new Map<string, string>();
+    for (const [, selectors = "", body = ""] of blocks) {
+      const area = /grid-area:\s*([a-z]+)/.exec(body)?.[1];
+      if (area === undefined) continue;
+      for (const selector of selectors.split(",")) {
+        const yaw = /data-yaw="(\d)"/.exec(selector)?.[1];
+        const facing = /data-entry="(\w+)"/.exec(selector)?.[1];
+        if (yaw === undefined || facing === undefined) continue;
+        placed.set(`${yaw}:${facing}`, area);
+      }
+    }
+    for (const yaw of ["0", "1", "2", "3"]) {
+      const areas = ["north", "east", "south", "west"].map((facing) =>
+        placed.get(`${yaw}:${facing}`),
+      );
+      expect(areas, `bearing ${yaw} is missing an arm`).not.toContain(undefined);
+      // Two arms in one quarter is a rose that lies about half the board.
+      expect(new Set(areas).size, `bearing ${yaw} doubles up a quarter`).toBe(4);
+    }
+  });
+});

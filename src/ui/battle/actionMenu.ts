@@ -1,7 +1,8 @@
-import { Component, el } from "../dom.js";
+import type { Facing } from "../../data/index.js";
+import { Component, el, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
 import { MenuDef, MenuEntry, MenuStack } from "../menu.js";
-import type { ActionMenuView, SkillsetView } from "../state.js";
+import type { ActionMenuView, MechanicsView, SkillsetView } from "../state.js";
 
 export interface ActionMenuOptions {
   intents?: Partial<UiIntents>;
@@ -20,10 +21,46 @@ export interface ActionMenuOptions {
 }
 
 const ROOT_ID = "action-root";
+export const FACING_MENU_ID = "action-facing";
 const SKILLSETS_ID = "action-skillsets";
 const OPERABLES_ID = "action-operables";
 const ITEMS_ID = "action-items";
 const UNDO_ID = "undo-move";
+
+/** Why the player is being asked at all — the rule the pick is worth anything for. */
+export const FACING_NOTE = "Attacks from the side and behind land harder.";
+
+/** Staging is not sending, and the row has to say which one it just did. */
+export const OPERATE_NOTE = "Forecast only — the stamp sends it.";
+
+const FACING_LABELS: Record<Facing, string> = {
+  north: "North",
+  east: "East",
+  south: "South",
+  west: "West",
+};
+
+const FACING_ORDER: readonly Facing[] = ["north", "east", "south", "west"];
+
+/**
+ * The rig's bearing in orbit steps, as `cameraYawIndex` (src/render/units.ts)
+ * reports it: 0 puts the camera over the board's south-east corner. The compass
+ * rose is placed off this — a rose that does not turn with the camera points
+ * three of its four arms at the wrong part of the board.
+ */
+export type CameraYawIndex = 0 | 1 | 2 | 3;
+
+/**
+ * The seam joins the mechanics line with " · " (src/app/mechanics.ts). A row
+ * that already prints the charge in its own right-hand column does not print it
+ * again in the line underneath.
+ */
+export function rowMechanics(mechanics: MechanicsView): string {
+  return mechanics.summary
+    .split(" · ")
+    .filter((part) => !/^Charge \d+$/.test(part) && !/^\d+ in stock$/.test(part))
+    .join(" · ");
+}
 
 /**
  * Move / Act / Item / Wait, with Act opening the unit's skillsets, and a row for
@@ -34,13 +71,57 @@ export class ActionMenu implements Component<ActionMenuView> {
   readonly menus: MenuStack;
   private readonly intents: UiIntents;
   private readonly options: ActionMenuOptions;
+  /** The focused row, at length: what a compact row could not hold. */
+  private readonly detailEl: HTMLElement;
   private view: ActionMenuView | null = null;
 
   constructor(options: ActionMenuOptions = {}) {
     this.options = options;
     this.intents = withIntents(options.intents);
     this.menus = new MenuStack({ onRefuse: (reason) => this.options.onRefuse?.(reason) });
-    this.el = el("div", { class: "gf-action-menu", children: [this.menus.el] });
+    this.detailEl = el("div", { class: "gf-action-detail is-empty" });
+    this.el = el("div", {
+      class: "gf-action-menu",
+      data: { yaw: "0" },
+      children: [this.menus.el, this.detailEl],
+    });
+  }
+
+  /** Which way the rig is looking; the compass rose is placed off it. */
+  setCameraYaw(index: CameraYawIndex): void {
+    this.el.dataset["yaw"] = String(index);
+  }
+
+  /**
+   * Ask which way the unit's turn closes. A rose rather than a list of four
+   * words: facing is a direction on the board, and the board is on screen.
+   */
+  promptFacing(current: Facing, onPick: (facing: Facing) => void, onCancel: () => void): void {
+    this.menus.push({
+      id: FACING_MENU_ID,
+      title: "Face",
+      entries: FACING_ORDER.map((facing) => ({
+        id: facing,
+        label: FACING_LABELS[facing],
+        ...(facing === current ? { detail: "current" } : {}),
+      })),
+      onCursor: () => this.setDetail(FACING_NOTE),
+      onSelect: (entry) => {
+        const facing = FACING_ORDER.find((option) => option === entry.id);
+        if (facing !== undefined) onPick(facing);
+      },
+      onCancel: () => {
+        this.setDetail(null);
+        onCancel();
+      },
+    });
+  }
+
+  /** Take the facing prompt back down, however the turn was closed. */
+  closePrompt(): void {
+    if (!this.menus.path.includes(FACING_MENU_ID)) return;
+    this.menus.pop();
+    this.setDetail(null);
   }
 
   update(view: ActionMenuView): void {
@@ -48,6 +129,18 @@ export class ActionMenu implements Component<ActionMenuView> {
     const root = this.rootMenu(view);
     if (this.menus.depth === 0) this.menus.push(root);
     else this.menus.refresh(root);
+    // The root's rows are orders, not mechanics; nothing under them to read.
+    if (this.menus.depth === 1) this.setDetail(null);
+  }
+
+  /** The focused row's fuller reading: prose first, then the figures. */
+  private setDetail(note: string | null, mechanics?: MechanicsView): void {
+    const summary = mechanics === undefined ? null : mechanics.summary;
+    this.detailEl.classList.toggle("is-empty", note === null && summary === null);
+    replaceChildren(this.detailEl, [
+      note === null ? null : el("p", { class: "gf-action-detail-note", text: note }),
+      summary === null ? null : el("p", { class: "gf-action-detail-line", text: summary }),
+    ]);
   }
 
   attach(target: EventTarget = document): void {
@@ -155,12 +248,21 @@ export class ActionMenu implements Component<ActionMenuView> {
         id: item.itemId,
         label: item.name,
         detail: `x${item.count}`,
-        note: item.description,
+        // What it does beats what it is called: the prose is a line away, on the
+        // focused row's detail line, and used to be the only thing here.
+        note: item.mechanics === undefined ? item.description : rowMechanics(item.mechanics),
         disabled: item.unavailableReason !== undefined,
         ...(item.unavailableReason === undefined ? {} : { disabledReason: item.unavailableReason }),
       })),
+      onCursor: (entry) => {
+        const item = items.find((candidate) => candidate.itemId === entry.id);
+        this.setDetail(item?.description ?? null, item?.mechanics);
+      },
       onSelect: (entry) => this.intents.selectItem(view.unit.id, entry.id),
-      onCancel: () => this.intents.cancelSelection(view.unit.id),
+      onCancel: () => {
+        this.setDetail(null);
+        this.intents.cancelSelection(view.unit.id);
+      },
     };
   }
 
@@ -170,7 +272,10 @@ export class ActionMenu implements Component<ActionMenuView> {
       id: OPERABLES_ID,
       title: "Operate",
       entries: operables.map((operable) => ({ id: operable.objectId, label: operable.name })),
-      onCursor: (entry) => this.intents.previewOperable(view.unit.id, entry.id),
+      onCursor: (entry) => {
+        this.setDetail(OPERATE_NOTE);
+        this.intents.previewOperable(view.unit.id, entry.id);
+      },
       // One commit model. The row *stages* the order exactly as resting on it
       // does, and the forecast's stamp is the only thing that sends it — the
       // playtest saw this order forecast once and fire instantly the next time.
@@ -181,6 +286,7 @@ export class ActionMenu implements Component<ActionMenuView> {
         this.options.onStaged?.(entry.label);
       },
       onCancel: () => {
+        this.setDetail(null);
         this.intents.previewOperable(view.unit.id, null);
         this.intents.cancelSelection(view.unit.id);
       },
@@ -214,13 +320,24 @@ export class ActionMenu implements Component<ActionMenuView> {
         id: ability.id,
         label: ability.name,
         detail: `Charge ${ability.chargeCost}`,
-        ...(ability.castSpeed === null ? {} : { note: `Cast ${ability.castSpeed}` }),
+        // Reach, area, whose side and how hard, on the row that offers it. The
+        // playtest could only get at any of it by spending the action first.
+        ...(ability.mechanics !== undefined
+          ? { note: rowMechanics(ability.mechanics) }
+          : ability.castSpeed === null
+            ? {}
+            : { note: `Cast ${ability.castSpeed}` }),
         disabled: ability.unavailableReason !== undefined,
         ...(ability.unavailableReason === undefined ? {} : { disabledReason: ability.unavailableReason }),
       })),
-      onCursor: (entry) => this.options.onAbilityPreview?.(entry.id),
+      onCursor: (entry) => {
+        const ability = set.abilities.find((candidate) => candidate.id === entry.id);
+        this.setDetail(ability?.description ?? null, ability?.mechanics);
+        this.options.onAbilityPreview?.(entry.id);
+      },
       onSelect: (entry) => this.intents.selectAbility(view.unit.id, entry.id),
       onCancel: () => {
+        this.setDetail(null);
         this.options.onAbilityPreview?.(null);
         this.intents.cancelSelection(view.unit.id);
       },

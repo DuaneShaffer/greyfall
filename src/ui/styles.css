@@ -3555,3 +3555,98 @@
   border-left-color: var(--gf-operable);
   color: var(--gf-operable);
 }
+
+/* ==========================================================================
+   WAVE E — what the blind playtest could not read or could not leave
+   One section, appended: the detail line under the orders, the compass rose the
+   facing prompt is asked with, the briefing, the objective chip, and the
+   formation rail. Everything above is untouched.
+   ========================================================================== */
+
+/* --- the focused row, at length ------------------------------------------- */
+/* A row stays one line; the reading that will not fit on it lands here, under
+   the list, where it costs the rows nothing. */
+
+.gf-action-detail {
+  display: grid;
+  gap: 2px;
+  padding: 4px var(--gf-s-3);
+  border-top: 1px solid var(--gf-ink);
+  box-shadow: var(--gf-groove-top);
+  background: var(--gf-trough);
+  max-width: 52ch;
+}
+
+.gf-action-detail.is-empty {
+  display: none;
+}
+
+.gf-action-detail-note {
+  font-size: var(--gf-t-100);
+  color: var(--gf-dim);
+  line-height: 1.4;
+}
+
+.gf-action-detail-line {
+  font-family: var(--gf-face-ledger);
+  font-size: var(--gf-t-100);
+  color: var(--gf-text);
+  line-height: 1.4;
+}
+
+/* --- the facing prompt: a rose, not four words --------------------------- */
+/* The four rows are laid out as the quarters of a compass and turn with the
+   rig, so the arm labelled North is the one pointing at the board's north. The
+   camera's own bearing decides which quarter that is: at yaw 0 it sits over the
+   south-east corner, which puts north up-and-right, and each orbit step turns
+   the rose a quarter counter-clockwise with it. The list is untouched
+   underneath — hover, arrows, Enter and Escape all still work as rows. */
+
+.gf-menu[data-menu="action-facing"] .gf-menu-list {
+  display: grid;
+  grid-template-areas:
+    "nw ne"
+    "sw se";
+  gap: 1px;
+  padding: var(--gf-s-2);
+  background: var(--gf-trough);
+  box-shadow: var(--gf-inset);
+}
+
+.gf-menu[data-menu="action-facing"] .gf-menu-entry {
+  border-top: 1px solid transparent;
+  justify-content: center;
+  text-align: center;
+}
+
+.gf-menu[data-menu="action-facing"] .gf-menu-entry + .gf-menu-entry {
+  border-top-color: transparent;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="west"] {
+  grid-area: ne;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="north"] {
+  grid-area: se;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="south"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="east"] {
+  grid-area: sw;
+}
+
+.gf-action-menu[data-yaw="0"] [data-menu="action-facing"] [data-entry="west"],
+.gf-action-menu[data-yaw="1"] [data-menu="action-facing"] [data-entry="north"],
+.gf-action-menu[data-yaw="2"] [data-menu="action-facing"] [data-entry="east"],
+.gf-action-menu[data-yaw="3"] [data-menu="action-facing"] [data-entry="south"] {
+  grid-area: nw;
+}
