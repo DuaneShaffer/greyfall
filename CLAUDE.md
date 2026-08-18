@@ -1,8 +1,9 @@
-# FFT Clone
+# Greyfall
 
-Tactics RPG with FFT's mechanical skeleton in an original industrial-fantasy
-setting (magic as industrial resource; interactive battlefields — operable
-machinery, destructible terrain). TypeScript + Three.js:
+An original industrial-fantasy tactics RPG — magic as an industrial resource,
+interactive battlefields (operable machinery, destructible terrain) — whose
+mechanical skeleton follows the Final Fantasy Tactics tradition: CT turn
+order, facing, charge-time casting, job-based growth. TypeScript + Three.js:
 3D terrain meshes with billboarded pixel-art sprites, orthographic camera,
 game logic runs headless in Node for tests and simulation.
 

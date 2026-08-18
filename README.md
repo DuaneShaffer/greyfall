@@ -30,12 +30,22 @@ and networked power grids you and the enemy fight over.
 
 ## Running it
 
+Node 22.12 or newer.
+
 ```
 npm install
-npm run dev        # play at the printed local URL
-npm test           # full suite (engine, content, sim, UI)
-npx tsc --noEmit   # typecheck
+npm run dev         # play at the printed local URL
+npm test            # full suite (engine, content, sim, UI)
+npm run test:fast   # the same suite minus the minutes-long balance sweeps
+npm run typecheck   # tsc --noEmit
+npm run build       # production bundle into dist/
 ```
+
+Two more scripts need something the clone does not bring with it.
+`npm run shots` regenerates the README screenshots against the real app and
+needs a Chrome or Chromium binary on `PATH` (`google-chrome`,
+`chromium-browser`, or `chromium`); `npm run gallery` dumps sprite contact
+sheets and fetches `tsx` through `npx`.
 
 ## The docs are the game
 
