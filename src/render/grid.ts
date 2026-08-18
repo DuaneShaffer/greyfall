@@ -1,10 +1,16 @@
+import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../art/sprites.js";
 import { coordEq } from "../data/coords.js";
 import type { Facing, TileCoord } from "../data/schemas/common.js";
 import type { GameMap, Tile } from "../data/schemas/map.js";
 
+/** One world unit per tile edge — the unit the art's texel density is quoted in. */
 export const TILE_SIZE = 1;
-// FFT-style half-step elevation: one height unit is half a tile edge.
-export const HEIGHT_STEP = 0.5;
+/**
+ * FFT-style half-step elevation: one height unit is half a tile edge. Derived
+ * from the authoring ruler so a side face keeps the ground's texel density —
+ * `HEIGHT_STEP_PX` texels span this rise where `TILE_TEXTURE_SIZE` span a tile.
+ */
+export const HEIGHT_STEP = (TILE_SIZE * HEIGHT_STEP_PX) / TILE_TEXTURE_SIZE;
 // How far the outermost columns hang below the lowest tile.
 export const SKIRT_DEPTH = 1.5;
 

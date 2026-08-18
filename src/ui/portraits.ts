@@ -10,15 +10,22 @@
 // is a crop and not a delivered asset, so the small slots take the same plate
 // and cut CHIP_RECT out of it in CSS.
 
+import { PORTRAIT } from "../art/sprites.js";
+
 /** The in-game portrait plate, per ART_DIRECTION §4. Masters are 4× this. */
-export const PORTRAIT_PLATE = { width: 128, height: 160 } as const;
+export const PORTRAIT_PLATE = { width: PORTRAIT.width, height: PORTRAIT.height } as const;
 
 /**
  * The head chip, cut out of the plate above and halved to 32×32 — (128, 64,
  * 256, 256) in master terms. Every square portrait slot shows this rect; the
  * 4:5 slots show the whole plate.
  */
-export const CHIP_RECT = { x: 32, y: 16, width: 64, height: 64 } as const;
+export const CHIP_RECT = {
+  x: PORTRAIT.chipCrop.x,
+  y: PORTRAIT.chipCrop.y,
+  width: PORTRAIT.chipCrop.w,
+  height: PORTRAIT.chipCrop.h,
+} as const;
 
 export interface PortraitAsset {
   /**

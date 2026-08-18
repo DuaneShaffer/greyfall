@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { FACE_SHADE } from "../../src/art/palette.js";
 import { TILE_TEXTURE, TILE_TEXTURE_IDS } from "../../src/art/tiles.js";
 import type { GameMap, Tile } from "../../src/data/schemas/map.js";
-import { HEIGHT_STEP, SKIRT_DEPTH, baseY } from "../../src/render/grid.js";
+import { OBJECT_TEXELS_PER_UNIT } from "../../src/art/objects.js";
+import { HEIGHT_STEP_PX, TILE_TEXTURE_SIZE } from "../../src/art/sprites.js";
+import { HEIGHT_STEP, SKIRT_DEPTH, TILE_SIZE, baseY } from "../../src/render/grid.js";
 import {
   buildTerrainMeshData,
   buildTerrainQuads,
@@ -22,6 +24,17 @@ const makeMap = (width: number, depth: number, tiles: Tile[]): GameMap => ({
   objects: [],
   deploymentTiles: [{ x: 0, y: 0 }],
   grids: [],
+});
+
+describe("the one ruler", () => {
+  it("gives a tile's top, its rise and an object face the same texel density", () => {
+    const side = TILE_TEXTURE["plain-side"];
+    const top = TILE_TEXTURE["plain-top"];
+    expect(top.width / TILE_SIZE).toBe(TILE_TEXTURE_SIZE);
+    expect(side.height / HEIGHT_STEP).toBe(side.width / TILE_SIZE);
+    expect(OBJECT_TEXELS_PER_UNIT).toBe(TILE_TEXTURE_SIZE / TILE_SIZE);
+    expect(HEIGHT_STEP * TILE_TEXTURE_SIZE).toBe(HEIGHT_STEP_PX);
+  });
 });
 
 describe("terrain geometry", () => {

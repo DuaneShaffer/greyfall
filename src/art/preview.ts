@@ -1,12 +1,16 @@
-// Dev-only viewer for the generated unit art. Serve with `npm run dev` and open
-// /src/art/preview.html. Nothing in the game imports this.
+// Dev-only viewer for the unit art the game ships — every frame here is cut out
+// of the sheet `render/sprites.ts` uploads, so the playback, the frame tables and
+// the strip below them are the same figure. The compositor's placeholder is a
+// different question, and `npm run gallery -- ingest` is where it is asked.
+// Serve with `npm run dev` and open /src/art/preview.html. Nothing in the game
+// imports this.
 
 import type { Team } from "../data/schemas/common.js";
-import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "./jobs.js";
+import { JOB_ART, JOB_IDS, type JobId } from "./jobs.js";
 import { SOOT_800, UI } from "./palette.js";
 import { mirrorGrid, writeGridToImageData, type PixelGrid } from "./pixel.js";
 import { AnimationPlayer } from "./player.js";
-import { buildJobSheet } from "./sheet.js";
+import { buildJobSheet, cellGrid, sheetCell, sheetKey } from "./sheet.js";
 import {
   ANIMATIONS,
   ANIM_STATES,
@@ -21,6 +25,25 @@ const TEAMS: readonly Team[] = ["player", "enemy", "neutral"];
 let team: Team = "player";
 let scale = 2;
 let mirrored = false;
+
+const sheets = new Map<string, PixelGrid>();
+
+const sheetOf = (jobId: JobId): PixelGrid => {
+  const key = sheetKey(jobId, team);
+  const cached = sheets.get(key);
+  if (cached) return cached;
+  const sheet = buildJobSheet(jobId, team);
+  sheets.set(key, sheet);
+  return sheet;
+};
+
+/** The frame the game ships, not the compositor's: delivered art, mirrored as declared. */
+const shippedFrame = (
+  jobId: JobId,
+  state: AnimState,
+  view: DrawnView,
+  frame: number,
+): PixelGrid => cellGrid(sheetOf(jobId), sheetCell(state, view, frame));
 
 const scratch = document.createElement("canvas");
 const scratchCtx = scratch.getContext("2d");
@@ -90,13 +113,7 @@ function tick(now: number): void {
   last = now;
   for (const cell of live) {
     cell.player.advanceSeconds(delta);
-    const grid = jobFrame({
-      jobId: cell.jobId,
-      team,
-      state: cell.player.state,
-      view: cell.view,
-      frame: cell.player.frame,
-    });
+    const grid = shippedFrame(cell.jobId, cell.player.state, cell.view, cell.player.frame);
     paint(cell.canvas, mirrored ? mirrorGrid(grid) : grid, scale);
     cell.label.textContent = `${cell.jobId}/${cell.view} ${cell.player.state}:${cell.player.frame}`;
   }
@@ -115,7 +132,7 @@ function buildFrameTables(root: HTMLElement): void {
         for (let frame = 0; frame < clip.frames; frame += 1) {
           const cell = el("div", "cell");
           const canvas = el("canvas");
-          const grid = jobFrame({ jobId, team, state, view, frame });
+          const grid = shippedFrame(jobId, state, view, frame);
           paint(canvas, mirrored ? mirrorGrid(grid) : grid, scale);
           cell.append(canvas, el("div", "label", `${frame} · ${clip.ticks[frame] ?? 0}t`));
           row.append(cell);
@@ -125,7 +142,7 @@ function buildFrameTables(root: HTMLElement): void {
     }
     const sheetRow = el("div", "row");
     const sheetCanvas = el("canvas");
-    paint(sheetCanvas, buildJobSheet(jobId, team), 2);
+    paint(sheetCanvas, sheetOf(jobId), 2);
     sheetRow.append(
       el("div", "rowlabel", `sheet ${SHEET_LAYOUT.width}x${SHEET_LAYOUT.height}`),
       sheetCanvas,

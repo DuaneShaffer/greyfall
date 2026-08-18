@@ -69,6 +69,17 @@ export function sheetCell(state: AnimState, view: DrawnView, frame: number): She
   return cell;
 }
 
+/** One cell copied off a sheet, as a frame-sized grid of its own. */
+export function cellGrid(sheet: PixelGrid, cell: SheetCell): PixelGrid {
+  const grid = createGrid(cell.w, cell.h);
+  for (let y = 0; y < cell.h; y += 1) {
+    for (let x = 0; x < cell.w; x += 1) {
+      grid.data[y * cell.w + x] = sheet.data[(cell.y + y) * sheet.width + cell.x + x] ?? 0;
+    }
+  }
+  return grid;
+}
+
 /** Inverse of `sheetCell`: which frame lives at a sheet pixel. */
 export function cellAtPixel(x: number, y: number): SheetCell | null {
   const column = Math.floor(x / SPRITE_WIDTH);

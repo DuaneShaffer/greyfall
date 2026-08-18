@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { CHIP_RECT, PORTRAIT_PLATE } from "../../src/ui/portraits.js";
 
 const CSS = readFileSync(
   join(import.meta.dirname, "..", "..", "src", "ui", "styles.css"),
@@ -51,6 +52,39 @@ describe("the annunciator's scrollback", () => {
     );
     expect(measures.length, "the log declares no measure at all").toBeGreaterThan(0);
     expect(Math.min(...measures)).toBeGreaterThanOrEqual(LINE_MEASURE_CH);
+  });
+});
+
+describe("the head chip's crop", () => {
+  /** The multipliers in the rule below, in source order. */
+  const multipliers = (declaration: string): number[] =>
+    [...declaration.matchAll(/var\(--gf-portrait-size\)\s*\*\s*(-?\d+(?:\.\d+)?)/g)].map(
+      (match) => Number(match[1]),
+    );
+
+  it("scales and offsets the plate by the rect the constants declare", () => {
+    // The crop lives in three places — PORTRAIT (src/art/sprites.ts), the UI
+    // constants derived from it, and these multipliers, which CSS cannot compute
+    // from either. A square slot shows CHIP_RECT of the plate, so the plate is
+    // drawn at slot/chip and slid back by the chip's origin.
+    const chip = rule(".gf-portrait.is-painted.is-chip");
+    const size = chip.slice(chip.indexOf("background-size"));
+    const scale = 1 / CHIP_RECT.width;
+    expect(multipliers(size.slice(0, size.indexOf(";")))).toEqual([
+      PORTRAIT_PLATE.width * scale,
+      PORTRAIT_PLATE.height * scale,
+    ]);
+    const position = chip.slice(chip.indexOf("background-position"));
+    expect(multipliers(position.slice(0, position.indexOf(";")))).toEqual([
+      -CHIP_RECT.x * scale,
+      -CHIP_RECT.y * scale,
+    ]);
+    expect(CHIP_RECT.width).toBe(CHIP_RECT.height);
+  });
+
+  it("keeps the 4:5 plate slots at the plate's own aspect", () => {
+    const scene = rule(".gf-dialogue.is-scene .gf-dialogue-portrait .gf-portrait");
+    expect(multipliers(scene)).toEqual([PORTRAIT_PLATE.height / PORTRAIT_PLATE.width]);
   });
 });
 

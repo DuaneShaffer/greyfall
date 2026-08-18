@@ -10,9 +10,10 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { Team } from "../src/data/schemas/common.js";
 import { hasExternalArt } from "../src/art/external.js";
 import { JOB_ART, JOB_IDS, jobFrame, type JobId } from "../src/art/jobs.js";
-import { buildJobSheet, sheetCell } from "../src/art/sheet.js";
+import { buildJobSheet, cellGrid, sheetCell, sheetKey } from "../src/art/sheet.js";
 import { importExternalMaster, propRegion } from "../src/art/intake.js";
 import { decodePNG, encodePNG as encodeSpritePNG } from "../src/art/png.js";
 import { deriveExternalFrame } from "../src/art/segments.js";
@@ -66,16 +67,37 @@ function contactSheet(rows: readonly (readonly Cell[])[], scale: number, title: 
   return img;
 }
 
-const idle = (jobId: JobId, view: DrawnView, frame = 0): PixelGrid =>
-  jobFrame({ jobId, team: "player", state: "idle", view, frame });
+const sheets = new Map<string, PixelGrid>();
+
+const sheetOf = (jobId: JobId, team: Team): PixelGrid => {
+  const key = sheetKey(jobId, team);
+  const cached = sheets.get(key);
+  if (cached) return cached;
+  const sheet = buildJobSheet(jobId, team);
+  sheets.set(key, sheet);
+  return sheet;
+};
+
+/**
+ * The frame the game ships: the delivered master where there is one, mirrored as
+ * declared. Every sheet below draws these — `ingest` is the one exception, and it
+ * says so on its face, because the compositor's placeholder is its subject.
+ */
+const shipped = (
+  jobId: JobId,
+  view: DrawnView,
+  state: AnimState = "idle",
+  frame = 0,
+  team: Team = "player",
+): PixelGrid => cellGrid(sheetOf(jobId, team), sheetCell(state, view, frame));
 
 const SHEETS: Record<string, () => void> = {
   "per-job": () => {
     for (const jobId of JOB_IDS) {
       const cells: Cell[] = [];
       for (const view of ["se", "ne"] as const) {
-        cells.push({ grid: idle(jobId, view), label: `${view}` });
-        cells.push({ grid: mirrorGrid(idle(jobId, view)), label: `${view} mir` });
+        cells.push({ grid: shipped(jobId, view), label: `${view}` });
+        cells.push({ grid: mirrorGrid(shipped(jobId, view)), label: `${view} mir` });
       }
       const one = contactSheet([cells], 1, `${jobId} ${TAG} 1x`);
       write(`${jobId}-${TAG}-1x.png`, one);
@@ -92,7 +114,7 @@ const SHEETS: Record<string, () => void> = {
         for (const state of states) {
           const row: Cell[] = [];
           for (let f = 0; f < ANIMATIONS[state].frames; f += 1) {
-            row.push({ grid: jobFrame({ jobId, team: "player", state, view, frame: f }), label: `${state}${f}` });
+            row.push({ grid: shipped(jobId, view, state, f), label: `${state}${f}` });
           }
           rows.push(row);
         }
@@ -104,8 +126,8 @@ const SHEETS: Record<string, () => void> = {
   "roster": () => {
     for (const scale of [1, 3, 6]) {
       const rows: Cell[][] = [
-        JOB_IDS.map((jobId) => ({ grid: idle(jobId, "se"), label: jobId.slice(0, 7) })),
-        JOB_IDS.map((jobId) => ({ grid: idle(jobId, "ne"), label: jobId.slice(0, 7) })),
+        JOB_IDS.map((jobId) => ({ grid: shipped(jobId, "se"), label: jobId.slice(0, 7) })),
+        JOB_IDS.map((jobId) => ({ grid: shipped(jobId, "ne"), label: jobId.slice(0, 7) })),
       ];
       write(`roster-${TAG}-${scale}x.png`, contactSheet(rows, scale, `roster ${TAG} ${scale}x`));
     }
@@ -120,7 +142,7 @@ const SHEETS: Record<string, () => void> = {
     drawText(img, `heads ${TAG}`, pad, 3, INK);
     (["se", "ne"] as const).forEach((view, ri) => {
       JOB_IDS.forEach((jobId, ci) => {
-        const grid = idle(jobId, view);
+        const grid = shipped(jobId, view);
         const x = pad + ci * (w * scale + pad);
         const y = 12 + ri * (h * scale + pad + 8);
         fillRect(img, x, y, w * scale, h * scale, [11, 13, 16, 255]);
@@ -185,10 +207,8 @@ const SHEETS: Record<string, () => void> = {
   },
 
   "verify": () => {
-    // Pulled out of the shipped sheet rather than the compositor, so a job with
-    // a delivered master shows the delivered art. The amber line is the ground
-    // line: every figure's feet must sit on it and nothing but contact shadow
-    // may hang below it.
+    // The amber line is the ground line: every figure's feet must sit on it and
+    // nothing but contact shadow may hang below it.
     const scale = 3;
     const pad = 4;
     const labelH = 8;
@@ -206,22 +226,12 @@ const SHEETS: Record<string, () => void> = {
     const img = createImage(cols * cw + pad + 40, JOB_IDS.length * ch + pad + 12, BG);
     drawText(img, `verification ${TAG} ${SPRITE_WIDTH}x${SPRITE_HEIGHT} @${scale}x`, pad, 3, INK);
     JOB_IDS.forEach((jobId, ri) => {
-      const sheet = buildJobSheet(jobId, ri % 2 === 0 ? "player" : "enemy");
+      const team = ri % 2 === 0 ? "player" : "enemy";
       const y = 12 + pad + ri * ch;
       shots.forEach(([state, frame], si) => {
         (["se", "ne"] as const).forEach((view, vi) => {
-          const cell = sheetCell(state, view, Math.min(frame, ANIMATIONS[state].frames - 1));
-          const grid = {
-            width: SPRITE_WIDTH,
-            height: SPRITE_HEIGHT,
-            data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
-          };
-          for (let gy = 0; gy < SPRITE_HEIGHT; gy += 1) {
-            for (let gx = 0; gx < SPRITE_WIDTH; gx += 1) {
-              grid.data[gy * SPRITE_WIDTH + gx] =
-                sheet.data[(cell.y + gy) * sheet.width + cell.x + gx] ?? 0;
-            }
-          }
+          const clamped = Math.min(frame, ANIMATIONS[state].frames - 1);
+          const grid = shipped(jobId, view, state, clamped, team);
           const x = pad + (si * 2 + vi) * cw;
           fillRect(img, x - 1, y - 1, SPRITE_WIDTH * scale + 2, SPRITE_HEIGHT * scale + 2, GRID);
           fillRect(img, x, y, SPRITE_WIDTH * scale, SPRITE_HEIGHT * scale, BG);
@@ -242,30 +252,8 @@ const SHEETS: Record<string, () => void> = {
   },
 
   "shipped": () => {
-    // `roster-*` above is the compositor's placeholder. This one is pulled out of
-    // the shipped sheet, so it is the delivered masters where there are any —
-    // the sheet to check identity markers and feet against.
-    const shipped = (jobId: JobId, view: DrawnView, state: AnimState, frame: number): PixelGrid => {
-      const sheet = buildJobSheet(jobId, "player");
-      const cell = sheetCell(state, view, frame);
-      const grid = {
-        width: SPRITE_WIDTH,
-        height: SPRITE_HEIGHT,
-        data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
-      };
-      for (let y = 0; y < SPRITE_HEIGHT; y += 1) {
-        for (let x = 0; x < SPRITE_WIDTH; x += 1) {
-          grid.data[y * SPRITE_WIDTH + x] = sheet.data[(cell.y + y) * sheet.width + cell.x + x] ?? 0;
-        }
-      }
-      return grid;
-    };
-    for (const scale of [1, 3, 6]) {
-      const rows: Cell[][] = (["se", "ne"] as const).map((view) =>
-        JOB_IDS.map((jobId) => ({ grid: shipped(jobId, view, "idle", 0), label: jobId.slice(0, 7) })),
-      );
-      write(`shipped-${TAG}-${scale}x.png`, contactSheet(rows, scale, `shipped roster ${TAG} ${scale}x`));
-    }
+    // Each job's three read-at-a-glance clips at 6x — the sheet to check identity
+    // markers and feet against. `roster-*` above is the same art in one strip.
     for (const jobId of JOB_IDS) {
       const rows: Cell[][] = [];
       for (const view of ["se", "ne"] as const) {
@@ -284,25 +272,12 @@ const SHEETS: Record<string, () => void> = {
 
   "external": () => {
     for (const jobId of JOB_IDS.filter(hasExternalArt)) {
-      const sheet = buildJobSheet(jobId, "player");
       const rows: Cell[][] = [];
       for (const state of ANIM_STATES) {
         for (const view of ["se", "ne"] as const) {
           const row: Cell[] = [];
           for (let f = 0; f < ANIMATIONS[state].frames; f += 1) {
-            const cell = sheetCell(state, view, f);
-            const grid = {
-              width: SPRITE_WIDTH,
-              height: SPRITE_HEIGHT,
-              data: new Uint8Array(SPRITE_WIDTH * SPRITE_HEIGHT),
-            };
-            for (let gy = 0; gy < SPRITE_HEIGHT; gy += 1) {
-              for (let gx = 0; gx < SPRITE_WIDTH; gx += 1) {
-                grid.data[gy * SPRITE_WIDTH + gx] =
-                  sheet.data[(cell.y + gy) * sheet.width + cell.x + gx] ?? 0;
-              }
-            }
-            row.push({ grid, label: `${state.slice(0, 3)}${f}` });
+            row.push({ grid: shipped(jobId, view, state, f), label: `${state.slice(0, 3)}${f}` });
           }
           rows.push(row);
         }
@@ -312,16 +287,12 @@ const SHEETS: Record<string, () => void> = {
   },
 
   "teams": () => {
-    const rows: Cell[][] = [
+    const rows: Cell[][] = (["enemy", "neutral"] as const).map((team) =>
       JOB_IDS.map((jobId) => ({
-        grid: jobFrame({ jobId, team: "enemy", state: "idle", view: "se", frame: 0 }),
+        grid: shipped(jobId, "se", "idle", 0, team),
         label: jobId.slice(0, 7),
       })),
-      JOB_IDS.map((jobId) => ({
-        grid: jobFrame({ jobId, team: "neutral", state: "idle", view: "se", frame: 0 }),
-        label: jobId.slice(0, 7),
-      })),
-    ];
+    );
     write(`teams-${TAG}-3x.png`, contactSheet(rows, 3, `enemy / neutral ${TAG}`));
   },
 
@@ -332,7 +303,7 @@ const SHEETS: Record<string, () => void> = {
       for (const state of states) {
         const row: Cell[] = [];
         for (let f = 0; f < ANIMATIONS[state].frames; f += 1) {
-          row.push({ grid: jobFrame({ jobId, team: "player", state, view: "se", frame: f }), label: `${state}${f}` });
+          row.push({ grid: shipped(jobId, "se", state, f), label: `${state}${f}` });
         }
         rows.push(row);
       }
