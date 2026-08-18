@@ -20,6 +20,12 @@ import { importFallback } from "./ingestSuite.js";
  */
 const EXPECTED_MIRROR: Partial<Record<JobId, Partial<Record<DrawnView, boolean>>>> = {
   enforcer: { se: true },
+  machinist: { se: true },
+  conduit: { se: true, ne: true },
+  saboteur: { se: true },
+  chemist: { se: true },
+  augmented: { se: true },
+  railrunner: { se: true },
 };
 
 describe("facing normalization — declared flags", () => {

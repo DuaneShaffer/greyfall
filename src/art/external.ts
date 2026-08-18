@@ -62,6 +62,8 @@ interface Delivery {
   readonly mirror?: Readonly<Partial<Record<DrawnView, boolean>>>;
 }
 
+// Every delivered front cell is captioned "Front 3/4 (facing left)" — the
+// opposite of the C.8 convention — so every delivery declares `mirror.se`.
 const DELIVERIES: Partial<Record<JobId, Delivery>> = {
   conduit: {
     se: CONDUIT_SE,
@@ -70,6 +72,9 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
     // would otherwise be split across head, arm, torso and leg regions.
     props: { se: [propRegion(11, 0, 14, 86, "handFar", "handFar")] },
     sourceTeam: "player",
+    // The ne rows are the front standing in (single-view delivery), so they
+    // carry the same left-drawn facing and need the same flip.
+    mirror: { se: true, ne: true },
   },
   enforcer: {
     se: ENFORCER_SE,
@@ -83,10 +88,6 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(7, 24, 16, 46, "hip"), propRegion(40, 58, 18, 24, "handNear", "handNear")],
     },
     sourceTeam: "player",
-    // The delivered se cell stands the figure facing up-screen-left instead of
-    // down-screen-right (C.8 facing convention): mirrored back at intake so
-    // east reads facing-right and south (se, mirrored again by the facing
-    // table) reads facing-left, as the cardinal rules require.
     mirror: { se: true },
   },
   machinist: {
@@ -101,6 +102,7 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(6, 2, 26, 52, "shoulderFar"), propRegion(40, 60, 22, 26, "handNear", "handNear")],
     },
     sourceTeam: "player",
+    mirror: { se: true },
   },
   saboteur: {
     se: SABOTEUR_SE,
@@ -113,6 +115,7 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(14, 42, 26, 26, "hip"), propRegion(42, 56, 18, 22, "handNear", "handNear")],
     },
     sourceTeam: "player",
+    mirror: { se: true },
   },
   chemist: {
     se: CHEMIST_SE,
@@ -125,6 +128,7 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(18, 44, 26, 32, "hip"), propRegion(44, 56, 18, 24, "handNear", "handNear")],
     },
     sourceTeam: "player",
+    mirror: { se: true },
   },
   augmented: {
     se: AUGMENTED_SE,
@@ -138,6 +142,7 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(1, 6, 26, 56, "shoulderFar", "handFar")],
     },
     sourceTeam: "player",
+    mirror: { se: true },
   },
   railrunner: {
     se: RAILRUNNER_SE,
@@ -150,6 +155,7 @@ const DELIVERIES: Partial<Record<JobId, Delivery>> = {
       ne: [propRegion(4, 40, 30, 34, "hip", "footFar"), propRegion(46, 56, 16, 26, "handNear", "handNear")],
     },
     sourceTeam: "player",
+    mirror: { se: true },
   },
 };
 

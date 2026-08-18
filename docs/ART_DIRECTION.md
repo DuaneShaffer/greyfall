@@ -313,8 +313,8 @@ facing index north=0, east=1, south=2, west=3 and camera yaw index c:
 
 ```
 m = (facingIndex - cameraYaw + 4) % 4
-m = 0 → back-left    m = 1 → front-left
-m = 2 → front-right  m = 3 → back-right
+m = 0 → back-right   m = 1 → front-right
+m = 2 → front-left   m = 3 → back-left
 ```
 
 **Handedness.** All units are drawn right-handed in the `se`/`ne` source
