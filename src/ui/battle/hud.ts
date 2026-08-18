@@ -107,7 +107,7 @@ export class BattleHud implements Component<BattleHudView> {
     this.status.update(
       view.inspected === null || view.inspected.id === view.action.unit.id ? null : view.inspected,
     );
-    this.turnOrder.update(view.turnOrder);
+    this.turnOrder.update(view.turnOrder, view.log ?? []);
     this.power.update(view.power);
     this.log.update(view.log ?? []);
     this.forecast.update(view.forecast);

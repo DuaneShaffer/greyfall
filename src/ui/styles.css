@@ -3714,3 +3714,81 @@
 .gf-log-toggle.is-hidden {
   display: none;
 }
+
+/* --- the queue: one NEXT, a faction rail on every row, and the newcomers --- */
+/* Two rows stamped NEXT is two claims to the same place in the queue. Exactly
+   one row is next; the ties behind it read THEN and the serial column orders
+   them. The rail is the row's side, spent on every row rather than only on the
+   two whose serial happened to be coloured. */
+
+.gf-turn-entry {
+  position: relative;
+}
+
+/* Painted over the acting row's amber rail on purpose: which side is acting is
+   the fact the queue is worst at carrying, and the amber face, name and stamp
+   still say the turn is live. */
+.gf-turn-entry::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gf-off);
+}
+
+.gf-turn-entry.is-player::before {
+  background: var(--gf-player-deep);
+}
+
+.gf-turn-entry.is-enemy::before {
+  background: var(--gf-danger);
+}
+
+.gf-turn-entry.is-neutral::before {
+  background: var(--gf-dim);
+}
+
+/* A tie resolving behind the one that is next: the same weight as a countdown,
+   because that is what it is — a countdown of nothing left to count. */
+.gf-turn-entry.is-tied .gf-turn-ticks {
+  color: var(--gf-dim);
+}
+
+/* The newcomers' band, above the queue. A reinforcement used to arrive as an
+   unexplained name in the middle of the list; this names them and their side,
+   and disappears once they have taken a turn and the queue speaks for them. */
+.gf-turn-joins {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gf-turn-joins:empty {
+  display: none;
+}
+
+.gf-turn-join {
+  padding: 3px var(--gf-s-2);
+  border-left: 3px solid var(--gf-off);
+  background: rgba(11, 13, 16, 0.42);
+  box-shadow: var(--gf-groove-top);
+  font-family: var(--gf-face-stamp);
+  font-size: var(--gf-t-100);
+  letter-spacing: var(--gf-track-label);
+  text-transform: uppercase;
+  color: var(--gf-text);
+}
+
+.gf-turn-join.is-player {
+  border-left-color: var(--gf-player-deep);
+}
+
+.gf-turn-join.is-enemy {
+  border-left-color: var(--gf-danger);
+}
+
+.gf-turn-join.is-neutral {
+  border-left-color: var(--gf-dim);
+}
