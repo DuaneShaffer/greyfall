@@ -685,3 +685,234 @@ and `refinery-three`'s `switchboard-main` are on no grid at all and are not
 sources, whatever their names suggest. `tests/content.test.ts` now fails if a
 delivered `spriteId` lands on anything but a source, if a source is still wearing
 `switch-board`, or if a footprint does not match the massing the art was drawn for.
+
+# Part D — Wave 1 map objects, briefs 2–4
+
+The brief is `art-src/OBJECT_BRIEFS.md` §2–§4; the binding spec is `ART_DIRECTION`
+§6 and D.6. Second delivery of the object set, three files at once:
+
+| File | Size | Brief | Cells |
+|---|---|---|---|
+| `art-src/cable_trough.png` | 448 × 216 | §2 cable trough (`cable-trough`), a `line` | A run top, B end-cap top, C run side |
+| `art-src/charge_hoist.png` | 576 × 344 | §3 charge hoist (`charge-hoist`), a `sink` | A long side, B short end, C top |
+| `art-src/severed_span.png` | 304 × 216 | §4 severed span — **the cut state of §2** | A break top, B dead run top |
+
+Regenerate the numbers with the same three commands Part C lists. The per-sheet
+declarations now live in one table, `OBJECT_SHEETS` in `src/art/objectIntake.ts`,
+which the tool and the tests both read; `tests/art/objects.fluxMain.test.ts`,
+`objects.cableTrough.test.ts` and `objects.chargeHoist.test.ts` each register the
+shared sweep in `tests/art/objectsSuite.ts` and then pin what only their object has.
+
+## D.1 Verdict against the brief
+
+**Ship all eight cells, unretouched.** The three sheets match Part C's standard
+exactly: palette-exact at 4×, every 4 × 4 block uniform, alpha strictly 0 or 255,
+so the 4:1 box filter is lossless — `movedCount` is **0 of 8 182 opaque pixels**
+across the three files and every `ambiguous` list is **empty**. C.8.2's bar is met
+literally for the second, third and fourth time.
+
+| Cell | Read | Colours (ceiling 8) | Amber | `copper-500` | Verdict |
+|---|---|---|---|---|---|
+| trough A `top` 32 × 32 | **Right.** A recessed channel: `soot-700` tray floor, `soot-800` in the lip's shadow, `soot-500` on the worn upper edge, `umber-700` grime at the join. Every row of the cell is the same row, so it tiles head to tail with nothing to find | 5 | 32 px, **3.13%**, one pure `amber-500` pixel per row over all 32 | none | **Ship** |
+| trough B `cap` 32 × 32 | **Right, and more than asked.** Not a terminal cap but a **gland box**: a bolted cover plate across the run with the filament passing under it and out the other side. Its edge columns match cell A's, so it drops onto any tile of a run | 5 | 23 px, 2.25% | none | **Ship** |
+| trough C `long` 32 × 8 | **Right.** Eight horizontal bands, uniform across the cell. Cold: no amber at all, so nothing on the flanks can average into the filament | 4 | none | none | **Ship** |
+| hoist A `long` 64 × 56 | **Right, and the gap is the read.** Portal gantry in `soot-500` with `soot-700` bracing, a `copper-700` winch drum at the head, `umber-300` on worn cable and timber, `umber-900` under the frame. **50% opaque** — the daylight through it is the silhouette | 8 — at the ceiling | 4 px, 0.22% | 30 px, one cluster, rows 24–33 | **Ship** |
+| hoist B `end` 32 × 56 | **Right.** The frame end-on, 61% opaque. Carries the same lever, which is the same lever: it stands at the corner where the two faces meet | 8 — at the ceiling | 4 px, 0.37% | 29 px, one cluster, rows 26–34 | **Ship** |
+| hoist C `top` 32 × 64 | **Right.** The beam and the drum from above over an empty bed, 46% opaque | 7 | 4 px, 0.43% | **none**, as §3 asks | **Ship** |
+| severed A `top:severed` 32 × 32 | **Right, and it is the one cell in the set a colour swap could not have produced.** The channel broken across its width, lip torn back in `soot-300` bright metal, `soot-900` in the gap, `umber-900` scorch at the break | 7 | **none** | **none** | **Ship** |
+| severed B `top:unpowered` 32 × 32 | **Right — and identical to what the engine already computes.** See §D.4 item 1 | 4 | **none** | **none** | **Ship as a check, not as data** |
+
+Four things the table cannot carry:
+
+- **The trough's filament came in at exactly one pure game pixel.** §2 costed it
+  at "four master columns, all pure `#d98a1b`, aligned to the 4px game grid" and
+  that is what arrived: column 16 of 32, `amber-500` and nothing else, no core and
+  no halo, on every one of the 32 rows. The flanks carry no warmth at all, so the
+  reduction had nothing to average into it. This is the correction Part C's §C.3
+  asked for out loud — the main's carrier is two pixels wide and the log recorded
+  that the trough's must not be drawn two wide by analogy — and the artist took it.
+- **The hoist is separable from the press it shares a primitive with**, on the cue
+  §3 ordered: it is open. 50%, 61% and 46% coverage inside rects that reach all
+  four edges, which is a frame with something hanging in it and not a mass over a
+  bed. The intake had to be taught the difference (§D.5).
+- **Dark and severed are separable, and by material rather than by light.** The
+  break spends `soot-300` and `soot-900` — two colours **no other trough cell
+  spends** — where the dead run is the live run with one column recoloured. That is
+  §4's whole requirement, and it is now measured rather than asserted.
+- **`copper-500` is absent from all four trough cells and from the hoist's top**,
+  and present on the hoist's two side faces as one cluster each. §6's binding rule
+  holds in both directions on all eight cells.
+
+## D.2 Cell location in the delivered sheets
+
+Same method as §C.2 — declared rects, checked by an opaque-run sweep, a
+transparent fence, a fill check and full accounting of every opaque pixel. Every
+cell is at **nominal aspect**; nothing is stretched to reach its master size.
+
+| Sheet | Axis | Runs found automatically |
+|---|---|---|
+| trough | columns | 4, 16–432, 443 |
+| trough | rows | 4, 16–144, 155, 168–199 |
+| hoist | columns | 11, 16–415, 420, 427, 432–559, 564 |
+| hoist | rows | 11, 16–271, 276, 300–327 |
+| severed | columns | 11, 16–287, 292 |
+| severed | rows | 11, 16–143, 148, 168–199 |
+
+| Cell | Crop rect | Fence | Fill | Partial alpha | Opaque inside the rect |
+|---|---|---|---|---|---|
+| trough `top` | 128 × 128 @ (16,16) | 0 on all four edges | flush | 0 | 16 384 / 16 384 (100%) |
+| trough `cap` | 128 × 128 @ (160,16) | 0 | flush | 0 | 16 384 / 16 384 (100%) |
+| trough `long` | 128 × 32 @ (304,16) | 0 | flush | 0 | 4 096 / 4 096 (100%) |
+| hoist `long` | 256 × 224 @ (16,16) | 0 | flush | 0 | **28 800 / 57 344 (50%)** |
+| hoist `end` | 128 × 224 @ (288,16) | 0 | flush | 0 | **17 440 / 28 672 (61%)** |
+| hoist `top` | 128 × 256 @ (432,16) | 0 | flush | 0 | **15 040 / 32 768 (46%)** |
+| severed `top:severed` | 128 × 128 @ (16,16) | 0 | flush | 0 | 16 384 / 16 384 (100%) |
+| severed `top:unpowered` | 128 × 128 @ (160,16) | 0 | flush | 0 | 16 384 / 16 384 (100%) |
+
+Unaccounted opaque pixels — the corner guide brackets, and nothing else: **216**
+on the trough sheet, **216** on the hoist sheet, **144** on the severed sheet.
+
+The swatch rows are declared as *reference and not cells*, which is what lets the
+intake cross-check them:
+
+| Sheet | Strip | Swatched | Cross-check |
+|---|---|---|---|
+| trough | 192 × 32 @ (128,168), six 32 px squares | `soot-800` `soot-700` `soot-500` `umber-700` `amber-700` `amber-500` | nothing painted is unswatched; **`amber-700` is swatched and never spent** (§D.4 item 2) |
+| hoist | 224 × 28 @ (176,300), eight 28 px squares | `umber-900` `soot-700` `soot-500` `copper-700` `umber-300` `copper-500` `amber-500` `amber-300` | exact, none missing and none spare |
+| severed | 224 × 32 @ (40,168), seven 32 px squares | `soot-900` `umber-900` `soot-800` `umber-700` `soot-700` `soot-500` `soot-300` | exact; the dead run spends four of the seven and the break all seven |
+
+## D.3 Audit, per cell
+
+| Cell | Shipped | Colours | Amber / budget | Share / ceiling | Carrier rows | Carrier cols | `copper-500` | `copper-300` | Reserved | Off-ramp | Quantized | Ambiguous |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| trough `top` | 32×32 | 5 | 32 / 40 | 3.13% / 4% | **32/32** | 16 | none | 0 | 0 | 0 | 0/1024 | **0** |
+| trough `cap` | 32×32 | 5 | 23 / 40 | 2.25% / 4% | 23/32 | 16 | none | 0 | 0 | 0 | 0/1024 | **0** |
+| trough `long` | 32×8 | 4 | 0 / 10 | 0.00% / 4% | 0/8 | — | none | 0 | 0 | 0 | 0/256 | **0** |
+| hoist `long` | 64×56 | **8** | 4 / 18 | 0.22% / **1%** | 2/56 | 39, 40 | 30 px ×1, rows 24–33 | 0 | 0 | 0 | 0/1800 | **0** |
+| hoist `end` | 32×56 | **8** | 4 / 10 | 0.37% / **1%** | 2/56 | 20, 21 | 29 px ×1, rows 26–34 | 0 | 0 | 0 | 0/1090 | **0** |
+| hoist `top` | 32×64 | 7 | 4 / 9 | 0.43% / **1%** | 2/64 | 21, 22 | none | 0 | 0 | 0 | 0/940 | **0** |
+| trough `top:severed` | 32×32 | 7 | 0 / 40 | 0.00% | 0/32 | — | none | 0 | 0 | 0 | 0/1024 | **0** |
+| trough `top:unpowered` | 32×32 | 4 | 0 / 40 | 0.00% | 0/32 | — | none | 0 | 0 | 0 | 0/1024 | **0** |
+
+**What each column costs downstream:**
+
+- **The hoist's ceiling is 1%, not 4%.** §3 costs a sink's indicator at "under 1%
+  of the cell" and the audit is now held to the object's own number rather than to
+  the set's — `ObjectFaceSpec.amberShare`. All three hoist faces would pass at 4%
+  and the point of §3 is that they must not be allowed to: the rule the whole set
+  turns on is that a player can tell where power *comes from*, and a generous amber
+  dress on a consumer would undo the main's brief in one image. A test poisons a
+  hoist top to 24 amber pixels and checks that it fails at 1% and passes at 4%.
+- **Two objects now carry a full-extent carrier, and for opposite reasons.** The
+  main's is vertical up its long side; the trough's is the filament along its run
+  top, one pixel wide over a nine-tile run on the Meter House. The audit's flag
+  (`amberColumn`) is what holds each of them to *unbroken*, and no third object in
+  the set has one.
+- **The gland box is 23 rows of 32 and is not asked to be continuous.** The
+  filament goes under the cover plate. If `cap` were flagged as a carrier face the
+  audit would reject it, which is the check working: a break in a *run* cell is a
+  bug and a break under a box is the box.
+- **Colours 4–8 against a ceiling of 8.** The hoist's two side faces are exactly
+  at it. As with the main, there is no headroom for a ninth colour on those cells.
+- **Every reserved-ramp, off-ramp and `copper-300` count is zero.** The copper
+  ramp is in the quantization target on purpose, so a stray rail-head specular
+  would have landed and been rejected. Eleven cells across the set, and it never
+  landed once.
+
+## D.4 What the owner should regenerate, in priority order
+
+**Nothing is required.** Two notes, both cheap and neither blocking:
+
+1. **`severed_span.png` cell B is redundant with the engine, exactly.** §4 asks
+   for the dead run as "cell A of brief 2 with the filament removed — the same
+   channel, unlit, its centre line in `#2b333d` where the amber was". That is
+   letter for letter what §6's unpowered substitution already does to the live
+   run, and the delivered cell is **byte-identical to it: 0 differing pixels of
+   1024**. So it is not stored. It is cut, quantized, audited and then held
+   against `faceInState(cable-trough/top, unpowered)` in the tests, which turns a
+   duplicate painting into a two-sided proof: the artist and the engine agree
+   about what "dark" looks like, and if either moves, the test says which. Drawing
+   it was the right call and drawing it again is not needed.
+2. **The trough sheet swatches `amber-700` and never spends it.** Six swatches,
+   five colours used. `amber-700` is the recess step the main puts beside its
+   column; §2 deliberately keeps the trough's flanks in the tray's own dark umber
+   instead, so the swatch is a leftover from the shared spec's palette block
+   rather than a colour the art is missing. Reported, not repaired (C.8.2).
+3. **Optional, and only if the trough ever gets a fourth cell: a run end.** §2's
+   cell table has no short-end side, and the trough needs one to dress a box (see
+   §D.5). Cell C answers it today because the tray wall is eight horizontal bands
+   and is uniform along its length, so the flank and the end are genuinely the
+   same eight rows — but if a future revision gives the run a *capped* end with a
+   visible mouth, that is a new 32 × 8 cell and not a repaint of C.
+
+## D.5 Engine decisions the intake had to make
+
+Part C's decisions all stand. Four more, all of them forced by the fact that these
+two objects are not the shape the main is:
+
+- **A cell can answer two faces (`ObjectFaceSpec.paintedAs`).** The box dressing
+  asks for `long`, `end` and `top` by name and would leave a material slot
+  undressed without all three; §2 delivers one side cell. Rather than declare the
+  same rect twice and commit the same 256 pixels under two names, the trough's
+  `end` points at its `long`, so one delivery stays one master. It is legitimate
+  and not a fudge: cell C is eight uniform horizontal bands, so it is the same
+  painting whichever side of the tray you are looking at, and at any width.
+- **A run's registered footprint is its tiling unit (`tilesAlongRun`).** The Meter
+  House runs the trough 2 and 3 tiles long, so `along: 1` and the cells tile head
+  to tail. Cell A makes that lossless in the current renderer by accident and by
+  merit: **every row of it is identical**, so the single clamped top texture that
+  a 2- or 3-tile box stretches along its run produces exactly the painting the
+  artist drew. `tests/content.test.ts` now checks a run's *width* against the art
+  and lets the map decide its length.
+- **The intake's fill check is a bounding-box check, and had to stay one.** The
+  hoist's cells reach all four edges of their rects at under half coverage,
+  because §3 makes the daylight under the beam the silhouette. So `fillsRect` asks
+  whether the opaque bounding box *is* the rect and a new `opaquePixels` count
+  reports coverage separately; a check that demanded solid fills would have
+  rejected the one property that stops a hoist reading as a press. Verified to
+  survive the pipeline: the delivered alpha lands on the 4px game grid exactly, so
+  `opaqueCount × 16` equals the delivered opaque count on all three cells, no
+  interior hole is half a pixel wide, and `alphaTest 0.5` has nothing to guess at.
+- **`severed` is a face state, and its colour half is the unpowered row.** §6's
+  table lists five states and separates severed from destroyed by *geometry*, so
+  `ObjectFaceState` adds it to the four power states and the substitution reads the
+  unpowered paint for it. That means every object answers in the state — a main
+  asked for its severed long face gets its unpowered one — and an object with a
+  delivered break gets the break instead. `stateFaces` is where a delivered state
+  painting is declared, and §4's break is the only one in the set: a torn tray is
+  missing material and no substitution over the amber ramp makes material go
+  missing.
+
+### Still owed by `src/render`, which this pass did not touch
+
+Two registered paintings have no way to reach the GPU yet, and both wait on the
+same piece of work — **laying a run's top tile by tile** instead of stretching one
+clamped texture over the whole box:
+
+1. **`cable-trough/cap`.** A box has one top slot and the gland box belongs on one
+   tile of the run. `BOX_FACE_SLOTS` cannot express that, so nothing in
+   `src/render` asks for `cap` and the run currently shows plain channel end to
+   end. The art is committed and measured and is waiting.
+2. **`cable-trough/top:severed`.** `ObjectVisual.setSevered` is the geometry half
+   of §6's severed row and it is right — the run parts, the halves kink, no squash
+   and no drop. The colour half is still a lerp toward the dead grey, which on a
+   *painted* object now tints the whole delivered face rather than replacing it:
+   `refreshPaintedFaces` derives its state from `destroyed`/`overload`/`powered`
+   and never asks for `"severed"`. The hookup is to pass `"severed"` when
+   `MapObjectView.severed` is set and to drop the body lerp on painted faces —
+   `objectFaceTexture` and `objectFaceGrid` already take the state and already
+   return the break painting for it. A desaturated tray is not a *torn* tray, and
+   the torn ends are what tell the player this is the reversible verb with a splice
+   as its answer.
+
+### Still owed by `data/maps`, which this pass did not touch
+
+`charge-hoist` has **no user**. `meter-house.json` and `refinery-three.json` both
+name objects `charge-hoist-west`/`charge-hoist-east`, and both give them
+`spriteId: "hydraulic-press"` — which is the exact confusion §3's identity
+section was written against ("the hoist must not read as the hydraulic press it
+currently shares a primitive with"). The follow-up is the same one Part C's mains
+needed: give the `sink` nodes the `spriteId` their art was drawn for. Until then
+the hoist's three faces are committed, audited and unused, and
+`tests/content.test.ts` will hold whichever objects take them to the `sink` role,
+the 1 × 2 footprint and the operable flag.
