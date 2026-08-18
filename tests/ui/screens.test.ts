@@ -290,11 +290,101 @@ describe("UnitSheetScreen", () => {
     const screen = new UnitSheetScreen();
     screen.update(mockUnitSheetView());
     const text = screen.el.textContent ?? "";
-    expect(text).toContain("Standing: 320");
+    expect(text).toContain("Standing (Enforcer)");
+    expect(text).toContain("320");
     expect(text).toContain("Shock Maul");
     expect(text).toContain("Watch Cuirass");
     expect(text).toContain("Pin");
-    expect(text).toContain("Unassigned");
+  });
+
+  // "RECORD hides every stat that matters": Move, Jump, Speed, Phys, Mag and
+  // Evade decide every turn and none of them were named on the record.
+  it("prints every stat the rules read off the unit", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(mockUnitSheetView());
+    const text = screen.el.textContent ?? "";
+    for (const label of ["Speed", "Phys", "Mag", "Move", "Jump", "Evade"]) {
+      expect(text, label).toContain(label);
+    }
+    expect(screen.el.querySelector(".gf-stat-move .gf-field-value")?.textContent).toBe("3");
+    expect(screen.el.querySelector(".gf-stat-jump .gf-field-value")?.textContent).toBe("2");
+    // One unit per stat: Evade is the percentage, and it says so here too.
+    expect(screen.el.querySelector(".gf-stat-evade .gf-field-value")?.textContent).toBe("8%");
+  });
+
+  it("names the two level tracks so Level 1 and level 2 stop contradicting", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(mockUnitSheetView());
+    const record = screen.el.querySelector(".gf-sheet-record")?.textContent ?? "";
+    expect(record).toContain("Unit Level");
+    expect(record).toContain("Job Level (Enforcer)");
+    expect(screen.el.querySelector(".gf-unit-level .gf-field-value")?.textContent).toBe("1");
+    expect(screen.el.querySelector(".gf-job-level .gf-field-value")?.textContent).toBe("2 of 8");
+  });
+
+  it("says where the Standing came from and which job holds it", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(mockUnitSheetView());
+    const rule = screen.el.querySelector(".gf-sheet-rule")?.textContent ?? "";
+    expect(rule).toContain("10 Standing for every action");
+    expect(rule).toContain("banked into the job it fought in");
+    expect(rule).toContain("only if the battle is won");
+  });
+
+  it("tells an empty ability slot how to get filled", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(mockUnitSheetView());
+    const empties = [...screen.el.querySelectorAll<HTMLElement>(".gf-slot-empty")];
+    expect(empties).toHaveLength(3);
+    for (const slot of empties) {
+      expect(slot.textContent).toContain("Learn one from a job, then equip it here");
+    }
+    expect(screen.el.textContent).not.toContain("Unassigned");
+  });
+
+  it("keeps a filled slot as the ability's name", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(
+      mockUnitSheetView({
+        passives: [
+          { slot: "reaction", abilityName: "Baton Answer" },
+          { slot: "support", abilityName: null },
+          { slot: "movement", abilityName: null },
+        ],
+      }),
+    );
+    expect(screen.el.querySelectorAll(".gf-slot-empty")).toHaveLength(2);
+    expect(screen.el.textContent).toContain("Baton Answer");
+  });
+
+  it("prints what a learned ability does, not only what it is for", () => {
+    const screen = new UnitSheetScreen();
+    screen.update(mockUnitSheetView());
+    const pin = screen.el.querySelector<HTMLElement>('.gf-ability[data-ability="pin"]');
+    expect(pin?.querySelector(".gf-ability-mechanics")?.textContent).toContain(
+      "Damage Weapon 80% kinetic",
+    );
+    expect(pin?.querySelector(".gf-ability-text")?.textContent).toContain("Watch doctrine");
+  });
+
+  it("hands the page back on the cancel key", () => {
+    const { intents, calls } = recordingIntents();
+    const screen = new UnitSheetScreen({ intents });
+    screen.update(mockUnitSheetView());
+    screen.attach(document);
+    document.dispatchEvent(key("Escape"));
+    expect(calls).toEqual([{ name: "closeScreen", args: [] }]);
+    screen.destroy();
+  });
+
+  it("stops listening once it is torn down", () => {
+    const { intents, calls } = recordingIntents();
+    const screen = new UnitSheetScreen({ intents });
+    screen.update(mockUnitSheetView());
+    screen.attach(document);
+    screen.destroy();
+    document.dispatchEvent(key("Escape"));
+    expect(calls).toHaveLength(0);
   });
 });
 

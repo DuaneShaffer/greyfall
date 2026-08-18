@@ -3663,3 +3663,34 @@
 .gf-delta {
   white-space: normal;
 }
+
+/* --- the unit's record: two level tracks, and the slots nobody filled ------ */
+
+.gf-sheet-rule {
+  margin: var(--gf-s-2) 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  color: var(--gf-dim);
+}
+
+/* An unfilled ability slot is a free upgrade sitting on the floor, so the slot
+   carries the instruction rather than the word "Unassigned". It is an
+   instruction, not a value: it reads at the label's weight. */
+.gf-field.gf-slot-empty .gf-field-value {
+  font-family: inherit;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  text-align: right;
+}
+
+.gf-ability-mechanics {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: var(--gf-t-100);
+  letter-spacing: 0.02em;
+  color: var(--gf-dim);
+  white-space: normal;
+  overflow-wrap: break-word;
+}

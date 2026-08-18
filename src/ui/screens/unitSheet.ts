@@ -1,12 +1,27 @@
 import { Component, el, labelledValue, meter, panel, portrait, replaceChildren } from "../dom.js";
 import { UiIntents, withIntents } from "../intents.js";
-import { EQUIP_SLOT_LABELS, UnitSheetView, formatSigned, formatStanding } from "../state.js";
+import { EQUIP_SLOT_LABELS, UnitSheetView, formatSigned } from "../state.js";
+import { formatStatValue } from "./vocabulary.js";
 
 const PASSIVE_LABELS: Record<"reaction" | "support" | "movement", string> = {
   reaction: "Reaction",
   support: "Support",
   movement: "Movement",
 };
+
+const MAX_JOB_LEVEL = 8;
+
+/**
+ * Where Standing comes from, in one line. `STANDING_PER_ACTION` is 10 and a win
+ * is what banks it (src/core/rules/abilities.ts, src/core/progression/ops.ts).
+ * The playtest read "Standing" as a shared purse and it is neither shared nor a
+ * purse.
+ */
+export const STANDING_EARNED_RULE =
+  "10 Standing for every action this unit resolves in a battle, banked into the job it fought in — and only if the battle is won.";
+
+/** How an empty passive slot gets filled, said on the slot itself. */
+const PASSIVE_HINT = "Learn one from a job, then equip it here";
 
 const CANCEL_KEYS = new Set(["Escape", "Backspace"]);
 
@@ -55,8 +70,7 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
             class: "gf-screen-head-text",
             children: [
               el("h1", { class: "gf-screen-title", text: unit.name }),
-              el("p", { class: "gf-screen-note", text: `${unit.jobName} · Level ${unit.level}` }),
-              el("p", { class: "gf-screen-note", text: formatStanding(view.standing) }),
+              el("p", { class: "gf-screen-note", text: unit.jobName }),
             ],
           }),
         ],
@@ -64,6 +78,29 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
       el("div", {
         class: "gf-sheet-cols",
         children: [
+          // Two levels, two names. The same unit read "Level 1" here and
+          // "Enforcer level 2" on the roster, which is two tracks and not a
+          // contradiction — but only once the record says which is which.
+          panel({
+            className: "gf-sheet-record",
+            title: "Record",
+            children: [
+              labelledValue("Unit Level", String(unit.level), "gf-unit-level"),
+              labelledValue(
+                `Job Level (${unit.jobName})`,
+                view.jobLevel === undefined
+                  ? "—"
+                  : `${view.jobLevel} of ${MAX_JOB_LEVEL}`,
+                "gf-job-level",
+              ),
+              labelledValue(
+                `Standing (${unit.jobName})`,
+                String(view.standing),
+                "gf-sheet-standing",
+              ),
+              el("p", { class: "gf-sheet-rule", text: STANDING_EARNED_RULE }),
+            ],
+          }),
           panel({
             title: "Condition",
             children: [
@@ -73,6 +110,8 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
               labelledValue("Attunement", String(unit.disposition.attunement)),
             ],
           }),
+          // Every stat the rules read off this unit, in its own unit. The record
+          // used to leave the ones that decide a turn off the page entirely.
           panel({
             title: "Attributes",
             children: [
@@ -80,14 +119,14 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
                 labelledValue(
                   stat.label,
                   stat.delta === undefined || stat.delta === 0
-                    ? String(stat.value)
-                    : `${stat.value} (${formatSigned(stat.delta)})`,
+                    ? formatStatValue(stat.key, stat.value)
+                    : `${formatStatValue(stat.key, stat.value)} (${formatSigned(stat.delta)})`,
                   stat.delta === undefined || stat.delta === 0 ? "" : stat.delta > 0 ? "is-gain" : "is-loss",
                 ),
               ),
-              labelledValue("Move", String(view.move)),
-              labelledValue("Jump", String(view.jump)),
-              labelledValue("Evade", `${view.evade}%`),
+              labelledValue("Move", formatStatValue("move", view.move), "gf-stat-move"),
+              labelledValue("Jump", formatStatValue("jump", view.jump), "gf-stat-jump"),
+              labelledValue("Evade", formatStatValue("evade", view.evade), "gf-stat-evade"),
             ],
           }),
           panel({
@@ -96,9 +135,15 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
               ...view.equipment.map((slot) =>
                 labelledValue(EQUIP_SLOT_LABELS[slot.slot], slot.itemName ?? "Empty", "gf-equip-line"),
               ),
-              el("h3", { class: "gf-panel-subtitle", text: "Slots" }),
+              el("h3", { class: "gf-panel-subtitle", text: "Ability slots" }),
+              // An unfilled slot is a free upgrade sitting on the floor. It used
+              // to say "Unassigned" and leave the player to guess it was theirs.
               ...view.passives.map((passive) =>
-                labelledValue(PASSIVE_LABELS[passive.slot], passive.abilityName ?? "Unassigned"),
+                labelledValue(
+                  PASSIVE_LABELS[passive.slot],
+                  passive.abilityName ?? PASSIVE_HINT,
+                  passive.abilityName === null ? "gf-slot-empty" : "",
+                ),
               ),
             ],
           }),
@@ -113,9 +158,15 @@ export class UnitSheetScreen implements Component<UnitSheetView> {
                     : view.learnedAbilities.map((ability) =>
                         el("li", {
                           class: "gf-ability",
+                          data: { ability: ability.id },
                           children: [
                             el("span", { class: "gf-ability-name", text: ability.name }),
                             el("span", { class: "gf-ability-cost", text: `Charge ${ability.chargeCost}` }),
+                            ability.mechanics !== undefined &&
+                              el("p", {
+                                class: "gf-ability-mechanics",
+                                text: ability.mechanics.summary,
+                              }),
                             el("p", { class: "gf-ability-text", text: ability.description }),
                           ],
                         }),
