@@ -1185,7 +1185,7 @@
       "id": "charge-hoist-west",
       "kind": "machine",
       "name": "Charge Hoist, West Bay",
-      "spriteId": "hydraulic-press",
+      "spriteId": "charge-hoist",
       "tiles": [
         {
           "x": 3,
@@ -1655,7 +1655,7 @@
       "id": "charge-hoist-east",
       "kind": "machine",
       "name": "Charge Hoist, East Bay",
-      "spriteId": "hydraulic-press",
+      "spriteId": "charge-hoist",
       "tiles": [
         {
           "x": 12,
