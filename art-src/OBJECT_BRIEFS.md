@@ -212,13 +212,19 @@ the image's **vertical axis**; the engine rotates it for east–west runs, so
 what is either side of the channel must read the same both ways.
 
 **Amber: yes, sparingly — a live trough is a legitimate carrier.** One
-**continuous `#d98a1b` filament, one game pixel wide, dead centre**, with
-`#8c5411` immediately either side of it and no core highlight. It is one pixel
-wide because this thing is nine game-tiles long on the Meter House and a bright
-run would out-shout the units standing on it. Under 2% of cell A. The filament
-must be **continuous across the tile boundary**, because the engine's unpowered
-state is this same image with the seam colour swapped and the player is being
-taught that the line either runs the whole way or does not run at all.
+**continuous `#d98a1b` filament, one game pixel wide** — four master columns,
+all pure `#d98a1b`, aligned to the 4px game grid — **dead centre**, with no
+core highlight. The recess either side stays in the tray's own dark umber,
+`#2c1d12` grime and `#171c22` in the shadow of the lip, never amber: the
+flanks carry no warmth at all, so nothing there can average into the filament
+under the 4:1 reduction. It is one pixel wide because this thing is nine
+game-tiles long on the Meter House and a bright run would out-shout the units
+standing on it — about 3.1% of cell A, a full-height game column of a
+32 × 32 cell, inside the 4% budget.
+The filament must be **continuous across the tile boundary**, because the
+engine's unpowered state is this same image with the seam colour swapped and
+the player is being taught that the line either runs the whole way or does not
+run at all.
 
 **Operable: no. `#a5622f` may not appear anywhere on this sheet.**
 
