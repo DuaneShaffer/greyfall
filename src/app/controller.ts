@@ -23,6 +23,7 @@ import {
   activeUnit,
   affectedTiles,
   aimTarget,
+  aimVerdicts,
   allCharges,
   allObjects,
   allUnits,
@@ -38,12 +39,11 @@ import {
   gridRestoringTies,
   itemAbilityId,
   itemIdFromAbilityId,
-  legalTargetTiles,
   objectEnergized,
   objectOperationPreview,
   powerRegister,
   reachableTiles,
-  targetableTiles,
+  type ActionAbility,
   type BattleEvent,
   type BattleResult,
   type BattleUnit,
@@ -116,6 +116,13 @@ export interface UiPort {
    * what was ordered but must stop offering to send it again.
    */
   lockForecast(): void;
+  /**
+   * Throw the settled record away. A locked forecast survives redraws on purpose
+   * — that is what makes it a receipt — so the next unit's turn has to say when
+   * it stops being one. Optional: an overlay with no receipt to keep has nothing
+   * to do here.
+   */
+  clearForecast?(): void;
   /** The field is closed: clear every live affordance and settle on the truth. */
   showFinalState(view: BattleHudView | null, result: BattleResult | null): void;
   showDialogue(lines: DialogueLine[]): void;
@@ -133,6 +140,12 @@ export interface UiPort {
   setBusy(busy: boolean): void;
   /** Brief, non-modal feedback. `tone` separates a refusal from a report. */
   notify?(message: string, tone?: NoticeTone): void;
+}
+
+/** One in-range tile the aim gate refuses, and the reason it gave. */
+interface AimRefusalAt {
+  tile: TileCoord;
+  reason: string;
 }
 
 type Selection =
@@ -155,7 +168,16 @@ export interface ControllerOptions {
 const LAYER_MOVE = "move-range";
 const LAYER_MOVE_PICK = "move-pick";
 const LAYER_TARGET = "target-range";
-const LAYER_TARGET_REACH = "target-reach";
+/**
+ * The aim overlay's other two layers, and a pinned contract with the renderer,
+ * which styles "support" as the green/teal wash and "blocked" as dimmed hatching
+ * (UI_DESIGN §14). They exist to make one promise keepable: a red tile means
+ * this can be hit. It used to mean "the ability carries this far", which put the
+ * enemy's colour on a wall, on a friend a heal would be wasted on, and on every
+ * tile the aim gate would have refused.
+ */
+const LAYER_TARGET_SUPPORT = "support";
+const LAYER_BLOCKED = "blocked";
 const LAYER_AFFECTED = "affected";
 /**
  * The component a staged grid order would flip. Three of the aim layers are
@@ -183,6 +205,20 @@ const LAYER_CHARGE_LANDING = "charge-landing";
  * full enemy round pays it two or three times per unit.
  */
 const AI_STEP_SECONDS = 0.18;
+
+/** Effects that do the target harm; a shove is harm because it is not consent. */
+const HARMFUL_EFFECT_KINDS = new Set(["damage", "damageObject", "forceMove"]);
+
+/**
+ * An order that harms nobody: nothing in its effects damages or shoves, and the
+ * aim gate would not accept an enemy anyway. Repairs, heals, buffs and the grid
+ * verbs are all this, and painting them in the enemy's red made a heal and a
+ * killing blow the same colour.
+ */
+function isSupportAbility(ability: ActionAbility): boolean {
+  if (ability.targeting.validTargets.includes("enemy")) return false;
+  return !ability.effects.some((effect) => HARMFUL_EFFECT_KINDS.has(effect.kind));
+}
 
 const sameTarget = (a: TargetRef, b: TargetRef): boolean => {
   if (a.kind !== b.kind) return false;
@@ -489,8 +525,17 @@ export class BattleController {
   private previewedMove: TileCoord | null = null;
   private aimTargets: TileCoord[] = [];
   private aimReach: TileCoord[] = [];
+  /** The gate's refusal for every in-range tile it will not accept. */
+  private aimRefusals: AimRefusalAt[] = [];
   private lastCommandError: CommandError | null = null;
   private started = false;
+  /**
+   * Who sent the order the settled forecast is the receipt for. The numbers stay
+   * up through the presentation and the rest of that unit's turn — they are the
+   * record of what was ordered — but they are not a fact about anyone else's
+   * turn, and they used to sit on the frame for the rest of the battle.
+   */
+  private filedForecastBy: string | null = null;
   /** Set while the player's own Operate is in flight; it reports itself. */
   private operating = false;
   /** The events the last command settled into, for a notice composed after it. */
@@ -777,17 +822,39 @@ export class BattleController {
     this.clearSelection();
     const ability = getAbility(this.gameState, unitId, abilityId);
     if (ability === null || ability.slot !== "action") return;
-    // Faint layer: how far the ability carries. Bright layer: what it may
-    // actually be sent at. Nothing outside the bright one ever arms a forecast.
-    this.aimReach = targetableTiles(this.gameState, unitId, abilityId);
-    this.aimTargets = legalTargetTiles(this.gameState, unitId, abilityId);
+    // The gate is asked once and its verdict is what the field paints: the tiles
+    // it accepts in the order's own colour, the tiles it refuses as blocked, and
+    // each refusal kept so a click on one can answer in the gate's own words.
+    // Nothing outside the accepted set ever arms a forecast.
+    const verdicts = aimVerdicts(this.gameState, unitId, abilityId);
+    const legal: TileCoord[] = [];
+    const refusals: AimRefusalAt[] = [];
+    for (const verdict of verdicts) {
+      if (verdict.refusal === null) legal.push(verdict.tile);
+      else refusals.push({ tile: verdict.tile, reason: verdict.refusal.message });
+    }
+    this.aimReach = verdicts.map((verdict) => verdict.tile);
+    this.aimTargets = legal;
+    this.aimRefusals = refusals;
     this.selection = { mode: "target", abilityId, pending: null };
-    this.paint(LAYER_TARGET_REACH, this.aimReach, palette.highlightTarget, {
-      opacity: 0.1,
-    });
-    this.paint(LAYER_TARGET, this.aimTargets, palette.highlightTarget, {
-      opacity: 0.32,
-    });
+    const support = isSupportAbility(ability);
+    this.paint(
+      support ? LAYER_TARGET_SUPPORT : LAYER_TARGET,
+      this.aimTargets,
+      // Verdigris is the palette's own green, already the deployment wash; the
+      // renderer owns the final look of both of these layers.
+      support ? palette.highlightDeployment : palette.highlightTarget,
+      { opacity: 0.32 },
+    );
+    if (refusals.length === 0) this.unpaint(LAYER_BLOCKED);
+    else {
+      this.paint(
+        LAYER_BLOCKED,
+        refusals.map((refusal) => refusal.tile),
+        palette.skyGrey,
+        { opacity: 0.16 },
+      );
+    }
 
     // Self-only abilities have nothing to aim: stage the caster straight away.
     const targets = ability.targeting.validTargets;
@@ -929,6 +996,7 @@ export class BattleController {
     // ordered, but it is describing an action already in flight: kill the stamp
     // now rather than when the queue finally drains.
     this.ui.lockForecast();
+    this.filedForecastBy = activeUnit(before)?.id ?? null;
     this.ui.resetMenus();
     this.consume(result.events, result.state, before);
     // No refresh here: the HUD must not jump ahead of the animation it is
@@ -995,6 +1063,12 @@ export class BattleController {
       this.ui.showFinalState(this.finalView(), null);
       return;
     }
+    // Somebody else has the floor: the last order's receipt is not about this
+    // turn, and holding it there is the panel reporting a stale decision.
+    if (this.filedForecastBy !== null && this.filedForecastBy !== acting.id) {
+      this.filedForecastBy = null;
+      this.ui.clearForecast?.();
+    }
     this.inspectedUnitId = acting.id;
     this.aiTimer = 0;
     if (acting.team === "player") {
@@ -1044,8 +1118,15 @@ export class BattleController {
     this.ui.notify?.(message, "refusal");
   }
 
-  /** Why a click on `tile` was not a target: out of reach, or the wrong thing. */
+  /**
+   * Why a click on `tile` was not a target, in the aim gate's own words — the
+   * gate names inert machinery, a missing line of sight and an unmet requirement
+   * separately, and a click that landed on one of those used to be answered with
+   * a guess or with nothing at all.
+   */
   private aimRefusal(actor: BattleUnit, abilityId: string, tile: TileCoord): string {
+    const refused = this.aimRefusals.find((entry) => coordEq(entry.tile, tile));
+    if (refused !== undefined) return refused.reason;
     if (!this.aimReach.some((candidate) => coordEq(candidate, tile))) return "Out of reach";
     const name = getAbility(this.gameState, actor.id, abilityId)?.name ?? "That";
     return `${name} cannot target that`;
@@ -1175,10 +1256,12 @@ export class BattleController {
     this.moveTargets = [];
     this.aimTargets = [];
     this.aimReach = [];
+    this.aimRefusals = [];
     this.unpaint(LAYER_MOVE);
     this.unpaint(LAYER_MOVE_PICK);
     this.unpaint(LAYER_TARGET);
-    this.unpaint(LAYER_TARGET_REACH);
+    this.unpaint(LAYER_TARGET_SUPPORT);
+    this.unpaint(LAYER_BLOCKED);
     this.unpaint(LAYER_AFFECTED);
     this.unpaint(LAYER_GRID_FLIP);
   }

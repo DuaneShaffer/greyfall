@@ -96,6 +96,149 @@ describe("ForecastPanel", () => {
     expect(rows).toEqual(["Provocateur B"]);
   });
 
+  // Rows arrive sorted by unit id, so the ally standing in the blast used to take
+  // the portrait, the name and the exchange off the enemy the order was sent at.
+  it("gives the headline to the unit the order is aimed at, not the first row", () => {
+    const panel = new ForecastPanel();
+    const base = mockForecastView();
+    panel.update(
+      mockForecastView({
+        attacker: { ...base.attacker, team: "player" },
+        targets: [
+          {
+            unitId: "dunn-brack",
+            name: "Dunn Brack",
+            team: "player",
+            jobName: "Enforcer",
+            hp: 30,
+            maxHp: 52,
+            hitChancePercent: 100,
+            damage: { kind: "damage", min: 12, max: 12, damageType: "arc" },
+            statuses: [],
+            effects: [],
+            attackAngle: "front",
+            heightAdvantage: 0,
+          },
+          { ...base.targets[0]!, team: "enemy" },
+        ],
+        aimedAt: { kind: "unit", unitId: "provocateur-a" },
+      }),
+    );
+
+    expect(textOf(panel.el, ".gf-forecast-party.is-target .gf-forecast-party-name")).toBe(
+      "Provocateur",
+    );
+    const rows = [...panel.el.querySelectorAll(".gf-forecast-target-name")].map((n) => n.textContent);
+    expect(rows).toEqual(["Dunn Brack"]);
+  });
+
+  it("strikes a hazard band over an order that catches the caster's own side", () => {
+    const panel = new ForecastPanel();
+    const base = mockForecastView();
+    panel.update(
+      mockForecastView({
+        attacker: { ...base.attacker, team: "player" },
+        targets: [
+          { ...base.targets[0]!, team: "enemy" },
+          {
+            ...base.targets[0]!,
+            unitId: "dunn-brack",
+            name: "Dunn Brack",
+            team: "player",
+          },
+        ],
+      }),
+    );
+
+    expect(panel.el.classList.contains("has-ally-caught")).toBe(true);
+    expect(textOf(panel.el, ".gf-forecast-warning.is-ally")).toBe(
+      "CAUGHT IN THE LINE — ALLY: Dunn Brack",
+    );
+    expect(panel.el.querySelector(".gf-forecast-target.is-ally")?.getAttribute("data-unit")).toBe(
+      "dunn-brack",
+    );
+    expect(textOf(panel.el, ".gf-forecast-ally-flag")).toBe("ALLY");
+  });
+
+  it("counts the allies when an area order catches more than one", () => {
+    const panel = new ForecastPanel();
+    const base = mockForecastView();
+    const ally = { ...base.targets[0]!, team: "player" as const };
+    panel.update(
+      mockForecastView({
+        attacker: { ...base.attacker, team: "player" },
+        targets: [
+          { ...ally, unitId: "dunn-brack", name: "Dunn Brack" },
+          { ...ally, unitId: "sella-wick", name: "Sella Wick" },
+        ],
+      }),
+    );
+
+    expect(textOf(panel.el, ".gf-forecast-warning.is-ally")).toBe("CAUGHT IN THE LINE — 2 ALLIES");
+  });
+
+  it("does not cry friendly fire over an order that heals an ally", () => {
+    const panel = new ForecastPanel();
+    const base = mockForecastView();
+    panel.update(
+      mockForecastView({
+        attacker: { ...base.attacker, team: "player" },
+        targets: [
+          {
+            ...base.targets[0]!,
+            unitId: "dunn-brack",
+            name: "Dunn Brack",
+            team: "player",
+            damage: { kind: "heal", min: 18, max: 18 },
+          },
+        ],
+      }),
+    );
+
+    expect(panel.el.classList.contains("has-ally-caught")).toBe(false);
+    expect(panel.el.querySelector(".gf-forecast-warning")).toBeNull();
+  });
+
+  // A line's length is measured from the caster: aimed past it, the order lands
+  // nowhere near the cursor, and the card used to list the bystanders in silence.
+  it("says the aim fell outside the area the order resolved to", () => {
+    const panel = new ForecastPanel();
+    const base = mockForecastView();
+    panel.update(
+      mockForecastView({
+        abilityName: "Arc",
+        area: { tiles: 3, coversAimedTarget: false },
+        targets: [{ ...base.targets[0]!, team: "enemy" }],
+        aimedAt: { kind: "unit", unitId: "far-provocateur" },
+      }),
+    );
+
+    expect(textOf(panel.el, ".gf-forecast-warning.is-aim")).toBe(
+      "Out of the line — Arc carries 3 tiles",
+    );
+  });
+
+  it("says nothing about the aim when the area covers what it was pointed at", () => {
+    const panel = new ForecastPanel();
+    panel.update(mockForecastView({ area: { tiles: 1, coversAimedTarget: true } }));
+    expect(panel.el.querySelector(".gf-forecast-warning.is-aim")).toBeNull();
+  });
+
+  it("names the aimed target rather than the caster when nothing is in the area", () => {
+    const panel = new ForecastPanel();
+    panel.update(
+      mockForecastView({
+        targets: [],
+        area: { tiles: 3, coversAimedTarget: false },
+        aimedAt: { kind: "unit", unitId: "provocateur-a" },
+      }),
+    );
+
+    expect(textOf(panel.el, ".gf-forecast-party.is-target .gf-forecast-party-name")).toBe(
+      "The aimed target",
+    );
+  });
+
   it("labels healing and casts, and says so when nothing lands a status", () => {
     const panel = new ForecastPanel();
     panel.update(

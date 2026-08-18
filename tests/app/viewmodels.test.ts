@@ -161,6 +161,29 @@ describe("forecastView", () => {
     expect(view?.aimedAt).toEqual({ kind: "unit", unitId: "perr" });
   });
 
+  // A line is measured from the caster, so an order aimed past its length lands
+  // nowhere near the cursor. The panel is told, because nothing in the rows says it.
+  it("reports whether the resolved area covers what the order was aimed at", () => {
+    const conduit: Unit = {
+      schemaVersion: 1,
+      id: "sella",
+      name: "Sella Wick",
+      level: 1,
+      jobId: "conduit",
+      disposition: { resolve: 45, attunement: 65 },
+      learnedAbilityIds: ["arc"],
+      equipment: {},
+    };
+    const state = advanceTo(openBattle([rowen(), conduit]).state, "sella");
+
+    // Arc carries three tiles north of (1, 4); the fourth is out of the line.
+    const short = forecastView(state, "sella", "arc", { kind: "tile", tile: { x: 1, y: 3 } });
+    expect(short?.area).toEqual({ tiles: 3, coversAimedTarget: true });
+
+    const past = forecastView(state, "sella", "arc", { kind: "tile", tile: { x: 1, y: 0 } });
+    expect(past?.area).toEqual({ tiles: 3, coversAimedTarget: false });
+  });
+
   it("reports a machine laid on an empty tile, which has no target row at all", () => {
     const machinist: Unit = {
       schemaVersion: 1,

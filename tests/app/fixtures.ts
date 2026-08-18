@@ -107,6 +107,7 @@ export interface FakeUi {
   noticeTones: (string | undefined)[];
   modes: HudMode[];
   forecastLocks: number;
+  forecastClears: number;
   finalViews: (BattleHudView | null)[];
   facingPrompt: { onPick: (facing: Facing) => void; onCancel: () => void } | null;
   menuResets: number;
@@ -125,6 +126,7 @@ export function fakeUi(): FakeUi {
     noticeTones: [],
     modes: [],
     forecastLocks: 0,
+    forecastClears: 0,
     finalViews: [],
     facingPrompt: null,
     menuResets: 0,
@@ -140,6 +142,9 @@ export function fakeUi(): FakeUi {
     },
     lockForecast: () => {
       fake.forecastLocks += 1;
+    },
+    clearForecast: () => {
+      fake.forecastClears += 1;
     },
     showFinalState: (view) => {
       fake.finalViews.push(view);

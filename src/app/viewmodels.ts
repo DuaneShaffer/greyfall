@@ -23,6 +23,7 @@ import {
   battleEncounter,
   battleMap,
   canUndoMove,
+  coordEq,
   forecast,
   getAbility,
   getItem,
@@ -400,6 +401,21 @@ function outcomeLine(state: GameState, outcome: ForecastOutcome): string | null 
 const outcomeLines = (state: GameState, outcomes: readonly ForecastOutcome[]): string[] =>
   outcomes.map((outcome) => outcomeLine(state, outcome)).filter((line): line is string => line !== null);
 
+/**
+ * The tiles the cursor was actually on, so the resolved area can be asked
+ * whether it covers them. An empty answer — a unit or machine that is already
+ * gone — is never reported as a miss.
+ */
+function aimedTiles(state: GameState, target: TargetRef): readonly TileCoord[] {
+  if (target.kind === "tile") return [target.tile];
+  if (target.kind === "unit") {
+    const unit = getUnit(state, target.unitId);
+    return unit === null ? [] : [unit.position];
+  }
+  const object = getObject(state, target.objectId);
+  return object === null ? [] : object.def.tiles;
+}
+
 const uiTarget = (target: TargetRef): UiTargetRef => {
   if (target.kind === "unit") return { kind: "unit", unitId: target.unitId };
   if (target.kind === "object") return { kind: "object", objectId: target.objectId };
@@ -418,6 +434,10 @@ export function forecastView(
 
   const itemId = itemIdFromAbilityId(abilityId);
   const damageType = damageTypeOf(ability);
+  const area = affectedTiles(state, unitId, abilityId, target);
+  const aimed = aimedTiles(state, target);
+  const coversAimedTarget =
+    aimed.length === 0 || aimed.some((tile) => area.some((covered) => coordEq(covered, tile)));
   const targets: ForecastTargetView[] = [];
   for (const entry of forecast(state, unitId, abilityId, target)) {
     const amount = entry.heal > 0 && entry.damage === 0 ? entry.heal : entry.damage;
@@ -496,6 +516,7 @@ export function forecastView(
     castSpeed: ability.castSpeed,
     ...(itemId === null ? {} : { item: { itemId, remaining: itemRemaining(state, unitId, itemId) } }),
     targets,
+    area: { tiles: area.length, coversAimedTarget },
     effects: outcomeLines(state, abilityOutcomes(state, unitId, abilityId)),
     aimedAt: uiTarget(target),
   };
@@ -504,6 +525,10 @@ export function forecastView(
 /** Two names read; more than two are a count, because machine names are long. */
 const machineList = (names: readonly string[]): string =>
   names.length <= 2 ? names.join(" and ") : `${names.length} machines`;
+
+/** One machine takes the singular; two names and a count both take the plural. */
+const machinePhrase = (names: readonly string[], singular: string, plural: string): string =>
+  `${machineList(names)} ${names.length === 1 ? singular : plural}`;
 
 /**
  * What working this machine's controls would do to the grid, per the real
@@ -527,9 +552,11 @@ export function operateForecastView(
     (objectEnergized(state, flipped) ? lost : gained).push(name);
   }
   const effects: string[] = [];
-  if (lost.length > 0) effects.push(`${machineList(lost)} lose power`);
-  if (gained.length > 0) effects.push(`${machineList(gained)} come back up`);
-  if (effects.length === 0) effects.push("No change on the grid");
+  if (lost.length > 0) effects.push(machinePhrase(lost, "loses power", "lose power"));
+  if (gained.length > 0) effects.push(machinePhrase(gained, "comes back up", "come back up"));
+  // Most maps declare no grid at all, so the old wording promised a grid the
+  // player could not see and reported honestly about nothing.
+  if (effects.length === 0) effects.push("No powered machines affected");
 
   return {
     attacker: {
