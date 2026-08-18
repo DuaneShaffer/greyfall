@@ -1,9 +1,11 @@
 import * as THREE from "three";
 import { AnimationPlayer } from "../art/player.js";
+import { BLOOD_300, VERDIGRIS_300, hexToNumber } from "../art/palette.js";
 import { drawnViewFor, type AnimState, type CameraYaw, type DrawnView } from "../art/sprites.js";
 import type { Facing, Team } from "../data/schemas/common.js";
 import { facingYaw } from "./board.js";
 import { DRAW_ORDER, markBloomOnly } from "./layers.js";
+import { NO_STATUSES, type UnitStatusCounts } from "./marks.js";
 import { palette, teamColor } from "./palette.js";
 import {
   SPRITE_ANCHOR_Y,
@@ -63,6 +65,31 @@ const SHADOW_LIFT = 0.02;
 const MARKER_LIFT = 0.028;
 const WEDGE_LIFT = 0.034;
 
+/**
+ * The turn marker: a ring outside the team ring on the tile, and a caret over
+ * the figure. Two cues rather than one because the ring is hidden by any
+ * geometry the unit is standing behind, and the caret is what carries at zoom.
+ * Team-tinted, both sides — whose turn the enemy's is, is also a fact.
+ */
+const BEACON_INNER = 0.5;
+const BEACON_OUTER = 0.62;
+const BEACON_LIFT = 0.03;
+const BEACON_PERIOD_SECONDS = 1.4;
+const BEACON_OPACITY_LOW = 0.28;
+const BEACON_OPACITY_HIGH = 0.85;
+/** Clear of the tallest head in the roster, under the popup lane. */
+const CARET_HEIGHT = 1.3;
+const CARET_BOB = 0.05;
+
+/** Status chips over the head: buff to the left, debuff to the right. */
+const CHIP_SIZE = 0.11;
+const CHIP_HEIGHT = 1.14;
+const CHIP_OFFSET = 0.1;
+const CHIP_COLOR = {
+  buff: hexToNumber(VERDIGRIS_300),
+  debuff: hexToNumber(BLOOD_300),
+} as const;
+
 interface Offset {
   x: number;
   y: number;
@@ -81,8 +108,12 @@ const TEAM_MARKER_SHAPE: Record<Team, { arcs: number; duty: number }> = {
   neutral: { arcs: 8, duty: 0.34 },
 };
 
-const markerGeometry = (team: Team): THREE.BufferGeometry => {
-  const { arcs, duty } = TEAM_MARKER_SHAPE[team];
+const annulusGeometry = (
+  inner: number,
+  outer: number,
+  arcs: number,
+  duty: number,
+): THREE.BufferGeometry => {
   const slot = (Math.PI * 2) / arcs;
   const span = slot * duty;
   const steps = Math.max(2, Math.ceil(span / (Math.PI / 16)));
@@ -93,16 +124,33 @@ const markerGeometry = (team: Team): THREE.BufferGeometry => {
     for (let step = 0; step < steps; step += 1) {
       const a0 = start + (span * step) / steps;
       const a1 = start + (span * (step + 1)) / steps;
-      const i0 = [Math.sin(a0) * MARKER_INNER, 0, Math.cos(a0) * MARKER_INNER];
-      const o0 = [Math.sin(a0) * MARKER_OUTER, 0, Math.cos(a0) * MARKER_OUTER];
-      const i1 = [Math.sin(a1) * MARKER_INNER, 0, Math.cos(a1) * MARKER_INNER];
-      const o1 = [Math.sin(a1) * MARKER_OUTER, 0, Math.cos(a1) * MARKER_OUTER];
+      const i0 = [Math.sin(a0) * inner, 0, Math.cos(a0) * inner];
+      const o0 = [Math.sin(a0) * outer, 0, Math.cos(a0) * outer];
+      const i1 = [Math.sin(a1) * inner, 0, Math.cos(a1) * inner];
+      const o1 = [Math.sin(a1) * outer, 0, Math.cos(a1) * outer];
       positions.push(...i0, ...o0, ...o1, ...i0, ...o1, ...i1);
     }
   }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(positions), 3));
+  return geometry;
+};
+
+const markerGeometry = (team: Team): THREE.BufferGeometry => {
+  const { arcs, duty } = TEAM_MARKER_SHAPE[team];
+  return annulusGeometry(MARKER_INNER, MARKER_OUTER, arcs, duty);
+};
+
+/** Downward caret, hanging by its point. Drawn in the plane of the billboard. */
+const caretGeometry = (): THREE.BufferGeometry => {
+  const geometry = new THREE.BufferGeometry();
+  const half = 0.13;
+  const drop = 0.19;
+  const positions = new Float32Array([-half, drop, 0, half, drop, 0, 0, 0, 0]);
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setIndex([0, 1, 2]);
+  geometry.computeVertexNormals();
   return geometry;
 };
 
@@ -126,6 +174,15 @@ export class UnitVisual {
   private readonly wedgeGeo: THREE.BufferGeometry;
   private readonly shadowGeo: THREE.CircleGeometry;
   private readonly shadowMaterial: THREE.MeshBasicMaterial;
+  private readonly beacon: THREE.Mesh;
+  private readonly beaconMaterial: THREE.MeshBasicMaterial;
+  private readonly beaconGeo: THREE.BufferGeometry;
+  private readonly caret: THREE.Mesh;
+  private readonly caretMaterial: THREE.MeshBasicMaterial;
+  private readonly caretGeo: THREE.BufferGeometry;
+  private readonly chips: Record<"buff" | "debuff", THREE.Mesh>;
+  private readonly chipGeo: THREE.PlaneGeometry;
+  private readonly chipMaterials: THREE.MeshBasicMaterial[] = [];
   private markerGeo: THREE.BufferGeometry;
   private markerTeam: Team;
   private readonly player: AnimationPlayer;
@@ -141,6 +198,9 @@ export class UnitVisual {
   private lastView: DrawnView | null = null;
   private lastMirrored = false;
   private preview: Offset | null = null;
+  private acting = false;
+  private statuses: UnitStatusCounts = NO_STATUSES;
+  private clock = 0;
 
   constructor(view: UnitView) {
     this.unitId = view.id;
@@ -233,6 +293,45 @@ export class UnitVisual {
     this.wedge.position.y = WEDGE_LIFT;
     this.wedge.renderOrder = DRAW_ORDER.unitMarker;
 
+    this.beaconGeo = annulusGeometry(BEACON_INNER, BEACON_OUTER, 1, 1);
+    this.beaconMaterial = new THREE.MeshBasicMaterial({
+      color: teamColor[view.team],
+      transparent: true,
+      opacity: BEACON_OPACITY_HIGH,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    this.beacon = new THREE.Mesh(this.beaconGeo, this.beaconMaterial);
+    this.beacon.name = "active-beacon";
+    this.beacon.position.y = BEACON_LIFT;
+    this.beacon.renderOrder = DRAW_ORDER.unitMarker;
+    this.beacon.visible = false;
+
+    this.caretGeo = caretGeometry();
+    this.caretMaterial = new THREE.MeshBasicMaterial({
+      color: teamColor[view.team],
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    this.caret = new THREE.Mesh(this.caretGeo, this.caretMaterial);
+    this.caret.name = "active-caret";
+    this.caret.position.y = CARET_HEIGHT;
+    this.caret.renderOrder = DRAW_ORDER.popup;
+    this.caret.visible = false;
+
+    // Chips ride the billboard, so they turn with it and travel with a move
+    // ghost: what is on a unit is on the figure, not on the tile it left.
+    this.chipGeo = new THREE.PlaneGeometry(CHIP_SIZE, CHIP_SIZE);
+    this.chips = {
+      buff: this.buildChip("buff", -CHIP_OFFSET),
+      debuff: this.buildChip("debuff", CHIP_OFFSET),
+    };
+
     this.shadowGeo = new THREE.CircleGeometry(0.3, 12);
     this.shadowGeo.rotateX(-Math.PI / 2);
     this.shadowMaterial = new THREE.MeshBasicMaterial({
@@ -246,7 +345,8 @@ export class UnitVisual {
     this.shadow.position.y = SHADOW_LIFT;
     this.shadow.renderOrder = DRAW_ORDER.unitShadow;
 
-    this.group.add(this.shadow, this.marker, this.wedge, this.billboard);
+    this.billboard.add(this.caret, this.chips.buff, this.chips.debuff);
+    this.group.add(this.shadow, this.beacon, this.marker, this.wedge, this.billboard);
     this.setFacing(view.facing);
     this.setDowned(view.downed);
     this.refreshFrame(true);
@@ -254,6 +354,41 @@ export class UnitVisual {
 
   get currentView(): UnitView {
     return this.view;
+  }
+
+  /**
+   * The one quad the pointer may hit. The rim and the emissive twin are
+   * furniture hung off it — picking either would be picking a halo.
+   */
+  get pickMesh(): THREE.Mesh {
+    return this.billboard;
+  }
+
+  /**
+   * Whether the figure itself is drawn at this point of its quad. A sprite is a
+   * silhouette in a rectangle, and most of the rectangle is the board behind it:
+   * without this a click on the empty air beside a head would take the tile the
+   * unit stands on instead of the tile the player is pointing at. Sheet alpha is
+   * 0 or 255 (ART_DIRECTION §3), so the answer is exact.
+   */
+  coversUv(u: number, v: number): boolean {
+    const image = this.texture.image as
+      | { data?: Uint8Array | Uint8ClampedArray; width?: number; height?: number }
+      | null
+      | undefined;
+    const data = image?.data;
+    const width = image?.width ?? 0;
+    const height = image?.height ?? 0;
+    // A sheet the renderer cannot read is a figure it must not silently drop:
+    // the quad stands in, which is the behaviour picking had before this.
+    if (data === undefined || width <= 0 || height <= 0) return true;
+    // The frame is a UV window into the shared sheet, and every level ships
+    // bottom-up (see `render/textures.ts`), so v needs no flip here.
+    const sheetU = u * this.texture.repeat.x + this.texture.offset.x;
+    const sheetV = v * this.texture.repeat.y + this.texture.offset.y;
+    const x = Math.min(width - 1, Math.max(0, Math.floor(sheetU * width)));
+    const y = Math.min(height - 1, Math.max(0, Math.floor(sheetV * height)));
+    return (data[(y * width + x) * 4 + 3] ?? 0) >= 128;
   }
 
   get animationState(): AnimState {
@@ -296,11 +431,62 @@ export class UnitVisual {
     this.wedgeMaterial.color.setHex(color);
     this.markerMaterial.color.setHex(color);
     this.rimMaterial.color.setHex(color);
+    this.beaconMaterial.color.setHex(color);
+    this.caretMaterial.color.setHex(color);
     if (team === this.markerTeam) return;
     this.markerTeam = team;
     this.markerGeo.dispose();
     this.markerGeo = markerGeometry(team);
     this.marker.geometry = this.markerGeo;
+  }
+
+  private buildChip(kind: "buff" | "debuff", offsetX: number): THREE.Mesh {
+    const material = new THREE.MeshBasicMaterial({
+      color: CHIP_COLOR[kind],
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+      depthTest: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    });
+    this.chipMaterials.push(material);
+    const mesh = new THREE.Mesh(this.chipGeo, material);
+    mesh.name = `status-chip-${kind}`;
+    mesh.position.set(offsetX, CHIP_HEIGHT, 0);
+    mesh.renderOrder = DRAW_ORDER.popup;
+    mesh.visible = false;
+    return mesh;
+  }
+
+  /**
+   * Whose turn it is, on the field. The playtest could not tell which figure was
+   * about to act from anything on the board, and reading it off the turn order
+   * panel means holding a name in your head while looking somewhere else.
+   */
+  setActing(acting: boolean): void {
+    this.acting = acting;
+    this.refreshMarks();
+  }
+
+  get isActing(): boolean {
+    return this.acting;
+  }
+
+  /** Buffs and debuffs in force, as the chips over the head report them. */
+  setStatusCounts(counts: UnitStatusCounts): void {
+    this.statuses = counts;
+    this.refreshMarks();
+  }
+
+  private refreshMarks(): void {
+    const live = this.acting && !this.view.downed;
+    this.beacon.visible = live;
+    this.caret.visible = live;
+    // A downed unit is not carrying anything any more; it is being carried.
+    const marked = !this.view.downed;
+    this.chips.buff.visible = marked && this.statuses.buffs > 0;
+    this.chips.debuff.visible = marked && this.statuses.debuffs > 0;
   }
 
   setWorldPosition(x: number, y: number, z: number): void {
@@ -340,6 +526,7 @@ export class UnitVisual {
     this.wedge.visible = !downed;
     this.rim.visible = !downed;
     this.markerMaterial.opacity = downed ? MARKER_OPACITY_DOWNED : MARKER_OPACITY;
+    this.refreshMarks();
     if (downed && !(wasDowned && this.player.state === "downed")) {
       this.player.play("downed");
     } else if (!downed && this.player.state === "downed") {
@@ -410,6 +597,13 @@ export class UnitVisual {
   update(deltaSeconds: number): void {
     this.player.advanceSeconds(deltaSeconds);
     this.refreshFrame();
+    if (!this.beacon.visible) return;
+    this.clock += deltaSeconds;
+    // One slow breath, so the marker reads as lit rather than as an alarm.
+    const phase = 0.5 - 0.5 * Math.cos((Math.PI * 2 * this.clock) / BEACON_PERIOD_SECONDS);
+    this.beaconMaterial.opacity =
+      BEACON_OPACITY_LOW + (BEACON_OPACITY_HIGH - BEACON_OPACITY_LOW) * phase;
+    this.caret.position.y = CARET_HEIGHT + CARET_BOB * phase;
   }
 
   /** Keeps the quad upright and turned toward the camera through orbits. */
@@ -435,6 +629,12 @@ export class UnitVisual {
     this.wedgeMaterial.dispose();
     this.shadowGeo.dispose();
     this.shadowMaterial.dispose();
+    this.beaconGeo.dispose();
+    this.beaconMaterial.dispose();
+    this.caretGeo.dispose();
+    this.caretMaterial.dispose();
+    this.chipGeo.dispose();
+    for (const material of this.chipMaterials) material.dispose();
   }
 
   private refreshFrame(force = false): void {

@@ -1,4 +1,11 @@
-export { BattleRenderer, type BattleRendererOptions, type MovePreview } from "./scene.js";
+export {
+  BattleRenderer,
+  resolveFieldPick,
+  type BattleRendererOptions,
+  type FieldPick,
+  type MovePreview,
+  type PickableFigure,
+} from "./scene.js";
 export { TacticsCamera } from "./camera.js";
 export { attachControls, type ControlsOptions } from "./controls.js";
 export {
@@ -16,6 +23,15 @@ export {
   type HighlightLayerStyle,
 } from "./highlights.js";
 export { BASE_LAYER, BLOOM_LAYER, DRAW_ORDER } from "./layers.js";
+export {
+  NO_MARKS,
+  NO_STATUSES,
+  fieldMarksFrom,
+  statusesOf,
+  type FieldMarks,
+  type MarkedUnit,
+  type UnitStatusCounts,
+} from "./marks.js";
 export {
   BLOOM_RADIUS,
   BLOOM_STRENGTH,

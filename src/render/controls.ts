@@ -126,12 +126,12 @@ export const attachControls = (
       renderer.rig.panPixels(dx, dy, element.getBoundingClientRect().height);
       return;
     }
-    renderer.setHoveredTile(renderer.pickTile(event.clientX, event.clientY));
+    renderer.hoverAt(event.clientX, event.clientY);
   };
 
   const onPointerLeave = (): void => {
     pointerInside = false;
-    renderer.setHoveredTile(null);
+    renderer.clearHover();
   };
 
   const onPointerDown = (event: PointerEvent): void => {
@@ -155,7 +155,7 @@ export const attachControls = (
     element.releasePointerCapture?.(event.pointerId);
     // The tile under the released hand is a different one than the tile the
     // drag started over, and nothing moved the pointer to say so.
-    renderer.setHoveredTile(renderer.pickTile(event.clientX, event.clientY));
+    renderer.hoverAt(event.clientX, event.clientY);
     if (cancelled) options.onCancel?.();
   };
 

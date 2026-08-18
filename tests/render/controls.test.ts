@@ -30,7 +30,8 @@ function stub(): Stub {
       pan: vi.fn(),
       panPixels: (dx: number, dy: number, height: number) => pans.push([dx, dy, height]),
     },
-    setHoveredTile: vi.fn(),
+    hoverAt: vi.fn(),
+    clearHover: vi.fn(),
     pickTile: () => null,
     selectTile: vi.fn(),
     resize: vi.fn(),
@@ -76,7 +77,7 @@ describe("middle-drag grab pan", () => {
 
   it("leaves the tile cursor alone mid-drag, then re-picks where the hand let go", () => {
     const h = stub();
-    const hovered = h.renderer.setHoveredTile as unknown as ReturnType<typeof vi.fn>;
+    const hovered = h.renderer.hoverAt as unknown as ReturnType<typeof vi.fn>;
     h.element.dispatchEvent(pointer("pointerdown", { button: 1, clientX: 400, clientY: 300 }));
     h.element.dispatchEvent(pointer("pointermove", { clientX: 520, clientY: 300 }));
     expect(hovered).not.toHaveBeenCalled();
@@ -124,7 +125,8 @@ describe("the hand", () => {
     document.body.append(element);
     const renderer = {
       rig: { orbit: vi.fn(), zoomStep: vi.fn(), pan: vi.fn(), panPixels: vi.fn() },
-      setHoveredTile: vi.fn(),
+      hoverAt: vi.fn(),
+      clearHover: vi.fn(),
       pickTile: () => null,
       selectTile: vi.fn(),
       resize: vi.fn(),
@@ -199,7 +201,7 @@ describe("right-drag turns the board", () => {
 
   it("leaves the tile cursor alone mid-turn, then re-picks where it let go", () => {
     const h = stub();
-    const hovered = h.renderer.setHoveredTile as unknown as ReturnType<typeof vi.fn>;
+    const hovered = h.renderer.hoverAt as unknown as ReturnType<typeof vi.fn>;
     h.element.dispatchEvent(pointer("pointerdown", { button: 2, clientX: 400, clientY: 300 }));
     h.element.dispatchEvent(pointer("pointermove", { clientX: 520, clientY: 300 }));
     expect(hovered).not.toHaveBeenCalled();

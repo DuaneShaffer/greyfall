@@ -18,7 +18,15 @@ import {
   type InventoryStack,
 } from "../core/index.js";
 import type { DialogueLine, Encounter, Facing, TileCoord, Unit } from "../data/index.js";
-import { BattleRenderer, attachControls, palette } from "../render/index.js";
+import {
+  BattleRenderer,
+  NO_MARKS,
+  attachControls,
+  fieldMarksFrom,
+  findUnitView,
+  palette,
+  type UnitView,
+} from "../render/index.js";
 import { viewModelFromGameState } from "../render/adapter.js";
 import {
   BattleHud,
@@ -75,7 +83,37 @@ const renderer = new BattleRenderer({
   canvas,
   onTileHover: (tile) => controller?.onTileHover(tile),
   onTileSelect: (tile) => onTileSelected(tile),
+  onUnitHover: (unitId) => onFieldUnitHover(unitId),
 });
+
+/**
+ * A figure the pointer reads outside a battle. In battle the controller already
+ * answers for it off the tile hover — a sprite resolves to its own tile, so a
+ * torso and the tile under it are one pick — and the only other screen that owns
+ * the field is the formation.
+ *
+ * The sink is matched by name rather than imported: the pick belongs to the
+ * renderer and the panel that prints it belongs to the between-battle screens,
+ * and neither has to wait for the other to exist.
+ */
+interface FieldHoverSink {
+  hoverFieldUnit(unit: UnitView | null): void;
+}
+
+const fieldHoverSink = (host: unknown): FieldHoverSink | null =>
+  typeof (host as { hoverFieldUnit?: unknown } | null)?.hoverFieldUnit === "function"
+    ? (host as FieldHoverSink)
+    : null;
+
+function onFieldUnitHover(unitId: string | null): void {
+  if (controller !== null) return;
+  const sink = fieldHoverSink(screens);
+  if (sink === null) return;
+  const snapshot = renderer.snapshot;
+  const unit =
+    unitId === null || snapshot === null ? null : (findUnitView(snapshot, unitId) ?? null);
+  sink.hoverFieldUnit(unit);
+}
 
 let controller: BattleController | null = null;
 let deploymentTiles: readonly TileCoord[] = [];
@@ -141,7 +179,13 @@ let currentEncounter: Encounter | null = null;
 const uiPort: UiPort = {
   // Deliberately not `hud.update`: that would restart an open dialogue's reveal
   // on every refresh. Dialogue is driven through showDialogue instead.
-  render: (view: BattleHudView) => hud.render(view),
+  render: (view: BattleHudView) => {
+    hud.render(view);
+    // The field's own copy of two facts the panels already hold: whose turn it
+    // is, and what is riding on each unit (UI_DESIGN §14.3, §14.4). Reading them
+    // off a panel means holding a name in your head while looking elsewhere.
+    renderer.setFieldMarks(fieldMarksFrom(view.activeUnitId ?? null, view.field?.units ?? []));
+  },
   setMode: (mode: HudMode, detail?: string | null) => hud.setMode(mode, detail),
   lockForecast: () => hud.forecast.lock(),
   showFinalState: (view: BattleHudView | null, _result: BattleResult | null) => {
@@ -152,6 +196,7 @@ const uiPort: UiPort = {
     hud.status.update(null);
     hud.setMode("ended", null);
     hud.actionMenu.menus.detach();
+    renderer.setFieldMarks(NO_MARKS);
   },
   showDialogue: (lines: DialogueLine[]) => {
     hud.dialogue.update(lines);
@@ -255,6 +300,7 @@ const battlePort: BattlePort = {
     );
   },
   end: () => {
+    renderer.setFieldMarks(NO_MARKS);
     hud.actionMenu.menus.detach();
     hud.dialogue.detach();
     hud.notice.clear();
