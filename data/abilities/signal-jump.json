@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "signal-jump",
   "name": "Signal Jump",
-  "description": "Read the deck the way you read a yard before a shunt: as gaps, not as ground.",
+  "description": "You have to be stood on running rail to start it. Once you are, the deck reads the way a yard does before a shunt \u2014 as gaps, not as ground.",
   "jobId": "railrunner",
   "standingCost": 300,
   "slot": "action",

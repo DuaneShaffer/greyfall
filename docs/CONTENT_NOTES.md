@@ -678,3 +678,42 @@ into the data rather than only into dialogue.
   each file against its zod schema at startup; there is no `VALE_PLACEHOLDER`
   anywhere in the tree and `data/units/vale.json` is loaded like any other
   roster unit.
+
+---
+
+## 10. Flavour, now that the panel prints the mechanics
+
+Phase 1 gave every ability and item a `MechanicsView` (`docs/UI_DESIGN.md`
+§14.1): range, area, targets, line of sight, damage scale, status odds, flux
+cost and cast speed are all printed beside the prose. That changes what a
+`description` is for, and the blind playtest found the old habit failing three
+ways at once — prose restating a number the panel now prints, prose contradicting
+one, and prose spending its only two sentences on arithmetic instead of fiction.
+
+**The rule.** A description carries the fiction and the tactical intent. The
+numbers are the panel's job and the panel does it better.
+
+- **Never restate a stat.** "Costs nothing", "puts them two tiles back",
+  "Machines only" — the panel says all three, in a column, correctly. Cut them
+  and spend the words on who taught the order and what they meant it for.
+- **Never contradict one.** Heavy Coagulant said "four times the dose" and healed
+  twice a vial; Bring the House opened "Not a charge" beside a printed flux cost
+  and a cast speed. Both read as the interface arguing with itself.
+- **Do carry what the panel cannot.** `requires` is *not* in `MechanicsView`, so a
+  rail-underfoot or live-target condition is invisible unless the prose says it:
+  Signal Jump now opens by saying you have to be stood on running rail. Same for
+  anything the fiction owes the player about *why* the order works.
+- **Fictional time is fine, arithmetic is not.** "Cuts a beam in ninety seconds
+  and a man in one" is a voice; "buys thirty seconds" beside a two-turn status is
+  a number pretending to be one.
+
+Audited across `data/abilities`, `data/items` and `data/statuses`
+(2026-08-18); ten strings changed, and two more are prepared and blocked on the
+`src/ui/mock.ts` mirror below. Canonical help copy for the systems this prose
+used to gesture at now lives in `docs/SYSTEMS_COPY.md`.
+
+**The mirror bit again.** §9's "re-sync cost on every edit" is not theoretical:
+`abilities/overload-cell` and `statuses/stunned` are both mirrored, so their
+audit fixes cannot land from `data/` alone. The two strings are written out in
+`docs/SYSTEMS_COPY.md` under *Outstanding copy* — apply each with the matching
+literal in `src/ui/mock.ts`, in one commit.

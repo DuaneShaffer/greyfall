@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "smoke-canister",
   "name": "Smoke Canister",
-  "description": "Rolled underhand into the middle of them. Buys thirty seconds of everyone guessing.",
+  "description": "Rolled underhand into the middle of them. Everyone inside the cloud is guessing, and the cloud does not check coats.",
   "jobId": "saboteur",
   "standingCost": 300,
   "slot": "action",

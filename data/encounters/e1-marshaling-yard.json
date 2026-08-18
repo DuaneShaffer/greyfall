@@ -5,6 +5,7 @@
   "mapId": "marshaling-yard",
   "rngSeed": 1001,
   "maxDeployedUnits": 4,
+  "objective": "Clear the yard gate and put down whoever swung first.",
   "enemies": [
     {
       "unit": {

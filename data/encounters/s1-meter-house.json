@@ -5,6 +5,7 @@
   "mapId": "meter-house",
   "rngSeed": 1006,
   "maxDeployedUnits": 6,
+  "objective": "Take the meter house boards off the crew holding them.",
   "enemies": [
     {
       "unit": {

@@ -242,22 +242,29 @@ describe("the field as data", () => {
   });
 });
 
+const yardWith = (objective: string | undefined): ContentLibrary => {
+  const base = loadContent();
+  const raw = JSON.parse(JSON.stringify(base.encounters[YARD_ENCOUNTER_ID]));
+  delete raw.objective;
+  const rewritten = Encounter.parse(objective === undefined ? raw : { ...raw, objective });
+  return { ...base, encounters: { ...base.encounters, [YARD_ENCOUNTER_ID]: rewritten } };
+};
+
 describe("the objective", () => {
   it("is null for an engagement that has not been written up", () => {
-    const state = advanceTo(battle(), "rowen");
+    const opened = createBattle(
+      yardWith(undefined),
+      YARD_ENCOUNTER_ID,
+      [rowen()],
+      [{ unitId: "rowen", position: ROWEN_TILE, facing: "north" }],
+      [],
+    );
+    const state = advanceTo(opened.state, "rowen");
     expect(battleHudView(state, {})?.objective).toBeNull();
   });
 
   it("is the encounter's own line where the data carries one", () => {
-    const base = loadContent();
-    const written = Encounter.parse({
-      ...JSON.parse(JSON.stringify(base.encounters[YARD_ENCOUNTER_ID])),
-      objective: "Put the provocateur down and keep the lift fed.",
-    });
-    const content: ContentLibrary = {
-      ...base,
-      encounters: { ...base.encounters, [YARD_ENCOUNTER_ID]: written },
-    };
+    const content = yardWith("Put the provocateur down and keep the lift fed.");
     const opened = createBattle(
       content,
       YARD_ENCOUNTER_ID,

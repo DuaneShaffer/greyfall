@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "reclose",
   "name": "Reclose",
-  "description": "Clear the latch and put the main back in. Cheap on purpose: a floor nobody can afford to relight is a floor that stays dark.",
+  "description": "Clear the latch and put the main back in. Half the job is deciding that a floor should be lit again, and who is standing on it when it is.",
   "jobId": "conduit",
   "standingCost": 250,
   "slot": "action",

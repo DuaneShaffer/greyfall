@@ -5,6 +5,7 @@
   "mapId": "charterhouse-steps",
   "rngSeed": 1005,
   "maxDeployedUnits": 7,
+  "objective": "Climb the terraces and put Aldric Corvane down on them.",
   "enemies": [
     {
       "unit": {

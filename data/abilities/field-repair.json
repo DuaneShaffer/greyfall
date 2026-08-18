@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "field-repair",
   "name": "Field Repair",
-  "description": "Shim, re-seat, re-tension. Machines only — a Machinist who tries this on a person is a Machinist with a body to explain.",
+  "description": "Shim, re-seat, re-tension — the shop's whole answer to a machine that has stopped. A Machinist who tries it on a person is a Machinist with a body to explain.",
   "jobId": "machinist",
   "standingCost": 200,
   "slot": "action",
