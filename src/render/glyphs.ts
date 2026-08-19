@@ -1,5 +1,5 @@
-// A 3x5 pixel font, just wide enough for damage numbers, the word MISS, and the
-// cursor's elevation readout.
+// A 3x5 pixel font, just wide enough for damage numbers, the words MISS and
+// RESIST, and the cursor's elevation readout.
 // Rasterizes to the same palette-index grids `src/art/pixel.ts` produces, so
 // the outline rule (ART_DIRECTION §7: soot-100 fill, 1px soot-900 outline) is
 // the same 8-connected ring the sprite pipeline uses, and the result paints to
@@ -41,6 +41,13 @@ const GLYPHS: Readonly<Record<string, readonly string[]>> = {
   // The elevation readout's own two: "H2 +1" is a height and a difference, and
   // the gap between them has to be a glyph like any other or `textGrid` throws.
   H: ["#.#", "#.#", "###", "#.#", "#.#"],
+  // RESIST's remainder. A status that rolls and does not stick is the one
+  // outcome the popups had a word for and no letters to spell it with, so it
+  // threw where MISS printed; §7 fixes the colour of these words, not the
+  // alphabet, and the elevation readout's H is the precedent for widening it.
+  R: ["##.", "#.#", "##.", "#.#", "#.#"],
+  E: ["###", "#..", "###", "#..", "###"],
+  T: ["###", ".#.", ".#.", ".#.", ".#."],
   " ": ["...", "...", "...", "...", "..."],
 };
 

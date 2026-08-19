@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DAMAGE_NUMBER_COLOR, SOOT_900 } from "../../src/art/palette.js";
+import { damagePopup, missPopup, resistPopup } from "../../src/render/popups.js";
+import { heightReadoutText } from "../../src/render/readout.js";
 import { gridBounds, gridGet, paletteIndex } from "../../src/art/pixel.js";
 import {
   GLYPH_HEIGHT,
@@ -15,18 +17,19 @@ import {
 } from "../../src/render/glyphs.js";
 
 const DIGITS = "0123456789".split("");
+const LETTERS = ["M", "I", "S", "H", "R", "E", "T"];
 const FILL = paletteIndex(DAMAGE_NUMBER_COLOR.normal);
 
 describe("glyph atlas", () => {
-  it("carries every digit plus the signs and MISS letters", () => {
-    for (const char of [...DIGITS, "-", "+", "M", "I", "S"]) {
+  it("carries every digit plus the signs and the words the board spells", () => {
+    for (const char of [...DIGITS, "-", "+", " ", ...LETTERS]) {
       expect(hasGlyph(char)).toBe(true);
     }
     expect(hasGlyph("Q")).toBe(false);
   });
 
   it("is a strict 3x5 cell for every glyph", () => {
-    for (const char of [...DIGITS, "-", "+", "M", "I", "S"]) {
+    for (const char of [...DIGITS, "-", "+", ...LETTERS]) {
       const rows = glyphRows(char);
       expect(rows).toHaveLength(GLYPH_HEIGHT);
       for (const row of rows) {
@@ -111,5 +114,51 @@ describe("glyph atlas", () => {
     expect(bounds?.x0).toBe(0);
     expect(bounds?.x1).toBe(grid.width - 1);
     expect(bounds?.y1).toBe(grid.height - 1);
+  });
+});
+
+/**
+ * The atlas is a closed set and the popups are the only thing that spells with
+ * it, so a word added to one and not the other throws on the frame it lands —
+ * which is exactly how `RESIST` shipped: a real popup, a deterministic error,
+ * and the whole presentation aborted behind it. Every string either surface can
+ * emit is checked here rather than at the moment a status rolls and fails.
+ */
+describe("everything the board spells has letters to spell it with", () => {
+  const emitted = (): string[] => {
+    const out = [missPopup().text, resistPopup().text];
+    for (const amount of [0, 1, 7, 16, 99, 120, -1, -48]) {
+      for (const type of [null, "kinetic", "arc", "thermal", "chemical"] as const) {
+        out.push(damagePopup(amount, type).text);
+      }
+    }
+    for (const height of [0, 1, 4, 9]) {
+      for (const delta of [null, 0, 2, -3]) out.push(heightReadoutText(height, delta));
+    }
+    return out;
+  };
+
+  it("has a glyph for every character the popups and the readout emit", () => {
+    for (const text of emitted()) {
+      for (const char of text) {
+        expect(hasGlyph(char), `no glyph for ${JSON.stringify(char)} in ${text}`).toBe(true);
+      }
+    }
+  });
+
+  it("rasterizes every one of them without throwing", () => {
+    for (const text of emitted()) {
+      expect(() => popupGrid(text, FILL, NUMBER_OUTLINE_INDEX)).not.toThrow();
+      expect(() => popupGrid(text, FILL, null)).not.toThrow();
+    }
+  });
+
+  it("spells RESIST at full width, quiet like the miss it rhymes with", () => {
+    const spec = resistPopup();
+    expect(spec.text).toBe("RESIST");
+    expect(spec.outlined).toBe(false);
+    const grid = popupGrid(spec.text, paletteIndex(DAMAGE_NUMBER_COLOR.miss), null);
+    expect(grid.width).toBe(textWidth("RESIST") + TEXT_PADDING * 2);
+    expect(new Set(grid.data)).toEqual(new Set([0, paletteIndex(DAMAGE_NUMBER_COLOR.miss)]));
   });
 });

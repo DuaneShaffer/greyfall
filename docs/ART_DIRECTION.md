@@ -483,7 +483,11 @@ Healing (chemistry driven by flux, per bible §5.4) is sparse rising
 
 **Damage numbers:** `soot-100` fill, 1px `soot-900` outline. Crits `amber-300`.
 Heals `verdigris-300`. Arc/overload damage `overload-100`. Miss is the word
-"MISS" in `soot-300`, no outline — misses should be quiet.
+"MISS" in `soot-300`, no outline — misses should be quiet. A status that rolls
+and does not stick is the word "RESIST", the same soot-300 and the same silence:
+nothing landed either time. The 3x5 atlas carries only the letters these words
+and the cursor's elevation readout need, and a word added to the popups without
+its letters throws on the frame it lands — so the atlas grows with the words.
 
 ## 8. Status iconography
 

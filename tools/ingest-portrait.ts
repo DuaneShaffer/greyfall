@@ -16,10 +16,16 @@
 // the conformance check is a histogram of how far each pixel sits from the
 // nearest allowed ramp step, and nothing is ever snapped.
 //
-// The plate is opaque and full-bleed, so the silhouette cannot come from alpha.
-// It comes from the character's declared ground register instead, which is why
-// the matte is worth delivering: the agreement between the two is the only
-// thing that proves either one.
+// The plate is opaque and full-bleed, so the silhouette cannot come from alpha
+// — and it cannot be derived from the ground either, because a coat painted at
+// the ground's own value is figure that no ground test can see. The delivered
+// matte *is* the silhouette. What the plate can grade about it is whether it
+// contains the visibly-painted figure (coverage) and how much of it the plate
+// paints at a ground value anyway (leak).
+//
+// Every measure below is calibrated against rowen v3, the first merged plate,
+// and agrees with the hand audit that approved it. `art-src/INTAKE_LOG.md` §E.1
+// records the redefinitions that calibration forced; §E.3 records the verdict.
 
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
@@ -58,6 +64,25 @@ export const FRAMING = {
   shoulder: [490, 520],
 } as const;
 
+/** §4 puts the eye-line at 38% of the frame. That rule *is* the measurement. */
+export const EYE_LINE_SHARE = 0.38;
+
+/**
+ * A face has ink in it — lashes, brow, the shadow under the lid — and none of it
+ * is on the skin ramp. Rows carrying pixels below this luma inside the face are
+ * what the eye-line rule is validated against.
+ */
+export const EYE_DARK_LUMA = 70;
+
+/**
+ * The jaw contour walks the rightmost skin pixel down from the eye-line. A step
+ * further left than this is the contour handing over to the neck — but a lash,
+ * a strand or a cast shadow crossing the edge does it for a row or two as well,
+ * so a break only counts once it has held for `JAW_BREAK_RUN` rows.
+ */
+export const JAW_BREAK = 8;
+export const JAW_BREAK_RUN = 4;
+
 export type PortraitFamily = "bone" | "soot" | "umber" | "copper" | "verdigris" | "flux" | "scarring";
 
 const family = (name: PortraitFamily, hexes: readonly Hex[]): readonly (readonly [Hex, PortraitFamily])[] =>
@@ -86,13 +111,28 @@ export const DISTANCE_BANDS = [8, 16, 24, 32, 48] as const;
 /** The one hue the briefs name by value outside a ramp label: Della's goggle rim. */
 export const NAMED_COPPER: Hex = PALETTE["copper-500"];
 
-/** Nothing in the palette is brighter than `bone-100` at 201.5 luma. */
+/** Nothing in the palette is brighter than `bone-100` (#ddc6a8), luma 201. */
 export const LUMA_CEILING = 201;
+
+/**
+ * The ramp's top step sits a fraction *under* the ceiling, so a pixel that
+ * rounds a fraction over it is quantisation rather than a highlight. A blown
+ * plate is not subtle about it: rowen v2 put 1,278 px over this line and v3,
+ * the version that shipped, puts one.
+ */
+export const LUMA_CEILING_BUDGET = 8;
 
 /** §4 forbids rim light. A painted edge crosses this a few dozen times; a lit one does not. */
 export const RIM_LIGHT_DELTA = 15;
 export const RIM_LIGHT_BUDGET = 170;
 export const RIM_LIGHT_DEPTH = 3;
+
+/**
+ * A lit edge is not just lighter than what is behind it, it is *bright* — over
+ * the cool ramp's top step. That second condition is what separates a drawn
+ * terminator from a rim, and it is the one the hand audit gated on.
+ */
+export const RIM_LIGHT_LUMA = 170;
 
 /** Ground registers, by where in the vertical city the character stands. */
 export const GROUND_REGISTERS = {
@@ -156,8 +196,15 @@ export function expectationFor(portraitId: string): PortraitExpectation {
 const at = (source: RGBASource, x: number, y: number): number => (y * source.width + x) * 4;
 const byte = (source: RGBASource, i: number): number => source.data[i] ?? 0;
 
-/** Rec.601 luma on the 0–255 scale, which is the scale every threshold here is in. */
-export const luma = (r: number, g: number, b: number): number => 0.299 * r + 0.587 * g + 0.114 * b;
+/**
+ * Rec.709 luma on the 0–255 scale, which is the scale every threshold here is
+ * in. The weights matter: they are the ones the hand audit of the first plate
+ * used, and every luma bar in the briefs is quoted in them — `bone-100` is
+ * "luma 201" (200.7) and `soot-100` is "187" (186.7) under Rec.709 only. Under
+ * Rec.601 the same two read 201.5 and 186.3, which moves the ceiling under the
+ * skin ramp's own top step and blames the plate for 30 px of rounding.
+ */
+export const luma = (r: number, g: number, b: number): number => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
 export interface PortraitScan {
   readonly width: number;
@@ -310,14 +357,16 @@ export function readMatte(matte: RGBASource): MatteReading {
 }
 
 /**
- * The plate has no alpha, so the figure is whatever is not close to one of the
- * character's two ground values. Flat ground makes this exact; a painted ground
- * with a soft division makes it approximate, which is what the matte is for.
+ * Pixels the plate paints away from both of the character's ground values —
+ * the *visibly* painted figure. This is a floor under the silhouette, never the
+ * silhouette itself: everything a character wears at a ground value falls out
+ * of it, which on rowen is most of a coat. Grade the matte against this and you
+ * grade the coat's value, not the matte.
  */
 export function paintedSilhouette(
   image: RGBASource,
   ground: { readonly upper: Hex; readonly lower: Hex },
-  tolerance = 24,
+  tolerance = PAINTED_TOLERANCE,
 ): Mask {
   const [ur, ug, ub] = hexToRgb(ground.upper);
   const [lr, lg, lb] = hexToRgb(ground.lower);
