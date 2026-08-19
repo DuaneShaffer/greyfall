@@ -64,9 +64,9 @@ export type ObjectSpriteId = "flux-main" | "cable-trough" | "charge-hoist";
  *
  * `cap` is the fourth and it is **not a box face**: it is a second top, for the
  * one tile of a run that carries a gland box instead of plain channel
- * (OBJECT_BRIEFS §2 cell B). A box has one top slot and a run's top is laid tile
- * by tile, so `cap` is delivered, registered and measured here and waits for the
- * render side to lay a run by the tile. Nothing in `src/render` asks for it.
+ * (OBJECT_BRIEFS §2 cell B). A run's top is laid tile by tile in
+ * `render/objects.ts`'s `buildRun`, which places `cap` on the run's first
+ * declared tile and plain `top` on the rest.
  */
 export type ObjectFaceId = "long" | "end" | "top" | "cap";
 
@@ -74,8 +74,9 @@ export const OBJECT_FACE_IDS: readonly ObjectFaceId[] = ["long", "end", "top", "
 
 /**
  * The faces `render/objectTextures.ts`'s `BOX_FACE_SLOTS` dresses a box with.
- * An object that wears all three can be worn by the box today; `cap` cannot, and
- * an object missing one of these three would leave a material slot undressed.
+ * `cap` is not a slot: a run's per-tile top quads swap it in where the anchor
+ * tile calls for it. An object missing one of these three would leave a
+ * material slot undressed.
  */
 export const BOX_FACE_IDS: readonly ObjectFaceId[] = ["long", "end", "top"];
 

@@ -885,27 +885,14 @@ two objects are not the shape the main is:
   missing material and no substitution over the amber ramp makes material go
   missing.
 
-### Still owed by `src/render`, which this pass did not touch
+### Owed by `src/render` at intake — both delivered since
 
-Two registered paintings have no way to reach the GPU yet, and both wait on the
-same piece of work — **laying a run's top tile by tile** instead of stretching one
-clamped texture over the whole box:
-
-1. **`cable-trough/cap`.** A box has one top slot and the gland box belongs on one
-   tile of the run. `BOX_FACE_SLOTS` cannot express that, so nothing in
-   `src/render` asks for `cap` and the run currently shows plain channel end to
-   end. The art is committed and measured and is waiting.
-2. **`cable-trough/top:severed`.** `ObjectVisual.setSevered` is the geometry half
-   of §6's severed row and it is right — the run parts, the halves kink, no squash
-   and no drop. The colour half is still a lerp toward the dead grey, which on a
-   *painted* object now tints the whole delivered face rather than replacing it:
-   `refreshPaintedFaces` derives its state from `destroyed`/`overload`/`powered`
-   and never asks for `"severed"`. The hookup is to pass `"severed"` when
-   `MapObjectView.severed` is set and to drop the body lerp on painted faces —
-   `objectFaceTexture` and `objectFaceGrid` already take the state and already
-   return the break painting for it. A desaturated tray is not a *torn* tray, and
-   the torn ends are what tell the player this is the reversible verb with a splice
-   as its answer.
+Two registered paintings had no way to reach the GPU when this part was written.
+Both landed after: `refreshPaintedFaces` asks for `"severed"` and skips the body
+lerp on painted faces (the wiring pass), and `buildRun` lays a `tilesAlongRun`
+object's top a tile at a time — `cap` on the first declared tile, the break cell
+on the parted ends, the dead run between (the severed-tiles pass). Nothing here
+is owed any more.
 
 ### Still owed by `data/maps`, which this pass did not touch
 
@@ -1021,4 +1008,16 @@ regenerate*, *Reject*).
 
 | `portraitId` | Framing (crown / eye / chin / centre) | Ramp conformance | Flux / brightblood | Rim light | Chip rect | Verdict |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | *nothing delivered* |
+| rowen (v3, PR #2) | 90 / 243.5 / ~386 / 266.8 — all in band (contour-measured) | 85.7% within 4, 0.025% beyond 28 | 0 / 0 | 0 outline px over luma 170; 1 px over 201 | 3 px overflow over 16 rows, 77.3% coverage | **Ship.** Wave-2 notes: face flatness, age reads 22–25, figure-vs-ground separation |
+
+**Tool calibration owed.** The tool's first run against this plate disagreed with
+the hand audit on four checks, and the hand audit is the one the numbers above
+come from: the matte-agreement silhouette flood-fills into a coat painted at
+ground value (the matte itself is pure and correct); the framing landmark
+heuristics (eye-line 218, chin 345) were calibrated only on the synthetic test
+fixture and miss the real plate's contours (243.5, ~386 by jaw contour); the
+luma formula counts 31 px over the ceiling where the audit's counts 1; and the
+head-outside-chip count treats below-the-crop mass as a failure although the
+framing table puts every chin below the crop by design. The checks themselves
+are right; their implementations need to be graded against this plate before
+wave 2 arrives.
