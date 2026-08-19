@@ -2,6 +2,14 @@
 
 The approved `greyfall_title.png` was used only as the visual reference for composition, mood, value structure, and painterly industrial realism. Each item below was generated as a distinct production asset with the built-in image-generation tool.
 
+## Targeted repaint pass — 2026-08-18
+
+Layers 01, 03, and 05 were repainted against `reference_greyfall_title.png`. Layers 02, 04, and 06 were retained byte-for-byte.
+
+- **01 Sky:** Replace broad near-featureless darkness with clearly visible long directional cloud bands, streaked scudding fronts, layered turbulent shelves, and intentional value variation. Make the top third active before runtime ash, while keeping the air clean: no particles, rain, sparks, or isolated speckles. Preserve full-canvas overscan and use neutral soot greys only.
+- **03 Near city:** Preserve the gasometer/bridge/spire composition and transparent isolation, but restore real façade value stepping and a richer sparse scatter of tiny `#7a5230`-family umber windows. Keep the result inhabited-but-rationed, darker than the approved far skyline, lighter than the pit, and completely free of amber colors.
+- **05 Conduit:** Preserve the route, step-down, junction position, and side overscan, but reduce the ornate pipe into a thin energized line with `#8c5411` flanks, a `#d98a1b` core, and `#f3b94a` confined to the compact junction hotspot. Remove decorative collars and architectural mass; retain genuine isolated binary alpha.
+
 ## 1. Sky
 
 Repaint only the stormy soot-grey cloud sky as a clean standalone background layer. Use a 16:10 landscape canvas whose centered 80.65% is the protected frame and whose surrounding 12% is painted overscan. Preserve a dark upper sky and slightly lighter low-horizon haze. Heavy overcast, clean air: no city, ground, pit, conduit, plate, text, ash, precipitation, sparks, dust, stars, birds, or smoke columns. Neutral soot-grey family only; no amber, reserved copper `#a5622f`, blue, green, or red.
