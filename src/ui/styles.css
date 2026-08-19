@@ -975,9 +975,16 @@
   font-size: var(--gf-t-300);
   display: grid;
   grid-template-columns: minmax(330px, 24vw) minmax(0, 1fr) minmax(286px, 20vw);
-  grid-template-rows: auto minmax(0, 1fr) auto auto auto auto;
+  /* The slack row sits between the inspect card and the record, and nothing is
+     placed in it. The record used to *be* the flexible row, aligned to its foot:
+     on a frame whose content overran the height, that row collapsed toward zero
+     and a 97px panel aligned to the end of a 22px row printed upward, straight
+     through the card above it. A panel may overflow the frame; it may not
+     overflow the row it was placed in. */
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto auto auto;
   grid-template-areas:
     "inspect notice   clock"
+    ".       .        clock"
     "record  .        clock"
     "order   forecast clock"
     "stage   stage    clock"

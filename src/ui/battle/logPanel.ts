@@ -3,6 +3,13 @@ import type { LogEntryView } from "../state.js";
 
 /** The tail a collapsed panel keeps: one enemy turn's worth of lines. */
 const COLLAPSED_LINES = 3;
+/**
+ * The tail it keeps while the inspect card is up. The left column holds a card,
+ * a record, an acting card and a menu, and on a short frame that is more than
+ * the height there is; the record is the one of the four that can say the same
+ * thing in fewer rows and still say it, so it is the one that gives them up.
+ */
+const YIELDED_LINES = 1;
 
 export interface LogPanelOptions {
   /** Lines the collapsed panel keeps. The rest are behind the toggle. */
@@ -50,6 +57,7 @@ export class LogPanel implements Component<readonly LogEntryView[] | undefined> 
   private readonly collapsedLines: number;
   private entries: readonly LogEntryView[] = [];
   private open = false;
+  private yielding = false;
 
   constructor(options: LogPanelOptions = {}) {
     this.collapsedLines = options.collapsedLines ?? COLLAPSED_LINES;
@@ -77,9 +85,25 @@ export class LogPanel implements Component<readonly LogEntryView[] | undefined> 
     });
   }
 
+  /**
+   * Stand down to the shortest honest trail: something else in the column needs
+   * the rows. The drawer still carries the whole battle, and its own count still
+   * tells the truth about how much is behind it.
+   */
+  setYielding(yielding: boolean): void {
+    if (yielding === this.yielding) return;
+    this.yielding = yielding;
+    this.render();
+  }
+
   /** True while the whole history is showing. */
   get expanded(): boolean {
     return this.open;
+  }
+
+  /** True while the trail is standing down for the card above it. */
+  get yielded(): boolean {
+    return this.yielding;
   }
 
   /** The lines on screen, oldest first — what the player can actually read. */
@@ -105,7 +129,8 @@ export class LogPanel implements Component<readonly LogEntryView[] | undefined> 
 
   private render(): void {
     const total = this.entries.length;
-    const shown = this.open ? this.entries : this.entries.slice(-this.collapsedLines);
+    const kept = this.yielding ? Math.min(YIELDED_LINES, this.collapsedLines) : this.collapsedLines;
+    const shown = this.open ? this.entries : this.entries.slice(-kept);
     const hidden = total - shown.length;
     this.el.classList.toggle("is-empty", total === 0);
     this.el.classList.toggle("is-expanded", this.open);

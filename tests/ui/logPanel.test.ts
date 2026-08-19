@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { BattleHud } from "../../src/ui/battle/hud.js";
 import { LogPanel } from "../../src/ui/battle/logPanel.js";
-import { mockActionMenuView, mockTurnOrderView } from "../../src/ui/mock.js";
+import { mockActionMenuView, mockTurnOrderView, mockUnitView } from "../../src/ui/mock.js";
 import type { LogEntryView } from "../../src/ui/state.js";
 
 let serial = 0;
@@ -169,6 +169,75 @@ describe("the HUD's record slot", () => {
     });
 
     expect(hud.log.lines).toEqual([filed.text]);
+    hud.destroy();
+  });
+});
+
+/**
+ * Re-playtest N3. The inspect card and the record share the top of the left
+ * column, and on a frame with no room for both the record printed over the card
+ * — worst exactly when it mattered, over a machine's power state read before an
+ * Operate. The layout half is a stylesheet rule (tests/ui/hudOcclusion.test.ts);
+ * this is the half that makes the room.
+ */
+describe("the record stands down for the card above it", () => {
+  const filled = () => [entry(), entry(), entry(), entry(), entry()];
+
+  it("keeps one line while a unit is inspected, and the drawer still counts the rest", () => {
+    const panel = new LogPanel();
+    const entries = filled();
+    panel.update(entries);
+    panel.setYielding(true);
+
+    expect(panel.yielded).toBe(true);
+    expect(panel.lines).toEqual([entries[entries.length - 1]?.text]);
+    expect(toggle(panel).textContent).toBe("Full record (4 earlier)");
+    panel.destroy();
+  });
+
+  it("gives the lines back the moment the card goes", () => {
+    const panel = new LogPanel();
+    const entries = filled();
+    panel.update(entries);
+    panel.setYielding(true);
+    panel.setYielding(false);
+
+    expect(panel.lines).toEqual(entries.slice(-3).map((row) => row.text));
+    panel.destroy();
+  });
+
+  it("still opens onto the whole battle while it is standing down", () => {
+    const panel = new LogPanel();
+    const entries = filled();
+    panel.update(entries);
+    panel.setYielding(true);
+    toggle(panel).click();
+
+    expect(panel.lines).toEqual(entries.map((row) => row.text));
+    panel.destroy();
+  });
+
+  it("is the HUD that decides, off the card it actually drew", () => {
+    const hud = new BattleHud();
+    const frame = (inspected: ReturnType<typeof mockUnitView> | null) => ({
+      action: mockActionMenuView(),
+      inspected,
+      turnOrder: mockTurnOrderView(),
+      forecast: null,
+      dialogue: [],
+      log: filled(),
+    });
+
+    hud.render(frame(null));
+    expect(hud.log.lines).toHaveLength(3);
+
+    // Somebody other than the actor: the acting unit's own card is not a second
+    // panel, so it is not a reason to give up rows.
+    hud.render(frame(mockUnitView({ id: "provocateur-a", name: "Yard Provocateur" })));
+    expect(hud.log.lines).toHaveLength(1);
+
+    hud.render(frame(null));
+    expect(hud.log.lines).toHaveLength(3);
     hud.destroy();
   });
 });

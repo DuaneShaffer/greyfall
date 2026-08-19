@@ -50,3 +50,43 @@ describe("the queue yields the field", () => {
     expect(reduced).toContain(".gf-turn-order");
   });
 });
+
+/**
+ * The other panel that stood on something it should not have. The record was
+ * *placed in* the frame's flexible row and aligned to its foot: on a frame whose
+ * content overran the height, that row collapsed toward zero and the panel
+ * printed upward out of it, through the inspect card above. Measured 12-185
+ * against 114-211. A panel may overflow the frame; it may not overflow its row.
+ */
+describe("the record stays in its own row", () => {
+  const grid = rule(".gf-battle-hud {");
+  const areas = /grid-template-areas:([^;]*);/.exec(grid)?.[1] ?? "";
+  const rows = (/grid-template-rows:([^;]*);/.exec(grid)?.[1] ?? "").trim().split(/\s+(?![^(]*\))/);
+  const named = [...areas.matchAll(/"([^"]*)"/g)].map((line) => (line[1] ?? "").trim().split(/\s+/));
+
+  it("declares one row track per row of the area map", () => {
+    expect(named.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(named.length);
+  });
+
+  it("never shares a row with the inspect card", () => {
+    const rowOf = (area: string): number[] =>
+      named.flatMap((cells, index) => (cells.includes(area) ? [index] : []));
+    const record = rowOf("record");
+    const inspect = rowOf("inspect");
+    expect(record.length).toBeGreaterThan(0);
+    expect(inspect.length).toBeGreaterThan(0);
+    expect(record.some((index) => inspect.includes(index))).toBe(false);
+  });
+
+  it("sits in a track sized by its content, not in the one that absorbs the slack", () => {
+    const recordRow = named.findIndex((cells) => cells.includes("record"));
+    expect(rows[recordRow]).toBe("auto");
+    // And the slack has a track of its own to collapse into, above the record,
+    // so the column still hangs from the foot of the frame.
+    const flexible = rows.findIndex((track) => track.includes("fr"));
+    expect(flexible).toBeGreaterThan(-1);
+    expect(flexible).toBeLessThan(recordRow);
+    expect(named[flexible]?.filter((cell) => cell !== "." && cell !== "clock")).toEqual([]);
+  });
+});

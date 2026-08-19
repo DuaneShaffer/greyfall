@@ -198,9 +198,13 @@ export class BattleHud implements Component<BattleHudView> {
     this.acting.update(view.action.unit);
     // The acting unit already has a panel; repeating it as "inspecting" is
     // noise, so the inspect card only appears for somebody else.
-    this.status.update(
-      view.inspected === null || view.inspected.id === view.action.unit.id ? null : view.inspected,
-    );
+    const inspected =
+      view.inspected === null || view.inspected.id === view.action.unit.id ? null : view.inspected;
+    this.status.update(inspected);
+    // The card and the record share the top of the left column. The record is
+    // the reference the player can still read in one line, so it is the one that
+    // stands down while the card is up.
+    this.log.setYielding(inspected !== null);
     this.turnOrder.update(view.turnOrder, view.log ?? []);
     this.power.update(view.power);
     this.log.update(view.log ?? []);
