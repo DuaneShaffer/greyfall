@@ -116,7 +116,7 @@ async function intoBattle(campaignText) {
   await sleep(500);
   await clickText("button", "move out");
   await sleep(900);
-  await clickText(".gf-menu-entry", "move out");
+  await clickText(".gf-menu-entry", "take the field");
   await sleep(1200);
   await advanceDialogue();
   await sleep(2500);

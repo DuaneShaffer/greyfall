@@ -917,11 +917,11 @@ in-game 128 × 160 — plus two optional companions per character: `<id>-matte.p
 (the figure solid white on solid black, hard-edged) and `<id>-palette.png` (a
 strip of solid swatches of the colours actually used).
 
-**Nothing has been delivered.** Neither `art-src/portraits/` nor the shipped
-`art/portraits/` exists yet, so every slot falls back to the monogram record card
-(UI_DESIGN §9) and §E.3's table has no rows. The tool and this part are here first on purpose:
-the acceptance numbers were argued in the brief and they should be measurable
-before the first master arrives, not after.
+**The first plate is in.** Rowen's master (PR #2, v3) merged the same evening this
+part was written, and §E.3 carries her verdict; every other slot still falls back
+to the monogram record card (UI_DESIGN §9). The tool and this part arrived first
+on purpose: the acceptance numbers were argued in the brief and measurable before
+the first master landed.
 
 Regenerate the numbers with:
 
