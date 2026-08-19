@@ -123,8 +123,10 @@ clipping: **the contract is the ratio and the landmarks, not the pixel count.**
 
 **The chip is a crop, not an asset.** §4 cuts (32, 16, 64, 64) out of the
 128×160 and halves it to 32×32 for the turn-order bar and unit lists. In master
-terms that is **(128, 64, 256, 256)**. Everything that identifies the character
-must fall inside that square. A portrait whose read lives in a collar badge at
+terms that is **(128, 64, 256, 256)** — rows **y = 64 to 320**, which stop at
+about the base of the nose and a clear 70 px above the chin the framing table
+fixes at y = 384–400. Everything that identifies the character must fall inside
+that square. A portrait whose read lives in a collar badge at
 the bottom of the frame is a portrait with no chip.
 
 **And the game now takes it as a crop, literally.** `src/ui/portraits.ts` holds
@@ -160,6 +162,16 @@ goggle strap or an antenna base may occupy it, and the skull may not float up
 into it. Two people of different heights get the same eye-line — this is a
 record plate, not a group photo. Build is carried by the shoulder span and the
 neck, which is exactly where it shows anyway.
+
+**The chip sees y = 64–320, and stops there.** The crop is (128, 64, 256, 256)
+in master terms: its bottom edge sits below the eye-line at y = 243 and lands at
+about the base of the nose, roughly 70 px above the chin row above. Everything
+from the mouth down is outside it — chin, jaw, throat, collar, gorget, scarf, a
+respirator at the collarbone, a pin on a lapel. **Anchors live between the brow
+and the nose.** What the chip can carry is headwear, a headband, a hairline, a
+raised visor shelf, goggles pushed up, a lens over an eye, a brow scar, a mark
+above the nose. Every entry below names its anchor in that band; a feature named
+anywhere else is a plate detail and cannot be one.
 
 **The clipped corner.** The UI clips a filing-card corner off the top-right of
 the portrait slot (`.gf-portrait`, a 6 px diagonal at 128 px — roughly a 24 px
@@ -339,8 +351,10 @@ TECHNICAL (hard constraints):
   * EYE-LINE at y = 243 (+/- 6). Crown of the skull at y = 90-110. Chin at
     y = 384-400. Head mass centred on x = 256 (+/- 24). Shoulders enter the
     frame around y = 500 and run off both sides.
-  * The head chip is cut from the square (128, 64, 256, 256). Everything
-    that identifies this person must sit inside it.
+  * The head chip is cut from the square (128, 64, 256, 256) — it sees
+    y = 64 to 320 ONLY, ending at about the base of the nose. The chin,
+    mouth, throat and collar are BELOW it. Everything that identifies this
+    person must sit inside that square, between the brow and the nose.
 - LIGHTING, identical for every character in the cast: ONE key light from
   the UPPER VIEWER-RIGHT, ~35 degrees above the eye-line, hard, colourless
   ash-grey daylight through soot. It lights the planes the face is turned
@@ -440,7 +454,10 @@ heavy unruly mass, fine-boned face, grey-green eyes, no facial hair. Match the
 costume exactly — brass-rimmed goggles worn UP on the forehead with the green
 lens, the teal scarf wound at the throat, the slate-blue coat with the pale
 turned collar and lining, the leather harness straps across the chest with the
-small amber cell-lantern on them.
+small amber cell-lantern on them. **His chip anchor is the goggles worn up on
+the brow with the green lens showing, over the heavy dark hair mass** — the
+scarf, the harness and the lantern all sit below the chip crop and are the
+plate's read, not the chip's.
 
 **What to change.** Only the register and the angle. The sheet is rendered with
 anime-adjacent polish — glossy highlights, soft blending, lit from the figure's
@@ -488,10 +505,12 @@ not know what to do about it.
 
 **Costume.** Per his field-sprite brief: canvas coat over a chest harness with
 tool loops, heavy gloves. The pack is behind him and its whip antenna is out of
-a bust crop, so the portrait substitutes its own anchor: **the pack's shoulder
-strap crossing the chest, carrying the spare flux cell his unit sheet gives
-him** (`accessory: spare-cell`), plus a watchmaker's loupe pushed up on the
-brow. One hand may enter the bottom edge holding a single small part — a
+a bust crop, so the portrait substitutes its own anchor: **a watchmaker's loupe
+pushed up on the brow**, over cropped greying hair, with the permanent narrow
+squint under it. The pack's shoulder strap crosses the chest carrying the spare
+flux cell his unit sheet gives him (`accessory: spare-cell`) — that is the
+plate's read and not the chip's, because the strap and the cell both sit below
+the crop. One hand may enter the bottom edge holding a single small part — a
 coupling, a fuse carrier — provided it does not cross the chin.
 
 **The read.** The man who keeps other people's things working. Attentive,
@@ -525,9 +544,17 @@ The face under it is unremarkable and, at rest, mild — which is worse, because
 of what he does for a living.
 
 **Costume.** Per his field-sprite brief, with the one change the register buys:
-**the work-hood is BACK**, pushed off onto the shoulders, and its cowl gathered
-at the neck is his chip-size anchor. Canvas coat, a fuse-cord spool strap over
-one shoulder, no shine anywhere. Everything he wears is chemical and mechanical.
+**the work-hood is BACK**, pushed right off the head onto the shoulders, so the
+chip sees a bare uneven kitchen-cut hairline and no cloth at all. Canvas coat, a
+fuse-cord spool strap over one shoulder, no shine anywhere. Everything he wears
+is chemical and mechanical.
+
+**His chip anchor is that bare head plus the burnt brow** — the half-missing
+eyebrow grown back wrong, the singed-short lashes on that side, and the
+powder-burn stipple over the cheekbone beneath them. The cowl gathered at the
+neck is below the crop and cannot carry him. Wick (#13) wears the other half of
+this distinction: his hood is pushed back but still *on*, and its roll shows
+inside his chip.
 
 **The read.** The sprite makes him a void with a glint in it; the portrait's job
 is to give the void a neighbour's face. He is the one who counts who lives on
@@ -569,9 +596,11 @@ holding still on purpose.
 
 **Costume.** Per her field-sprite brief: heavy work coat (never a dress), flask
 bandolier across the chest, verdigris-green apron in `#1e4640`/`#2f7a6c` — the
-one patch of colour on her. **The respirator hangs at her throat**, unstrapped,
-with the strap's pressure line still visible across one cheek. That mask at the
-collarbone is her chip anchor.
+one patch of colour on her. **The respirator hangs at her throat**, unstrapped —
+a plate detail, because at the collarbone it is below the chip crop entirely.
+**Her chip anchor is what the mask left above the crop: the strap's pressure
+line running from the temple across the cheekbone, and the hard-tied hairline it
+flattened**, over the dark brows and the direct eyes.
 
 **The read.** The one who is already thinking about the sentence after this one.
 She is measuring the person she is talking to — not coldly, not yet; she is
@@ -613,8 +642,12 @@ in `#6b3a1e` with `#c98a4b` on the worked edges, riveted, hand-fitted, with rag
 and leather padding where it meets him. The human shoulder sits low and
 narrow on the far side, in a plain shirt. **The graft seam runs up under the
 jaw** and `#ff9db1` brightblood scarring spreads from where the metal meets the
-neck, in crisp veins, no halo. That seam and that asymmetric shoulder are his
-chip anchor and they are unmistakable at 32 px.
+neck, in crisp veins, no halo. That seam and that asymmetric shoulder are the
+plate's read and both sit below the chip crop. **His chip anchor is the head
+itself: the graft-side skull shaved where the mount fouls it, and the
+brightblood veins climbing past the jaw onto the near cheek and up to the
+temple, under the fallen-in temples themselves.** The scarring has to reach that
+high or he has no chip — it is spread, and this is where the spread shows.
 
 **The read.** Strength that cost too much — and specifically, a man for whom
 this is a normal Tuesday. The horror is not on his face; the horror is that it
@@ -654,7 +687,9 @@ nose bridge, a nick or two on the chin.
 **Costume.** Per her field-sprite brief: **brass-rimmed goggles worn UP on the
 forehead** — her chip anchor, one pair, scratched, `#a5622f` rim with a
 `#1e4640` lens — over the collar of the long split riding coat, with a rag
-scarf at the throat pulled down. The coupling hook is out of frame.
+scarf at the throat pulled down. The goggles and the clean goggle-skin around
+the eyes are both above the nose and both inside the crop; the scarf and the
+collar are below it. The coupling hook is out of frame.
 
 **The read.** Someone mid-stride even when standing still. In a bust that
 becomes the one composition in the set that is not settled: caught turning back
@@ -697,7 +732,12 @@ minute of each other and the player must see it without being told.
 whose clothes are not worn: the cuirass collar clean, the gorget polished, the
 collar of the coat under it done up exactly right. A Master's plain rank mark,
 no ornament beyond it — House Corvane's money does not need announcing. Helm not
-in frame, ever.
+in frame, ever. **None of that kit is his chip anchor** — collar, gorget and rank
+mark are all below the crop. The anchor is the head: the barbered hairline with
+the first grey at the temple, the close shave under it, and above all *Rowen's
+brow*, with the shallow permanent line sitting on it. The chip is exactly where
+the family resemblance has to land, because the two chips share a turn-order
+bar.
 
 **The read.** A man who has already decided, is not enjoying it, and will not be
 moved. Attentive, level, immovable — the expression of somebody being told
@@ -750,7 +790,9 @@ in the docs constrains whether this face is visible at all, so this file
 decides: it is, and only just. That is the whole difference between him and
 Rowen in Chapter 1 and it is the composition — her helm is off in her portrait
 and his is not, and neither of them chose otherwise. The raised visor shelf
-above the brow is his chip anchor.
+above the brow is his chip anchor, with the helm's brow band over it — both in
+the top half of the crop. The fastened chin strap and the breach-shield strap
+are below it and do no work at 32 px.
 
 **The read.** Procedure with a face. Incurious. He is looking at you and
 recording what he sees and it is not going to change what he writes. Absolutely
@@ -783,14 +825,19 @@ eyes that are ordinary exhaustion and not illness.
 
 **Costume.** A good coat that has been re-lined more than once, buttoned to the
 throat. The lodge steward's pin at the collar — plain brass, the single piece
-of metal on her, and her chip anchor. Nothing else: the Combine's authority is
+of metal on her, and a plate detail: it sits below the chip crop. **Her chip
+anchor is the grey hair pinned up off the collar with the pins visible**,
+catching the key at the crown and the temple, over the heavy brow and the
+pouched eyes. Nothing else: the Combine's authority is
 that people listen to her, and it has no uniform.
 
 **The plant.** At the very edge of the crop, where the collar opens at the
 collarbone, a **faint `#ff9db1` brightblood tracery** — two or three fine
 luminous lines, no halo, easily missed. She dies of this two chapters from now
 and the portrait already knows. It is a detail at the frame's edge, not a
-symptom on display; if a first-time viewer notices it, it is too strong.
+symptom on display; if a first-time viewer notices it, it is too strong. It is
+also below the chip crop, and that is deliberate — the plant is for the plate,
+never for the turn-order bar.
 
 **The read.** Attention without hope. She has heard this speech before and she
 is going to hear it out anyway, because hearing it out is the job. Steady,
@@ -825,7 +872,9 @@ standard-mark at the collar — a stamped measure, not an emblem, no religious
 iconography anywhere. **The assay visor is the composition:** worn on the brow
 with one lens swung down over the far eye and the near eye clear. Half the man
 is instrument and half is a person, and the asymmetry *is* the characterisation.
-The visor is his chip anchor.
+The visor is his chip anchor: it is worn on the brow and its
+swung-down lens is over an eye, so the whole composition sits inside the crop.
+The standard-mark at the collar is below it.
 
 **The read.** The one face in the set that is deliberately unreadable, and that
 unreadability is the point. Neither warm nor cold; attentive the way a meter is
@@ -863,7 +912,9 @@ rather than charged for it.
 **Costume.** Oiled jacket, grounding strap at the wrist (out of frame), and
 **the assay visor DOWN over the eyes** — her lenses covering where Quill's are
 open. That inversion is intentional: his instrument is beside his eye and hers
-is over it, and hers is the licence she is using. The visor is her chip anchor.
+is over it, and hers is the licence she is using. The visor is her chip anchor,
+and the band strapping her hair back sits at the crown above it: band, then
+lens, then face, top to bottom and all of it inside the crop.
 
 **The read.** *This woman signed for it.* She is not hiding and she is not
 sorry — not yet. The mouth carries the entire expression, because the eyes are
@@ -900,9 +951,15 @@ broken at least once.
 
 **Costume.** Per his unit sheet: oiled jacket over a dust hood pushed back, the
 grounding strap looped at the throat, a fuse-cord spool on the shoulder strap.
-Nothing military; nothing from a shop. The pushed-back hood and the throat
-strap are his chip anchor, and they must not read as Marek's cowl — Marek's
-gathers, his hangs.
+Nothing military; nothing from a shop.
+
+**His chip anchor is the pushed-back dust hood** — still *on* the head, its roll
+sitting behind the hairline inside the crop — **with the torch-burnt brow that
+took the eyebrow**, and the gas-hood strap marks pressed high on the cheeks. The
+grounding strap at the throat is below the crop and does no work at chip size.
+The hood is the thing that must not read as Marek's (#4): Marek's is off the
+head entirely and gathers at the neck, out of his chip; Wick's is on, and
+shows.
 
 **The read.** Caught, not beaten. He is already pricing his own release: half a
 step ahead of you and unbothered about being on the wrong end of it, because
@@ -959,8 +1016,9 @@ Human gate, in this order:
 2. **One light.** Cover the faces and look only at the shadow shapes. They
    should all fall the same way. A portrait keyed from the other side is a
    reject even if it is the best painting in the set.
-3. **Chip test.** Crop (32, 16, 64, 64) and halve it. If you cannot tell who it
-   is at 32 × 32, the identifying anchor failed and the fix is in the anchor,
+3. **Chip test.** Crop (32, 16, 64, 64) and halve it — y = 16–80 of the plate,
+   brow to about the base of the nose, and nothing below. If you cannot tell who
+   it is at 32 × 32, the identifying anchor failed and the fix is in the anchor,
    not in the chip.
 4. **Amber audit.** Look for warmth. Every warm pixel must trace to a source in
    this file's table. Marek gets checked twice.

@@ -381,6 +381,14 @@ character-art cost from the sprite pipeline.
 The chip is the head-only derivative used in the turn-order bar and unit lists;
 32×32 matches the tile texture size, so chips atlas with the terrain art.
 
+The chip's rect **ends at y = 80** of the 128 × 160 — 16 rows above the chin the
+crop row puts at ~60% — so it sees the head from the brow to about the base of
+the nose and nothing below. Whatever identifies a character at chip size has to
+live in that band: headwear, hairline, brow, eyes, marks above the nose. A
+collar badge, a gorget, a mask at the collarbone or anything else at the throat
+is a plate detail and cannot be a chip anchor.
+`art-src/PORTRAIT_BRIEFS.md` names one per character, in that band.
+
 Portraits are **never mirrored** — asymmetric painted detail does not survive
 it. The UI therefore always places the portrait to the *left* of the dialogue
 box regardless of speaker; speaker identity is carried by name plate and
