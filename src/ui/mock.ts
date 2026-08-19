@@ -401,7 +401,7 @@ export const mockItemMechanics: Record<string, MechanicsView> = {
     chargeCost: 0,
     castSpeed: null,
     usesRemaining: 2,
-    summary: "Range 0–1 (±1h) · Single target · Self or ally · Recovery 30 · 2 in stock",
+    summary: "Range 0–1 (±1h) · Single target · Self or ally · Recovery 30 · 2 left after use",
   },
   "cinder-flask": {
     range: { min: 1, max: 3, vertical: 2 },
@@ -423,7 +423,7 @@ export const mockItemMechanics: Record<string, MechanicsView> = {
     chargeCost: 0,
     castSpeed: null,
     usesRemaining: 0,
-    summary: "Range 1–3 (±2h) · Single target · Enemy · Damage 25 thermal · Scalded 60% · 0 in stock",
+    summary: "Range 1–3 (±2h) · Single target · Enemy · Damage 25 thermal · Scalded 60% · 0 left after use",
   },
 };
 

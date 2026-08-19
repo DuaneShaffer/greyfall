@@ -1159,7 +1159,19 @@ same and the player had to guess which.
   affected, allies included (`COMBAT_RULES` §12), and that has always been
   correct mechanics badly reported.
 
-Both layers go through the controller's one `setHighlight` pair, so
+- **Deployment** — where the party came in, painted for the whole battle. It was
+  the same verdigris wash as support, so a green tile meant either "this order
+  can help somebody here" or "somebody started here": the exact ambiguity this
+  section exists to remove. It stays in the friendly family and changes register
+  instead — an oxidized-copper ring with no fill, which is a standing boundary
+  rather than an answer to an aim, and the only overlay drawn when nothing is
+  being aimed at all.
+
+Both aim layers go through the controller's one `setHighlight` pair, so
 `controller.highlights` — and therefore the probe and the tests — knows what is
-painted (§14.5). Neither layer takes amber and neither takes copper: copper is
-operable machinery and nothing else.
+painted (§14.5). The deployment ring is painted by `main.ts` straight on the
+renderer at scene build, so it is the one overlay `describe()` cannot see: a
+probe reading an empty `highlights` map is not reading an unlit board. Neither
+aim layer takes amber and neither takes copper: copper is operable machinery,
+which is what the standing ring borrows it as — a mark on the works, not an
+order.

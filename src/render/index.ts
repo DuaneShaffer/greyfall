@@ -16,6 +16,7 @@ export {
 export {
   HIGHLIGHT_STYLES,
   LAYER_BLOCKED,
+  LAYER_DEPLOYMENT,
   LAYER_SUPPORT,
   TileHighlights,
   highlightStyleFor,

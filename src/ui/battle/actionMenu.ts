@@ -63,7 +63,7 @@ export type CameraYawIndex = 0 | 1 | 2 | 3;
 export function rowMechanics(mechanics: MechanicsView): string {
   return mechanics.summary
     .split(" · ")
-    .filter((part) => !/^Charge \d+$/.test(part) && !/^\d+ in stock$/.test(part))
+    .filter((part) => !/^Charge \d+$/.test(part) && !/^\d+ left after use$/.test(part))
     .join(" · ");
 }
 

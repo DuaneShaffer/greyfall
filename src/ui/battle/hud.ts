@@ -20,7 +20,7 @@ const PLAYER_MODES = new Set<HudMode>(["orders", "move", "target", "facing"]);
  * What one back-out actually did. The canvas asks for a withdraw on every
  * right-click and has no idea what is open, so the answer has to come back.
  */
-export type WithdrawOutcome = "menu" | "unstaged" | "root" | "none";
+export type WithdrawOutcome = "record" | "menu" | "unstaged" | "root" | "none";
 
 /**
  * The battle overlay.
@@ -132,6 +132,7 @@ export class BattleHud implements Component<BattleHudView> {
    * correct at every depth *including the root*, and a no-op only when the
    * orders are not the player's to give — never a silent no-op inside a turn.
    *
+   *   "record"   — the expanded record was the topmost thing open; it collapsed.
    *   "menu"     — an open submenu popped one level and reported its own cancel.
    *   "unstaged" — a staged move, aim or facing was withdrawn; the field cursor
    *                is the player's again and nothing is left armed.
@@ -139,6 +140,12 @@ export class BattleHud implements Component<BattleHudView> {
    *   "none"     — not a mode the player entered; nothing to leave.
    */
   withdraw(): WithdrawOutcome {
+    // The drawer is the last thing the player opened and the only one whose exit
+    // was its own row: Escape and right-click both put the briefing over it.
+    if (this.log.expanded) {
+      this.log.collapse();
+      return "record";
+    }
     if (!PLAYER_MODES.has(this.mode.current)) return "none";
     // Nothing has been drawn yet, so there is nothing to leave — and a briefing
     // pushed here would become the root the orders never get back.

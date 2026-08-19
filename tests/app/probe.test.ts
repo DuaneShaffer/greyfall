@@ -309,3 +309,70 @@ describe("the honesty test", () => {
     expect(kit?.cursor).toBe(selected);
   });
 });
+
+/**
+ * Three places the re-playtest caught `describe()` disagreeing with the screen.
+ * A probe that reports what the DOM holds rather than what a player can read is
+ * a probe that will certify a broken frame, so each of them is pinned here.
+ */
+describe("the probe's own honesty", () => {
+  let s: Stack;
+  beforeEach(() => {
+    s = stack();
+    toRowen(s);
+  });
+
+  const panel = (label: string) =>
+    s.probe.describe().panels.find((entry) => entry.label === label) ?? null;
+
+  it("drops text a stylesheet has hidden, not just an inline style", () => {
+    const line = document.querySelector<HTMLElement>(".gf-battle-hud .gf-unit-facing");
+    expect(line, "no facing line to hide").not.toBeNull();
+    const shown = s.probe.describe().panels.flatMap((entry) => entry.lines);
+    expect(shown.some((text) => text.includes("Facing"))).toBe(true);
+
+    const sheet = document.createElement("style");
+    sheet.textContent = ".gf-unit-facing { display: none; }";
+    document.head.append(sheet);
+
+    const hidden = s.probe.describe().panels.flatMap((entry) => entry.lines);
+    expect(hidden.some((text) => text.includes("Facing"))).toBe(false);
+    sheet.remove();
+  });
+
+  it("reports a panel painted under another one as covered, by name", () => {
+    const boxes = new Map<string, DOMRect>([
+      ["Inspecting unit", new DOMRect(12, 12, 384, 173)],
+      ["Battle record", new DOMRect(12, 114, 384, 97)],
+    ]);
+    for (const node of document.querySelectorAll<HTMLElement>("section.gf-panel")) {
+      const box = boxes.get(node.getAttribute("aria-label") ?? "");
+      node.getBoundingClientRect = () => box ?? new DOMRect(600, 600, 200, 40);
+    }
+
+    const record = panel("Battle record");
+    expect(record?.rect).toEqual({ x: 12, y: 114, width: 384, height: 97 });
+    expect(record?.occludedBy).toBe("Inspecting unit");
+    expect(panel("Inspecting unit")?.occludedBy).toBe("Battle record");
+  });
+
+  it("says 'not measured' rather than 'not covered' where there is no layout", () => {
+    // happy-dom measures nothing, and a zero box is not evidence of clear air.
+    for (const entry of s.probe.describe().panels) {
+      expect(entry.rect).toBeNull();
+      expect(entry.occludedBy).toBeNull();
+    }
+  });
+
+  it("carries the between-battle toast, which is a notice on screen", () => {
+    const toast = document.createElement("p");
+    toast.className = "gf-toast";
+    toast.textContent = "Shield Advance entered on Rowen Corvane's record — 150 Standing spent.";
+    document.body.append(toast);
+    expect(s.probe.describe().notices).toContain(toast.textContent);
+
+    toast.classList.add("is-hidden");
+    expect(s.probe.describe().notices).not.toContain(toast.textContent);
+    toast.remove();
+  });
+});

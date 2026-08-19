@@ -101,6 +101,11 @@ export class LogPanel implements Component<readonly LogEntryView[] | undefined> 
     return this.open;
   }
 
+  /** Shut the drawer from outside it: the frame's own back-out gesture. */
+  collapse(): void {
+    if (this.open) this.setOpen(false);
+  }
+
   /** True while the trail is standing down for the card above it. */
   get yielded(): boolean {
     return this.yielding;

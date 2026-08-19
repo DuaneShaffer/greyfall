@@ -85,7 +85,8 @@ const statusClause = (status: LogStatusView): string => {
   }
 };
 
-const targetClause = (target: LogTargetView): string => {
+/** Null when the rules recorded no figure against this target at all. */
+const targetClause = (target: LogTargetView): string | null => {
   const bits: string[] = [];
   if (target.hit === false) bits.push("missed");
   if (target.damage !== undefined) {
@@ -95,7 +96,7 @@ const targetClause = (target: LogTargetView): string => {
   if (target.hpRemaining !== undefined) bits.push(`HP ${target.hpRemaining}`);
   for (const status of target.statuses) bits.push(statusClause(status));
   if (target.downed) bits.push("down");
-  return bits.length === 0 ? `${target.name}: no effect` : `${target.name}: ${bits.join(", ")}`;
+  return bits.length === 0 ? null : `${target.name}: ${bits.join(", ")}`;
 };
 
 const join = (parts: readonly string[]): string => parts.filter((part) => part !== "").join(" — ");
@@ -463,8 +464,21 @@ export class BattleLog {
       ...(draft.action === undefined ? {} : { action: draft.action }),
       targets,
       notes,
-      text: join([head, targets.map(targetClause).join("; "), notes.join("; ")]),
+      text: join([head, this.targetsText(targets, notes), notes.join("; ")]),
     });
+  }
+
+  /**
+   * "No effect" means "no damage or recovery figure", and the clause right after
+   * it named the effect: `Throw the Breaker — Freight Lift: no effect — Freight
+   * Lift came back up`. So a target the rules recorded nothing against says so
+   * only when nothing else in the line does.
+   */
+  private targetsText(targets: readonly LogTargetView[], notes: readonly string[]): string {
+    const named = targets.map(targetClause).filter((clause): clause is string => clause !== null);
+    if (named.length > 0 || targets.length === 0) return named.join("; ");
+    if (notes.length > 0) return "";
+    return targets.map((target) => `${target.name}: no effect`).join("; ");
   }
 
   // --- naming ---------------------------------------------------------------

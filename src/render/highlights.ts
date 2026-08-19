@@ -139,6 +139,8 @@ const hatchMask = (): THREE.DataTexture => {
 export const LAYER_BLOCKED = "blocked";
 /** Beneficial aim: a heal, a ward, a shunt onto an ally. */
 export const LAYER_SUPPORT = "support";
+/** Where the party came in. Painted for the whole battle, never an aim. */
+export const LAYER_DEPLOYMENT = "deployment";
 
 /**
  * How a named layer is drawn, whatever the caller asks for. Colour, opacity and
@@ -153,6 +155,8 @@ export interface HighlightLayerStyle {
   inset: number;
   /** Stippled fill: reachable, and not a place an order may be sent. */
   hatched?: boolean;
+  /** Ring only, no wash: a standing mark on the board rather than an answer. */
+  outlineOnly?: boolean;
 }
 
 export const HIGHLIGHT_STYLES: Readonly<Record<string, HighlightLayerStyle>> = {
@@ -169,6 +173,18 @@ export const HIGHLIGHT_STYLES: Readonly<Record<string, HighlightLayerStyle>> = {
     opacity: 0.34,
     yOffset: 0.032,
     inset: 0.03,
+  },
+  // Verdigris said two things at once: "this order can help somebody here" and
+  // "somebody started here", the second painted over four tiles for the whole
+  // battle. Support keeps the wash — green stays the friendly family — and the
+  // standing mark becomes a ring in the deeper verdigris, which is a boundary
+  // rather than an overlay and cannot be mistaken for an answer to an aim.
+  [LAYER_DEPLOYMENT]: {
+    color: palette.oxidizedCopper,
+    opacity: 0.55,
+    yOffset: 0.02,
+    inset: 0.06,
+    outlineOnly: true,
   },
 };
 
@@ -253,6 +269,7 @@ export class TileHighlights {
       });
       existing.fillMaterial.color.setHex(paint);
       existing.fillMaterial.opacity = opacity;
+      existing.fill.visible = style?.outlineOnly !== true;
       existing.outlineMaterial.color.setHex(paint);
       return;
     }
@@ -277,6 +294,7 @@ export class TileHighlights {
       buildTileOutlineGeometry(this.map, tiles, yOffset + 0.004, inset),
       outlineMaterial,
     );
+    fill.visible = style?.outlineOnly !== true;
     fill.renderOrder = DRAW_ORDER.highlightFill;
     outline.renderOrder = DRAW_ORDER.highlightOutline;
     this.group.add(fill, outline);

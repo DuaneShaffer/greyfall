@@ -251,7 +251,7 @@ describe("ActionMenu prints the mechanics on the row", () => {
             chargeCost: 0,
             castSpeed: null,
             usesRemaining: 3,
-            summary: "Range 1 (±1h) · Single target · Ally or self · Recovery 30 · 3 in stock",
+            summary: "Range 1 (±1h) · Single target · Ally or self · Recovery 30 · 3 left after use",
           }),
         },
       ],
@@ -300,8 +300,8 @@ describe("ActionMenu prints the mechanics on the row", () => {
     menu.menus.handleKey(key("Enter"));
     const row = entry(menu, "coagulant-vial");
     expect(row?.querySelector(".gf-menu-note")?.textContent).toContain("Recovery 30");
-    // The stock is in the row's own column; the line does not repeat it.
-    expect(row?.querySelector(".gf-menu-note")?.textContent).not.toContain("in stock");
+    // The count is in the row's own column; the line does not repeat it.
+    expect(row?.querySelector(".gf-menu-note")?.textContent).not.toContain("left after use");
     expect(row?.querySelector(".gf-menu-detail")?.textContent).toBe("x3");
     expect(menu.el.querySelector(".gf-action-detail-note")?.textContent).toContain("Thickens a bleed");
   });

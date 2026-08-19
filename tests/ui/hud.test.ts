@@ -162,3 +162,41 @@ describe("refusals reach the annunciator", () => {
     expect(hud.notice.el.textContent).toContain("Action already spent");
   });
 });
+
+/**
+ * Re-playtest N7. With the record expanded, Escape and right-click both opened
+ * the briefing over it and neither closed it; its only exit was its own row.
+ * §15.4 names the expanded log as something the back-out gesture backs out of.
+ */
+describe("backing out of the expanded record", () => {
+  const filed = Array.from({ length: 6 }, (_, index) => ({
+    index,
+    kind: "action" as const,
+    turn: 1,
+    tick: index,
+    targets: [],
+    notes: [],
+    text: `line ${index}`,
+  }));
+
+  it("collapses the drawer before it opens anything over it", () => {
+    const { hud } = rig();
+    hud.render({ ...hudView({ operables: OPERABLES }), log: filed });
+    hud.log.el.querySelector<HTMLElement>(".gf-log-toggle")!.click();
+    expect(hud.log.expanded).toBe(true);
+
+    expect(hud.withdraw()).toBe("record");
+    expect(hud.log.expanded).toBe(false);
+    expect(hud.actionMenu.menus.path).not.toContain("battle-briefing");
+  });
+
+  it("hands the gesture straight on once the drawer is shut", () => {
+    const { hud } = rig();
+    hud.render({ ...hudView({ operables: OPERABLES }), log: filed });
+    hud.log.el.querySelector<HTMLElement>(".gf-log-toggle")!.click();
+    hud.withdraw();
+
+    expect(hud.withdraw()).toBe("root");
+    expect(hud.actionMenu.menus.path).toContain("battle-briefing");
+  });
+});

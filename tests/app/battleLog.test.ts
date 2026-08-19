@@ -244,3 +244,52 @@ describe("the record, straight off a batch", () => {
     expect(tail[0]).toEqual(log.entries[log.entries.length - 1]);
   });
 });
+
+/**
+ * Re-playtest N8. "No effect" means "no damage or recovery figure", and the
+ * clause after it named the effect: `Throw the Breaker — Freight Lift: no effect
+ * — Freight Lift came back up`. A record that contradicts itself in one line is
+ * a record the player stops reading.
+ */
+describe("what the record calls an order that moved no figures", () => {
+  const BREAKER: Unit = { ...VALE, learnedAbilityIds: ["throw-the-breaker", "overload-cell"] };
+
+  function yardHarness(): Harness {
+    const battle = openBattle([rowen(), BREAKER], [
+      { unitId: "rowen", position: { x: 0, y: 4 }, facing: "north" },
+      { unitId: "vale", position: { x: 3, y: 5 }, facing: "north" },
+    ]);
+    const renderer = fakeRenderer();
+    const ui = fakeUi();
+    return {
+      renderer,
+      ui,
+      controller: new BattleController({
+        state: battle.state,
+        events: battle.events,
+        renderer: renderer.port,
+        ui: ui.port,
+        ai: stubAiCommand,
+      }),
+    };
+  }
+
+  it("names the machine once, in the clause that says what happened to it", () => {
+    const h = yardHarness();
+    h.controller.start();
+    h.controller.intents.endDialogue();
+    runUntilPlayer(h, "vale");
+    h.controller.intents.selectAbility("vale", "throw-the-breaker");
+    h.controller.intents.confirmTarget("vale", "throw-the-breaker", {
+      kind: "object",
+      objectId: "freight-lift",
+    });
+
+    const filed = actions(h.controller.log).find((row) => row.action === "Throw the Breaker");
+    expect(filed).toBeDefined();
+    expect(filed?.text).toContain("Freight Lift lost power");
+    expect(filed?.text).not.toContain("no effect");
+    // The target is still in the structured record; it is the sentence that changed.
+    expect(filed?.targets.map((target) => target.name)).toContain("Freight Lift");
+  });
+});

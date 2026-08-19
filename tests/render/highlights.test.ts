@@ -13,6 +13,7 @@ import type { GameMap } from "../../src/data/schemas/map.js";
 import {
   HIGHLIGHT_STYLES,
   LAYER_BLOCKED,
+  LAYER_DEPLOYMENT,
   LAYER_SUPPORT,
   TileHighlights,
   highlightStyleFor,
@@ -85,6 +86,43 @@ describe("the support layer", () => {
   });
 });
 
+/**
+ * Re-playtest N5. The deployment tiles were a permanent verdigris wash over four
+ * tiles for the whole battle, and the support layer is the same verdigris — so a
+ * green tile meant either "this order can help somebody here" or "somebody
+ * started here", which is the ambiguity the layer split exists to remove.
+ */
+describe("the deployment layer", () => {
+  it("is a ring, not a wash, so it cannot be read as an answer to an aim", () => {
+    const style = highlightStyleFor(LAYER_DEPLOYMENT);
+    expect(style?.outlineOnly).toBe(true);
+    expect(style?.hatched ?? false).toBe(false);
+    const support = highlightStyleFor(LAYER_SUPPORT);
+    expect(support?.outlineOnly ?? false).toBe(false);
+    expect(style?.color).not.toBe(support?.color);
+  });
+
+  it("stays in the friendly family, and paints no fill on the board", () => {
+    const highlights = new TileHighlights(map);
+    highlights.set(LAYER_DEPLOYMENT, tiles, palette.highlightSupport);
+    const fill = highlights.group.children.find(
+      (child): child is THREE.Mesh => (child as THREE.Mesh).isMesh === true,
+    ) as THREE.Mesh;
+    const line = highlights.group.children.find(
+      (child): child is THREE.LineSegments => (child as THREE.LineSegments).isLineSegments === true,
+    ) as THREE.LineSegments;
+
+    expect(fill.visible).toBe(false);
+    expect(line.visible).toBe(true);
+    expect((line.material as THREE.LineBasicMaterial).color.getHex()).toBe(palette.oxidizedCopper);
+    // Repainted in place — same layer, same count, moved tiles — still a ring.
+    highlights.set(LAYER_DEPLOYMENT, [{ x: 2, y: 2 }, { x: 1, y: 0 }], palette.highlightSupport);
+    expect(highlights.group.children).toContain(fill);
+    expect(fill.visible).toBe(false);
+    highlights.clearAll();
+  });
+});
+
 describe("layer ids the renderer has no opinion about", () => {
   it("draws them exactly as asked instead of failing", () => {
     expect(highlightStyleFor("some-wave-invented-this")).toBeNull();
@@ -100,7 +138,7 @@ describe("layer ids the renderer has no opinion about", () => {
   });
 
   it("leaves the existing layers' look to their callers", () => {
-    for (const layerId of ["move", "target", "cursor", "selection", "path", "deployment"]) {
+    for (const layerId of ["move", "target", "cursor", "selection", "path"]) {
       expect(HIGHLIGHT_STYLES[layerId], layerId).toBeUndefined();
     }
   });

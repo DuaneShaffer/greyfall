@@ -87,6 +87,21 @@ describe("mechanics on a menu row", () => {
     expect(vial?.mechanics?.summary).toContain("Recovery 30");
   });
 
+  /**
+   * Re-playtest N10. `usesRemaining` is `count - 1` — what is left once this one
+   * is spent — and it was labelled "in stock", so a field kit printed
+   * "Caustic Flask x1 · 0 in stock" against its own count. The in-battle
+   * forecast already had the right words for the same figure.
+   */
+  it("labels what is left after use as what it is, not as the stock", () => {
+    const state = openBattle([rowen(), VALE], undefined, [{ itemId: "coagulant-vial", count: 1 }]).state;
+    const vial = satchelViews(state, "rowen").find((entry) => entry.itemId === "coagulant-vial");
+    expect(vial?.count).toBe(1);
+    expect(vial?.mechanics?.usesRemaining).toBe(0);
+    expect(vial?.mechanics?.summary).toContain("0 left after use");
+    expect(vial?.mechanics?.summary).not.toContain("in stock");
+  });
+
   it("gives a between-battle item the engine's default reach when it names none", () => {
     const bench = { ...BENCH, items: { ...BENCH.items } };
     const tonic = bench.items["tonic"];

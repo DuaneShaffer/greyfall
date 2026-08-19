@@ -148,7 +148,10 @@ export function mechanicsView(source: MechanicsSource, options: MechanicsOptions
     ...statuses.map((status) => `${status.name} ${status.chancePercent}%`),
     source.chargeCost > 0 ? `Charge ${source.chargeCost}` : null,
     source.castSpeed === null ? null : `Cast ${source.castSpeed}`,
-    options.usesRemaining === undefined ? null : `${options.usesRemaining} in stock`,
+    // The figure is `count - 1` — what is left once this one is spent — so the
+    // kit read "Caustic Flask x1 · 0 in stock" against itself. The in-battle
+    // forecast already had the right words for it.
+    options.usesRemaining === undefined ? null : `${options.usesRemaining} left after use`,
   ]
     .filter((part): part is string => part !== null)
     .join(" · ");

@@ -15,6 +15,18 @@
 // Everything fails loudly. A target that is not on screen throws with what WAS on
 // screen, because a probe that quietly no-ops recreates the silent-failure class
 // of bug it exists to catch.
+//
+// What it still cannot see, stated so a tester does not have to find out:
+//   - the deployment ring. `main.ts` paints it on the renderer at scene build,
+//     outside the controller's highlight bookkeeping, so an empty `highlights`
+//     is not an unlit board.
+//   - the hover diamond and its elevation badge. `act("hover", tile)` drives
+//     `controller.onTileHover`, not the renderer's pointer path, so the cursor
+//     moves in the view model without the board being repainted. Pixel questions
+//     about the cursor want a real mouse move.
+// Panel geometry is reported (`rect`, `occludedBy`) where the host has a layout
+// engine; under a DOM with no layout both are null, which is "not measured"
+// rather than "not occluded".
 
 import type { TileCoord } from "../data/index.js";
 import type { BattleHudView, HudMode, LogEntryView } from "../ui/index.js";
@@ -55,9 +67,24 @@ export interface ProbeMenuView {
   entries: ProbeMenuEntryView[];
 }
 
+/** A panel's box in viewport coordinates, when the host measures one. */
+export interface ProbeRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface ProbePanelView {
   label: string;
   lines: string[];
+  /** Null where the host has no layout engine — never "the panel has no box". */
+  rect: ProbeRect | null;
+  /**
+   * A panel painted over this one, by the name a reader would call it. The DOM
+   * says a covered card is on screen; the player cannot read it.
+   */
+  occludedBy: string | null;
 }
 
 export interface ProbeBattleView {
@@ -107,7 +134,23 @@ const isTile = (target: unknown): target is TileCoord =>
   typeof (target as TileCoord).x === "number" &&
   typeof (target as TileCoord).y === "number";
 
-/** On screen: not inside anything hidden, and not display:none itself. */
+/**
+ * The stylesheet's opinion, where the host has one. The probe used to read the
+ * inline `style` attribute only, so a rule like the HUD's responsive
+ * `display: none` on `.gf-unit-facing` was invisible to it and describe()
+ * printed a line no player could see.
+ */
+const computedOf = (node: Element): CSSStyleDeclaration | null => {
+  const view = node.ownerDocument?.defaultView ?? null;
+  if (view === null || typeof view.getComputedStyle !== "function") return null;
+  try {
+    return view.getComputedStyle(node);
+  } catch {
+    return null;
+  }
+};
+
+/** On screen: not inside anything hidden, and not hidden by any rule itself. */
 function visible(node: Element): boolean {
   let current: Element | null = node;
   while (current !== null) {
@@ -115,10 +158,31 @@ function visible(node: Element): boolean {
     if (current.hasAttribute("hidden")) return false;
     const style = (current as HTMLElement).style;
     if (style !== undefined && style.display === "none") return false;
+    const computed = computedOf(current);
+    if (computed !== null && (computed.display === "none" || computed.visibility === "hidden")) {
+      return false;
+    }
     current = current.parentElement;
   }
   return true;
 }
+
+const rectOf = (node: Element): ProbeRect | null => {
+  const box = typeof node.getBoundingClientRect === "function" ? node.getBoundingClientRect() : null;
+  if (box === null) return null;
+  // A layout engine that measures nothing reports zeroes for everything; that is
+  // "not measured", and calling it a box would make the occlusion answer a lie.
+  if (box.width === 0 && box.height === 0) return null;
+  return {
+    x: Math.round(box.left),
+    y: Math.round(box.top),
+    width: Math.round(box.width),
+    height: Math.round(box.height),
+  };
+};
+
+const overlaps = (a: ProbeRect, b: ProbeRect): boolean =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
 const trimmed = (node: Element | null): string | null => {
   if (node === null) return null;
@@ -225,14 +289,26 @@ function menuViews(root: Document | HTMLElement): ProbeMenuView[] {
 }
 
 function panelViews(root: Document | HTMLElement): ProbePanelView[] {
-  const out: ProbePanelView[] = [];
+  const found: { label: string; lines: string[]; rect: ProbeRect | null }[] = [];
   for (const panel of root.querySelectorAll("section.gf-panel")) {
     if (!(panel instanceof HTMLElement) || !visible(panel)) continue;
     const label =
       panel.getAttribute("aria-label") ?? trimmed(panel.querySelector(".gf-plate-title")) ?? panel.className;
-    out.push({ label, lines: textLines(panel) });
+    found.push({ label, lines: textLines(panel), rect: rectOf(panel) });
   }
-  return out;
+  // Panels are siblings in one overlay, so a pair whose boxes intersect is a
+  // pair the player reads one of. Which one is on top is the stylesheet's
+  // business; that they collide at all is the finding.
+  return found.map((panel, index) => ({
+    ...panel,
+    occludedBy:
+      panel.rect === null
+        ? null
+        : (found.find(
+            (other, otherIndex) =>
+              otherIndex !== index && other.rect !== null && overlaps(panel.rect!, other.rect),
+          )?.label ?? null),
+  }));
 }
 
 function noticeViews(root: Document | HTMLElement): string[] {
@@ -242,6 +318,13 @@ function noticeViews(root: Document | HTMLElement): string[] {
   if (first !== null) out.push(first);
   for (const line of root.querySelectorAll(".gf-notice-log .gf-notice-line")) {
     const text = trimmed(line);
+    if (text !== null) out.push(text);
+  }
+  // The between-battle screens raise their own strip: the purchase confirmation
+  // the roster prints is a notice on screen, and the probe reported none.
+  for (const toast of root.querySelectorAll(".gf-toast")) {
+    if (!visible(toast)) continue;
+    const text = trimmed(toast);
     if (text !== null) out.push(text);
   }
   return out;

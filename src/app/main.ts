@@ -20,6 +20,7 @@ import {
 import type { DialogueLine, Encounter, TileCoord, Unit } from "../data/index.js";
 import {
   BattleRenderer,
+  LAYER_DEPLOYMENT,
   NO_MARKS,
   attachControls,
   cameraYawIndex,
@@ -121,9 +122,9 @@ let deploymentTiles: readonly TileCoord[] = [];
 const rendererPort: RendererPort = {
   buildScene: (view) => {
     renderer.buildScene(view);
-    renderer.setHighlight("deployment", deploymentTiles, palette.highlightDeployment, {
-      opacity: 0.14,
-    });
+    // Colour, opacity and treatment are the field's for this id: the standing
+    // mark is a ring, and the caller cannot paint it as a wash.
+    renderer.setHighlight(LAYER_DEPLOYMENT, deploymentTiles, palette.highlightDeployment);
   },
   applyRenderEvents: (events) => renderer.applyRenderEvents(events),
   setHighlight: (layerId, tiles, color, options) =>
