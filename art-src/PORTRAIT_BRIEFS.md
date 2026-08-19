@@ -402,7 +402,7 @@ off. This portrait is her at the *start* of that.
 
 **Face and build.** Nineteen or twenty, and she must look it — the youngest
 face in the cast by a clear margin. House-born: fed, straight-nosed, teeth
-that were seen to. Not delicate: a soldier's neck and shoulders that a shoulder span the
+that were seen to. Not delicate: a soldier's neck and a shoulder span the
 drill built. **Auburn hair pulled back into a short tied tail at the nape,
 under her field headband** — the look her shipped sprite master wears, ruled
 canon 2026-08-18 (owner's call; supersedes the earlier short-dark-hair text and
