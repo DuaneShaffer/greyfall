@@ -356,6 +356,12 @@ export function readMatte(matte: RGBASource): MatteReading {
   return { mask: { width: matte.width, height: matte.height, bits }, white, black, impure, purity: (count - impure) / count };
 }
 
+/** How far off a ground value a pixel has to sit before it counts as painted. */
+export const PAINTED_TOLERANCE = 24;
+
+/** The matte has to contain this much of the visibly-painted figure. */
+export const MATTE_COVERAGE_BAR = 0.99;
+
 /**
  * Pixels the plate paints away from both of the character's ground values —
  * the *visibly* painted figure. This is a floor under the silhouette, never the
@@ -385,17 +391,70 @@ export function paintedSilhouette(
   return { width: image.width, height: image.height, bits };
 }
 
-export interface Agreement {
-  readonly agree: number;
-  readonly total: number;
-  readonly share: number;
+export interface MatteCoverage {
+  /** Plate pixels away from both ground values — the figure that can be seen. */
+  readonly painted: number;
+  /** …of which the matte calls figure. */
+  readonly covered: number;
+  readonly coverage: number;
+  /** Matte figure pixels. */
+  readonly figure: number;
+  /** …of which the plate paints at a ground value: legal, and invisible to the plate. */
+  readonly flat: number;
+  readonly leak: number;
 }
 
-export function maskAgreement(a: Mask, b: Mask): Agreement {
-  const total = Math.min(a.bits.length, b.bits.length);
-  let agree = 0;
-  for (let i = 0; i < total; i += 1) if (a.bits[i] === b.bits[i]) agree += 1;
-  return { agree, total, share: total === 0 ? 0 : agree / total };
+/**
+ * The one thing a 100%-opaque plate can say about a delivered matte: does the
+ * matte's figure region contain everything the plate visibly paints as figure?
+ *
+ * Coverage is gated — paint outside the matte means the matte is not this
+ * figure. Leak is reported only: it is the share of the matte that the plate
+ * paints flat at a ground value, which is a real and legal choice (rowen's coat
+ * is 58% of her matte) and is exactly why grading a matte against a
+ * ground-derived silhouette scores a correct delivery at 70%.
+ */
+export function matteCoverage(
+  image: RGBASource,
+  mask: Mask,
+  ground: { readonly upper: Hex; readonly lower: Hex },
+  tolerance = PAINTED_TOLERANCE,
+): MatteCoverage {
+  const [ur, ug, ub] = hexToRgb(ground.upper);
+  const [lr, lg, lb] = hexToRgb(ground.lower);
+  const limit = tolerance * tolerance;
+  let painted = 0;
+  let covered = 0;
+  let figure = 0;
+  let flat = 0;
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const p = at(image, x, y);
+      const r = byte(image, p);
+      const g = byte(image, p + 1);
+      const b = byte(image, p + 2);
+      const du = (r - ur) ** 2 + (g - ug) ** 2 + (b - ub) ** 2;
+      const dl = (r - lr) ** 2 + (g - lg) ** 2 + (b - lb) ** 2;
+      const visible = du > limit && dl > limit;
+      const inMatte = maskAt(mask, x, y);
+      if (visible) {
+        painted += 1;
+        if (inMatte) covered += 1;
+      }
+      if (inMatte) {
+        figure += 1;
+        if (!visible) flat += 1;
+      }
+    }
+  }
+  return {
+    painted,
+    covered,
+    coverage: painted === 0 ? 1 : covered / painted,
+    figure,
+    flat,
+    leak: figure === 0 ? 0 : flat / figure,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -404,17 +463,20 @@ export function maskAgreement(a: Mask, b: Mask): Agreement {
 
 export interface Landmarks {
   readonly crownRow: number;
-  /** Where the jaw has closed to within a fifth of the neck's width. */
+  /** Where the jaw contour hands over to the neck. */
   readonly chinRow: number;
-  /** The narrowest row below the head: the neck. */
+  /** The narrowest row between chin and shoulders: the neck. */
   readonly neckRow: number;
   readonly neckWidth: number;
-  /** Crown plus half the crown-to-chin span — the matte's only handle on the eyes. */
+  /** §4's 38% of the frame — a rule, validated against `eyeDarkRows`, not a search. */
   readonly eyeLineRow: number;
+  /** The band of rows carrying facial ink, or null on a face with none painted. */
+  readonly eyeDarkRows: readonly [number, number] | null;
+  /** Mean x of the cranium — crown to eye-line, above the jaw's turn. */
   readonly headCentreX: number;
   readonly headLeft: number;
   readonly headRight: number;
-  /** First row below the neck at twice the neck's width: the shoulders entering. */
+  /** First row the figure reaches a frame side: the shoulders entering. */
   readonly shoulderRow: number;
 }
 
@@ -430,7 +492,16 @@ const rowSpan = (mask: Mask, y: number): { readonly left: number; readonly right
   return { left, right, width: left < 0 ? 0 : right - left + 1 };
 };
 
-export function framingLandmarks(mask: Mask): Landmarks | null {
+/**
+ * The landmarks, measured the way the hand audit measures them.
+ *
+ * Crown and shoulders come off the matte; eye-line comes off §4's rule; chin and
+ * head centre come off the *paint*, because the matte cannot tell a jaw from the
+ * hair behind it. The narrowest row is a neck measure only once the chin is
+ * known — taken over the whole figure it lands in the hair, which is how the
+ * first cut of this function put rowen's chin 40 px high.
+ */
+export function framingLandmarks(mask: Mask, scan: PortraitScan): Landmarks | null {
   const widths: number[] = [];
   for (let y = 0; y < mask.height; y += 1) widths.push(rowSpan(mask, y).width);
   const crownRow = widths.findIndex((w) => w > 0);
@@ -438,26 +509,85 @@ export function framingLandmarks(mask: Mask): Landmarks | null {
   let lastRow = mask.height - 1;
   while (lastRow > crownRow && (widths[lastRow] ?? 0) === 0) lastRow -= 1;
 
-  const headBand = crownRow + Math.floor((lastRow - crownRow) * 0.5);
-  let widestRow = crownRow;
-  for (let y = crownRow; y <= headBand; y += 1) {
-    if ((widths[y] ?? 0) > (widths[widestRow] ?? 0)) widestRow = y;
+  const eyeLineRow = Math.round(EYE_LINE_SHARE * mask.height);
+
+  // The jaw contour: rightmost skin pixel per row, walked down from the eye-line.
+  // §4 fixes the three-quarter turn toward viewer-right, so the far jaw is the
+  // one that runs to the chin.
+  const skinRight: number[] = [];
+  for (let y = 0; y < mask.height; y += 1) {
+    let right = -1;
+    for (let x = mask.width - 1; x >= 0; x -= 1) {
+      if (!maskAt(mask, x, y)) continue;
+      if ((PORTRAIT_COLORS[scan.nearest[y * mask.width + x] ?? 0] ?? PORTRAIT_COLORS[0])?.[1] !== "bone") continue;
+      right = x;
+      break;
+    }
+    skinRight.push(right);
   }
-  let neckRow = widestRow;
-  for (let y = widestRow; y <= lastRow; y += 1) {
+
+  let contour = skinRight[Math.min(eyeLineRow, lastRow)] ?? -1;
+  let breakFrom = -1;
+  let chinRow = lastRow;
+  for (let y = Math.min(eyeLineRow, lastRow) + 1; y <= lastRow; y += 1) {
+    const right = skinRight[y] ?? -1;
+    if (right < 0 || contour - right > JAW_BREAK) {
+      if (breakFrom < 0) breakFrom = y;
+      if (y - breakFrom + 1 >= JAW_BREAK_RUN) {
+        chinRow = breakFrom;
+        break;
+      }
+      continue;
+    }
+    breakFrom = -1;
+    contour = right;
+  }
+
+  let neckRow = chinRow;
+  let shoulderRow = lastRow;
+  for (let y = crownRow; y <= lastRow; y += 1) {
+    const span = rowSpan(mask, y);
+    if (span.left === 0 || span.right === mask.width - 1) {
+      shoulderRow = y;
+      break;
+    }
+  }
+  for (let y = chinRow; y <= shoulderRow; y += 1) {
     if ((widths[y] ?? 0) > 0 && (widths[y] ?? 0) < (widths[neckRow] ?? 0)) neckRow = y;
   }
   const neckWidth = widths[neckRow] ?? 0;
 
-  let chinRow = neckRow;
-  for (let y = widestRow; y <= neckRow; y += 1) {
-    if ((widths[y] ?? 0) <= neckWidth * 1.2) {
-      chinRow = y;
-      break;
+  // Validation for the eye-line rule: the rows the face carries ink on.
+  const darkPerRow: number[] = [];
+  for (let y = 0; y < mask.height; y += 1) {
+    let dark = 0;
+    let left = -1;
+    for (let x = 0; x < mask.width; x += 1) {
+      if (!maskAt(mask, x, y)) continue;
+      if ((PORTRAIT_COLORS[scan.nearest[y * mask.width + x] ?? 0] ?? PORTRAIT_COLORS[0])?.[1] === "bone") {
+        if (left < 0) left = x;
+      }
     }
+    const right = skinRight[y] ?? -1;
+    if (left >= 0 && right >= left) {
+      for (let x = left; x <= right; x += 1) {
+        if (!maskAt(mask, x, y)) continue;
+        if ((scan.luma[y * mask.width + x] ?? 255) < EYE_DARK_LUMA) dark += 1;
+      }
+    }
+    darkPerRow.push(dark);
   }
-
-  const eyeLineRow = Math.round(crownRow + (chinRow - crownRow) * 0.5);
+  let peak = crownRow;
+  for (let y = crownRow; y <= chinRow; y += 1) if ((darkPerRow[y] ?? 0) > (darkPerRow[peak] ?? 0)) peak = y;
+  let eyeDarkRows: readonly [number, number] | null = null;
+  if ((darkPerRow[peak] ?? 0) > 0) {
+    const bar = (darkPerRow[peak] ?? 0) * 0.25;
+    let top = peak;
+    let bottom = peak;
+    while (top > crownRow && (darkPerRow[top - 1] ?? 0) >= bar) top -= 1;
+    while (bottom < chinRow && (darkPerRow[bottom + 1] ?? 0) >= bar) bottom += 1;
+    eyeDarkRows = [top, bottom];
+  }
 
   let sum = 0;
   let seen = 0;
@@ -468,19 +598,12 @@ export function framingLandmarks(mask: Mask): Landmarks | null {
     if (span.left < 0) continue;
     headLeft = Math.min(headLeft, span.left);
     headRight = Math.max(headRight, span.right);
+    if (y > eyeLineRow) continue;
     for (let x = span.left; x <= span.right; x += 1) {
-      if ((mask.bits[y * mask.width + x] ?? 0) === 1) {
+      if (maskAt(mask, x, y)) {
         sum += x;
         seen += 1;
       }
-    }
-  }
-
-  let shoulderRow = lastRow;
-  for (let y = neckRow; y <= lastRow; y += 1) {
-    if ((widths[y] ?? 0) >= neckWidth * 2) {
-      shoulderRow = y;
-      break;
     }
   }
 
@@ -490,45 +613,89 @@ export function framingLandmarks(mask: Mask): Landmarks | null {
     neckRow,
     neckWidth,
     eyeLineRow,
-    headCentreX: seen === 0 ? 0 : Math.round(sum / seen),
+    eyeDarkRows,
+    headCentreX: seen === 0 ? 0 : sum / seen,
     headLeft: headRight < 0 ? 0 : headLeft,
     headRight: headRight < 0 ? 0 : headRight,
     shoulderRow,
   };
 }
 
+/** The chip has to see this much of the head band it does cover. */
+export const CHIP_HEAD_SEEN_BAR = 0.98;
+
+/** The chip rect has to be at least this much figure. */
+export const CHIP_FILL_BAR = 0.5;
+
+export interface ChipSide {
+  readonly pixels: number;
+  readonly rows: number;
+  /** How far past the rect's edge the head reaches, in px. */
+  readonly depth: number;
+}
+
 export interface ChipOverflow {
   /** Share of the chip rect that is figure. An empty chip is a portrait with no chip. */
   readonly fill: number;
-  /** Head-band figure pixels outside the chip rect, by side. */
-  readonly left: number;
-  readonly right: number;
-  readonly below: number;
-  readonly above: number;
-  readonly total: number;
+  readonly left: ChipSide;
+  readonly right: ChipSide;
+  readonly above: ChipSide;
+  /** Head-band pixels in the chip's own rows, and the share of them it can see. */
+  readonly headBand: number;
+  readonly seen: number;
 }
 
-/** How much of the head the chip cannot see, per side of §4's rect. */
+/**
+ * How much of the head the chip cannot see — sideways and upward only.
+ *
+ * There is deliberately no `below`. The crop bottoms at y = 320 and the framing
+ * table puts every chin at 384–400, so *every* portrait in the set hides its
+ * chin, throat and collar from the chip by construction; counting that mass as
+ * overflow scores the spec against itself. For the same reason the side counts
+ * are taken over the chip's own rows: head below the crop is already gone and
+ * cannot spill out of a side it is not in.
+ */
 export function chipOverflow(mask: Mask, marks: Landmarks): ChipOverflow {
   const { x, y, w, h } = CHIP_RECT_MASTER;
   let inside = 0;
   for (let py = y; py < y + h; py += 1) {
     for (let px = x; px < x + w; px += 1) if (maskAt(mask, px, py)) inside += 1;
   }
-  let left = 0;
-  let right = 0;
-  let above = 0;
-  let below = 0;
-  for (let py = marks.crownRow; py <= marks.chinRow; py += 1) {
+  const side = (): { pixels: number; rows: Set<number>; edge: number } => ({ pixels: 0, rows: new Set(), edge: 0 });
+  const left = side();
+  const right = side();
+  const above = side();
+  let headBand = 0;
+  const bottom = Math.min(marks.chinRow, y + h - 1);
+  for (let py = marks.crownRow; py <= bottom; py += 1) {
     for (let px = 0; px < mask.width; px += 1) {
       if (!maskAt(mask, px, py)) continue;
-      if (py < y) above += 1;
-      else if (py >= y + h) below += 1;
-      else if (px < x) left += 1;
-      else if (px >= x + w) right += 1;
+      headBand += 1;
+      if (py < y) {
+        above.pixels += 1;
+        above.rows.add(py);
+        above.edge = Math.max(above.edge, y - py);
+      } else if (px < x) {
+        left.pixels += 1;
+        left.rows.add(py);
+        left.edge = Math.max(left.edge, x - px);
+      } else if (px >= x + w) {
+        right.pixels += 1;
+        right.rows.add(py);
+        right.edge = Math.max(right.edge, px - (x + w - 1));
+      }
     }
   }
-  return { fill: inside / (w * h), left, right, above, below, total: left + right + above + below };
+  const shape = (s: ReturnType<typeof side>): ChipSide => ({ pixels: s.pixels, rows: s.rows.size, depth: s.edge });
+  const spilled = left.pixels + right.pixels + above.pixels;
+  return {
+    fill: inside / (w * h),
+    left: shape(left),
+    right: shape(right),
+    above: shape(above),
+    headBand,
+    seen: headBand === 0 ? 0 : (headBand - spilled) / headBand,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -538,6 +705,8 @@ export function chipOverflow(mask: Mask, marks: Landmarks): ChipOverflow {
 export interface RimLightReading {
   readonly edge: number;
   readonly lit: number;
+  /** …of which are also over `RIM_LIGHT_LUMA`: the ones that are actually a rim. */
+  readonly bright: number;
   readonly share: number;
 }
 
@@ -557,12 +726,14 @@ const NEIGHBOURS: readonly (readonly [number, number])[] = [
 export function rimLight(
   image: RGBASource,
   mask: Mask,
-  options: { readonly delta?: number; readonly depth?: number } = {},
+  options: { readonly delta?: number; readonly depth?: number; readonly ceiling?: number } = {},
 ): RimLightReading {
   const delta = options.delta ?? RIM_LIGHT_DELTA;
   const depth = options.depth ?? RIM_LIGHT_DEPTH;
+  const ceiling = options.ceiling ?? RIM_LIGHT_LUMA;
   let edge = 0;
   let lit = 0;
+  let bright = 0;
   for (let y = 0; y < mask.height; y += 1) {
     for (let x = 0; x < mask.width; x += 1) {
       if (!maskAt(mask, x, y)) continue;
@@ -582,10 +753,13 @@ export function rimLight(
       const i = at(image, ix, iy);
       const edgeLuma = luma(byte(image, e), byte(image, e + 1), byte(image, e + 2));
       const inner = luma(byte(image, i), byte(image, i + 1), byte(image, i + 2));
-      if (edgeLuma - inner > delta) lit += 1;
+      if (edgeLuma - inner > delta) {
+        lit += 1;
+        if (edgeLuma > ceiling) bright += 1;
+      }
     }
   }
-  return { edge, lit, share: edge === 0 ? 0 : lit / edge };
+  return { edge, lit, bright, share: edge === 0 ? 0 : lit / edge };
 }
 
 export interface BandMean {
@@ -597,6 +771,8 @@ export interface BandMean {
 export interface GroundReading {
   readonly upper: BandMean;
   readonly lower: BandMean;
+  /** Ground pixels within neither band's tolerance — a painted or dirty ground. */
+  readonly strays: number;
 }
 
 const distanceTo = (hex: Hex, r: number, g: number, b: number): number => {
@@ -604,35 +780,53 @@ const distanceTo = (hex: Hex, r: number, g: number, b: number): number => {
   return Math.sqrt((r - tr) ** 2 + (g - tg) ** 2 + (b - tb) ** 2);
 };
 
-/** The ground is two flat values, upper over lower. Mean each half of what is not figure. */
+/**
+ * The ground is two flat values. It is *not* an upper half and a lower half:
+ * rowen's division runs down the frame, light behind the shadow side, and
+ * averaging the top 320 rows against the light value mixes both bands and
+ * reports a colour that is on neither (#222831 for a plate whose bands are
+ * exactly #2b333d and #171c22). So sort each non-figure pixel into the register
+ * value it is nearest and mean the two sets, wherever on the plate they sit.
+ */
 export function groundBands(
   image: RGBASource,
   mask: Mask,
   register: { readonly upper: Hex; readonly lower: Hex },
+  tolerance = PAINTED_TOLERANCE,
 ): GroundReading {
-  const half = Math.floor(image.height / 2);
-  const band = (from: number, to: number, want: Hex): BandMean => {
-    let r = 0;
-    let g = 0;
-    let b = 0;
-    let n = 0;
-    for (let y = from; y < to; y += 1) {
-      for (let x = 0; x < image.width; x += 1) {
-        if (maskAt(mask, x, y)) continue;
-        const p = at(image, x, y);
-        r += byte(image, p);
-        g += byte(image, p + 1);
-        b += byte(image, p + 2);
-        n += 1;
-      }
+  const sums = [
+    { r: 0, g: 0, b: 0, n: 0 },
+    { r: 0, g: 0, b: 0, n: 0 },
+  ];
+  const [ur, ug, ub] = hexToRgb(register.upper);
+  const [lr, lg, lb] = hexToRgb(register.lower);
+  let strays = 0;
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      if (maskAt(mask, x, y)) continue;
+      const p = at(image, x, y);
+      const r = byte(image, p);
+      const g = byte(image, p + 1);
+      const b = byte(image, p + 2);
+      const du = (r - ur) ** 2 + (g - ug) ** 2 + (b - ub) ** 2;
+      const dl = (r - lr) ** 2 + (g - lg) ** 2 + (b - lb) ** 2;
+      const into = sums[du <= dl ? 0 : 1] as { r: number; g: number; b: number; n: number };
+      into.r += r;
+      into.g += g;
+      into.b += b;
+      into.n += 1;
+      if (Math.min(du, dl) > tolerance * tolerance) strays += 1;
     }
-    if (n === 0) return { hex: "#000000", pixels: 0, distance: Number.POSITIVE_INFINITY };
-    const mr = r / n;
-    const mg = g / n;
-    const mb = b / n;
-    return { hex: rgbToHex(mr, mg, mb), pixels: n, distance: distanceTo(want, mr, mg, mb) };
+  }
+  const mean = (i: number, want: Hex): BandMean => {
+    const s = sums[i] as { r: number; g: number; b: number; n: number };
+    if (s.n === 0) return { hex: "#000000", pixels: 0, distance: Number.POSITIVE_INFINITY };
+    const mr = s.r / s.n;
+    const mg = s.g / s.n;
+    const mb = s.b / s.n;
+    return { hex: rgbToHex(mr, mg, mb), pixels: s.n, distance: distanceTo(want, mr, mg, mb) };
   };
-  return { upper: band(0, half, register.upper), lower: band(half, image.height, register.lower) };
+  return { upper: mean(0, register.upper), lower: mean(1, register.lower), strays };
 }
 
 // ---------------------------------------------------------------------------
@@ -696,12 +890,13 @@ export function auditPortrait(input: PortraitAuditInput): PortraitAudit {
       `${reading.impure} px neither pure white nor pure black (${pct(reading.purity)} pure), ` +
         `figure ${reading.white} px / ground ${reading.black} px`,
     );
-    const agreement = maskAgreement(reading.mask, painted);
+    const cover = matteCoverage(plate, reading.mask, register);
     add(
-      "matte agreement",
-      agreement.share >= 0.98,
-      `${pct(agreement.share)} of pixels agree with the ${want.register} ground silhouette ` +
-        `(${agreement.total - agreement.agree} px differ)`,
+      "matte coverage",
+      cover.coverage >= MATTE_COVERAGE_BAR,
+      `${pct(cover.coverage)} of the ${cover.painted} px the plate paints off the ${want.register} ground ` +
+        `are inside the matte (${cover.painted - cover.covered} px are not); leak ${pct(cover.leak)} — ` +
+        `${cover.flat} of ${cover.figure} matte px are painted at a ground value, which the plate cannot see`,
     );
   }
   const mask = reading?.mask ?? painted;
@@ -742,23 +937,29 @@ export function auditPortrait(input: PortraitAuditInput): PortraitAudit {
   const rim = rimLight(plate, mask);
   add(
     "rim light",
-    rim.lit <= RIM_LIGHT_BUDGET,
+    rim.lit <= RIM_LIGHT_BUDGET && rim.bright === 0,
     `${rim.lit} of ${rim.edge} edge px are >${RIM_LIGHT_DELTA} luma lighter than the interior ` +
-      `${RIM_LIGHT_DEPTH} px behind them (budget ${RIM_LIGHT_BUDGET})`,
+      `${RIM_LIGHT_DEPTH} px behind them (budget ${RIM_LIGHT_BUDGET}), ` +
+      `${rim.bright} of those over luma ${RIM_LIGHT_LUMA}`,
   );
 
   const blown = countOverLuma(scan, LUMA_CEILING);
-  add("luma ceiling", blown === 0, `${blown} px over luma ${LUMA_CEILING} — nothing in §2 is brighter than bone-100`);
+  add(
+    "luma ceiling",
+    blown <= LUMA_CEILING_BUDGET,
+    `${blown} px over luma ${LUMA_CEILING} (budget ${LUMA_CEILING_BUDGET}) — nothing in §2 is brighter than bone-100`,
+  );
 
   const ground = groundBands(plate, mask, register);
   add(
     "ground bands",
-    ground.upper.distance <= 24 && ground.lower.distance <= 24,
-    `${want.register}: upper ${ground.upper.hex} vs ${register.upper} (${ground.upper.distance.toFixed(1)}), ` +
-      `lower ${ground.lower.hex} vs ${register.lower} (${ground.lower.distance.toFixed(1)})`,
+    ground.upper.distance <= PAINTED_TOLERANCE && ground.lower.distance <= PAINTED_TOLERANCE,
+    `${want.register}: upper ${ground.upper.hex} vs ${register.upper} (${ground.upper.distance.toFixed(1)}, ` +
+      `${ground.upper.pixels} px), lower ${ground.lower.hex} vs ${register.lower} ` +
+      `(${ground.lower.distance.toFixed(1)}, ${ground.lower.pixels} px), ${ground.strays} px off both bands`,
   );
 
-  const marks = framingLandmarks(mask);
+  const marks = framingLandmarks(mask, scan);
   if (marks === null) {
     add("framing", false, "no figure found in the silhouette");
     return { portraitId, checks, ok: false, landmarks: null };
@@ -771,18 +972,25 @@ export function auditPortrait(input: PortraitAuditInput): PortraitAudit {
       inRange(marks.headCentreX, FRAMING.headCentreX) &&
       inRange(marks.shoulderRow, FRAMING.shoulder),
     `crown y=${marks.crownRow} [${FRAMING.crown.join("-")}], eye-line y=${marks.eyeLineRow} ` +
-      `[${FRAMING.eyeLine.join("-")}], chin y=${marks.chinRow} [${FRAMING.chin.join("-")}], ` +
-      `neck narrowest y=${marks.neckRow} (${marks.neckWidth} px), head centre x=${marks.headCentreX} ` +
-      `[${FRAMING.headCentreX.join("-")}], shoulders y=${marks.shoulderRow} [${FRAMING.shoulder.join("-")}]`,
+      `[${FRAMING.eyeLine.join("-")}] (§4's ${(EYE_LINE_SHARE * 100).toFixed(0)}%, ` +
+      `${marks.eyeDarkRows === null ? "no facial ink to check it against" : `facial ink y=${marks.eyeDarkRows[0]}-${marks.eyeDarkRows[1]}`}), ` +
+      `chin y=${marks.chinRow} [${FRAMING.chin.join("-")}] on the jaw contour, head centre ` +
+      `x=${marks.headCentreX.toFixed(1)} [${FRAMING.headCentreX.join("-")}], shoulders reach the frame side ` +
+      `y=${marks.shoulderRow} [${FRAMING.shoulder.join("-")}]\n` +
+      `      narrowest row y=${marks.neckRow} (${marks.neckWidth} px, the neck) — reported, not gated`,
   );
 
   const overflow = chipOverflow(mask, marks);
+  const spill = (name: string, side: ChipSide): string =>
+    `${name} ${side.pixels} px over ${side.rows} rows (${side.depth} px past the edge)`;
   add(
     "chip rect",
-    overflow.left === 0 && overflow.right === 0 && overflow.fill >= 0.5,
+    overflow.above.pixels === 0 && overflow.seen >= CHIP_HEAD_SEEN_BAR && overflow.fill >= CHIP_FILL_BAR,
     `(${CHIP_RECT_MASTER.x}, ${CHIP_RECT_MASTER.y}, ${CHIP_RECT_MASTER.w}, ${CHIP_RECT_MASTER.h}) is ` +
-      `${pct(overflow.fill)} figure; head px outside it — left ${overflow.left}, right ${overflow.right}, ` +
-      `above ${overflow.above}, below ${overflow.below}`,
+      `${pct(overflow.fill)} figure and sees ${pct(overflow.seen)} of the head band it covers; ` +
+      `${spill("left", overflow.left)}, ${spill("right", overflow.right)}, ${spill("above", overflow.above)}\n` +
+      `      nothing below is counted — the crop bottoms at y=${CHIP_RECT_MASTER.y + CHIP_RECT_MASTER.h} and ` +
+      `every chin in the framing table sits under it`,
   );
 
   if (palette !== undefined) {

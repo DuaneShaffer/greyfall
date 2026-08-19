@@ -242,7 +242,10 @@ describe("the Operate cursor forecasts what it would do", () => {
     h.controller.intents.previewOperable(HAND, "west-main");
 
     expect(lastView(h)?.forecast?.abilityName).toBe("Operate — west-main");
-    expect(lastView(h)?.forecast?.effects).toEqual(["5 machines come back up"]);
+    expect(lastView(h)?.forecast?.effects).toEqual([
+      "5 machines come back up",
+      "lift-deck's deck comes up — 1 tile at height 2",
+    ]);
     expect(h.renderer.highlights.get("grid-flip")).toHaveLength(5);
   });
 

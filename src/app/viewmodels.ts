@@ -35,6 +35,7 @@ import {
   itemIdFromAbilityId,
   objectEnergized,
   objectGridRole,
+  gridFlipPreview,
   objectOperationPreview,
   powerRegister,
   standHeight,
@@ -519,7 +520,10 @@ export function forecastView(
     ...(itemId === null ? {} : { item: { itemId, remaining: itemRemaining(state, unitId, itemId) } }),
     targets,
     area: { tiles: area.length, coversAimedTarget },
-    effects: outcomeLines(state, abilityOutcomes(state, unitId, abilityId)),
+    effects: [
+      ...outcomeLines(state, abilityOutcomes(state, unitId, abilityId)),
+      ...gridFlipLines(state, gridFlipPreview(state, unitId, abilityId, target)),
+    ],
     aimedAt: uiTarget(target),
   };
 }
@@ -531,6 +535,49 @@ const machineList = (names: readonly string[]): string =>
 /** One machine takes the singular; two names and a count both take the plural. */
 const machinePhrase = (names: readonly string[], singular: string, plural: string): string =>
   `${machineList(names)} ${names.length === 1 ? singular : plural}`;
+
+const tileCount = (tiles: number): string => `${tiles} tile${tiles === 1 ? "" : "s"}`;
+
+/**
+ * A lift or catwalk that loses its power stops being ground, and one that comes
+ * back up puts ground back — a pathing, reach and sight-line change the power
+ * sentence does not contain. `objectEnergized` is read against the state before
+ * the flip, so an energized node here is one that is about to go dark.
+ */
+function surfaceLines(state: GameState, flipped: readonly string[]): string[] {
+  const lines: string[] = [];
+  for (const objectId of flipped) {
+    const object = getObject(state, objectId);
+    const surface = object?.def.surfaceHeight;
+    if (object === null || surface === undefined) continue;
+    const covered = tileCount(object.def.tiles.length);
+    lines.push(
+      objectEnergized(state, objectId)
+        ? `${object.def.name}'s deck drops away — ${covered} back to the ground`
+        : `${object.def.name}'s deck comes up — ${covered} at height ${surface}`,
+    );
+  }
+  return lines;
+}
+
+/**
+ * What a set of flipped grid nodes does, in the words the log and the register
+ * use for the same event. Every order that moves the grid reads this: Operate
+ * had it and the aimed orders did not, so `Throw the Breaker` re-powered a lift
+ * and raised its deck two strata under a forecast that said "Power switched".
+ */
+function gridFlipLines(state: GameState, flipped: readonly string[]): string[] {
+  const lost: string[] = [];
+  const gained: string[] = [];
+  for (const objectId of flipped) {
+    const name = getObject(state, objectId)?.def.name ?? objectId;
+    (objectEnergized(state, objectId) ? lost : gained).push(name);
+  }
+  const lines: string[] = [];
+  if (lost.length > 0) lines.push(machinePhrase(lost, "loses power", "lose power"));
+  if (gained.length > 0) lines.push(machinePhrase(gained, "comes back up", "come back up"));
+  return [...lines, ...surfaceLines(state, flipped)];
+}
 
 /**
  * What working this machine's controls would do to the grid, per the real
@@ -547,15 +594,7 @@ export function operateForecastView(
   const object = getObject(state, objectId);
   if (actor === null || object === null || object.def.operable === null) return null;
 
-  const lost: string[] = [];
-  const gained: string[] = [];
-  for (const flipped of objectOperationPreview(state, unitId, objectId)) {
-    const name = getObject(state, flipped)?.def.name ?? flipped;
-    (objectEnergized(state, flipped) ? lost : gained).push(name);
-  }
-  const effects: string[] = [];
-  if (lost.length > 0) effects.push(machinePhrase(lost, "loses power", "lose power"));
-  if (gained.length > 0) effects.push(machinePhrase(gained, "comes back up", "come back up"));
+  const effects = gridFlipLines(state, objectOperationPreview(state, unitId, objectId));
   // Most maps declare no grid at all, so the old wording promised a grid the
   // player could not see and reported honestly about nothing.
   if (effects.length === 0) effects.push("No powered machines affected");

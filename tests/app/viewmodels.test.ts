@@ -270,3 +270,52 @@ describe("the acting unit is always the hud's subject", () => {
     expect(battleHudView(state)?.action.unit.id).toBe(activeUnit(state)?.id);
   });
 });
+
+/**
+ * Re-playtest N2. `Operate` named its flip and the aimed grid orders did not:
+ * Throw the Breaker forecast "Power switched", then re-powered the Freight Lift
+ * and put a deck back two strata up — a pathing, reach and sight-line change
+ * nothing on screen had mentioned. Same map, same order, same lift.
+ */
+describe("an aimed grid order names what it flips", () => {
+  const CONDUIT: Unit = { ...VALE, learnedAbilityIds: ["throw-the-breaker", "overload-cell"] };
+  const LIFT = "freight-lift";
+
+  const yard = (): GameState => {
+    const start = openBattle([rowen(), CONDUIT], [
+      { unitId: "rowen", position: { x: 0, y: 4 }, facing: "north" },
+      { unitId: "vale", position: { x: 3, y: 5 }, facing: "north" },
+    ]);
+    return advanceTo(start.state, "vale");
+  };
+
+  const breakerEffects = (state: GameState): string[] =>
+    forecastView(state, "vale", "throw-the-breaker", { kind: "object", objectId: LIFT })?.effects ??
+    [];
+
+  it("names the machine it takes dark, and the deck that goes with it", () => {
+    const effects = breakerEffects(yard());
+    expect(effects).toContain("Freight Lift loses power");
+    expect(effects).toContain("Freight Lift's deck drops away — 1 tile back to the ground");
+  });
+
+  it("names the machine it brings back up, and how high the deck returns", () => {
+    const dark = applyCommand(yard(), {
+      kind: "act",
+      unitId: "vale",
+      abilityId: "throw-the-breaker",
+      target: { kind: "object", objectId: LIFT },
+    });
+    expect(dark.error).toBeNull();
+    const effects = breakerEffects(advanceTo(dark.state, "vale"));
+    expect(effects).toContain("Freight Lift comes back up");
+    expect(effects).toContain("Freight Lift's deck comes up — 1 tile at height 2");
+  });
+
+  it("says nothing about a deck for an order that moves no grid", () => {
+    const effects =
+      forecastView(yard(), "vale", "overload-cell", { kind: "object", objectId: "yard-cell" })
+        ?.effects ?? [];
+    expect(effects.some((line) => line.includes("deck"))).toBe(false);
+  });
+});

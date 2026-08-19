@@ -214,7 +214,10 @@ describe("intent to command translation", () => {
     h.controller.intents.previewOperable("rowen", "yard-switch");
 
     expect(h.ui.latest()?.forecast?.abilityName).toBe("Operate — Signal Switch");
-    expect(h.ui.latest()?.forecast?.effects).toEqual(["Freight Lift loses power"]);
+    expect(h.ui.latest()?.forecast?.effects).toEqual([
+      "Freight Lift loses power",
+      "Freight Lift's deck drops away — 1 tile back to the ground",
+    ]);
     expect(h.renderer.highlights.get("grid-flip")).toEqual([{ x: 5, y: 4 }]);
   });
 
