@@ -102,3 +102,18 @@ export const faceShade = (face: ObjectFaceId, runAxis: "x" | "z"): number => {
   const normalAxis = face === "end" ? runAxis : runAxis === "x" ? "z" : "x";
   return normalAxis === "z" ? FACE_SHADE.sideNorthSouth : FACE_SHADE.sideEastWest;
 };
+
+/**
+ * Turn one box's top cell end-for-end along the run, so a break painted with a
+ * near-symmetric parting can be laid mirrored at the far end of a cut run.
+ *
+ * Only `v` is mirrored. `u` runs across the run and a trough's filament sits half
+ * a texel off centre — column 16 of 32 — so mirroring `u` would move it. The top
+ * is `BoxGeometry`'s third face and three lays four vertices per face in the slot
+ * order above, which puts its UVs at 8..11.
+ */
+export const flipTopCell = (geometry: THREE.BufferGeometry): void => {
+  const uv = geometry.getAttribute("uv");
+  for (let vertex = 8; vertex < 12; vertex += 1) uv.setY(vertex, 1 - uv.getY(vertex));
+  uv.needsUpdate = true;
+};
