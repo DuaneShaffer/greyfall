@@ -6,7 +6,9 @@ Nothing below was fixed by hand; where the delivery diverges from its brief, the
 divergence is written down and the art ships as drawn.
 
 Part A is the six field sprites (§1–§5). Part B is the Wave 1 terrain texture set
-(§B.1–§B.5). Part C is the Wave 1 map objects (§C.1–§C.5).
+(§B.1–§B.5). Part C is the Wave 1 map objects (§C.1–§C.5), and Part D the three
+sheets that followed them (§D.1–§D.5). Part E is the painted portraits
+(§E.1–§E.3), and it is the one part with no numbers in it yet.
 
 # Part A — field sprites
 
@@ -916,3 +918,107 @@ needed: give the `sink` nodes the `spriteId` their art was drawn for. Until then
 the hoist's three faces are committed, audited and unused, and
 `tests/content.test.ts` will hold whichever objects take them to the `sink` role,
 the 1 × 2 footprint and the operable flag.
+
+---
+
+# Part E — the painted portraits
+
+The brief is `art-src/PORTRAIT_BRIEFS.md`; the binding spec is `ART_DIRECTION`
+§4 (the register decision, the crop, the chip) and §2 (palette). Thirteen faces,
+delivered one character per file at **512 × 640** — the 4× master of the
+in-game 128 × 160 — plus two optional companions per character: `<id>-matte.png`
+(the figure solid white on solid black, hard-edged) and `<id>-palette.png` (a
+strip of solid swatches of the colours actually used).
+
+**Nothing has been delivered.** Neither `art-src/portraits/` nor the shipped
+`art/portraits/` exists yet, so every slot falls back to the monogram record card
+(UI_DESIGN §9) and §E.3's table has no rows. The tool and this part are here first on purpose:
+the acceptance numbers were argued in the brief and they should be measurable
+before the first master arrives, not after.
+
+Regenerate the numbers with:
+
+```
+npx tsx tools/ingest-portrait.ts rowen                 # art-src/portraits/rowen.png
+npx tsx tools/ingest-portrait.ts --all                 # every id the briefs list
+npx tsx tools/ingest-portrait.ts path/to/plate.png     # any file, id from its name
+```
+
+The matte and the palette strip are picked up automatically from `<id>-matte.png`
+and `<id>-palette.png` beside the plate; the checks that need them are skipped
+when they are absent. The tool exits non-zero if any portrait is rejected, and
+it **writes nothing** — there is no `src/art/masters/portraits.ts` and there
+will not be one. Portraits do not take the sprite path: `fitMasterToCanvas`
+stands a figure on a feet anchor and `auditGrid` wants a closed outline and a
+sub-floor band, and a bust has none of those, while `quantizeToPalette` is wrong
+here by design because §4 makes portrait colour hue-anchored rather than
+index-locked. What ships is the delivered PNG, globbed by
+`src/app/portraitArt.ts`.
+
+`tests/art/ingest.portrait.test.ts` runs the whole battery against a synthetic
+bust it paints itself — a rect figure standing on the framing table's own
+landmarks — and proves each check both passes on a clean fixture and fails on
+one deliberate defect at a time. That is what makes the battery below a
+measurement rather than a claim, in the absence of any art to measure.
+
+## E.1 The battery, in the order it prints
+
+| Check | What it measures | Bar |
+|---|---|---|
+| `dimensions` | plate size against the 4× master | exactly 512 × 640 |
+| `alpha` | non-opaque pixels, minimum alpha | 0 — the ground is painted, full bleed, and the chip is cut out of the middle of a head |
+| `matte purity` | matte pixels that are neither pure white nor pure black | 0 — hard-edged, no anti-aliasing |
+| `matte agreement` | matte silhouette against the silhouette derived from the character's ground register | ≥ 98% of pixels agree |
+| `ramp conformance` | distance from every pixel to the nearest allowed §2 step, banded ≤8 / ≤16 / ≤24 / ≤32 / ≤48 / beyond, plus the nearest-family split | nothing beyond 48; hue-anchored, never snapped |
+| `flux ramp` | pixels nearest the amber ramp | 0 for the eight the amber table grants none; ≤ 3% of the plate for Vale, Ivo, Orin, Nessa and Quill |
+| `brightblood` | pixels nearest `#ff9db1` | 0 for everyone but Orin and Maren, and **present** for those two |
+| `copper-500` | pixels nearest `#a5622f` | reported, not gated — it is the one value the briefs name by hand (Della's goggle rim) |
+| `rim light` | silhouette edge pixels more than 15 luma lighter than the interior 3 px behind them | ≤ 170. §4 forbids rim light; a painted hard edge crosses this a few dozen times, a lit contour crosses it everywhere |
+| `luma ceiling` | pixels over luma 201 | 0 — nothing in §2 is brighter than `bone-100` at 201.5 |
+| `ground bands` | mean of the non-figure pixels in each half of the plate, against the character's register | within 24 of `#2b333d` over `#171c22` (the Works), `#4a545f` over `#2b333d` (the Rise), `#0b0d10` over `#171c22` (the Underveins) |
+| `framing` | crown row, eye-line estimate, chin row, narrowest neck row, head centre x, shoulder row — all off the silhouette | the framing table: crown 90–110, eye-line 243 ± 6, chin 384–400, centre 256 ± 24, shoulders 490–520 |
+| `chip rect` | head-band pixels outside §4's (128, 64, 256, 256), by side, and how much of the rect is figure | no spill left or right, and the rect at least half figure |
+| `palette strip` | the delivered swatches through the same conformance histogram | nothing beyond 48 |
+
+Two of those are worth a sentence, because they are the ones a reader will
+doubt.
+
+**The eye-line is an estimate and says so.** A matte has no eyes. What it has is
+a crown and a chin, and the eye-line sits at half that span — which the framing
+table's own numbers agree with: crown 100 and chin 385 put the estimate on
+y = 243, exactly where §4 asks. It is a framing check, not a face check; the face
+is the human gate's business.
+
+**The chip rect check is the one the briefs were rewritten for.** The crop
+bottoms at y = 320 and the chin is at y = 384–400, so the chip never sees a
+chin, a throat or a collar. `below` is therefore expected to be large and is
+reported rather than gated; what is gated is spill to the *sides*, where the
+head leaving the crop means the chip loses face rather than jaw.
+
+## E.2 What the tool deliberately does not check
+
+- **Whether it is the right person.** Likeness, age, expression and the line
+  test are the human gate (`PORTRAIT_BRIEFS` "Acceptance"), and no number
+  reaches them. The chip test in particular — crop to 32 × 32 and see whether
+  you can tell who it is — is a judgement the anchor either survives or does
+  not.
+- **One key light.** The shadow being a single connected hard-edged mass falling
+  the same way across thirteen plates is a look, and the check for it is laying
+  them out and covering the faces.
+- **The clipped corner.** The UI eats a diagonal off the top-right; that nothing
+  identifying is painted there is a composition note, not a measurement.
+- **Anything downstream.** The 2× shipped texture and the 32 × 32 chip are
+  derivations the UI makes in CSS out of the one delivered plate. Nobody paints
+  them and nothing here stores them.
+
+## E.3 Verdicts against the brief
+
+Empty, and honestly so. **The table fills at the first portrait merge** — one
+row per `portraitId`, in the wave order the briefs set, carrying the framing
+landmarks, the conformance bands, the flux and brightblood counts, the rim-light
+measure and a verdict in Part A's vocabulary (*Ship*, *Ship, minor*, *Ship,
+regenerate*, *Reject*).
+
+| `portraitId` | Framing (crown / eye / chin / centre) | Ramp conformance | Flux / brightblood | Rim light | Chip rect | Verdict |
+|---|---|---|---|---|---|---|
+| — | — | — | — | — | — | *nothing delivered* |
