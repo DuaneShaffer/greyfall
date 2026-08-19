@@ -3594,6 +3594,8 @@
   .gf-root.is-overlay .gf-turn-order {
     transition: none;
   }
+}
+
 /* ================================================== the record, and the queue */
 /* The blind-playtest pass: a durable combat log in the bottom-left, one NEXT in
    the queue, a faction rail on every queue row, and a band that says a
