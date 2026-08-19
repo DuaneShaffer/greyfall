@@ -172,6 +172,7 @@ describe("kinds that outrank their role", () => {
 // nothing at all.
 describe("spriteId with delivered art", () => {
   const MAIN = { spriteId: "flux-main", gridRole: "source" as const };
+  const TROUGH = { spriteId: "cable-trough", gridRole: "line" as const };
 
   const layersOf = (which: number): THREE.Layers => {
     const layers = new THREE.Layers();
@@ -316,10 +317,10 @@ describe("spriteId with delivered art", () => {
   it("wears the cut's own painting rather than a fade over the delivered one", () => {
     // The trough is the object whose brief ships a severed face: a cut reads as
     // absent material, which is a painting and not a darker version of one.
-    const TROUGH = { spriteId: "cable-trough", gridRole: "line" as const };
     const cut = built({ ...TROUGH, severed: true });
     const whole = built(TROUGH);
 
+    // RUN_Z is two tiles, so both of them are ends and both are parted.
     expect(paintOf(cut).map((m) => m.map)).toEqual(
       BOX_FACE_SLOTS.map((face) => objectFaceTexture("cable-trough", face, "severed")),
     );
@@ -331,11 +332,147 @@ describe("spriteId with delivered art", () => {
     expect(cut.group.scale.z).toBeLessThan(whole.group.scale.z);
     expect(cut.group.rotation.y).not.toBe(whole.group.rotation.y);
 
-    // A wreck is a wreck: destruction outranks the cut it was cut with.
+    // A wreck is a wreck: destruction outranks the cut it was cut with. The
+    // anchor tile is back under its gland box, because only the cut moves it.
     cut.setDestroyed(true);
     expect(paintOf(cut).map((m) => m.map)).toEqual(
-      BOX_FACE_SLOTS.map((face) => objectFaceTexture("cable-trough", face, "destroyed")),
+      ["long", "long", "cap", "cap", "end", "end"].map((face) =>
+        objectFaceTexture("cable-trough", face as "long" | "end" | "cap", "destroyed"),
+      ),
     );
+  });
+
+  // A run's registered footprint is one tile of it (`tilesAlongRun`), so its top
+  // is laid tile by tile: one stretched clamp puts the gland box nowhere and the
+  // break painting across the whole run, and neither is where they belong.
+  describe("a run laid tile by tile", () => {
+    /** Four tiles running north-south, declared head to tail. */
+    const RUN_4 = [
+      { x: 2, y: 1 },
+      { x: 2, y: 2 },
+      { x: 2, y: 3 },
+      { x: 2, y: 4 },
+    ];
+
+    /** A run offsets its tiles on one axis only, so the sum is that axis. */
+    const alongRun = (mesh: THREE.Mesh): number => mesh.position.x + mesh.position.z;
+
+    const runBoxes = (visual: ObjectVisual): THREE.Mesh[] =>
+      meshes(visual)
+        .filter((mesh) => mesh.layers.test(BASE_ONLY))
+        .sort((a, b) => alongRun(a) - alongRun(b));
+
+    /** The top cell each tile of the run wears, head to tail. */
+    const runTops = (visual: ObjectVisual): (THREE.Texture | null)[] =>
+      runBoxes(visual).map(
+        (mesh) => (mesh.material as unknown as THREE.MeshLambertMaterial[])[2]?.map ?? null,
+      );
+
+    const cell = (face: "top" | "cap", state: "powered" | "unpowered" | "severed" | "destroyed") =>
+      objectFaceTexture("cable-trough", face, state);
+
+    /** The top face's four UVs, which is where a turned cell shows. */
+    const topV = (mesh: THREE.Mesh): number[] =>
+      [8, 9, 10, 11].map((vertex) => mesh.geometry.getAttribute("uv").getY(vertex));
+
+    it("gives a run one box per tile instead of one stretched over the whole of it", () => {
+      const visual = built({ ...TROUGH, tiles: RUN_4 });
+      // A body and a halo key per tile, and the run still measures the footprint.
+      expect(meshes(visual)).toHaveLength(8);
+      const box3 = size(visual);
+      expect(box3.z).toBeCloseTo(4, 5);
+      expect(box3.x).toBeCloseTo(1, 5);
+      expect(box3.y).toBeCloseTo(OBJECT_ART["cable-trough"].heightUnits, 5);
+    });
+
+    it("lands the gland box on one tile of a live run and plain channel on the rest", () => {
+      expect(runTops(built({ ...TROUGH, tiles: RUN_4 }))).toEqual([
+        cell("cap", "powered"),
+        cell("top", "powered"),
+        cell("top", "powered"),
+        cell("top", "powered"),
+      ]);
+    });
+
+    it("anchors the gland box on the map's first declared tile, not on the run's head", () => {
+      // The registry names no anchor, so declaring a run from its gland end is
+      // what puts the box there — here that is the third tile along.
+      const declared = [RUN_4[2], RUN_4[0], RUN_4[1], RUN_4[3]] as typeof RUN_4;
+      expect(runTops(built({ ...TROUGH, tiles: declared }))).toEqual([
+        cell("top", "powered"),
+        cell("top", "powered"),
+        cell("cap", "powered"),
+        cell("top", "powered"),
+      ]);
+    });
+
+    it("takes the whole run dark when it is merely unpowered, gland box included", () => {
+      expect(runTops(built({ ...TROUGH, tiles: RUN_4, powered: false }))).toEqual([
+        cell("cap", "unpowered"),
+        cell("top", "unpowered"),
+        cell("top", "unpowered"),
+        cell("top", "unpowered"),
+      ]);
+    });
+
+    it("breaks the tiles the gap opens beside and kills the run between them", () => {
+      // The cut anchors the gland box on a middle tile, so both halves of the
+      // rule show at once: torn at the parted ends, dead — and still a gland
+      // box — everywhere the cut did not land.
+      const declared = [RUN_4[1], RUN_4[0], RUN_4[2], RUN_4[3]] as typeof RUN_4;
+      expect(runTops(built({ ...TROUGH, tiles: declared, severed: true }))).toEqual([
+        cell("top", "severed"),
+        cell("cap", "unpowered"),
+        cell("top", "unpowered"),
+        cell("top", "severed"),
+      ]);
+      // Absent material outranks the cover plate on a parted tile.
+      expect(runTops(built({ ...TROUGH, tiles: RUN_4, severed: true }))).toEqual([
+        cell("top", "severed"),
+        cell("top", "unpowered"),
+        cell("top", "unpowered"),
+        cell("top", "severed"),
+      ]);
+    });
+
+    it("turns the tail's break end-for-end so the two torn ends mirror each other", () => {
+      const visual = built({ ...TROUGH, tiles: RUN_4, severed: true });
+      const boxes = runBoxes(visual);
+      const head = boxes[0] as THREE.Mesh;
+      const tail = boxes[3] as THREE.Mesh;
+      expect(topV(tail)).toEqual(topV(head).map((v) => 1 - v));
+      // A splice puts it back: the run lies the same way again once it is whole.
+      visual.setSevered(false);
+      expect(topV(tail)).toEqual(topV(head));
+    });
+
+    it("lays an east-west run the same way, a tile at a time", () => {
+      const RUN_X = [
+        { x: 1, y: 4 },
+        { x: 2, y: 4 },
+        { x: 3, y: 4 },
+      ];
+      expect(size(built({ ...TROUGH, tiles: RUN_X })).x).toBeCloseTo(3, 5);
+      const cut = built({ ...TROUGH, tiles: RUN_X, severed: true });
+      // The tiles are strung out on x, and the ends of that string are the ends.
+      expect(runBoxes(cut).map((mesh) => mesh.position.z)).toEqual([0, 0, 0]);
+      expect(runTops(cut)).toEqual([
+        cell("top", "severed"),
+        cell("top", "unpowered"),
+        cell("top", "severed"),
+      ]);
+    });
+
+    it("still lets destruction outrank the cut, on every tile of the run", () => {
+      const visual = built({ ...TROUGH, tiles: RUN_4, severed: true });
+      visual.setDestroyed(true);
+      expect(runTops(visual)).toEqual([
+        cell("cap", "destroyed"),
+        cell("top", "destroyed"),
+        cell("top", "destroyed"),
+        cell("top", "destroyed"),
+      ]);
+    });
   });
 
   it("leaves every spriteId without art on the primitive it already had", () => {

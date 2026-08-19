@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { objectArtFor, type ObjectArtSpec, type ObjectFaceId, type ObjectFaceState } from "../art/objects.js";
+import type { TileCoord } from "../data/schemas/common.js";
 import type { GameMap, GridRole, MapObjectKind } from "../data/schemas/map.js";
 import { HEIGHT_STEP, TILE_SIZE, tileCenter, tileHeight } from "./board.js";
 import { markBloomEligible, markBloomOnly } from "./layers.js";
@@ -7,6 +8,7 @@ import {
   BOX_FACE_SLOTS,
   boxYaw,
   faceShade,
+  flipTopCell,
   objectCarrierTexture,
   objectFaceTexture,
 } from "./objectTextures.js";
@@ -41,6 +43,62 @@ const KIND_OVER_ROLE: ReadonlySet<MapObjectKind> = new Set<MapObjectKind>([
   "catwalk",
   "turret",
 ]);
+
+/**
+ * The tile of a run the gland box lands on, as an index into the map's declared
+ * tile list. The art registry names no anchor — `cable-trough/cap` "drops onto
+ * any tile of a run" — so the declared order is the only stable handle its author
+ * has, and writing a run from its gland end is what puts the box there.
+ */
+const CAP_TILE = 0;
+
+/** One tile of a run, and where it sits in the run rather than in the map. */
+interface RunTile {
+  /** Index in the map's declared tile list — what anchors the gland box. */
+  readonly declared: number;
+  /** Position along the run, 0 at the head. */
+  readonly rank: number;
+  readonly count: number;
+  /** This tile's own box, so its top cell can be turned without turning the run. */
+  readonly geometry: THREE.BufferGeometry;
+  flipped: boolean;
+}
+
+/** A painting to lay in one material slot: which face, in which state, which way. */
+interface Cell {
+  readonly face: ObjectFaceId;
+  readonly state: ObjectFaceState;
+  readonly flipped: boolean;
+}
+
+/**
+ * Which top cell one tile of a run wears. `SEVERED_GAP` opens at both ends of a
+ * cut run, so the end tiles are the parted ones and wear the delivered break —
+ * absent material outranks the cover plate, so a cut end shows the tear and not
+ * the gland box — and everything between them is the dead run the unpowered
+ * substitution already draws. The tail's cell is turned end-for-end so the two
+ * torn ends mirror each other about the cut instead of pointing the same way.
+ */
+const runTopCell = (tile: RunTile, state: ObjectFaceState): Cell => {
+  if (state === "severed" && (tile.rank === 0 || tile.rank === tile.count - 1)) {
+    return { face: "top", state, flipped: tile.count > 1 && tile.rank === tile.count - 1 };
+  }
+  return {
+    face: tile.declared === CAP_TILE ? "cap" : "top",
+    // A run that is merely dark keeps its gland box, in the dead paint §6 gives it.
+    state: state === "severed" ? "unpowered" : state,
+    flipped: false,
+  };
+};
+
+/** One material slot of a painted object, with the halo key that shadows it. */
+interface PaintedSlot {
+  readonly material: THREE.MeshLambertMaterial;
+  readonly halo: THREE.MeshBasicMaterial;
+  /** The face this slot wears where it wears one; a run top is planned per state. */
+  readonly face: ObjectFaceId;
+  readonly runTile: RunTile | null;
+}
 
 interface Footprint {
   center: THREE.Vector3;
@@ -91,14 +149,13 @@ export class ObjectVisual {
   private readonly seamMaterials = new Set<THREE.MeshLambertMaterial>();
   private readonly baseColors = new Map<THREE.MeshLambertMaterial, number>();
   /**
-   * The painted faces, when this object's `spriteId` has delivered art: which
-   * face each material carries, so a state change re-points the maps instead of
-   * repainting a colour. Empty on every object still drawn as a primitive.
+   * The painted slots, when this object's `spriteId` has delivered art: what each
+   * material carries, so a state change re-points the maps instead of repainting a
+   * colour. Empty on every object still drawn as a primitive.
    */
-  private readonly paintedBody: { material: THREE.MeshLambertMaterial; face: ObjectFaceId }[] = [];
+  private readonly painted: PaintedSlot[] = [];
   /** The same materials as a set, for the colour passes that must not touch them. */
   private readonly paintedMaterials = new Set<THREE.MeshLambertMaterial>();
-  private readonly paintedHalo: { material: THREE.MeshBasicMaterial; face: ObjectFaceId }[] = [];
   private paintedArt: ObjectArtSpec | null = null;
   private paintedState: ObjectFaceState | null = null;
   private readonly baseY: number;
@@ -118,7 +175,7 @@ export class ObjectVisual {
     this.runAxis = footprint.spanX >= footprint.spanZ ? "x" : "z";
     this.group.position.copy(footprint.center);
     this.glowPhase = (view.id.length % 7) * 0.5;
-    this.build(view, footprint);
+    this.build(map, view, footprint);
     this.setPowered(view.powered);
     this.setDestroyed(view.destroyed);
     this.setSevered(view.severed);
@@ -249,7 +306,7 @@ export class ObjectVisual {
     // §6's 2-frame pulse, on the painted carrier's own light rather than on the
     // whole face: the seam is what breathes, and on a painted box the seam is a
     // mask over the frame, not a mesh beside it.
-    for (const { material } of this.paintedBody) {
+    for (const { material } of this.painted) {
       if (material.emissiveMap !== null) material.emissiveIntensity = pulse;
     }
   }
@@ -257,7 +314,7 @@ export class ObjectVisual {
   dispose(): void {
     for (const geometry of this.geometries) geometry.dispose();
     for (const material of this.materials) material.dispose();
-    for (const { material } of this.paintedHalo) material.dispose();
+    for (const { halo } of this.painted) halo.dispose();
   }
 
   private mat(color: number, options?: { powered?: boolean; emissive?: number }): THREE.MeshLambertMaterial {
@@ -304,13 +361,13 @@ export class ObjectVisual {
     return this.runAxis === "x" ? [along, y, across] : [across, y, along];
   }
 
-  private build(view: MapObjectView, footprint: Footprint): void {
+  private build(map: GameMap, view: MapObjectView, footprint: Footprint): void {
     // The map author's word for what a thing *is* outranks both the grid role and
     // the kind, but only where it has been answered with paint. Everything else
     // falls through to the primitive it already had.
     const art = objectArtFor(view.spriteId);
     if (art !== null) {
-      this.buildPainted(art, footprint);
+      this.buildPainted(map, art, footprint);
       return;
     }
     if (view.gridRole !== null && !KIND_OVER_ROLE.has(view.kind)) {
@@ -444,56 +501,107 @@ export class ObjectVisual {
 
   /**
    * A delivered object, wearing its painted faces on the primitive massing the
-   * placeholder already stood at: one box on the map's footprint, the brief's
-   * height, and a face texture per side.
+   * placeholder already stood at: the brief's height, the map's footprint, and a
+   * face texture per side. What that footprint is made of is the registry's word:
+   * an object painted for its whole footprint is one box, and a run — whose
+   * registered footprint is one tile of it — is a box per tile.
    *
-   * Two meshes over one geometry. The first is the object as the player sees it:
-   * three `MeshLambertMaterial`s across six slots, each carrying one painting and
-   * a `color` that is nothing but §5's face shade, so the paint is the texture's
-   * and the shading is the engine's exactly as the shared spec promises the
-   * artist. The second exists only in the bloom pass and
-   * only to be blurred: `emissiveKeyMaterial` discards every texel that is not one
-   * of §2's three bloom-eligible colours, which is how the amber column gets the
-   * halo the brief told the artist *not* to paint.
+   * Two meshes over each geometry. The first is the object as the player sees it:
+   * `MeshLambertMaterial`s across six slots, each carrying one painting and a
+   * `color` that is nothing but §5's face shade, so the paint is the texture's and
+   * the shading is the engine's exactly as the shared spec promises the artist.
+   * The second exists only in the bloom pass and only to be blurred:
+   * `emissiveKeyMaterial` discards every texel that is not one of §2's three
+   * bloom-eligible colours, which is how the amber column gets the halo the brief
+   * told the artist *not* to paint.
    */
-  private buildPainted(art: ObjectArtSpec, footprint: Footprint): void {
+  private buildPainted(map: GameMap, art: ObjectArtSpec, footprint: Footprint): void {
     this.paintedArt = art;
+    if (art.tilesAlongRun) this.buildRun(map, art, footprint);
+    else this.buildWholeBox(art, footprint);
+  }
+
+  /** An object whose faces were painted for its whole footprint: one box. */
+  private buildWholeBox(art: ObjectArtSpec, footprint: Footprint): void {
     const along = this.runAxis === "x" ? footprint.spanX : footprint.spanZ;
     const across = this.runAxis === "x" ? footprint.spanZ : footprint.spanX;
     // Built long-axis-on-z and turned; see BOX_FACE_SLOTS.
     const geometry = new THREE.BoxGeometry(across, art.heightUnits, along);
     this.geometries.push(geometry);
+    const slots = new Map<ObjectFaceId, PaintedSlot>();
+    for (const face of new Set(BOX_FACE_SLOTS)) slots.set(face, this.paintedSlot(art, face, null));
+    this.addPaintedMesh(
+      geometry,
+      BOX_FACE_SLOTS.map((face) => slots.get(face) as PaintedSlot),
+      0,
+      art.heightUnits / 2,
+      0,
+    );
+  }
 
-    const paint = new Map<ObjectFaceId, THREE.MeshLambertMaterial>();
-    const halo = new Map<ObjectFaceId, THREE.Material>();
+  /**
+   * An object whose registered footprint is one tile of it (`tilesAlongRun`): the
+   * run is laid a tile at a time, so each tile's top can wear its own cell — the
+   * gland box on one of them, the break on the tiles a cut parts. The sides repeat
+   * unchanged along the run and share one material apiece; only the top is per
+   * tile, which is also the only face a run has more than one painting for.
+   */
+  private buildRun(map: GameMap, art: ObjectArtSpec, footprint: Footprint): void {
+    const across = this.runAxis === "x" ? footprint.spanZ : footprint.spanX;
+    const sides = new Map<ObjectFaceId, PaintedSlot>();
     for (const face of new Set(BOX_FACE_SLOTS)) {
-      const texture = objectFaceTexture(art.id, face, "powered");
-      const material = new THREE.MeshLambertMaterial({ map: texture, alphaTest: 0.5 });
-      // The only thing the body's colour carries is §5's face shade. Everything
-      // else the player sees on this box is the delivered painting.
-      material.color.setScalar(faceShade(face, this.runAxis));
-      this.materials.push(material);
-      this.baseColors.set(material, material.color.getHex());
-      this.paintedBody.push({ material, face });
-      this.paintedMaterials.add(material);
-      paint.set(face, material);
-
-      const key = emissiveKeyMaterial(texture);
-      this.paintedHalo.push({ material: key, face });
-      halo.set(face, key);
+      if (face !== "top") sides.set(face, this.paintedSlot(art, face, null));
     }
+    const tiles = this.view.tiles;
+    const alongOf = (tile: TileCoord): number => (this.runAxis === "x" ? tile.x : tile.y);
+    for (const [declared, tile] of tiles.entries()) {
+      const geometry = new THREE.BoxGeometry(across, art.heightUnits, TILE_SIZE);
+      this.geometries.push(geometry);
+      const runTile: RunTile = {
+        declared,
+        rank: tiles.filter((other) => alongOf(other) < alongOf(tile)).length,
+        count: tiles.length,
+        geometry,
+        flipped: false,
+      };
+      const top = this.paintedSlot(art, "top", runTile);
+      const center = tileCenter(map, tile.x, tile.y);
+      this.addPaintedMesh(
+        geometry,
+        BOX_FACE_SLOTS.map((face) => (face === "top" ? top : (sides.get(face) as PaintedSlot))),
+        center.x - footprint.center.x,
+        art.heightUnits / 2,
+        center.z - footprint.center.z,
+      );
+    }
+  }
 
-    const body = new THREE.Mesh(
-      geometry,
-      BOX_FACE_SLOTS.map((face) => paint.get(face) as THREE.MeshLambertMaterial),
-    );
-    const glow = new THREE.Mesh(
-      geometry,
-      BOX_FACE_SLOTS.map((face) => halo.get(face) as THREE.Material),
-    );
+  private paintedSlot(art: ObjectArtSpec, face: ObjectFaceId, runTile: RunTile | null): PaintedSlot {
+    const texture = objectFaceTexture(art.id, face, "powered");
+    const material = new THREE.MeshLambertMaterial({ map: texture, alphaTest: 0.5 });
+    // The only thing the body's colour carries is §5's face shade. Everything
+    // else the player sees on this box is the delivered painting.
+    material.color.setScalar(faceShade(face, this.runAxis));
+    this.materials.push(material);
+    this.baseColors.set(material, material.color.getHex());
+    this.paintedMaterials.add(material);
+    const slot: PaintedSlot = { material, halo: emissiveKeyMaterial(texture), face, runTile };
+    this.painted.push(slot);
+    return slot;
+  }
+
+  private addPaintedMesh(
+    geometry: THREE.BufferGeometry,
+    slots: readonly PaintedSlot[],
+    x: number,
+    y: number,
+    z: number,
+  ): void {
+    const body = new THREE.Mesh(geometry, slots.map((slot) => slot.material));
+    const glow = new THREE.Mesh(geometry, slots.map((slot) => slot.halo));
     markBloomOnly(glow);
     for (const mesh of [body, glow]) {
-      mesh.position.set(0, art.heightUnits / 2, 0);
+      mesh.position.set(x, y, z);
       mesh.rotation.y = boxYaw(this.runAxis);
       this.group.add(mesh);
     }
@@ -522,20 +630,26 @@ export class ObjectVisual {
             : "unpowered";
     const changed = state !== this.paintedState;
     this.paintedState = state;
-    for (const { material, face } of this.paintedBody) {
-      const carrier = objectCarrierTexture(this.paintedArt.id, face, state);
+    for (const slot of this.painted) {
+      const cell: Cell =
+        slot.runTile === null
+          ? { face: slot.face, state, flipped: false }
+          : runTopCell(slot.runTile, state);
+      const carrier = objectCarrierTexture(this.paintedArt.id, cell.face, cell.state);
       if (changed) {
-        material.map = objectFaceTexture(this.paintedArt.id, face, state);
-        material.emissiveMap = carrier;
-        material.needsUpdate = true;
+        const texture = objectFaceTexture(this.paintedArt.id, cell.face, cell.state);
+        slot.material.map = texture;
+        slot.material.emissiveMap = carrier;
+        slot.material.needsUpdate = true;
+        slot.halo.map = texture;
+        slot.halo.needsUpdate = true;
+        if (slot.runTile !== null && slot.runTile.flipped !== cell.flipped) {
+          flipTopCell(slot.runTile.geometry);
+          slot.runTile.flipped = cell.flipped;
+        }
       }
-      material.emissive.setHex(carrier === null ? 0x000000 : 0xffffff);
-      material.emissiveIntensity = carrier === null ? 0 : 1;
-    }
-    if (!changed) return;
-    for (const { material, face } of this.paintedHalo) {
-      material.map = objectFaceTexture(this.paintedArt.id, face, state);
-      material.needsUpdate = true;
+      slot.material.emissive.setHex(carrier === null ? 0x000000 : 0xffffff);
+      slot.material.emissiveIntensity = carrier === null ? 0 : 1;
     }
   }
 
