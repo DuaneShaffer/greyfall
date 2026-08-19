@@ -204,6 +204,20 @@ describe("the formation rail is bounded by the frame, not by a guess", () => {
     expect(rail).toContain("overscroll-behavior: contain");
   });
 
+  it("runs two columns where the frame is wide enough to carry them", () => {
+    // 1148px of content in 594px of frame put the opposition intel at y=916, off
+    // the bottom of a rail whose scrollbar is the last thing a player looks for
+    // over a board that takes the wheel for the camera. The width was never the
+    // constraint: at 1600 the rail was 340px of a 1600px frame.
+    const wide = CSS.slice(CSS.lastIndexOf("@media (min-width: 1180px)"));
+    const columns = /\.gf-between\.is-field \.gf-deploy-rail \{([^}]*)\}/.exec(wide)?.[1];
+    expect(columns, "the rail never gets a second column").toBeDefined();
+    expect(columns).toContain("grid-template-columns");
+    // And a width to put it in: the one-column rule is 340px.
+    const width = /width:\s*min\((\d+)px/.exec(columns ?? "");
+    expect(Number(width?.[1])).toBeGreaterThan(340);
+  });
+
   it("measures nothing inside it wider than the rail itself", () => {
     const body = rule(".gf-deploy-rail .gf-detail-body");
     expect(body).toContain("max-width: none");

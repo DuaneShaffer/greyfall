@@ -293,6 +293,11 @@ export class DeploymentScreen implements Component<DeploymentView> {
   private renderSlots(view: DeploymentView): void {
     const held = view.candidates.find((candidate) => candidate.unitId === this.placing) ?? null;
     replaceChildren(this.detail, [
+      // Who is across the board comes first. It was the last thing in the rail
+      // and it fell off the bottom of it: the whole answer to "no enemy intel at
+      // formation time" was below the fold at the window size the finding was
+      // filed from, behind a scrollbar nobody had a reason to look for.
+      ...this.oppositionBlock(view),
       plate("Deployment tiles", `${view.slots.length}`),
       el("ul", {
         class: "gf-deploy-slots",
@@ -311,7 +316,6 @@ export class DeploymentScreen implements Component<DeploymentView> {
           this.refusal === null
             ? null
             : el("p", { class: "gf-detail-note is-refused", text: this.refusal }),
-          ...this.oppositionBlock(view),
           el("p", { class: "gf-detail-sub gf-satchel", text: summarizeSatchel(view.satchel) }),
           ...view.candidates
             .filter((candidate) => candidate.assigned)

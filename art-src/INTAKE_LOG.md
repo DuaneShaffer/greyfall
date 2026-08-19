@@ -950,37 +950,91 @@ measurement rather than a claim, in the absence of any art to measure.
 
 ## E.1 The battery, in the order it prints
 
+Every row below was **calibrated against rowen v3**, the first merged plate, and
+now agrees with the hand audit that approved it (PR #2). Four of them measured
+something other than what they named until that plate arrived — the synthetic
+rect bust `tests/art/ingest.portrait.test.ts` paints could not tell the
+difference, because a rect has no coat at ground value, no jaw and no eyes. The
+redefinitions are marked **†** and explained under the table.
+
 | Check | What it measures | Bar |
 |---|---|---|
 | `dimensions` | plate size against the 4× master | exactly 512 × 640 |
 | `alpha` | non-opaque pixels, minimum alpha | 0 — the ground is painted, full bleed, and the chip is cut out of the middle of a head |
 | `matte purity` | matte pixels that are neither pure white nor pure black | 0 — hard-edged, no anti-aliasing |
-| `matte agreement` | matte silhouette against the silhouette derived from the character's ground register | ≥ 98% of pixels agree |
+| `matte coverage` **†** | share of the pixels the plate paints *off* both ground values that fall inside the matte's figure, plus the leak — how much of the matte the plate paints at a ground value | coverage ≥ 99%; leak reported, never gated |
 | `ramp conformance` | distance from every pixel to the nearest allowed §2 step, banded ≤8 / ≤16 / ≤24 / ≤32 / ≤48 / beyond, plus the nearest-family split | nothing beyond 48; hue-anchored, never snapped |
 | `flux ramp` | pixels nearest the amber ramp | 0 for the eight the amber table grants none; ≤ 3% of the plate for Vale, Ivo, Orin, Nessa and Quill |
 | `brightblood` | pixels nearest `#ff9db1` | 0 for everyone but Orin and Maren, and **present** for those two |
 | `copper-500` | pixels nearest `#a5622f` | reported, not gated — it is the one value the briefs name by hand (Della's goggle rim) |
-| `rim light` | silhouette edge pixels more than 15 luma lighter than the interior 3 px behind them | ≤ 170. §4 forbids rim light; a painted hard edge crosses this a few dozen times, a lit contour crosses it everywhere |
-| `luma ceiling` | pixels over luma 201 | 0 — nothing in §2 is brighter than `bone-100` at 201.5 |
-| `ground bands` | mean of the non-figure pixels in each half of the plate, against the character's register | within 24 of `#2b333d` over `#171c22` (the Works), `#4a545f` over `#2b333d` (the Rise), `#0b0d10` over `#171c22` (the Underveins) |
-| `framing` | crown row, eye-line estimate, chin row, narrowest neck row, head centre x, shoulder row — all off the silhouette | the framing table: crown 90–110, eye-line 243 ± 6, chin 384–400, centre 256 ± 24, shoulders 490–520 |
-| `chip rect` | head-band pixels outside §4's (128, 64, 256, 256), by side, and how much of the rect is figure | no spill left or right, and the rect at least half figure |
+| `rim light` | silhouette edge pixels more than 15 luma lighter than the interior 3 px behind them, and how many of those are also over luma 170 | ≤ 170 lit, and **0** of them bright. §4 forbids rim light; a painted hard edge crosses the delta a few dozen times and never rises over the cool ramp's top step, a lit contour does both |
+| `luma ceiling` **†** | pixels over luma 201 on Rec.709 weights | ≤ 8. Nothing in §2 is brighter than `bone-100`, which is luma 200.7 — a handful of pixels rounding a fraction over is quantisation, a blown plate is thousands |
+| `ground bands` **†** | each non-figure pixel sorted into the register value it is nearest, then the mean of each set | within 24 of `#2b333d` over `#171c22` (the Works), `#4a545f` over `#2b333d` (the Rise), `#0b0d10` over `#171c22` (the Underveins) |
+| `framing` **†** | crown row and shoulder row off the matte, eye-line off §4's rule, chin off the jaw contour, head centre off the cranium | the framing table: crown 90–110, eye-line 243 ± 6, chin 384–400, centre 256 ± 24, shoulders 490–520 |
+| `chip rect` **†** | head-band pixels left of, right of and above §4's (128, 64, 256, 256) — px, rows and depth — the share of the head band the crop can see, and how much of the rect is figure | nothing above the crop, ≥ 98% of the head band seen, and the rect at least half figure |
 | `palette strip` | the delivered swatches through the same conformance histogram | nothing beyond 48 |
 
-Two of those are worth a sentence, because they are the ones a reader will
-doubt.
+**† `matte coverage` replaced `matte agreement`.** The old check derived a
+silhouette from the character's ground register and graded the delivered matte
+against it. That cannot work on a 100%-opaque plate: a coat painted at the
+ground's own value is figure the ground test cannot see, so a *correct* matte
+scores badly — rowen's, which is pure and exact, agreed 70.71%. What a full-bleed
+plate can prove is containment, so the check now asks whether the matte holds
+everything the plate visibly paints (rowen: 100.00% of 68,878 px) and reports
+the rest as leak (rowen: 58.22% of the matte is coat at a ground value). Purity
+is still its own check, and the matte is still the silhouette every other check
+runs on.
 
-**The eye-line is an estimate and says so.** A matte has no eyes. What it has is
-a crown and a chin, and the eye-line sits at half that span — which the framing
-table's own numbers agree with: crown 100 and chin 385 put the estimate on
-y = 243, exactly where §4 asks. It is a framing check, not a face check; the face
-is the human gate's business.
+**† The framing landmarks come off the paint, not off the matte's shape.** Three
+of the five were heuristics tuned on a rect and they missed a face by 25 and 40
+px:
 
-**The chip rect check is the one the briefs were rewritten for.** The crop
-bottoms at y = 320 and the chin is at y = 384–400, so the chip never sees a
-chin, a throat or a collar. `below` is therefore expected to be large and is
-reported rather than gated; what is gated is spill to the *sides*, where the
-head leaving the crop means the chip loses face rather than jaw.
+- **Eye-line.** §4 puts it at 38% of the frame; that rule *is* the measurement
+  (243 on a 640-px plate), and the tool validates it rather than searching for
+  it — it reports the band of rows carrying facial ink (pixels under luma 70
+  inside the skin span) and checks the rule's row falls inside. Rowen: ink on
+  y = 213–249, rule on 243, hand audit 243.5. The old estimate — half the
+  crown-to-chin span — is a rect's answer and put rowen's eye-line on 218.
+- **Chin.** Off the **jaw contour**: the rightmost skin pixel per row, walked
+  down from the eye-line, with the chin at the row where it hands over to the
+  neck (a step further left than 8 px that holds for four rows; a lash or a cast
+  shadow crossing the edge breaks it for one or two). Rowen: 386, hand audit
+  ≈386. The old check took the silhouette's narrowest row, which on a real head
+  is the hair-and-collar pinch — 345, with the true narrowest row 4 px *below*
+  the chin at 178 px wide.
+- **Head centre.** Mean x of the cranium, crown to eye-line, above the jaw's
+  turn: 266.4 against the audit's 266.8.
+- **Shoulders.** The first row the figure reaches a frame side — literally
+  "shoulders enter frame side". Rowen: 504, hand audit 504. The old rule (twice
+  the narrowest width) inherited the bad neck measure and read 474.
+
+**† The luma ceiling is quoted in Rec.709.** Every luma number in the briefs and
+the PR reviews is: `bone-100` is "201" (200.7), `soot-100` is "187" (186.7). Read
+in Rec.601 the same two are 201.5 and 186.3, which drops the ceiling *under* the
+skin ramp's own top step and charges a conforming plate for 30 px of rounding —
+rowen scored 31 px over and by hand 1. The one pixel that is genuinely over is
+`#e7c4a8` at 201.4, and the budget of 8 exists so that a pixel of rounding is not
+a rejection; v2 of this plate put 1,278 px over the same line.
+
+**† The ground bands are not halves.** The register names an upper and a lower
+value, not a top half and a bottom half: rowen's division runs down the frame,
+the lighter value behind the shadow side. Meaning the top 320 rows against the
+light value mixes both bands and reports a colour that is on neither — `#222831`
+and `#20272f` for a plate whose bands are exactly `#2b333d` and `#171c22`. Each
+non-figure pixel is now sorted into the value it is nearest and the two sets are
+meaned where they lie, which reads rowen's ground at distance 0.0 from both, with
+0 px off either band.
+
+**† The chip rect check no longer counts what is below it.** The crop bottoms at
+y = 320 and the framing table puts every chin at 384–400, so *every* portrait in
+the set hides its chin, throat and collar from the chip by construction; counting
+that mass as overflow scores the spec against itself, and it is what rejected
+rowen for 5,371 px of jaw. `below` is gone — not reported, not computed — and the
+side counts are taken over the crop's own rows, since head below the crop is
+already lost and cannot spill out of a side it is not in. What is graded is the
+share of that head band the crop can see (rowen: 98.82%, the loss being hair on
+the left and 4 px of cheek on the right), that nothing sits above the crop, and
+that the rect is at least half figure (rowen: 77.33%).
 
 ## E.2 What the tool deliberately does not check
 
@@ -1000,24 +1054,31 @@ head leaving the crop means the chip loses face rather than jaw.
 
 ## E.3 Verdicts against the brief
 
-Empty, and honestly so. **The table fills at the first portrait merge** — one
-row per `portraitId`, in the wave order the briefs set, carrying the framing
+One row per `portraitId`, in the wave order the briefs set, carrying the framing
 landmarks, the conformance bands, the flux and brightblood counts, the rim-light
 measure and a verdict in Part A's vocabulary (*Ship*, *Ship, minor*, *Ship,
-regenerate*, *Reject*).
+regenerate*, *Reject*). Wave 1 has landed its first face; the rest fill in as
+they merge.
 
 | `portraitId` | Framing (crown / eye / chin / centre) | Ramp conformance | Flux / brightblood | Rim light | Chip rect | Verdict |
 |---|---|---|---|---|---|---|
 | rowen (v3, PR #2) | 90 / 243.5 / ~386 / 266.8 — all in band (contour-measured) | 85.7% within 4, 0.025% beyond 28 | 0 / 0 | 0 outline px over luma 170; 1 px over 201 | 3 px overflow over 16 rows, 77.3% coverage | **Ship.** Wave-2 notes: face flatness, age reads 22–25, figure-vs-ground separation |
 
-**Tool calibration owed.** The tool's first run against this plate disagreed with
-the hand audit on four checks, and the hand audit is the one the numbers above
-come from: the matte-agreement silhouette flood-fills into a coat painted at
-ground value (the matte itself is pure and correct); the framing landmark
-heuristics (eye-line 218, chin 345) were calibrated only on the synthetic test
-fixture and miss the real plate's contours (243.5, ~386 by jaw contour); the
-luma formula counts 31 px over the ceiling where the audit's counts 1; and the
-head-outside-chip count treats below-the-crop mass as a failure although the
-framing table puts every chin below the crop by design. The checks themselves
-are right; their implementations need to be graded against this plate before
-wave 2 arrives.
+**Calibrated against the first plate.** The tool's first run disagreed with the
+hand audit on four checks and the hand audit was right on all four, so the tool
+was regraded against this plate and now agrees with it: `matte agreement` became
+`matte coverage` because no ground-derived silhouette can see a coat painted at
+ground value (100.00% coverage, 58.22% leak, where the old check scored a pure
+matte 70.71%); the framing landmarks moved onto the audit's own methods — §4's
+38% rule for the eye-line, the jaw contour for the chin, the cranium for the
+centre, the frame side for the shoulders — and now read 90 / 243 / 386 / 266.4 /
+504 against the audit's 90 / 243.5 / ≈386 / 266.8 / 504; the luma ceiling moved
+to the Rec.709 weights the briefs quote, which is 1 px over rather than 31; and
+the chip check stopped counting below-crop mass, which is every chin in the set
+by design. `ground bands` was regraded with them — sorting each ground pixel into
+the value it is nearest instead of averaging halves reads this plate's bands as
+exactly `#2b333d` and `#171c22`, where the halves read `#222831` and `#20272f`.
+§E.1 marks all five and says what each now measures, and
+`tests/art/ingest.portrait.test.ts` pins the numbers off the committed plate so a
+later edit to the tool cannot drift away from them. Rowen runs clean through the
+whole battery.

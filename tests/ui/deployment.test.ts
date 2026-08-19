@@ -108,6 +108,27 @@ describe("the other side of the board", () => {
     expect(intel?.classList.contains("is-hidden")).toBe(true);
   });
 
+  /**
+   * Re-playtest N4. The block sat at y=916 in an 883px viewport, at the foot of a
+   * 1002px rail showing 643 — the whole answer to "no enemy intel at formation
+   * time", off screen at the window size the finding came from. Its place in the
+   * rail is the half of that a DOM test can hold; the two-column frame that makes
+   * the room is asserted in tests/ui/styles.test.ts.
+   */
+  it("is read before the tiles, not under them", () => {
+    const { screen: made } = screen();
+    made.setOpposition(OPPOSITION);
+    const rail = [...made.el.querySelectorAll(".gf-deploy-opposition, .gf-deploy-slots")];
+    expect(rail.map((node) => node.className)).toEqual(["gf-deploy-opposition", "gf-deploy-slots"]);
+    // And the bearing still heads it, above the rows it is about.
+    const detail = made.el.querySelector(".gf-deploy-detail") as HTMLElement;
+    const order = [...detail.querySelectorAll(".gf-deploy-bearing, .gf-deploy-opposition")];
+    expect(order.map((node) => node.className.split(" ").at(-1))).toEqual([
+      "gf-deploy-bearing",
+      "gf-deploy-opposition",
+    ]);
+  });
+
   it("marks one of ours without rebuilding the rows under the hand", () => {
     const { screen: made } = screen();
     const before = [...made.el.querySelectorAll(".gf-deploy-slot")];

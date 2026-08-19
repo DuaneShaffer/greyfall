@@ -4330,3 +4330,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* --- the formation rail, at the height it is actually read ---------------- */
+/* The rail is one column of roster, tiles and intel over a live field, and at
+   1600×1000 it was 1148px of content in 594px of frame: the opposition block —
+   count, bearing, enemy card and the hover readout — sat at y=916, off the
+   bottom, reachable only by finding a thin scrollbar over a board that takes the
+   wheel for the camera. The width is there; the height is not. So where the
+   frame is wide enough for it the rail runs two columns, the roster beside the
+   tiles rather than above them, and the intel rides at the top of the second. */
+
+@media (min-width: 1180px) {
+  .gf-between.is-field .gf-deploy-rail {
+    width: min(700px, 46vw);
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    align-items: start;
+  }
+}
