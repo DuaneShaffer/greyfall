@@ -1,19 +1,23 @@
-// The portrait intake battery, run against a figure this file paints itself.
+// The portrait intake battery, twice over.
 //
-// No portrait has been delivered yet (`art-src/portraits/` is empty until the
-// first master merges), so there is nothing to pin the way `tiles.test.ts` pins
-// the terrain sheet. What can be pinned now is the *battery*: a synthetic bust
-// built to the brief's own landmarks passes every check, and one deliberate
-// defect at a time makes exactly the check that owns it fail.
+// The battery itself is pinned against a figure this file paints: a rect bust —
+// head block over neck over shoulders, on the Works ground — placed so the
+// framing table's numbers come out right (crown y=100, chin y=385, eye-line
+// y=243, head centre x=255.5, shoulders reaching the frame sides at y=500), so
+// that a clean fixture passes every check and one deliberate defect at a time
+// makes exactly the check that owns it fail.
 //
-// The fixture is a painted rect figure — a head block over a neck over
-// shoulders, on the Works ground — placed so the framing table's numbers come
-// out right: crown y=100, chin y=385, eye-line y=243, head centre x=256,
-// shoulders entering at y=500.
+// A fixture cannot keep the battery honest on its own — every check the first
+// cut of this file got wrong passed against a rect. So the second half pins the
+// numbers the tool reads off `art-src/portraits/rowen.png`, the first merged
+// plate, against the hand audit that approved it. Those are the measurements a
+// future edit to the tool must not drift.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PALETTE, hexToRgb, type Hex } from "../../src/art/palette.js";
-import type { RGBAImage } from "../../src/art/png.js";
+import { decodePNG, type RGBAImage } from "../../src/art/png.js";
 import {
   CHIP_RECT_MASTER,
   GROUND_REGISTERS,
@@ -21,8 +25,11 @@ import {
   auditPortrait,
   chipOverflow,
   countColor,
+  countOverLuma,
   framingLandmarks,
   groundBands,
+  luma,
+  matteCoverage,
   paintedSilhouette,
   readMatte,
   rimLight,
@@ -40,7 +47,9 @@ interface Rect {
 
 const HEAD: Rect = { x: 166, y: 100, w: 180, h: 285 };
 const NECK: Rect = { x: 226, y: 385, w: 60, h: 115 };
-const SHOULDERS: Rect = { x: 16, y: 500, w: 480, h: 140 };
+// The shoulders run off both frame sides, which is where the framing table
+// reads them: "shoulders enter frame side".
+const SHOULDERS: Rect = { x: -16, y: 500, w: 544, h: 140 };
 
 const SKIN = PALETTE["bone-500"];
 const COAT = PALETTE["umber-500"];
@@ -125,6 +134,13 @@ const named = (audit: PortraitAudit, name: string): PortraitCheck => {
 const auditOf = (overrides: Partial<Parameters<typeof auditPortrait>[0]> = {}): PortraitAudit =>
   auditPortrait({ portraitId: "rowen", plate: plate(), matte: matte(), palette: strip(), ...overrides });
 
+/** The chin and the eye-line validation are read off the paint, not the matte. */
+const landmarksOf = (options: FixtureOptions = {}): NonNullable<ReturnType<typeof framingLandmarks>> => {
+  const marks = framingLandmarks(readMatte(matte(options)).mask, scanPortrait(plate(options)));
+  if (marks === null) throw new Error("no figure in the fixture");
+  return marks;
+};
+
 describe("portrait intake — the clean fixture", () => {
   const audit = auditOf();
 
@@ -138,7 +154,7 @@ describe("portrait intake — the clean fixture", () => {
       "dimensions",
       "alpha",
       "matte purity",
-      "matte agreement",
+      "matte coverage",
       "ramp conformance",
       "flux ramp",
       "brightblood",
@@ -152,14 +168,15 @@ describe("portrait intake — the clean fixture", () => {
     ]);
   });
 
-  it("reads the framing landmarks off the matte", () => {
+  it("reads the framing landmarks off the matte and the paint", () => {
     expect(audit.landmarks).toEqual({
       crownRow: 100,
       chinRow: 385,
       neckRow: 385,
       neckWidth: 60,
       eyeLineRow: 243,
-      headCentreX: 256,
+      eyeDarkRows: null,
+      headCentreX: 255.5,
       headLeft: 166,
       headRight: 345,
       shoulderRow: 500,
@@ -188,10 +205,19 @@ describe("portrait intake — one defect at a time", () => {
     expect(named(auditOf({ matte: matte() }), "matte purity").ok).toBe(true);
   });
 
-  it("fails matte agreement when the matte is not this figure", () => {
+  it("fails matte coverage when the matte does not contain the painted figure", () => {
     const wrong = auditOf({ matte: matte({ dx: 0, dy: 60 }) });
-    expect(named(wrong, "matte agreement").ok).toBe(false);
-    expect(named(auditOf(), "matte agreement").ok).toBe(true);
+    expect(named(wrong, "matte coverage").ok).toBe(false);
+    expect(named(auditOf(), "matte coverage").ok).toBe(true);
+  });
+
+  it("reports leak rather than failing a matte over ground-valued paint", () => {
+    const coated = plate();
+    fill(coated, { x: 226, y: 500, w: 60, h: 60 }, GROUND_REGISTERS.works.lower);
+    const cover = matteCoverage(coated, readMatte(matte()).mask, GROUND_REGISTERS.works);
+    expect(cover.coverage).toBe(1);
+    expect(cover.flat).toBe(3600);
+    expect(named(auditOf({ plate: coated }), "matte coverage").ok).toBe(true);
   });
 
   it("fails ramp conformance on a hue with no ancestor in the palette", () => {
@@ -249,12 +275,20 @@ describe("portrait intake — one defect at a time", () => {
 
   it("fails the luma ceiling above bone-100", () => {
     const blown = plate();
-    fill(blown, { x: 220, y: 200, w: 10, h: 10 }, PALETTE["bone-100"]);
+    fill(blown, { x: 220, y: 200, w: 10, h: 10 }, "#e9dcc0");
     const audit = auditOf({ plate: blown });
     expect(named(audit, "luma ceiling").ok).toBe(false);
     expect(named(audit, "luma ceiling").detail).toContain("100 px over luma 201");
     expect(named(audit, "ramp conformance").ok).toBe(true);
     expect(named(auditOf(), "luma ceiling").ok).toBe(true);
+  });
+
+  it("puts the ceiling on Rec.709 weights, where bone-100 is the top step", () => {
+    expect(luma(...hexToRgb(PALETTE["bone-100"]))).toBeLessThan(201);
+    expect(luma(...hexToRgb(PALETTE["soot-100"]))).toBeCloseTo(186.7, 1);
+    const capped = plate();
+    fill(capped, { x: 220, y: 200, w: 10, h: 10 }, PALETTE["bone-100"]);
+    expect(countOverLuma(scanPortrait(capped), 201)).toBe(0);
   });
 
   it("measures the ground bands against the character's own register", () => {
@@ -279,19 +313,23 @@ describe("portrait intake — one defect at a time", () => {
     expect(named(auditOf(), "framing").ok).toBe(true);
   });
 
-  it("counts head mass the chip rect cannot see", () => {
-    const mask = readMatte(matte()).mask;
-    const marks = framingLandmarks(mask);
-    expect(marks).not.toBeNull();
-    const clean = chipOverflow(mask, marks as NonNullable<typeof marks>);
-    expect([clean.left, clean.right]).toEqual([0, 0]);
-    expect(clean.below).toBeGreaterThan(0);
+  it("counts head mass the chip rect cannot see, sideways and up but never down", () => {
+    const marks = landmarksOf();
+    const clean = chipOverflow(readMatte(matte()).mask, marks);
+    expect([clean.left.pixels, clean.right.pixels, clean.above.pixels]).toEqual([0, 0, 0]);
+    expect(clean.seen).toBe(1);
     expect(clean.fill).toBeGreaterThan(0.5);
+    expect(clean).not.toHaveProperty("below");
+    // The chin is below the crop by the framing table's own design, and the
+    // head band the chip is graded on stops at the crop's bottom.
+    expect(marks.chinRow).toBeGreaterThan(CHIP_RECT_MASTER.y + CHIP_RECT_MASTER.h);
+    expect(clean.headBand).toBe(180 * (CHIP_RECT_MASTER.y + CHIP_RECT_MASTER.h - 100));
 
     const offCentre = readMatte(matte({ dx: -80 })).mask;
-    const offMarks = framingLandmarks(offCentre);
-    const spilled = chipOverflow(offCentre, offMarks as NonNullable<typeof offMarks>);
-    expect(spilled.left).toBeGreaterThan(0);
+    const offMarks = landmarksOf({ dx: -80 });
+    const spilled = chipOverflow(offCentre, offMarks);
+    expect(spilled.left.pixels).toBeGreaterThan(0);
+    expect(spilled.left.depth).toBe(42);
     expect(named(auditOf(), "chip rect").ok).toBe(true);
     expect(
       named(
@@ -321,11 +359,93 @@ describe("portrait intake — the chip rect is §4's, not this file's", () => {
 
   it("bottoms a clear margin above the chin the framing table fixes", () => {
     expect(CHIP_RECT_MASTER.y + CHIP_RECT_MASTER.h).toBe(320);
-    expect(framingLandmarks(readMatte(matte()).mask)?.chinRow).toBeGreaterThan(320);
+    expect(landmarksOf().chinRow).toBeGreaterThan(320);
   });
 
   it("derives the same silhouette from the ground as the matte declares", () => {
     const agreement = paintedSilhouette(plate(), GROUND_REGISTERS.works);
     expect(agreement.bits).toEqual(readMatte(matte()).mask.bits);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The first merged plate
+// ---------------------------------------------------------------------------
+
+const portraitsAt = join(import.meta.dirname, "..", "..", "art-src", "portraits");
+const plateOf = (name: string): RGBAImage => decodePNG(readFileSync(join(portraitsAt, name)));
+
+describe("portrait intake — rowen, the plate that calibrated the battery", () => {
+  const rowenPlate = plateOf("rowen.png");
+  const rowenMatte = plateOf("rowen-matte.png");
+  const audit = auditPortrait({
+    portraitId: "rowen",
+    plate: rowenPlate,
+    matte: rowenMatte,
+    palette: plateOf("rowen-palette.png"),
+  });
+  const mask = readMatte(rowenMatte).mask;
+  const scan = scanPortrait(rowenPlate);
+
+  it("ships — every check in the battery passes", () => {
+    expect(audit.checks.filter((c) => !c.ok).map((c) => c.name)).toEqual([]);
+    expect(audit.ok).toBe(true);
+  });
+
+  it("lands the framing landmarks the hand audit measured", () => {
+    // Audit: crown 90, eye-line 243.5 (§4's 38% = 243.2), chin ~386 on the jaw
+    // contour, head centre 266.8, shoulders reaching the frame side at 504.
+    const marks = audit.landmarks;
+    expect(marks?.crownRow).toBe(90);
+    expect(marks?.eyeLineRow).toBe(243);
+    expect(marks?.chinRow).toBe(386);
+    expect(marks?.headCentreX).toBeCloseTo(266.35, 1);
+    expect(marks?.shoulderRow).toBe(504);
+    // The chin is not the narrowest row and never was: that one is 4 px lower
+    // and 178 px wide, which is the hair meeting the collar.
+    expect(marks?.neckRow).toBe(390);
+    expect(marks?.eyeDarkRows).toEqual([213, 249]);
+  });
+
+  it("grades the matte on coverage, not on a ground-derived silhouette", () => {
+    const cover = matteCoverage(rowenPlate, mask, GROUND_REGISTERS.works);
+    expect(cover.painted).toBe(68878);
+    expect(cover.coverage).toBe(1);
+    // 58% of the matte is coat painted at a ground value. Scoring the matte
+    // against `paintedSilhouette` is what scored this delivery at 70.71%.
+    expect(cover.flat).toBe(95991);
+    expect(cover.leak).toBeCloseTo(0.5822, 4);
+    expect(readMatte(rowenMatte).impure).toBe(0);
+  });
+
+  it("reads the ground as the two exact register values", () => {
+    const ground = groundBands(rowenPlate, mask, GROUND_REGISTERS.works);
+    expect(ground.upper.hex).toBe(GROUND_REGISTERS.works.upper);
+    expect(ground.lower.hex).toBe(GROUND_REGISTERS.works.lower);
+    expect(ground.upper.distance).toBe(0);
+    expect(ground.lower.distance).toBe(0);
+    expect(ground.strays).toBe(0);
+  });
+
+  it("puts one pixel over the luma ceiling and none on a lit edge", () => {
+    expect(countOverLuma(scan, 201)).toBe(1);
+    expect(luma(...hexToRgb("#e7c4a8"))).toBeCloseTo(201.42, 2);
+    const rim = rimLight(rowenPlate, mask);
+    expect(rim.edge).toBe(2184);
+    expect(rim.bright).toBe(0);
+  });
+
+  it("spends none of the reserved colour it is not granted", () => {
+    expect(countColor(scan, PALETTE["copper-500"])).toBe(0);
+    expect(named(audit, "flux ramp").detail).toContain("0 px");
+    expect(named(audit, "brightblood").detail).toContain("0 px");
+  });
+
+  it("fits the chip crop, counting only what the crop can lose", () => {
+    const overflow = chipOverflow(mask, audit.landmarks as NonNullable<typeof audit.landmarks>);
+    expect(overflow.fill).toBeCloseTo(0.7733, 4);
+    expect(overflow.above.pixels).toBe(0);
+    expect(overflow.right.rows).toBe(24);
+    expect(overflow.seen).toBeGreaterThan(0.98);
   });
 });
