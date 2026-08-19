@@ -34,7 +34,7 @@ are the first four columns.
 
 | Job / character | Head-level marker | Silhouette | Amber discipline | Both cells usable | Verdict |
 |---|---|---|---|---|---|
-| enforcer — Rowen Corvane | **Diverges.** Bare head: headband + ponytail, no riot helm and no visor slit. 11 rows above the shoulder line = 16% of figure height, so the *mass* clears the 10% bar, but it is hair, not a job marker — she reads as "a soldier", not "the visored one" | Correct and correct-est: widest of the cast, 62 of 62 columns, tower shield + maul | 3 px (se) / 7 px (ne) on the maul head. One element, small — as briefed, but at 1× it is almost gone | Yes | **Ship, regenerate later.** The one marker miss in the set |
+| enforcer — Rowen Corvane | **Diverges.** Bare head: headband + ponytail, no riot helm and no visor slit. 11 rows above the shoulder line = 16% of figure height, so the *mass* clears the 10% bar, but it is hair, not a job marker — she reads as "a soldier", not "the visored one" | Correct and correct-est: widest of the cast, 62 of 62 columns, tower shield + maul | 3 px (se) / 7 px (ne) on the maul head. One element, small — as briefed, but at 1× it is almost gone | Yes | **Ship; ruled canon 2026-08-18.** The divergence was adopted — headband + tail is her look (see the retracted item below) |
 | machinist — Ivo Brace | Whip antenna, 9 rows clear above the head, 11% of figure height on its own; pack silhouette behind the shoulder | Correct: copper pack, chest harness, long spanner, heavy gloves | 21 px, one indicator lamp on the pack. As briefed | Yes | **Ship.** Best brief adherence in the set |
 | saboteur — Marek Sump | Deep work-hood, 12 rows / 16%, face a void with a glint | Correct: hooded, hunched, shortest standing height, satchel + three banded charges + wire spool (spool visible in the back cell) | **1 px (se), 0 px (ne)** — effectively none, as briefed. The charge bands are `blood-500`, not amber | Yes | **Ship.** Amber discipline exactly right |
 | chemist — Jory Slate | Respirator + hair bun, 17 rows / 20% | Correct: heavy split work coat over trousers and boots (not a dress), flask bandolier, verdigris apron, foundry-hand build | 16 px (se) / 18 px (ne): the two injectors and the vial fluid. Brief did not specify; within budget and fiction-sourced | Yes | **Ship.** Brief asked for a *half*-face mask and the delivery is full-face — a gain, not a loss, at this scale |
@@ -44,11 +44,11 @@ are the first four columns.
 
 ### What the owner should regenerate, in priority order
 
-1. **Rowen's head.** The brief asked for a riot helm with a horizontal visor
-   slit, openable so it can humanize her. The delivery has neither helm nor
-   visor. She is the protagonist and she is the one unit in the roster with no
-   job marker above the shoulders. A helm slung at the hip with the visor pushed
-   up on the brow would satisfy both the brief and the story note.
+1. **Rowen's head — RETRACTED (2026-08-18).** The owner ruled the delivery's
+   bare head canon: headband + auburn tail is Rowen's look, and the portrait
+   brief now specifies it (PORTRAIT_BRIEFS #1). The riot-helm-with-visor idea is
+   struck; if a job marker above the shoulders is ever wanted, it is a new
+   design decision, not a correction. No regeneration owed.
 2. **Three stances are wider than the figure box.** Rowen, Della and Marek are
    drawn in stances whose gear spread exceeds the 62-column figure box, and the
    spec's reduction is measured off the whole figure, so they pay for the width

@@ -389,9 +389,11 @@ off. This portrait is her at the *start* of that.
 **Face and build.** Nineteen or twenty, and she must look it — the youngest
 face in the cast by a clear margin. House-born: fed, straight-nosed, teeth
 that were seen to. Not delicate: a soldier's neck and shoulders that a shoulder span the
-drill built. Dark hair cut short enough to live under a helmet, and
-**flattened at the temples where the liner sits** — she has just taken the helm
-off, and the portrait should know it. Same jaw and brow as Aldric (see #8);
+drill built. **Auburn hair pulled back into a short tied tail at the nape,
+under her field headband** — the look her shipped sprite master wears, ruled
+canon 2026-08-18 (owner's call; supersedes the earlier short-dark-hair text and
+the sprite intake log's regenerate item). The headband sits across the brow
+and is her above-shoulder read at every size. Same jaw and brow as Aldric (see #8);
 the family resemblance is load-bearing, because on the Charterhouse Steps the
 player has to see the brother in the sister.
 
@@ -402,7 +404,8 @@ Watch coat, buttoned, with a light plain gorget at the throat and the heavy
 riot cuirass conspicuously *absent* — where Aldric (#8) is turned out complete
 and correct, she is a young officer wearing most of a uniform. Sooted steel, no
 heraldry beyond a small stamped house mark. **The helm is off** and not in
-frame. Her chip-size anchor is that collar line plus the helmet-flattened hair.
+frame. Her chip-size anchor is the headband plus the auburn tail — the collar line
+sits below the chip crop and cannot anchor it.
 
 **The read.** *The person who stands at the front and takes it* — and, in the
 face, the person who is still listening. Chin level, mouth closed and level,
